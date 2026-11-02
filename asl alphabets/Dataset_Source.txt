@@ -1,0 +1,35 @@
+DATASET SOURCE - ASL ALPHABET
+=================================
+
+Dataset name : ASL Alphabet
+Source URL   : https://www.kaggle.com/datasets/grassknoted/asl-alphabet
+
+Description
+-----------
+Image dataset for the alphabets in American Sign Language, published on
+Kaggle. Colour images of hand signs, 200x200 pixels, stored in one folder
+per class. Useful for a real-time translator because it includes the
+"space", "del" and "nothing" control classes on top of A-Z.
+
+Content
+-------
+Training images : ~87,000 colour images (200x200)
+Classes         : 29 (A-Z, space, del, nothing)
+Official test   : 29 images (one per class - very small)
+
+Download instructions
+---------------------
+1. Visit the URL above.
+2. Sign in or create a free Kaggle account.
+3. Click the "Download" button to obtain the dataset ZIP.
+4. Extract it so that the folder `asl_alphabet_train/` is next to
+   eda_asl_alphabet.py.
+
+The eda_asl_alphabet.py script also downloads it automatically through
+the `kagglehub` package, so manual download is only needed if the
+automatic download fails.
+
+License and usage
+-----------------
+Follow the license shown on the Kaggle dataset page.
+Used here for educational and research purposes only.

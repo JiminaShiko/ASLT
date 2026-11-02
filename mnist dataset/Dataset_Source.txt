@@ -1,0 +1,49 @@
+DATASET SOURCE - SIGN LANGUAGE MNIST
+========================================
+
+Dataset name : Sign Language MNIST
+Source URL   : https://www.kaggle.com/datasets/datamunge/sign-language-mnist
+
+Description
+-----------
+A drop-in replacement for the classic MNIST handwritten-digits dataset,
+but for American Sign Language letters. Each row contains one label
+(the letter, 0-24) followed by 784 pixel values (28x28 grayscale image,
+row by row, values 0-255).
+
+This dataset is the small, fast baseline for the real-time letter
+classifier in the translator.
+
+Content
+-------
+Training images : 27,455
+Test images     :  7,172
+Pixel format    : 28 x 28 grayscale, flattened to 784 columns
+Classes         : 24 (A-Z except J and Z - those two need motion)
+CSV columns     : label, pixel1, pixel2, ..., pixel784
+
+Download instructions
+---------------------
+Option A - Automatic (used by eda_analysis.py):
+  The script downloads the dataset through the `kagglehub` package into
+  its cache, then copies the two CSV files into dataset/.
+
+Option B - Manual:
+  1. Visit https://www.kaggle.com/datasets/datamunge/sign-language-mnist
+  2. Sign in or create a free Kaggle account.
+  3. Download sign_mnist_train.csv and sign_mnist_test.csv.
+  4. Put both files inside a folder called dataset/ next to the script.
+  5. Run: python eda_analysis.py
+
+File structure expected by the script
+-------------------------------------
+EDA_SignLanguageMNIST/
+├── dataset/
+│   ├── sign_mnist_train.csv
+│   └── sign_mnist_test.csv
+└── eda_analysis.py
+
+License and usage
+-----------------
+Follow the license shown on the Kaggle dataset page.
+Used here for educational and research purposes only.

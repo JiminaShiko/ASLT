@@ -1,0 +1,47 @@
+{
+  "n_metadata_rows": 83399,
+  "n_videos_on_disk": 83399,
+  "columns": [
+    "signer_id",
+    "video_id",
+    "gloss",
+    "ASL-LEX Code",
+    "split"
+  ],
+  "missing_total": 183,
+  "dup_rows": 0,
+  "dup_ids": 0,
+  "rows_without_video": 83399,
+  "n_classes": 2731,
+  "videos_per_class_mean": 30.5,
+  "videos_per_class_median": 31.0,
+  "videos_per_class_min": 21,
+  "videos_per_class_max": 45,
+  "classes_with_one_video": 0,
+  "n_signers": 52,
+  "videos_per_signer_min": 2,
+  "videos_per_signer_max": 3004,
+  "split_counts": {
+    "train": 40154,
+    "test": 32941,
+    "val": 10304
+  },
+  "probe_total": 83399,
+  "probe_broken": 0,
+  "probe_fps_median": 29.99813676169182,
+  "probe_fps_min": 11.346,
+  "probe_fps_max": 120.0,
+  "probe_duration_median": 2.567,
+  "probe_duration_mean": 2.804488000806356,
+  "probe_duration_min": 0.06400136536246107,
+  "probe_duration_max": 22.627445760681486,
+  "probe_duration_p95": 5.267,
+  "probe_size_median_mb": 0.54,
+  "probe_resolutions": {
+    "640x480": 80184,
+    "960x540": 3211,
+    "480x640": 4
+  },
+  "probe_short_clips": 12,
+  "probe_long_clips": 92
+}

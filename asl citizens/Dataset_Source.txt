@@ -1,0 +1,53 @@
+DATASET SOURCE - ASL CITIZEN
+=================================
+
+Dataset name : ASL Citizen
+Project URL  : https://www.microsoft.com/en-us/research/project/asl-citizen/
+Download URL : https://www.microsoft.com/en-us/download/details.aspx?id=105253
+Direct ZIP   : https://download.microsoft.com/download/b/8/8/
+               b88c0bae-e6c1-43e1-8726-98cf5af36ca4/ASL_Citizen.zip
+Paper        : https://arxiv.org/abs/2304.05934
+
+Description
+-----------
+A crowdsourced dataset of isolated American Sign Language signs, recorded
+by webcam by many different people in different environments. Used as an
+extra source of word examples because its webcam-style recordings are
+close to the conditions of a real-time translator.
+
+Content
+-------
+Videos  : ~84,000 isolated word videos (.mp4)
+Glosses : ~2,700 distinct signs
+Signers : 52 different people
+Extras  : one metadata CSV per split (train / val / test) with columns
+          for video_id, gloss and signer_id
+
+Download instructions
+---------------------
+Option A - Automatic (used by eda_asl_citizen_full.py):
+  The script downloads the ZIP through urllib using the direct ZIP URL
+  above. Downloads support HTTP Range resume.
+
+Option B - Manual:
+  1. Visit the project page or the Microsoft Download Center link above.
+  2. Download the ASL_Citizen.zip file (~30 GB).
+  3. Extract it so that the CSVs and .mp4 files are inside
+     ASL_Citizen/.
+  4. Point eda_asl_citizen_full.py to the extracted folder.
+
+License and usage
+-----------------
+The terms are given on the Dataset License page of the project:
+  https://www.microsoft.com/en-us/research/project/asl-citizen/dataset-license/
+
+Commercial use requires contacting Microsoft
+(ASL_Citizen@microsoft.com).
+
+If the dataset is used, the paper must be cited:
+  Desai et al., "ASL Citizen: A Community-Sourced Dataset for
+  Advancing Isolated Sign Language Recognition",
+  arXiv:2304.05934, 2023.
+
+Open-source code for the dataset is at:
+  https://github.com/microsoft/ASL-citizen-code

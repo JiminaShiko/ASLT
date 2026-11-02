@@ -1,0 +1,167 @@
+AI Final Project - Dataset Source File (Updated)
+=====================================================
+
+Project: Two-Way Sign Language Translator
+Scope: ASL alphabet (letters) AND word-level signs (for example "mother")
+
+Datasets in this file:
+  1. Sign Language MNIST ........... letters (primary dataset, approved in Assignment 1)
+  2. Google Isolated Sign Language Recognition ... words (landmark data)
+  3. WLASL ......................... words (video, large vocabulary)
+  4. ASL Citizen ................... words (video, very large vocabulary)
+  5. ASL Alphabet .................. letters (optional, larger real-photo image set)
+
+
+1. PRIMARY DATASET (Two-Way Sign Language Translator - Letters)
+---------------------------------------------------------
+Dataset Name: Sign Language MNIST
+Original Source URL: https://www.kaggle.com/datasets/datamunge/sign-language-mnist
+
+- Purpose and Relevance: 
+Provides approximately 34,000 grayscale images of American Sign Language (ASL) alphabet hand gestures. Used for training our Convolutional Neural Network (CNN) to accurately recognize ASL letters, which forms the core of the two-way sign language translation system (Sign → Text, Sign → Voice, Text → Sign, and Voice → Text).
+
+- Important Features: 
+Image pixel arrays (28x28 grayscale), label (ASL letter class).
+
+- Target Variable: 
+ASL alphabet letter class (24 classes: A–Y, excluding J and Z which require motion).
+
+- Records & Size: 
+Approximately 27,455 training images + 7,172 test images (total ~34,627 images). Each image is 28×28 pixels in grayscale.
+
+- License & Usage: 
+Publicly available on Kaggle for educational and research use. Free for academic projects with proper citation of the source.
+
+------------------------------------------------------------
+Access Instructions:
+1. Visit: https://www.kaggle.com/datasets/datamunge/sign-language-mnist
+2. Sign in or create a free Kaggle account.
+3. Click the “Download” button to obtain the dataset ZIP file.
+4. Extract the files (sign_mnist_train.csv and sign_mnist_test.csv).
+   (The project code can also download it automatically with the kagglehub package.)
+
+
+2. SECONDARY DATASET (Word-Level Signs - Landmark Data)
+---------------------------------------------------------
+Dataset Name: Google - Isolated Sign Language Recognition (Kaggle competition "asl-signs")
+Original Source URL: https://www.kaggle.com/competitions/asl-signs/data
+
+- Purpose and Relevance:
+Provides isolated American Sign Language word signs recorded by different people. Used to train the word-recognition model (a sequence model) so the translator can recognize words such as "mother" in addition to letters. Because the videos are already converted to hand/face/body landmark coordinates, it is much lighter to process than raw video, and it works with the same MediaPipe landmarks that can be extracted from a webcam in real time.
+
+- Important Features:
+Landmark sequences per sign: x, y, z coordinates of 543 MediaPipe landmarks per frame (468 face, 21 left hand, 21 right hand, 33 pose), plus frame number and participant ID. Hand landmarks are sometimes missing in some frames.
+
+- Target Variable:
+Sign (word) class: 250 different ASL words.
+
+- Records & Size:
+About 94,481 training sequences from 21 participants, recorded at about 20 frames per second. The download is about 40 GB compressed (about 57 GB extracted), so a subset of the needed words can be used for the project.
+
+- License & Usage:
+Distributed through the Kaggle competition "Google - Isolated Sign Language Recognition". Use is governed by the competition rules and the data license shown on the competition's Data page. The competition is based on the PopSign project, so the PopSign paper should also be cited (Starner et al., "PopSign ASL v1.0: An Isolated American Sign Language Dataset Collected via Smartphones", NeurIPS 2023 Datasets and Benchmarks Track). Used here for educational and research purposes with citation of the source. Check that the target words (for example "mother") are in the 250-sign list (sign_to_prediction_index_map.json) before using it.
+
+------------------------------------------------------------
+Access Instructions:
+1. Visit: https://www.kaggle.com/competitions/asl-signs/data
+2. Sign in or create a free Kaggle account.
+3. Click “Join Competition” and accept the competition rules (required before download).
+4. Download the data from the page, or with the Kaggle API: kaggle competitions download -c asl-signs
+5. Extract the files (train.csv, sign_to_prediction_index_map.json and the train_landmark_files folder).
+
+
+3. SECONDARY DATASET (Word-Level Signs - Large Vocabulary Video)
+---------------------------------------------------------
+Dataset Name: WLASL (Word-Level American Sign Language)
+Original Source URL: https://dxli94.github.io/WLASL/
+Code and Data Repository: https://github.com/dxli94/WLASL
+
+- Purpose and Relevance:
+The largest public video dataset for word-level ASL recognition. Used as an additional or backup source for words that are not included in the Google dataset, using only a small vocabulary subset chosen for the project.
+
+- Important Features:
+Video clips of one signed word each (RGB frames, different signers and backgrounds), a JSON file with the word (gloss), signer and video information, and train/validation/test splits. Body keypoints (pose) are also provided by the authors.
+
+- Target Variable:
+Word (gloss) class: up to 2,000 words (subsets of 100, 300, 1000 and 2000 words are used in the literature).
+
+- Records & Size:
+More than 2,000 words performed by over 100 signers. The videos are collected from sign language websites and YouTube, so some videos may no longer be available when downloaded. The authors offer pre-processed videos on request.
+
+- License & Usage:
+Licensed under the Computational Use of Data Agreement (C-UDA). The data is intended for academic and computational use only. The WLASL paper must be cited (Li et al., WACV 2020, arXiv:1910.11006).
+
+------------------------------------------------------------
+Access Instructions:
+1. Visit: https://github.com/dxli94/WLASL
+2. Clone the repository: git clone https://github.com/dxli94/WLASL.git
+3. Use the provided JSON file and video_downloader.py script to download the videos
+   (or request the pre-processed videos from the authors, as described in the repository).
+4. Download the splits and body keypoints files and place them in WLASL/data as described in the repository README.
+
+
+4. SECONDARY DATASET (Word-Level Signs - Very Large Vocabulary Video)
+---------------------------------------------------------
+Dataset Name: ASL Citizen
+Original Source URL: https://www.microsoft.com/en-us/research/project/asl-citizen/
+Paper: https://arxiv.org/abs/2304.05934
+
+- Purpose and Relevance:
+A crowdsourced dataset of isolated ASL signs recorded by webcam by many different people in different environments. Used as an optional extra source of word examples, since its webcam-style recordings are close to the conditions of our real-time translator.
+
+- Important Features:
+Video clips of one signed word each, with word (gloss) labels and signer information.
+
+- Target Variable:
+Word (gloss) class: about 2,700 distinct signs.
+
+- Records & Size:
+About 84,000 videos of about 2,700 distinct signs, filmed by 52 signers. This is a large download, so only the needed words should be used.
+
+- License & Usage:
+The terms are given on the Dataset License page of the project (https://www.microsoft.com/en-us/research/project/asl-citizen/dataset-license/) and must be followed; commercial use requires contacting Microsoft (ASL_Citizen@microsoft.com). If the dataset is used, the paper must be cited (Desai et al., "ASL Citizen: A Community-Sourced Dataset for Advancing Isolated Sign Language Recognition", arXiv:2304.05934, 2023).
+
+------------------------------------------------------------
+Access Instructions:
+1. Visit: https://www.microsoft.com/en-us/research/project/asl-citizen/
+2. Download from the Microsoft Download Center: https://www.microsoft.com/en-us/download/details.aspx?id=105253
+   or from the command line: wget https://download.microsoft.com/download/b/8/8/b88c0bae-e6c1-43e1-8726-98cf5af36ca4/ASL_Citizen.zip
+   (Open-source code: https://github.com/microsoft/ASL-citizen-code)
+3. Read the license terms on the project page, then extract the videos and the label/split files, then keep only the videos of the chosen words.
+
+
+5. OPTIONAL DATASET (Letters - Larger Real-Photo Image Set)
+---------------------------------------------------------
+Dataset Name: ASL Alphabet
+Original Source URL: https://www.kaggle.com/datasets/grassknoted/asl-alphabet
+
+- Purpose and Relevance:
+Image data set for the alphabets in American Sign Language. Optional alternative or extra data for the letter model, because its images are larger (200x200) than Sign Language MNIST and include extra classes useful for a real-time translator (SPACE, DELETE and NOTHING).
+
+- Important Features:
+Color images of hand signs (200x200 pixels) stored in one folder per class.
+
+- Target Variable:
+Letter/sign class: 29 classes (A-Z, SPACE, DELETE, NOTHING).
+
+- Records & Size:
+About 87,000 training images (200x200 pixels). The official test set is very small (29 images), so a validation split must be made from the training images.
+
+- License & Usage:
+Publicly available on Kaggle; follow the license shown on the dataset page and cite the source. Used here for educational and research purposes only.
+
+------------------------------------------------------------
+Access Instructions:
+1. Visit: https://www.kaggle.com/datasets/grassknoted/asl-alphabet
+2. Sign in or create a free Kaggle account.
+3. Click the “Download” button to obtain the dataset ZIP file.
+4. Extract the files (asl_alphabet_train and asl_alphabet_test folders).
+
+
+HOW THE DATASETS ARE USED IN THE PROJECT
+---------------------------------------------------------
+- Letters (A-Y): Sign Language MNIST -> image CNN. (ASL Alphabet is optional extra data for the letter model.)
+- Words (for example "mother"): Google Isolated Sign Language Recognition (main word dataset) -> sequence model on landmarks.
+  WLASL and ASL Citizen are used only if a needed word is missing from the Google dataset.
+- Note: Sign Language MNIST has no J and Z, because these letters need motion. They can be handled
+  as word-level/motion signs if needed.
