@@ -1,0 +1,5 @@
+datasets/*
+!datasets/.gitkeep
+longVideos/*
+__pycache__/
+*.py[cod]
