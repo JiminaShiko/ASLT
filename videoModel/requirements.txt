@@ -1,0 +1,8 @@
+numpy
+pandas
+opencv-python-headless
+yt-dlp
+torch
+scikit-learn
+matplotlib
+reportlab
