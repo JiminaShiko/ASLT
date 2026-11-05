@@ -211,7 +211,7 @@
   /* ---------- Layout (sidebar + top bar) ---------- */
   var NAV = [
     { key: 'home', href: 'home.php', icon: 'home', label: 'Home' },
-    { key: 'translate', href: 'home.php#translate', icon: 'chat', label: 'Translation' },
+    { key: 'translate', href: 'translation.php', icon: 'chat', label: 'Translation' },
     { key: 'learning', href: 'learning.php', icon: 'book', label: 'Learning' },
     { key: 'history', href: 'home.php#history', icon: 'clock', label: 'History' },
     { key: 'feedback', href: 'feedback.php', icon: 'star', label: 'Feedback' },
