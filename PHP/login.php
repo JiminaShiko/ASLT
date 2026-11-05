@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log in - ASL Translator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="login">
+<div class="login">
+  <section class="login-art" aria-label="About">
+    <a class="brand" href="login.php" style="padding:0">
+      <span class="brand-mark"><span data-icon="hand" data-size="26"></span></span>
+      <span class="brand-name">ASL Translator<small>Sign language, made visual</small></span>
+    </a>
+    <div>
+      <h1>Sign language, made visible.</h1>
+      <p>Translate signs into text, turn text into signs, and practise with charts and quizzes.</p>
+    </div>
+    <div class="signing" aria-hidden="true">
+      <div class="t" style="--i:0"><b>H</b></div>
+      <div class="t" style="--i:1"><b>E</b></div>
+      <div class="t" style="--i:2"><b>L</b></div>
+      <div class="t" style="--i:3"><b>L</b></div>
+      <div class="t" style="--i:4"><b>O</b></div>
+    </div>
+  </section>
+
+  <section class="login-form">
+    <div class="login-box">
+      <h2 id="form-title">Welcome back</h2>
+      <div class="seg" role="tablist" aria-label="Account">
+        <button type="button" role="tab" id="tab-login" aria-selected="true">Log in</button>
+        <button type="button" role="tab" id="tab-signup" aria-selected="false">Create account</button>
+      </div>
+
+      <form id="auth-form" novalidate style="display:flex;flex-direction:column;gap:16px">
+        <div class="field" id="name-field" hidden>
+          <label for="name">Full name</label>
+          <input class="input" id="name" type="text" autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input class="input" id="email" type="email" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input class="input" id="password" type="password" autocomplete="current-password" required>
+        </div>
+        <div class="err" id="err" role="alert"></div>
+        <button class="btn btn-block" type="submit" id="submit">Log in</button>
+      </form>
+
+      <button class="btn btn-ghost btn-block" type="button" id="guest">Continue as guest</button>
+      <p class="muted" style="font-size:15px">Accounts are stored in this browser only. Connect a backend before real use.</p>
+    </div>
+  </section>
+</div>
+<script src="js/common.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>

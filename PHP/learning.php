@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learning - ASL Translator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="learning" data-title="Learning">
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="scrim" id="scrim"></div>
+  <div class="content">
+    <header class="topbar" id="topbar"></header>
+
+    <main class="page" id="main">
+
+      <section class="card" aria-labelledby="l-h">
+        <div class="card-head">
+          <div>
+            <h2 id="l-h">Your learning progress</h2>
+            <p class="muted" id="prog-text">0 of 31 signs learned</p>
+          </div>
+          <span class="muted" id="best-text"></span>
+        </div>
+        <div class="progress" id="prog" role="progressbar" aria-labelledby="l-h" aria-valuemin="0" aria-valuemax="31" aria-valuenow="0" style="margin-top:16px"><i id="prog-bar" style="width:0%"></i></div>
+      </section>
+
+      <div class="seg" role="tablist" aria-label="Learning sections">
+        <button type="button" role="tab" id="tab-charts" aria-selected="true" aria-controls="charts"><span data-icon="book"></span>Charts</button>
+        <button type="button" role="tab" id="tab-quiz" aria-selected="false" aria-controls="quiz"><span data-icon="star"></span>Quiz</button>
+      </div>
+
+      <!-- Charts -->
+      <section class="card" id="charts" role="tabpanel" aria-labelledby="tab-charts">
+        <div class="seg" role="tablist" aria-label="Chart type" style="max-width:420px">
+          <button type="button" role="tab" id="tab-alpha" aria-selected="true">Alphabet</button>
+          <button type="button" role="tab" id="tab-word" aria-selected="false">Word</button>
+        </div>
+
+        <div id="alpha-view" style="margin-top:20px">
+          <div class="agrid" id="agrid"></div>
+          <div class="detail" id="alpha-detail" hidden></div>
+        </div>
+
+        <div id="word-view" style="margin-top:20px" hidden>
+          <div class="seg" id="word-tabs" role="tablist" aria-label="Words"></div>
+          <div class="detail" id="word-detail"></div>
+        </div>
+      </section>
+
+      <!-- Quiz -->
+      <section class="card" id="quiz" role="tabpanel" aria-labelledby="tab-quiz" hidden>
+        <div id="quiz-play" style="display:flex;flex-direction:column;gap:18px">
+          <div class="qmeta"><span id="q-count"></span><span id="q-score"></span></div>
+          <div class="progress"><i id="q-bar" style="width:0%"></i></div>
+          <h2 class="qtext" id="q-text"></h2>
+          <div class="qmedia"><div id="q-img" style="display:contents"></div><div class="callout" id="q-hint"></div></div>
+          <div class="opts" id="q-options"></div>
+          <div class="fbline" id="q-feedback" role="status" aria-live="polite"></div>
+          <div><button class="btn" id="q-next" type="button" hidden>Next question</button></div>
+        </div>
+        <div id="quiz-result" hidden>
+          <div class="scorebox">
+            <div class="ring" id="ring" style="--p:0"><span id="final-score"></span></div>
+            <h2 id="final-msg"></h2>
+            <p class="muted" id="final-best"></p>
+            <div class="row" style="justify-content:center">
+              <button class="btn" id="restart" type="button" style="flex:0 1 auto">Restart quiz</button>
+              <button class="btn btn-ghost" id="to-charts" type="button" style="flex:0 1 auto">Back to charts</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+<script src="js/common.js"></script>
+<script src="js/learning.js"></script>
+</body>
+</html>
