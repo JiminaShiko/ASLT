@@ -157,7 +157,7 @@
   function setSession(s) { write('asl_session', s); }
   function logout() {
     try { localStorage.removeItem('asl_session'); } catch (e) {}
-    location.href = 'login.html';
+    location.href = 'login.php';
   }
   function getProfile() {
     var s = getSession() || {};
@@ -210,12 +210,12 @@
 
   /* ---------- Layout (sidebar + top bar) ---------- */
   var NAV = [
-    { key: 'home', href: 'home.html', icon: 'home', label: 'Home' },
-    { key: 'translate', href: 'home.html#translate', icon: 'chat', label: 'Translation' },
-    { key: 'learning', href: 'learning.html', icon: 'book', label: 'Learning' },
-    { key: 'history', href: 'home.html#history', icon: 'clock', label: 'History' },
-    { key: 'feedback', href: 'feedback.html', icon: 'star', label: 'Feedback' },
-    { key: 'profile', href: 'profile.html', icon: 'user', label: 'Profile Settings' }
+    { key: 'home', href: 'home.php', icon: 'home', label: 'Home' },
+    { key: 'translate', href: 'home.php#translate', icon: 'chat', label: 'Translation' },
+    { key: 'learning', href: 'learning.php', icon: 'book', label: 'Learning' },
+    { key: 'history', href: 'home.php#history', icon: 'clock', label: 'History' },
+    { key: 'feedback', href: 'feedback.php', icon: 'star', label: 'Feedback' },
+    { key: 'profile', href: 'profile.php', icon: 'user', label: 'Profile Settings' }
   ];
 
   function buildShell(page) {
@@ -231,7 +231,7 @@
     }).join('');
 
     side.innerHTML =
-      '<a class="brand" href="home.html"><span class="brand-mark">' + icon('hand', 26) + '</span>' +
+      '<a class="brand" href="home.php"><span class="brand-mark">' + icon('hand', 26) + '</span>' +
       '<span class="brand-name">ASL Translator<small>Sign language, made visual</small></span></a>' +
       '<nav aria-label="Main menu" style="display:flex;flex-direction:column;gap:4px">' + links + '</nav>' +
       '<div class="spacer"></div>' +
@@ -243,7 +243,7 @@
       '<button class="icon-btn menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false">' + icon('menu', 22) + '</button>' +
       '<div class="title">' + esc(document.body.dataset.title || '') + '</div>' +
       '<button class="icon-btn" id="fx-toggle" type="button" aria-pressed="true" aria-label="Cursor effects" title="Cursor effects">' + icon('sparkle', 22) + '</button>' +
-      '<a class="icon-btn" href="profile.html" aria-label="Profile">' + icon('user', 22) + '</a>';
+      '<a class="icon-btn" href="profile.php" aria-label="Profile">' + icon('user', 22) + '</a>';
 
     var scrim = document.getElementById('scrim');
     var menuBtn = document.getElementById('menu-btn');
@@ -346,7 +346,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     var page = document.body.dataset.page || '';
     if (page !== 'login' && !getSession()) {
-      location.replace('login.html');
+      location.replace('login.php');
       return;
     }
     if (page !== 'login') {
