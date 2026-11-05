@@ -41,12 +41,14 @@ if (!in_array($model, ['cnn_gru', 'cnn3d'], true)) {
 
 $projectRoot = realpath(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'videoModel');
 if ($projectRoot === false) {
-    sendJson(500, ['error' => 'The video model folder is unavailable.']);
+    error_log('Video prediction failed: video model folder is unavailable.');
+    sendJson(500, ['error' => 'Translation is temporarily unavailable. Please try again later.']);
 }
 
 $temporaryBase = tempnam(sys_get_temp_dir(), 'aslt_');
 if ($temporaryBase === false) {
-    sendJson(500, ['error' => 'Could not create a temporary upload file.']);
+    error_log('Video prediction failed: could not create a temporary upload file.');
+    sendJson(500, ['error' => 'We could not process this video. Please try again later.']);
 }
 $temporaryVideo = $temporaryBase . '.' . $extension;
 $status = 500;
@@ -88,8 +90,11 @@ try {
     $exitCode = proc_close($process);
 
     if ($exitCode !== 0) {
-        error_log(trim((string) $stderr));
-        throw new RuntimeException(trim((string) $stderr) ?: 'The model could not read this video.');
+        $diagnostic = trim((string) $stderr);
+        if ($diagnostic !== '') {
+            error_log('Video prediction process failed: ' . $diagnostic);
+        }
+        throw new RuntimeException('Video prediction process failed.');
     }
 
     $decoded = json_decode((string) $stdout, true, 512, JSON_THROW_ON_ERROR);
@@ -99,8 +104,10 @@ try {
     $response = $decoded;
     $status = 200;
 } catch (Throwable $error) {
-    error_log($error->getMessage());
-    $response = ['error' => $error->getMessage()];
+    error_log('Video prediction failed: ' . $error->getMessage());
+    $response = [
+        'error' => 'We could not translate this video. Please try recording it again or choose another supported video.',
+    ];
 } finally {
     if (is_file($temporaryBase)) {
         unlink($temporaryBase);

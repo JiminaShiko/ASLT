@@ -7,7 +7,6 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import pandas as pd
 
 from src.config import (
     ANNOTATION_FPS,
@@ -71,6 +70,8 @@ def find_video(video_dir: Path, video_id: str) -> Path | None:
 
 
 def asl_citizen_records() -> list[dict]:
+    import pandas as pd
+
     if not ASL_CITIZEN_METADATA.is_file():
         raise FileNotFoundError(
             f"ASL Citizen selected metadata not found at {ASL_CITIZEN_METADATA}. "
@@ -145,28 +146,45 @@ def extract_frames(video_path: Path, record: dict) -> np.ndarray:
     try:
         if not capture.isOpened():
             raise ValueError(f"Video cannot be opened: {video_path}")
-        frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
         video_fps = float(capture.get(cv2.CAP_PROP_FPS))
-        if frame_count <= 0 or not math.isfinite(video_fps) or video_fps <= 0:
-            raise ValueError(f"Video has invalid frame count or FPS: {video_path}")
+        if not math.isfinite(video_fps) or video_fps <= 0:
+            raise ValueError(f"Video has invalid FPS: {video_path}")
 
-        start, end = frame_interval(record, frame_count, video_fps)
-        indices = np.linspace(start, end, NUM_FRAMES).round().astype(np.int64)
+        frame_count = 0
+        while True:
+            ok, _ = capture.read()
+            if not ok:
+                break
+            frame_count += 1
+        if frame_count == 0:
+            raise ValueError(f"Video contains no decodable frames: {video_path}")
+    finally:
+        capture.release()
+
+    start, end = frame_interval(record, frame_count, video_fps)
+    indices = np.linspace(start, end, NUM_FRAMES).round().astype(np.int64)
+    capture = cv2.VideoCapture(str(video_path))
+    try:
+        if not capture.isOpened():
+            raise ValueError(f"Video cannot be reopened: {video_path}")
+
         frames = []
-        for index in indices:
-            capture.set(cv2.CAP_PROP_POS_FRAMES, int(index))
+        next_sample = 0
+        for index in range(int(indices[-1]) + 1):
             ok, frame = capture.read()
             if not ok or frame is None:
-                raise ValueError(
-                    f"Could not decode frame {int(index)} from {video_path}"
+                raise ValueError(f"Could not decode frame {index} from {video_path}")
+            while next_sample < len(indices) and indices[next_sample] == index:
+                sampled = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                sampled = cv2.resize(
+                    sampled,
+                    (FRAME_WIDTH, FRAME_HEIGHT),
+                    interpolation=cv2.INTER_AREA,
                 )
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = cv2.resize(
-                frame,
-                (FRAME_WIDTH, FRAME_HEIGHT),
-                interpolation=cv2.INTER_AREA,
-            )
-            frames.append(frame)
+                frames.append(sampled)
+                next_sample += 1
+        if next_sample != NUM_FRAMES:
+            raise ValueError(f"Could not sample enough frames from {video_path}")
         return np.stack(frames).astype(np.uint8, copy=False)
     finally:
         capture.release()

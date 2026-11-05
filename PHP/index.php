@@ -73,7 +73,7 @@ button,input{font-family:inherit}
 .feedback .btn{background:#fff;color:var(--primary);border:2px solid var(--primary);font-size:18px;min-height:56px}
 
 .camera{overflow:hidden}
-.camera video,.camera img.snap{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.camera video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .camera .flip{z-index:2}
 .row-btns{display:flex;flex-wrap:wrap;gap:12px}
 .row-btns .btn{flex:1 1 200px}
@@ -134,7 +134,6 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #0B2E
         <div class="panel" id="panel-sign" role="tabpanel" aria-labelledby="tab-sign">
           <div class="camera" id="camera">
             <video id="cam" autoplay playsinline muted hidden></video>
-            <img class="snap" id="snap" alt="Captured sign" hidden>
             <div id="cam-placeholder" style="display:flex;flex-direction:column;align-items:center;gap:12px">
               <svg width="88" height="88" viewBox="0 0 24 24" fill="none" stroke="#0B72C7" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13V5a1.5 1.5 0 0 1 3 0v6"/><path d="M11 11V3.5a1.5 1.5 0 0 1 3 0V11"/><path d="M14 11V5.5a1.5 1.5 0 0 1 3 0V14"/><path d="M17 9.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1a7 7 0 0 1-5.5-2.7L3 14.5a1.5 1.5 0 0 1 2.3-1.9L8 15"/></svg>
               <div>Tap "Start Camera" to begin</div>
@@ -145,7 +144,16 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #0B2E
           </div>
           <div class="row-btns">
             <button class="btn btn-outline" type="button" id="cam-toggle">Start Camera</button>
-            <button class="btn" type="button" id="capture" disabled>Capture Sign</button>
+            <button class="btn" type="button" id="capture" disabled>Start Live Translation</button>
+          </div>
+          <div class="field">
+            <div>
+              <label class="label" for="camera-model-choice">Model</label>
+              <select class="input" id="camera-model-choice">
+                <option value="cnn3d">3D CNN</option>
+                <option value="cnn_gru">CNN-GRU</option>
+              </select>
+            </div>
           </div>
           <div class="status" id="cam-status" role="status" aria-live="polite"></div>
           <div class="result">
@@ -252,25 +260,29 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #0B2E
 </div>
 
 <script>
-/* =========================================================
-   AI model hook (connect your model here)
-  Video predictions are sent to predict.php.
-   source = <canvas>, <img> or <video>
-   Return (or resolve to): { text: "Hello", confidence: 0.92 }
-   ========================================================= */
-async function runPrediction(source) {
-  if (!(source instanceof HTMLVideoElement) || !currentFile) {
-    return { error: 'This model requires a video clip. Choose Video under Upload Media.' };
+/* Video predictions are sent to predict.php. */
+async function runPrediction(videoFile, model) {
+  if (!(videoFile instanceof Blob)) {
+    return { error: 'Choose a video clip to translate.' };
   }
   try {
     var body = new FormData();
-    body.append('video', currentFile);
-    body.append('model', document.getElementById('model-choice').value);
+    body.append('video', videoFile, videoFile.name || 'camera.webm');
+    body.append('model', model);
     var response = await fetch('predict.php', { method: 'POST', body: body });
+    if (!response.ok) {
+      var safeErrors = {
+        400: 'Please choose a supported video file and try again.',
+        413: 'This video is too large. Choose a video under 200 MB.'
+      };
+      return {
+        error: safeErrors[response.status] ||
+          'We could not translate this video. Please try again later.'
+      };
+    }
     var result = await response.json();
-    if (!response.ok) { return { error: result.error || 'Prediction failed.' }; }
     if (!result.predictions || !result.predictions.length) {
-      return { error: 'The model returned no predictions.' };
+      return { error: 'We could not recognize a sign in this video. Please try again.' };
     }
     return {
       text: result.predictions[0].label,
@@ -278,7 +290,8 @@ async function runPrediction(source) {
       model: result.model
     };
   } catch (err) {
-    return { error: 'Could not reach the model endpoint. Check that PHP and Python are running.' };
+    console.error('Video prediction request failed:', err);
+    return { error: 'We could not connect to the translation service. Please try again later.' };
   }
 }
 
@@ -343,7 +356,6 @@ renderHistory();
 
 /* ---------------- Sign to Text (camera) ---------------- */
 var cam = document.getElementById('cam');
-var snap = document.getElementById('snap');
 var camPlaceholder = document.getElementById('cam-placeholder');
 var camToggle = document.getElementById('cam-toggle');
 var captureBtn = document.getElementById('capture');
@@ -352,6 +364,10 @@ var camStatus = document.getElementById('cam-status');
 var signResult = document.getElementById('sign-result');
 var stream = null;
 var facing = 'user';
+var liveTranslation = false;
+var activeRecorder = null;
+var CAMERA_CLIP_DURATION_MS = 2250;
+var RETRY_DELAY_MS = 1000;
 
 function setCamStatus(msg, isError) {
   camStatus.textContent = msg;
@@ -365,21 +381,32 @@ async function startCamera() {
   }
   stopCamera();
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: false });
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: facing,
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        frameRate: { ideal: 30 }
+      },
+      audio: false
+    });
     cam.srcObject = stream;
     cam.hidden = false;
-    snap.hidden = true;
     camPlaceholder.hidden = true;
     captureBtn.disabled = false;
     flipBtn.disabled = false;
     camToggle.textContent = 'Stop Camera';
-    setCamStatus('Camera is on. Show your sign, then tap "Capture Sign".', false);
+    setCamStatus('Camera is on. Start live translation when you are ready.', false);
   } catch (err) {
     setCamStatus('Could not open the camera. Please allow camera permission.', true);
   }
 }
 
 function stopCamera() {
+  liveTranslation = false;
+  if (activeRecorder && activeRecorder.state === 'recording') {
+    activeRecorder.stop();
+  }
   if (stream) {
     stream.getTracks().forEach(function (t) { t.stop(); });
     stream = null;
@@ -387,9 +414,10 @@ function stopCamera() {
   cam.srcObject = null;
   cam.hidden = true;
   captureBtn.disabled = true;
+  captureBtn.textContent = 'Start Live Translation';
   flipBtn.disabled = true;
   camToggle.textContent = 'Start Camera';
-  if (snap.hidden) { camPlaceholder.hidden = false; }
+  camPlaceholder.hidden = false;
 }
 
 camToggle.addEventListener('click', function () {
@@ -401,23 +429,97 @@ flipBtn.addEventListener('click', function () {
   startCamera();
 });
 
-captureBtn.addEventListener('click', async function () {
-  if (!stream || !cam.videoWidth) { return; }
-  var canvas = document.createElement('canvas');
-  canvas.width = cam.videoWidth;
-  canvas.height = cam.videoHeight;
-  canvas.getContext('2d').drawImage(cam, 0, 0);
-  snap.src = canvas.toDataURL('image/jpeg', 0.9);
-  snap.hidden = false;
-  cam.hidden = true;
-  camPlaceholder.hidden = true;
-  setCamStatus('Reading your sign...', false);
-  var r = await runPrediction(canvas);
-  var ok = showResult(signResult, r);
-  if (ok) { addHistory('Sign to Text', r.text); setCamStatus('Done.', false); }
-  else { setCamStatus('Photo captured. Tap "Capture Sign" again to retry.', !!r.error && r.error.indexOf('not connected') === -1); }
-  // go back to live view so the user can try again
-  setTimeout(function () { if (stream) { cam.hidden = false; snap.hidden = true; } }, 1800);
+function recordCameraClip() {
+  return new Promise(function (resolve, reject) {
+    var supportedTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+    var mimeType = supportedTypes.find(function (type) {
+      return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(type);
+    });
+    var recorder;
+    try {
+      recorder = mimeType ? new MediaRecorder(stream, { mimeType: mimeType }) : new MediaRecorder(stream);
+    } catch (err) {
+      reject(new Error('This browser cannot record camera video for translation.'));
+      return;
+    }
+
+    activeRecorder = recorder;
+    var chunks = [];
+    recorder.ondataavailable = function (event) {
+      if (event.data.size > 0) { chunks.push(event.data); }
+    };
+    recorder.onerror = function () {
+      if (activeRecorder === recorder) { activeRecorder = null; }
+      reject(new Error('Could not record a camera clip. Please try again.'));
+    };
+    recorder.onstop = function () {
+      if (activeRecorder === recorder) { activeRecorder = null; }
+      resolve(new Blob(chunks, { type: recorder.mimeType || 'video/webm' }));
+    };
+    recorder.start();
+    window.setTimeout(function () {
+      if (recorder.state === 'recording') { recorder.stop(); }
+    }, CAMERA_CLIP_DURATION_MS);
+  });
+}
+
+async function runLiveTranslation() {
+  var lastPrediction = '';
+  var translatedWords = [];
+  while (stream && liveTranslation) {
+    try {
+      setCamStatus('Recording a sign...', false);
+      var clip = await recordCameraClip();
+      if (!liveTranslation) { break; }
+      if (!clip.size) { throw new Error('No camera video was recorded. Please try again.'); }
+
+      setCamStatus('Analyzing this sign; this can take several seconds...', false);
+      var model = document.getElementById('camera-model-choice').value;
+      var result = await runPrediction(clip, model);
+      if (!liveTranslation) { break; }
+      if (result.error) {
+        lastPrediction = '';
+        setCamStatus('Could not read that clip. Keep signing; trying another clip...', true);
+        await new Promise(function (resolve) { window.setTimeout(resolve, RETRY_DELAY_MS); });
+        continue;
+      }
+
+      if (result.text !== lastPrediction) {
+        translatedWords.push(result.text);
+        addHistory('Sign to Text', result.text);
+        lastPrediction = result.text;
+      }
+      signResult.textContent = translatedWords.join(' ');
+      setCamStatus('Live translation is on. Show one sign at a time.', false);
+    } catch (error) {
+      if (!liveTranslation) { break; }
+      console.error('Camera clip translation failed:', error);
+      lastPrediction = '';
+      setCamStatus('Could not record that clip. Keep signing; trying again...', true);
+      await new Promise(function (resolve) { window.setTimeout(resolve, RETRY_DELAY_MS); });
+    }
+  }
+}
+
+captureBtn.addEventListener('click', function () {
+  if (liveTranslation) {
+    liveTranslation = false;
+    if (activeRecorder && activeRecorder.state === 'recording') {
+      activeRecorder.stop();
+    }
+    captureBtn.textContent = 'Start Live Translation';
+    setCamStatus('Live translation paused.', false);
+    return;
+  }
+  if (!stream) { return; }
+  if (!window.MediaRecorder) {
+    setCamStatus('Live video recording is not supported by this browser.', true);
+    return;
+  }
+  liveTranslation = true;
+  captureBtn.textContent = 'Stop Live Translation';
+  signResult.textContent = 'Your text will appear here';
+  runLiveTranslation();
 });
 
 /* ---------------- Text to Sign ---------------- */
@@ -505,7 +607,6 @@ var uploadResult = document.getElementById('upload-result');
 var translateBtn = document.getElementById('translate-upload');
 var filePhoto = document.getElementById('file-photo');
 var fileVideo = document.getElementById('file-video');
-var currentMedia = null;
 var currentFile = null;
 var currentUrl = null;
 
@@ -530,7 +631,6 @@ function loadFile(file, kind) {
   el.src = currentUrl;
   preview.appendChild(el);
   preview.hidden = false;
-  currentMedia = el;
   translateBtn.disabled = kind !== 'video';
   uploadResult.textContent = 'Your text will appear here';
   uploadStatus.textContent = kind === 'video' ? file.name : 'The video model requires a video clip.';
@@ -540,9 +640,9 @@ filePhoto.addEventListener('change', function () { loadFile(filePhoto.files[0], 
 fileVideo.addEventListener('change', function () { loadFile(fileVideo.files[0], 'video'); fileVideo.value = ''; });
 
 translateBtn.addEventListener('click', async function () {
-  if (!currentMedia) { return; }
+  if (!currentFile) { return; }
   uploadStatus.textContent = 'Reading your sign...';
-  var r = await runPrediction(currentMedia);
+  var r = await runPrediction(currentFile, document.getElementById('model-choice').value);
   var ok = showResult(uploadResult, r);
   if (ok) { addHistory('Upload Media', r.text); uploadStatus.textContent = 'Done.'; }
   else { uploadStatus.textContent = 'File loaded.'; }

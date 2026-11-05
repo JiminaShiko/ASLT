@@ -10,8 +10,8 @@ import numpy as np
 import torch
 
 from src.config import ANNOTATION_FPS, ROOT, TARGET_WORDS, WLASL_METADATA, canonicalize_gloss
+from src.model_architectures import build_model
 from src.preprocess import extract_frames
-from src.train_model import build_model
 
 CHECKPOINT_DIR = ROOT / "models"
 

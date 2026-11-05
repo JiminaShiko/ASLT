@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import random
 from collections import Counter
@@ -20,11 +21,12 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, recall_score
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
 from src.config import FRAME_HEIGHT, FRAME_WIDTH, NUM_FRAMES, PROCESSED_DIR, ROOT, TARGET_WORDS
+from src.model_architectures import FrameCNNGRU, VideoCNN3D, build_model
 
 DEFAULT_OUTPUT_DIR = PROCESSED_DIR / "training_artifacts"
 MODEL_DIR = ROOT / "models"
@@ -32,10 +34,12 @@ SPLITS = ("train", "val", "test")
 
 
 class ProcessedVideoDataset(Dataset):
-    def __init__(self, rows: list[dict[str, str]], class_to_index: dict[str, int], root: Path = PROCESSED_DIR):
+    def __init__(self, rows: list[dict[str, str]], class_to_index: dict[str, int], root: Path = PROCESSED_DIR,
+                 include_seed_flag: bool = False):
         self.rows = rows
         self.class_to_index = class_to_index
         self.root = root
+        self.include_seed_flag = include_seed_flag
 
     def __len__(self) -> int:
         return len(self.rows)
@@ -49,51 +53,8 @@ class ProcessedVideoDataset(Dataset):
         if frames.shape != expected:
             raise ValueError(f"Unexpected frame shape in {path}: {frames.shape}; expected {expected}.")
         video = torch.from_numpy(np.ascontiguousarray(frames))
-        return video.permute(0, 3, 1, 2).float().div_(255.0), self.class_to_index[row["gloss"]]
-
-
-class FrameCNNGRU(nn.Module):
-    """Frame-wise spatial CNN followed by a temporal GRU."""
-
-    def __init__(self, num_classes: int):
-        super().__init__()
-        self.encoder = nn.Sequential(
-            nn.Conv2d(3, 16, 3, padding=1, bias=False), nn.BatchNorm2d(16), nn.ReLU(inplace=True), nn.MaxPool2d(2),
-            nn.Conv2d(16, 32, 3, padding=1, bias=False), nn.BatchNorm2d(32), nn.ReLU(inplace=True), nn.MaxPool2d(2),
-            nn.Conv2d(32, 64, 3, padding=1, bias=False), nn.BatchNorm2d(64), nn.ReLU(inplace=True), nn.AdaptiveAvgPool2d(1),
-        )
-        self.gru = nn.GRU(64, 64, batch_first=True)
-        self.head = nn.Sequential(nn.Dropout(0.3), nn.Linear(64, num_classes))
-
-    def forward(self, videos: torch.Tensor) -> torch.Tensor:
-        batch, frames, channels, height, width = videos.shape
-        features = self.encoder(videos.reshape(batch * frames, channels, height, width))
-        features = features.flatten(1).reshape(batch, frames, -1)
-        sequence, _ = self.gru(features)
-        return self.head(sequence[:, -1])
-
-
-class VideoCNN3D(nn.Module):
-    """Compact 3D CNN over spatial and temporal dimensions."""
-
-    def __init__(self, num_classes: int):
-        super().__init__()
-        self.features = nn.Sequential(
-            nn.Conv3d(3, 8, 3, padding=1, bias=False), nn.BatchNorm3d(8), nn.ReLU(inplace=True), nn.MaxPool3d((1, 2, 2)),
-            nn.Conv3d(8, 16, 3, padding=1, bias=False), nn.BatchNorm3d(16), nn.ReLU(inplace=True), nn.MaxPool3d(2),
-            nn.Conv3d(16, 32, 3, padding=1, bias=False), nn.BatchNorm3d(32), nn.ReLU(inplace=True), nn.AdaptiveAvgPool3d(1),
-        )
-        self.head = nn.Sequential(nn.Flatten(), nn.Dropout(0.3), nn.Linear(32, num_classes))
-
-    def forward(self, videos: torch.Tensor) -> torch.Tensor:
-        return self.head(self.features(videos.permute(0, 2, 1, 3, 4)))
-
-
-def build_model(name: str, class_count: int) -> nn.Module:
-    models = {"cnn_gru": FrameCNNGRU, "cnn3d": VideoCNN3D}
-    if name not in models:
-        raise ValueError(f"Unknown model: {name}")
-    return models[name](class_count)
+        result = (video.permute(0, 3, 1, 2).float().div_(255.0), self.class_to_index[row["gloss"]])
+        return (*result, row.get("is_seed") == "1") if self.include_seed_flag else result
 
 
 def load_manifest(path: Path, class_names: list[str]) -> dict[str, list[dict[str, str]]]:
@@ -108,6 +69,57 @@ def load_manifest(path: Path, class_names: list[str]) -> dict[str, list[dict[str
     if missing:
         raise ValueError(f"No training examples for: {sorted(missing)}")
     return splits
+
+
+def load_incremental_splits(class_names: list[str], seed_manifest: Path, raw_manifest: Path) -> dict[str, list[dict[str, str]]]:
+    """Merge available current data with the compact seed; deduplicate source clips."""
+    rows: dict[str, dict[str, str]] = {}
+    for path, is_seed in ((raw_manifest, False), (seed_manifest, True)):
+        if not path.is_file():
+            continue
+        with path.open(encoding="utf-8-sig", newline="") as stream:
+            for row in csv.DictReader(stream):
+                if row.get("split") not in SPLITS or row.get("gloss") not in class_names:
+                    continue
+                if is_seed and row.get("sha256"):
+                    seed_clip = PROCESSED_DIR / row["processed_path"]
+                    if not seed_clip.is_file():
+                        raise FileNotFoundError(f"Seed clip listed in manifest is missing: {seed_clip}")
+                    checksum = hashlib.sha256(seed_clip.read_bytes()).hexdigest()
+                    if checksum.casefold() != row["sha256"].casefold():
+                        raise ValueError(f"Seed clip checksum mismatch: {seed_clip}")
+                key = f"{row.get('dataset','')}:{row.get('video_id','')}:{row['split']}"
+                # Seed manifest wins because it remains usable after source files are removed.
+                if key not in rows or is_seed:
+                    row["is_seed"] = "1" if is_seed else "0"
+                    rows[key] = row
+    splits = {name: [] for name in SPLITS}
+    for row in rows.values():
+        splits[row["split"]].append(row)
+    if any(not splits[name] for name in SPLITS):
+        raise ValueError("Current data plus seed must contain train, validation, and test records.")
+    missing = set(class_names) - {row["gloss"] for row in splits["train"]}
+    if missing:
+        raise ValueError(f"No training examples for: {sorted(missing)}")
+    return splits
+
+
+def initialize_from_checkpoint(model: nn.Module, checkpoint: dict, old_classes: list[str], class_names: list[str]) -> None:
+    """Copy compatible weights and map old output rows by label, not by assumed index."""
+    old_state = checkpoint["model_state_dict"]
+    new_state = model.state_dict()
+    old_index = {label: i for i, label in enumerate(old_classes)}
+    new_index = {label: i for i, label in enumerate(class_names)}
+    for key, value in old_state.items():
+        if key not in new_state:
+            continue
+        if new_state[key].shape == value.shape:
+            new_state[key] = value
+        elif key.endswith(("head.1.weight", "head.1.bias", "head.2.weight", "head.2.bias")):
+            for label in old_classes:
+                if label in new_index:
+                    new_state[key][new_index[label]].copy_(value[old_index[label]])
+    model.load_state_dict(new_state)
 
 
 def compute_metrics(y_true: list[int], y_pred: list[int], class_names: list[str]) -> tuple[dict, np.ndarray]:
@@ -166,14 +178,29 @@ def save_confusion(matrix: np.ndarray, names: list[str], path: Path, title: str)
 
 def train_model(name: str, class_names: list[str], splits: dict[str, list[dict[str, str]]],
                 device: torch.device, output: Path, epochs: int, patience: int,
-                batch_size: int, learning_rate: float, seed: int) -> tuple[dict, list[dict]]:
+                batch_size: int, learning_rate: float, seed: int,
+                prior_checkpoint: dict | None = None, old_classes: list[str] | None = None,
+                distillation_weight: float = 0.5, distillation_temperature: float = 2.0,
+                max_old_recall_drop: float = 0.05) -> tuple[dict, list[dict]]:
     mapping = {label: index for index, label in enumerate(class_names)}
-    datasets = {key: ProcessedVideoDataset(rows, mapping) for key, rows in splits.items()}
+    datasets = {key: ProcessedVideoDataset(rows, mapping, include_seed_flag=(key == "train"))
+                for key, rows in splits.items()}
     generator = torch.Generator().manual_seed(seed)
     loaders = {key: DataLoader(ds, batch_size=batch_size, shuffle=key == "train", num_workers=0,
                                generator=generator if key == "train" else None)
                for key, ds in datasets.items()}
     model = build_model(name, len(class_names)).to(device)
+    teacher = None
+    old_classes = old_classes or []
+    if prior_checkpoint is not None:
+        if prior_checkpoint.get("architecture") != name:
+            raise ValueError(f"Cannot initialize {name} from a different architecture checkpoint.")
+        initialize_from_checkpoint(model, prior_checkpoint, old_classes, class_names)
+        teacher = build_model(name, len(old_classes)).to(device)
+        teacher.load_state_dict(prior_checkpoint["model_state_dict"])
+        teacher.eval()
+        for parameter in teacher.parameters():
+            parameter.requires_grad_(False)
     counts = Counter(row["gloss"] for row in splits["train"])
     weights = torch.tensor([len(splits["train"]) / (len(class_names) * counts[label]) for label in class_names],
                            dtype=torch.float32, device=device)
@@ -183,10 +210,26 @@ def train_model(name: str, class_names: list[str], splits: dict[str, list[dict[s
     for epoch in range(1, epochs + 1):
         model.train()
         total_loss, total = 0.0, 0
-        for videos, labels in loaders["train"]:
+        for videos, labels, seed_flags in loaders["train"]:
             videos, labels = videos.to(device), labels.to(device)
             optimizer.zero_grad(set_to_none=True)
-            loss = loss_fn(model(videos), labels)
+            logits = model(videos)
+            loss = loss_fn(logits, labels)
+            # Distill only on retained, labeled old-word examples. New examples are not
+            # forced to imitate the teacher's old vocabulary outputs.
+            if teacher is not None and old_classes:
+                old_rows = torch.tensor([class_names[int(label)] in old_classes for label in labels],
+                                        dtype=torch.bool, device=device)
+                replay_rows = seed_flags.to(device) & old_rows
+                if replay_rows.any():
+                    with torch.no_grad():
+                        teacher_logits = teacher(videos[replay_rows])
+                    student_columns = torch.tensor([mapping[label] for label in old_classes], device=device)
+                    temperature = distillation_temperature
+                    distill = nn.functional.kl_div(
+                        nn.functional.log_softmax(logits[replay_rows][:, student_columns] / temperature, dim=1),
+                        nn.functional.softmax(teacher_logits / temperature, dim=1), reduction="batchmean")
+                    loss = loss + distillation_weight * temperature * temperature * distill
             loss.backward()
             optimizer.step()
             total_loss += loss.item() * labels.size(0)
@@ -219,7 +262,43 @@ def train_model(name: str, class_names: list[str], splits: dict[str, list[dict[s
         "best_epoch": best_epoch,
         "normalization": "uint8 RGB scaled to float32 [0, 1]",
         "seed": seed,
+        "class_order_version": 1,
+        "incremental_from": old_classes if prior_checkpoint is not None else [],
+        "distillation": {"weight": distillation_weight, "temperature": distillation_temperature,
+                         "replay_seed_only": True},
     }
+    if teacher is not None and old_classes:
+        old_validation = [row for row in splits["val"] if row["gloss"] in old_classes]
+        support = {label: sum(row["gloss"] == label for row in old_validation) for label in old_classes}
+        if any(count == 0 for count in support.values()):
+            missing = [label for label, count in support.items() if count == 0]
+            raise RuntimeError(f"Candidate rejected: retained validation anchors are missing old labels {missing}.")
+        old_mapping = {label: index for index, label in enumerate(old_classes)}
+        anchor_loader = DataLoader(ProcessedVideoDataset(old_validation, old_mapping), batch_size=batch_size,
+                                   shuffle=False, num_workers=0)
+        truth, before, after = [], [], []
+        model.eval()
+        with torch.inference_mode():
+            for videos, labels in anchor_loader:
+                videos = videos.to(device)
+                teacher_logits = teacher(videos)
+                candidate_logits = model(videos)
+                truth.extend(labels.tolist())
+                before.extend(teacher_logits.argmax(dim=1).cpu().tolist())
+                predicted = candidate_logits.argmax(dim=1).cpu().tolist()
+                after.extend([old_mapping.get(class_names[index], -1) for index in predicted])
+        baseline_recall = float(recall_score(truth, before, labels=list(range(len(old_classes))),
+                                             average="macro", zero_division=0))
+        candidate_recall = float(recall_score(truth, after, labels=list(range(len(old_classes))),
+                                              average="macro", zero_division=0))
+        drop = baseline_recall - candidate_recall
+        test["old_word_acceptance"] = {"baseline_macro_recall": baseline_recall,
+                                       "candidate_macro_recall": candidate_recall,
+                                       "drop": drop, "maximum_drop": max_old_recall_drop,
+                                       "support": support}
+        if drop > max_old_recall_drop:
+            raise RuntimeError(f"Candidate rejected: old-word macro recall dropped by {drop:.3f} "
+                               f"(limit {max_old_recall_drop:.3f}); previous checkpoint remains active.")
     torch.save(checkpoint, output / f"{name}.pt")
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     torch.save(checkpoint, MODEL_DIR / f"{name}.pt")
@@ -315,6 +394,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--seed-manifest", type=Path, default=PROCESSED_DIR / "seed" / "manifest.csv",
+                        help="Compact replay/evaluation manifest produced by src.seed_dataset.")
+    parser.add_argument("--distillation-weight", type=float, default=0.5)
+    parser.add_argument("--distillation-temperature", type=float, default=2.0)
+    parser.add_argument("--old-class-recall-drop", type=float, default=0.05,
+                        help="Maximum permitted absolute macro-recall drop on retained old-word validation anchors.")
+    parser.add_argument("--fresh", action="store_true", help="Ignore existing checkpoints and train from scratch.")
     return parser.parse_args()
 
 
@@ -323,15 +409,29 @@ def main() -> None:
     if min(args.epochs, args.patience, args.batch_size) < 1:
         raise SystemExit("epochs, patience, and batch-size must be positive.")
     requested = {word.strip().casefold() for word in args.classes.split(",") if word.strip()}
-    unknown = requested - set(TARGET_WORDS)
-    if unknown:
-        raise SystemExit(f"Unknown classes: {sorted(unknown)}")
-    classes = [word for word in TARGET_WORDS if not requested or word in requested]
     models = [name.strip() for name in args.models.split(",") if name.strip()]
     if not models or len(set(models)) != len(models) or set(models) - {"cnn_gru", "cnn3d"}:
         raise SystemExit("Choose distinct model names from cnn_gru and cnn3d.")
     if args.device == "cuda" and not torch.cuda.is_available():
         raise SystemExit("CUDA was requested but is unavailable.")
+    if args.distillation_weight < 0 or args.distillation_temperature <= 0 or not 0 <= args.old_class_recall_drop <= 1:
+        raise SystemExit("Distillation weight must be nonnegative, temperature positive, and recall-drop in [0, 1].")
+    reference_checkpoint = None
+    if not args.fresh:
+        reference_path = MODEL_DIR / f"{models[0]}.pt"
+        if reference_path.is_file():
+            reference_checkpoint = torch.load(reference_path, map_location="cpu", weights_only=True)
+    old_vocab = list(reference_checkpoint.get("class_names", [])) if reference_checkpoint else []
+    unknown = requested - set(TARGET_WORDS) - set(old_vocab)
+    if unknown:
+        raise SystemExit(f"Unknown classes (add them to TARGET_WORDS first): {sorted(unknown)}")
+    additions = [word for word in TARGET_WORDS if (not requested or word in requested) and word not in old_vocab]
+    # Existing classes keep their checkpoint indices. New labels are appended in config order.
+    classes = old_vocab + additions if old_vocab else [word for word in TARGET_WORDS if not requested or word in requested]
+    if requested and old_vocab:
+        omitted = set(old_vocab) - requested
+        if omitted:
+            raise SystemExit(f"Incremental updates cannot drop existing labels: {sorted(omitted)}")
     device = torch.device("cuda" if args.device == "cuda" or
                           (args.device == "auto" and torch.cuda.is_available()) else "cpu")
     random.seed(args.seed)
@@ -339,15 +439,25 @@ def main() -> None:
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
-    splits = load_manifest(PROCESSED_DIR / "manifest.csv", classes)
+    splits = load_incremental_splits(classes, args.seed_manifest, PROCESSED_DIR / "manifest.csv")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     print(f"Device={device}; records={len(splits['train'])}/{len(splits['val'])}/{len(splits['test'])}; "
           f"classes={len(classes)}")
     results, histories = {}, {}
     for name in models:
+        prior_path = MODEL_DIR / f"{name}.pt"
+        prior = None
+        old_classes = []
+        if not args.fresh and prior_path.is_file():
+            prior = torch.load(prior_path, map_location="cpu", weights_only=True)
+            old_classes = list(prior.get("class_names", []))
+            if classes[:len(old_classes)] != old_classes:
+                raise SystemExit(f"{name} checkpoint vocabulary is incompatible with the selected class order.")
         result, history = train_model(name, classes, splits, device, args.output_dir,
                                        args.epochs, args.patience, args.batch_size,
-                                       args.learning_rate, args.seed)
+                                       args.learning_rate, args.seed, prior, old_classes,
+                                       args.distillation_weight, args.distillation_temperature,
+                                       args.old_class_recall_drop)
         results[name], histories[name] = result, history
         print(f"{name} test: accuracy={result['accuracy']:.4f}, macro_f1={result['macro_f1']:.4f}, "
               f"weighted_f1={result['weighted_f1']:.4f}")

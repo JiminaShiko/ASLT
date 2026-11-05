@@ -159,6 +159,47 @@ class VideoPreprocessingTests(unittest.TestCase):
             self.assertEqual(frames.dtype, np.uint8)
             self.assertEqual(result["split"], "train")
 
+    def test_extract_frames_uses_decoded_count_instead_of_container_metadata(self):
+        source_frames = [
+            np.full((8, 8, 3), index, dtype=np.uint8)
+            for index in range(30)
+        ]
+
+        class FakeCapture:
+            def __init__(self, _path):
+                self.index = 0
+
+            def isOpened(self):
+                return True
+
+            def get(self, property_id):
+                return 15.0 if property_id == cv2.CAP_PROP_FPS else 31
+
+            def read(self):
+                if self.index >= len(source_frames):
+                    return False, None
+                frame = source_frames[self.index]
+                self.index += 1
+                return True, frame
+
+            def release(self):
+                pass
+
+        with patch("src.preprocess.cv2.VideoCapture", FakeCapture):
+            frames = preprocess.extract_frames(
+                Path("camera.webm"),
+                {
+                    "dataset": "custom",
+                    "frame_start": None,
+                    "frame_end": None,
+                    "annotation_fps": None,
+                },
+            )
+
+        self.assertEqual(frames.shape, (16, 112, 112, 3))
+        self.assertEqual(int(frames[0, 0, 0, 0]), 0)
+        self.assertEqual(int(frames[-1, 0, 0, 0]), 29)
+
 
 if __name__ == "__main__":
     unittest.main()
