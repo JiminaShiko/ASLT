@@ -4,10 +4,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import av
+import numpy as np
 import torch
 from torch import nn
 
-from src.predict_video import load_model, load_wlasl_record, predict
+from streamlit_app import LivePredictionState, LiveVideoProcessor
+from src.predict_video import frames_to_tensor, load_model, load_wlasl_record, predict
 from src.train_model import build_model
 
 
@@ -17,6 +20,38 @@ class FixedClassifier(nn.Module):
 
 
 class PredictVideoTests(unittest.TestCase):
+    def test_frames_to_tensor_matches_video_model_input(self):
+        frames = np.full((16, 112, 112, 3), 255, dtype=np.uint8)
+        video = frames_to_tensor(frames)
+        self.assertEqual(tuple(video.shape), (1, 16, 3, 112, 112))
+        self.assertEqual(video.dtype, torch.float32)
+        self.assertTrue(torch.all(video == 1.0))
+
+    def test_frames_to_tensor_rejects_unexpected_shape(self):
+        with self.assertRaises(ValueError):
+            frames_to_tensor(np.zeros((15, 112, 112, 3), dtype=np.uint8))
+
+    def test_live_processor_predicts_after_collecting_video_window(self):
+        state = LivePredictionState()
+        processor = LiveVideoProcessor(
+            FixedClassifier(),
+            ["hello", "thanks", "bye"],
+            torch.device("cpu"),
+            state,
+        )
+        frame = av.VideoFrame.from_ndarray(
+            np.zeros((32, 32, 3), dtype=np.uint8),
+            format="bgr24",
+        )
+
+        for _ in range(16):
+            processor.recv(frame)
+
+        results, error, frames_seen, _ = state.snapshot()
+        self.assertIsNone(error)
+        self.assertEqual(frames_seen, 16)
+        self.assertEqual([label for label, _ in results[:2]], ["thanks", "bye"])
+
     def test_load_wlasl_record_reads_target_annotation(self):
         with tempfile.TemporaryDirectory() as temporary:
             metadata = Path(temporary) / "metadata.json"
