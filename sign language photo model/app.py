@@ -1,6 +1,7 @@
 #--------------------------------------------------
 # 1. Import Libraries
 #--------------------------------------------------
+import os
 import threading
 import time
 from collections import deque
@@ -21,7 +22,7 @@ import preprocess
 # 2. Model Path and Settings
 #--------------------------------------------------
 # Define the path of the trained sign language photo model
-MODEL_PATH = "sign_photo_model.keras"
+MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sign_photo_model.keras")
 
 # The image size of the model (must be the same as in preprocess.py)
 IMG_SIZE = preprocess.IMG_SIZE
