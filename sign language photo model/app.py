@@ -40,8 +40,11 @@ MEANINGS = {
 
 # Live webcam settings
 MIN_CONFIDENCE = 0.60      # Predictions below 60% are not typed
-STABLE_FRAMES = 10         # The same letter must be predicted 10 times in a row before it is typed
-PREDICT_EVERY = 3          # Predict only every 3rd video frame (faster)
+STABLE_FRAMES = 4          # The same letter must be predicted 4 times in a row before it is typed
+PREDICT_INTERVAL = 0.3     # Seconds between two predictions (the work runs in its own thread)
+DETECT_MAX_SIDE = 640      # Frames bigger than this are shrunk before hand detection
+NOTHING_TICKS = 2          # Missed detections in a row before "no hand" is shown
+BOX_SIZE = 0.45            # The green guide box is this fraction of the smaller frame side
 
 RTC_CONFIGURATION = RTCConfiguration(
     {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
@@ -193,8 +196,10 @@ def show_photo_result(image, key, mirror = False):
 #--------------------------------------------------
 # 9. Live Webcam Processor
 #--------------------------------------------------
-# This class receives every frame of the webcam, predicts the sign inside the green box
-# and writes the letter on the video
+# This class receives every frame of the webcam. The heavy work (hand
+# detection + neural network) runs in its own background thread on the
+# newest frame, so the video never waits for a prediction and stays smooth.
+# Predictions use the WHOLE frame, like the photo tabs (no box).
 class SignProcessor(VideoProcessorBase):
 
     def __init__(self):
@@ -202,89 +207,166 @@ class SignProcessor(VideoProcessorBase):
         self.mirror = False                     # Mirror the video (selfie view), set from the main page
         self.left_hand = False                  # The user signs with the left hand, set from the main page
         self.lock = threading.Lock()            # The video and the page run in different threads
-        self.frame_count = 0
-        self.letter = "-"                       # Last predicted class
+        self.letter = "-"                       # Last predicted class ("-" = waiting for a sign)
         self.confidence = 0.0                   # Probability of the last predicted class
+        self.hand_found = False                 # Did MediaPipe find a hand in the last frame?
+        self.top_names = []                     # Top 5 class names of the newest prediction
+        self.top_probs = []                     # Top 5 probabilities of the newest prediction
         self.recent = deque(maxlen = STABLE_FRAMES)
         self.last_added = None                  # Last class that was typed
+        self.misses = 0                         # Detections in a row without a hand
         self.text = ""                          # Typed text
         self.prob_ema = None                    # Smoothed probabilities (removes flicker between frames)
         self.last_processed = None              # Last 96 x 96 image that went into the model
+        self.latest_frame = None                # Newest frame waiting for a prediction
+        self.last_frame_time = 0.0              # time.monotonic() value of the newest frame
+        self.next_predict_time = 0.0            # time.monotonic() value of the next prediction
+        self.worker = None                      # Background prediction thread
 
     def recv(self, frame):
         image = frame.to_ndarray(format = "bgr24")
 
-        height, width = image.shape[:2]
-
-        # Green box in the centre: the hand must be inside it
-        size = int(min(height, width) * 0.45)
-        x0 = (width - size) // 2
-        y0 = (height - size) // 2
-
-        self.frame_count += 1
-
-        if self.model is not None and self.frame_count % PREDICT_EVERY == 0:
-            # Crop the box BEFORE any mirroring, because the model was trained on normal (not selfie) photos.
-            box = image[y0:y0 + size, x0:x0 + size]
-
-            # A left hand looks like a mirrored right hand, so flip it before the prediction.
-            if self.left_hand:
-                box = cv2.flip(box, 1)
-
-            processed, hand_found = preprocess.preprocess_image(
-                Image.fromarray(cv2.cvtColor(box, cv2.COLOR_BGR2RGB))
-            )
-
+        if self.model is not None:
+            # Hand the frame to the background thread. recv itself stays fast,
+            # so the video keeps its frame rate.
             with self.lock:
-                self.last_processed = processed
+                self.latest_frame = image.copy()
+            self.last_frame_time = time.monotonic()
+            if self.worker is None or not self.worker.is_alive():
+                self.worker = threading.Thread(target = self.predict_loop, daemon = True)
+                self.worker.start()
 
-            if hand_found:
-                prediction = predict_probabilities(self.model, processed)
-
-                # Smooth the probabilities with the previous frames, so the letter does not flicker
-                if self.prob_ema is None:
-                    self.prob_ema = prediction
-                else:
-                    self.prob_ema = 0.6 * self.prob_ema + 0.4 * prediction
-                prediction = self.prob_ema
-
-                index = int(np.argmax(prediction))
-                name = CLASS_NAMES[index]
-                confidence = float(prediction[index])
-            else:
-                self.prob_ema = None
-                name = "nothing"
-                confidence = 1.0
-
-            with self.lock:
-                self.letter = name
-                self.confidence = confidence
-
-                # "?" = not sure
-                self.recent.append(name if confidence >= MIN_CONFIDENCE else "?")
-
-                # The same class many times in a row = a stable sign
-                stable = self.recent[0] if len(self.recent) == STABLE_FRAMES and len(set(self.recent)) == 1 else None
-
-                if stable == "nothing":
-                    # The hand was removed, so the same letter can be typed again
-                    self.last_added = None
-                elif stable is not None and stable != "?" and stable != self.last_added:
-                    self.text = apply_to_text(self.text, stable)
-                    self.last_added = stable
-
-        # Mirror the video for the selfie view. This happens AFTER the prediction,
-        # so the model always sees the normal (not mirrored) photo.
+        # Mirror the video for the selfie view. The prediction thread works on
+        # the un-mirrored copy, because the model was trained on normal photos.
         if self.mirror:
             image = cv2.flip(image, 1)
 
-        # Draw the box and the prediction on the video
-        colour = (0, 200, 0) if self.confidence >= MIN_CONFIDENCE else (0, 165, 255)
+        # Draw the green guide box and the prediction label
+        with self.lock:
+            letter, confidence = self.letter, self.confidence
+
+        height, width = image.shape[:2]
+        size = int(min(height, width) * BOX_SIZE)
+        x0 = (width - size) // 2
+        y0 = (height - size) // 2
+        colour = (0, 200, 0) if letter != "-" and confidence >= MIN_CONFIDENCE else (0, 165, 255)
         cv2.rectangle(image, (x0, y0), (x0 + size, y0 + size), colour, 3)
-        cv2.putText(image, f"{self.letter.upper()}  {self.confidence * 100:.0f}%", (x0, max(30, y0 - 12)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, colour, 2)
+
+        if letter != "-":
+            label = "NO SIGN" if letter == "nothing" else f"{letter.upper()}  {confidence * 100:.0f}%"
+            (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.9, 2)
+            cv2.rectangle(image, (10, 10), (10 + tw + 24, 10 + th + 20), (0, 0, 0), -1)
+            cv2.rectangle(image, (10, 10), (10 + tw + 24, 10 + th + 20), colour, 2)
+            cv2.putText(image, label, (22, 10 + th + 14), cv2.FONT_HERSHEY_SIMPLEX, 0.9, colour, 2)
 
         return av.VideoFrame.from_ndarray(image, format = "bgr24")
+
+    def predict_loop(self):
+        # Runs in its own thread until the webcam has been silent for 5 seconds.
+        while True:
+            if time.monotonic() - self.last_frame_time > 5.0:
+                return
+
+            if time.monotonic() < self.next_predict_time:
+                time.sleep(0.02)
+                continue
+
+            with self.lock:
+                frame = self.latest_frame
+                self.latest_frame = None
+                model = self.model
+                left_hand = self.left_hand
+
+            if frame is None or model is None:
+                time.sleep(0.02)
+                continue
+
+            started = time.monotonic()
+            self.predict_frame(frame, model, left_hand)
+            self.next_predict_time = started + PREDICT_INTERVAL
+
+    def predict_frame(self, image, model, left_hand):
+        if left_hand:
+            # A left hand looks like a mirrored right hand, so flip it first.
+            image = cv2.flip(image, 1)
+
+        # Shrink very large frames (the 96 x 96 model input needs no more detail)
+        height, width = image.shape[:2]
+        longest = max(height, width)
+        if longest > DETECT_MAX_SIDE:
+            scale = DETECT_MAX_SIDE / longest
+            image = cv2.resize(image, (int(width * scale), int(height * scale)),
+                               interpolation = cv2.INTER_AREA)
+
+        # Predict from the whole frame, exactly like the photo tabs. The green
+        # box is only a guide for the user: cropping to the box can cut a hand
+        # in half when it touches the edge, and the model then reads a partial
+        # hand as a different letter.
+        processed, hand_found = preprocess.preprocess_image(
+            Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)),
+            video = True
+        )
+
+        if hand_found:
+            self.misses = 0
+            prediction = predict_probabilities(model, processed)
+
+            # Smooth the probabilities with the previous frames, so the letter
+            # does not flicker - but when a clearly different sign appears,
+            # switch at once instead of blending it with the old sign for a
+            # second or two (that made the display show the previous letter).
+            if self.prob_ema is None:
+                self.prob_ema = prediction
+            else:
+                old_name = int(np.argmax(self.prob_ema))
+                new_name = int(np.argmax(prediction))
+                if new_name != old_name and prediction[new_name] >= MIN_CONFIDENCE:
+                    self.prob_ema = prediction
+                else:
+                    self.prob_ema = 0.6 * self.prob_ema + 0.4 * prediction
+            prediction = self.prob_ema
+
+            index = int(np.argmax(prediction))
+            name = CLASS_NAMES[index]
+            confidence = float(prediction[index])
+        else:
+            self.misses += 1
+            if self.misses < NOTHING_TICKS:
+                # One failed detection is not "no hand" yet: keep the last sign,
+                # so a single bad frame does not reset the display or the typing.
+                with self.lock:
+                    self.last_processed = processed
+                return
+
+            # The hand is really gone: "nothing" (the same rule as the photo tabs)
+            self.prob_ema = None
+            prediction = np.zeros(len(CLASS_NAMES), dtype = "float32")
+            prediction[CLASS_NAMES.index("nothing")] = 1.0
+            name = "nothing"
+            confidence = 1.0
+
+        with self.lock:
+            self.letter = name
+            self.confidence = confidence
+            self.hand_found = hand_found
+            self.last_processed = processed
+
+            top_five = np.argsort(prediction)[::-1][:5]
+            self.top_names = [CLASS_NAMES[i] for i in top_five]
+            self.top_probs = [float(prediction[i]) for i in top_five]
+
+            # "?" = not sure
+            self.recent.append(name if confidence >= MIN_CONFIDENCE else "?")
+
+            if name == "nothing":
+                # The hand was removed, so the same letter can be typed again
+                self.last_added = None
+            else:
+                # The same class many times in a row = a stable sign
+                stable = self.recent[0] if len(self.recent) == STABLE_FRAMES and len(set(self.recent)) == 1 else None
+                if stable is not None and stable != "?" and stable != self.last_added:
+                    self.text = apply_to_text(self.text, stable)
+                    self.last_added = stable
 
 #--------------------------------------------------
 # 10. Tabs: Upload Photo, Camera Photo, Live Webcam
@@ -329,7 +411,9 @@ with tab_camera:
 #--------------------------------------------------
 with tab_live:
     st.write(
-        "Click START and show your hand sign inside the green box. "
+        "Click START and show your hand sign inside the green box, like in the training photos. "
+        "Keep the palm or the back of your hand turned towards the camera - a hand seen from the side "
+        "looks like a different letter. "
         "When the same letter is seen for a moment, it is typed below. "
         "For a double letter (for example LL), remove your hand for a moment between the two letters."
     )
@@ -350,11 +434,15 @@ with tab_live:
     )
 
     st.subheader("Live Prediction")
-    live_letter = st.empty()
-    st.subheader("Typed Text")
-    live_text = st.empty()
+    live_sign = st.empty()
+    live_meaning = st.empty()
+    live_confidence = st.empty()
+    live_warning = st.empty()
+    live_top = st.empty()
     st.subheader(f"Model Input ({IMG_SIZE} x {IMG_SIZE})")
     live_debug = st.empty()
+    st.subheader("Typed Text")
+    live_text = st.empty()
 
     # Clear the typed text
     if st.button("Clear live text", key = "clear_live") and live.video_processor:
@@ -372,13 +460,43 @@ with tab_live:
             processor.left_hand = left_hand_live
 
             with processor.lock:
-                letter, confidence, text = processor.letter, processor.confidence, processor.text
+                letter, confidence = processor.letter, processor.confidence
+                hand_found = processor.hand_found
+                text = processor.text
                 processed = processor.last_processed
+                top_names = list(processor.top_names)
+                top_probs = list(processor.top_probs)
 
-            live_letter.write(f"**{meaning_of(letter)}**  ({confidence * 100:.0f}%)")
+            if letter == "-":
+                live_sign.info("Waiting for a sign - show your hand to the webcam")
+                live_meaning.write("")
+                live_confidence.write("")
+                live_warning.write("")
+                live_top.write("")
+            else:
+                live_sign.success(f"Predicted Sign: **{letter.upper()}**")
+                live_meaning.write(f"Meaning: **{meaning_of(letter)}**")
+                live_confidence.write(f"Confidence: **{confidence * 100:.2f}%**")
+
+                if not hand_found:
+                    live_warning.warning(
+                        "The camera does not see a hand. Improve the light, move closer, "
+                        "turn the palm or the back of the hand towards the camera, "
+                        "and keep the whole hand inside the green box."
+                    )
+                elif confidence < MIN_CONFIDENCE:
+                    live_warning.warning("The model is not sure. Show the whole hand clearly and closer to the webcam.")
+                else:
+                    live_warning.write("")
+
+                top_md = "\n\n".join(
+                    f"{name.upper()}: {prob * 100:.2f}%" for name, prob in zip(top_names, top_probs)
+                )
+                live_top.markdown(f"**Top 5 Predictions**\n\n{top_md}")
+
             live_text.code(text if text else " ")
 
             if processed is not None:
                 live_debug.image(processed, width = 150)
 
-        time.sleep(0.3)
+        time.sleep(0.2)

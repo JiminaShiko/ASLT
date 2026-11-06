@@ -6,3 +6,5 @@ torch
 scikit-learn
 matplotlib
 reportlab
+streamlit>=1.51
+streamlit-webrtc

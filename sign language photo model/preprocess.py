@@ -6,6 +6,7 @@
 # "nothing" class (full frame is kept).
 import os
 import threading
+import time
 import urllib.request
 
 import cv2
@@ -23,6 +24,13 @@ _landmarker = None
 # The app predicts from the Streamlit page thread AND the live video thread,
 # and one HandLandmarker cannot be used from two threads at the same time.
 _lock = threading.RLock()
+
+# The live webcam uses MediaPipe VIDEO mode: it remembers the hand between
+# frames, so the tracking is much more stable than a fresh detection on every
+# frame. It is a separate landmarker because VIDEO mode needs frame timestamps.
+_landmarker_video = None
+_video_lock = threading.RLock()
+_video_timestamp = 0
 
 
 def get_landmarker():
@@ -59,6 +67,44 @@ def _detect(rgb):
     if not result.hand_landmarks:
         return None
     return [(p.x, p.y) for p in result.hand_landmarks[0]]
+
+
+def get_video_landmarker():
+    global _landmarker_video
+    if _landmarker_video is None:
+        if not os.path.exists(TASK_PATH):
+            get_landmarker()   # downloads hand_landmarker.task if needed
+        options = vision.HandLandmarkerOptions(
+            base_options=mp_python.BaseOptions(model_asset_path=TASK_PATH),
+            running_mode=vision.RunningMode.VIDEO,
+            num_hands=1,
+            min_hand_detection_confidence=0.3)
+        _landmarker_video = vision.HandLandmarker.create_from_options(options)
+    return _landmarker_video
+
+
+def _detect_video(rgb):
+    """VIDEO mode detection. Timestamps must be strictly increasing, so every
+    call (including retries) gets its own timestamp."""
+    global _video_timestamp
+    image = mp.Image(image_format=mp.ImageFormat.SRGB, data=np.ascontiguousarray(rgb))
+    with _video_lock:
+        _video_timestamp = max(_video_timestamp + 1, int(time.monotonic() * 1000))
+        result = get_video_landmarker().detect_for_video(image, _video_timestamp)
+    if not result.hand_landmarks:
+        return None
+    return [(p.x, p.y) for p in result.hand_landmarks[0]]
+
+
+def find_hand_landmarks_video(rgb):
+    """Live webcam detection: VIDEO mode first (tracks the hand between
+    frames), then the photo detector with all its retries as a fallback."""
+    landmarks = _detect_video(rgb)
+    if landmarks is None:
+        landmarks = _detect_video(_brighten(rgb))
+    if landmarks is None:
+        landmarks = find_hand_landmarks(rgb)
+    return landmarks
 
 
 def find_hand_landmarks(rgb):
@@ -162,15 +208,20 @@ def remove_background(crop, crop_points=None):
     return out
 
 
-def preprocess_image(image, target=IMG_SIZE):
+def preprocess_image(image, target=IMG_SIZE, video=False):
     """PIL RGB image -> (target x target uint8 numpy array, hand_found bool).
     hand_found is False when MediaPipe found no hand: the full frame is kept
-    (that is exactly what the model's "nothing" class was trained on)."""
+    (that is exactly what the model's "nothing" class was trained on).
+    video=True (live webcam) uses MediaPipe VIDEO mode with the photo
+    detector as a fallback."""
     rgb = np.array(image.convert("RGB"))
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     height, width = gray.shape
 
-    landmarks = find_hand_landmarks(rgb)
+    if video:
+        landmarks = find_hand_landmarks_video(rgb)
+    else:
+        landmarks = find_hand_landmarks(rgb)
     if landmarks is None:
         crop = gray
     else:

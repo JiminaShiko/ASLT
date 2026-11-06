@@ -1,6 +1,7 @@
 """Convert selected sign videos into fixed-length RGB frame sequences."""
 
 import csv
+import glob
 import json
 import math
 from pathlib import Path
@@ -11,6 +12,7 @@ import numpy as np
 from src.config import (
     ANNOTATION_FPS,
     ASL_CITIZEN_METADATA,
+    ASL_CITIZEN_SPLITS_DIR,
     ASL_CITIZEN_VIDEOS,
     FRAME_HEIGHT,
     FRAME_WIDTH,
@@ -59,17 +61,74 @@ def wlasl_records() -> list[dict]:
 
 
 def find_video(video_dir: Path, video_id: str) -> Path | None:
-    safe_id = safe_filename(video_id)
-    candidates = [
-        path
-        for path in video_dir.glob(safe_id + ".*")
-        if path.suffix.casefold()
-        in {".mp4", ".m4v", ".mov", ".avi", ".mkv", ".webm"}
-    ]
-    return next((path for path in candidates if path.stat().st_size), None)
+    # ASL Citizen stems contain spaces ("<id>-THANK YOU"); try the raw stem
+    # first, then the sanitized form for ids that are not valid file names.
+    stems = [video_id, safe_filename(video_id)]
+    if stems[0] == stems[1]:
+        stems.pop()
+    for stem in stems:
+        candidates = [
+            path
+            for path in video_dir.glob(glob.escape(stem) + ".*")
+            if path.suffix.casefold()
+            in {".mp4", ".m4v", ".mov", ".avi", ".mkv", ".webm", ".flv", ".3gp"}
+        ]
+        found = next((path for path in candidates if path.stat().st_size), None)
+        if found is not None:
+            return found
+    return None
+
+
+def csv_first(row: dict, *names: str) -> str:
+    """Return the first nonempty cell among case-insensitive column names."""
+    lowered = {str(key).strip().casefold(): str(value).strip() for key, value in row.items()}
+    for name in names:
+        value = lowered.get(name.casefold(), "")
+        if value:
+            return value
+    return ""
 
 
 def asl_citizen_records() -> list[dict]:
+    if ASL_CITIZEN_SPLITS_DIR.is_dir():
+        return _asl_citizen_split_records()
+    return _asl_citizen_metadata_records()
+
+
+def _asl_citizen_split_records() -> list[dict]:
+    """Read the manual download layout: splits/{train,val,test}.csv plus
+    videos/<id>-<GLOSS>.mp4 (ASL Citizen's released folder structure)."""
+    records = []
+    for split in VALID_SPLITS:
+        split_path = ASL_CITIZEN_SPLITS_DIR / f"{split}.csv"
+        if not split_path.is_file():
+            continue
+        with split_path.open(encoding="utf-8-sig", newline="") as stream:
+            for row in csv.DictReader(stream):
+                gloss = canonicalize_gloss(row.get("Gloss", ""))
+                if gloss not in TARGET_WORDS:
+                    continue
+                video_file = csv_first(row, "Video file", "video file")
+                if not video_file:
+                    continue
+                video_id = Path(video_file).stem
+                records.append(
+                    {
+                        "dataset": "asl_citizen",
+                        "video_id": video_id,
+                        "gloss": gloss,
+                        "split": split,
+                        "signer_id": csv_first(row, "Participant ID", "participant id"),
+                        "video_path": find_video(ASL_CITIZEN_VIDEOS, video_id),
+                        "frame_start": None,
+                        "frame_end": None,
+                        "annotation_fps": None,
+                    }
+                )
+    return records
+
+
+def _asl_citizen_metadata_records() -> list[dict]:
     import pandas as pd
 
     if not ASL_CITIZEN_METADATA.is_file():
@@ -235,7 +294,15 @@ def write_csv(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
 
 
 def main() -> None:
-    records = wlasl_records() + asl_citizen_records()
+    records: list[dict] = []
+    if WLASL_METADATA.is_file():
+        records.extend(wlasl_records())
+    else:
+        print(f"WLASL metadata not found at {WLASL_METADATA}; skipping WLASL.")
+    if ASL_CITIZEN_SPLITS_DIR.is_dir() or ASL_CITIZEN_METADATA.is_file():
+        records.extend(asl_citizen_records())
+    else:
+        print("No ASL Citizen data found; skipping ASL Citizen.")
     if not records:
         raise ValueError("No selected video records were found.")
 
