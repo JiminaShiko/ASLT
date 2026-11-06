@@ -10,19 +10,50 @@ function sendJson(int $status, array $payload): never
     exit;
 }
 
+function iniSizeBytes(string $value): int
+{
+    $value = trim($value);
+    if ($value === '') {
+        return 0;
+    }
+
+    $unit = strtolower(substr($value, -1));
+    $size = (float) $value;
+    return (int) match ($unit) {
+        'g' => $size * 1024 * 1024 * 1024,
+        'm' => $size * 1024 * 1024,
+        'k' => $size * 1024,
+        default => $size,
+    };
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     sendJson(405, ['error' => 'Use POST to submit a video.']);
+}
+
+$postLimit = iniSizeBytes((string) ini_get('post_max_size'));
+if (
+    empty($_FILES)
+    && $postLimit > 0
+    && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > $postLimit
+) {
+    sendJson(413, [
+        'error' => 'The request exceeds PHP post_max_size. Set post_max_size to at least 210M.',
+    ]);
 }
 
 $upload = $_FILES['video'] ?? null;
 if (!is_array($upload)) {
     sendJson(400, ['error' => 'Choose a video to test.']);
 }
-if ($upload['error'] !== UPLOAD_ERR_OK) {
-    $message = $upload['error'] === UPLOAD_ERR_INI_SIZE || $upload['error'] === UPLOAD_ERR_FORM_SIZE
-        ? 'Video exceeds the PHP upload limit.'
-        : 'The video upload did not complete.';
-    sendJson(400, ['error' => $message]);
+$uploadError = (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
+if ($uploadError !== UPLOAD_ERR_OK) {
+    if ($uploadError === UPLOAD_ERR_INI_SIZE || $uploadError === UPLOAD_ERR_FORM_SIZE) {
+        sendJson(413, [
+            'error' => 'Video exceeds PHP upload_max_filesize. Set it to at least 200M.',
+        ]);
+    }
+    sendJson(400, ['error' => 'The video upload did not complete.']);
 }
 
 $extension = strtolower(pathinfo((string) $upload['name'], PATHINFO_EXTENSION));
