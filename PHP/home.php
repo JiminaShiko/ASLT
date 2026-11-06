@@ -17,14 +17,13 @@
     <header class="topbar" id="topbar"></header>
 
     <main class="page" id="main">
-
       <section class="card hero" aria-label="Welcome">
         <div>
           <h1>Hello, <span id="user-name">there</span>!</h1>
           <p>Translate a sign, turn words into signs, or practise a few letters today.</p>
           <div class="hero-actions">
             <a class="btn" href="translation.php"><span data-icon="chat"></span>Start translating</a>
-            <a class="btn btn-ghost" href="learning"><span data-icon="book"></span>Open Learning</a>
+            <a class="btn btn-ghost" href="learning.php"><span data-icon="book"></span>Open Learning</a>
           </div>
         </div>
         <div class="signing" aria-hidden="true">
@@ -52,7 +51,6 @@
         <div><b id="st-learn">0 / 31</b><span>Signs learned</span></div>
         <div><b id="st-quiz">None yet</b><span>Best quiz score</span></div>
       </section>
-
     </main>
   </div>
 </div>

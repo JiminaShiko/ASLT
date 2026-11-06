@@ -92,6 +92,32 @@ python -m src.seed_dataset --help
 `--old-class-recall-drop` sets the validation acceptance limit. To allow deliberate
 vocabulary change, train as a fresh model and explicitly manage the old checkpoint.
 
+## Test predictions from the web app
+
+The Home page sends uploaded or camera-recorded video clips to `PHP/predict.php`,
+which runs the selected checkpoint in this folder. Raw datasets are not needed for
+prediction; the model checkpoints are tracked in Git.
+
+Install the Python requirements, set `PYTHON_EXECUTABLE` to the interpreter that has
+those requirements installed, then start PHP's development server from the repository
+root. For PowerShell:
+
+```powershell
+python -m pip install -r videoModel/requirements.txt
+$env:PYTHON_EXECUTABLE = (Get-Command python).Source
+php -d upload_max_filesize=200M -d post_max_size=210M -S 127.0.0.1:8000
+```
+
+Open `http://127.0.0.1:8000/PHP/home.php`. For macOS/Linux, use `python3` and set
+`PYTHON_EXECUTABLE="$(command -v python3)"` before starting the same PHP command.
+The PHP runtime must have `proc_open` enabled. When using Apache or another PHP
+server, set `upload_max_filesize` to at least `200M` and `post_max_size` to at least
+`210M` in its PHP configuration. The PHP directory's `.htaccess` selects `home.php`
+as its default page when Apache allows that override.
+
+Run the model's automated tests from `videoModel` with
+`python -m unittest discover -s tests`.
+
 ## Storage and data handling
 
 `seed/metadata.json` records the frame format, class list, selected quotas, record
