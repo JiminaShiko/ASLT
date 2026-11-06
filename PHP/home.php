@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="../css/style.css">
 </head>
 <body data-page="home" data-title="Home">
 <div class="app">
@@ -121,7 +121,7 @@
     </main>
   </div>
 </div>
-<script src="js/common.js"></script>
-<script src="js/home.js"></script>
+<script src="../js/common.js"></script>
+<script src="../js/home.js"></script>
 </body>
 </html>
