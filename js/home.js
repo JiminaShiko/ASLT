@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var historyList = document.getElementById('hlist');
   var dayAgo = Date.now() - 24 * 60 * 60 * 1000;
-  var kindIcons = { 'Sign to Text': 'camera', 'Text to Sign': 'type', 'Upload Media': 'upload' };
+  var kindIcons = { 'Text to Sign': 'type' };
 
   function renderHistory() {
     var recent = A.history.list().filter(function (item) {

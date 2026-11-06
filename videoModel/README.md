@@ -60,6 +60,32 @@ uses the annotated signing interval.
    clean retrain, pass `--fresh` (this does not delete the old checkpoint before a
    successful new model is written).
 
+## Download more examples for the existing 20 words
+
+The repository includes `download_popsign_targets.py`, which retrieves only exact
+matching PopSign sign archives instead of downloading the full dataset. From the
+`videoModel` folder, run:
+
+```powershell
+python download_popsign_targets.py
+```
+
+The default downloads the official `game/train` archives only and writes extracted
+videos beneath `datasets/external/popsign_v2_1/`. It shows matched and unmatched
+labels before downloading and asks you to type `DOWNLOAD`. To get all official
+splits for evaluation as well, run:
+
+```powershell
+python download_popsign_targets.py --splits train val test
+```
+
+The downloader uses the official [PopSign v2.1 dataset](https://signdata.cc.gatech.edu/view/datasets/popsign_v2_1/index.html)
+and its [per-sign download API](https://signdata.cc.gatech.edu/view/guides/downloading_popsign/index.html).
+PopSign is isolated ASL video, but its labels may denote a particular sign variant;
+review the sign and label mapping before merging it into an existing gloss class. The
+downloaded clips are not automatically added to the current processed manifest or
+model training pipeline yet. See `download_manifest.csv` for extracted file paths.
+
 ## What an incremental run does
 
 - Merges the raw processed manifest and seed manifest by `(dataset, video_id, split)`;
@@ -92,28 +118,38 @@ python -m src.seed_dataset --help
 `--old-class-recall-drop` sets the validation acceptance limit. To allow deliberate
 vocabulary change, train as a fresh model and explicitly manage the old checkpoint.
 
-## Test predictions from the web app
+## Standalone Streamlit testing
 
-The Home page sends uploaded or camera-recorded video clips to `PHP/predict.php`,
-which runs the selected checkpoint in this folder. Raw datasets are not needed for
-prediction; the model checkpoints are tracked in Git.
-
-Install the Python requirements, set `PYTHON_EXECUTABLE` to the interpreter that has
-those requirements installed, then start PHP's development server from the repository
-root. For PowerShell:
+The video model can be tested independently of the website or PHP application. From
+the repository root in PowerShell, run:
 
 ```powershell
-python -m pip install -r videoModel/requirements.txt
-$env:PYTHON_EXECUTABLE = (Get-Command python).Source
-php -d upload_max_filesize=200M -d post_max_size=210M -S 127.0.0.1:8000
+python -m pip install -r ".\videoModel\requirements.txt"
+python -m streamlit run ".\videoModel\streamlit_app.py"
 ```
 
-Open `http://127.0.0.1:8000/PHP/home.php`. For macOS/Linux, use `python3` and set
-`PYTHON_EXECUTABLE="$(command -v python3)"` before starting the same PHP command.
-The PHP runtime must have `proc_open` enabled. When using Apache or another PHP
-server, set `upload_max_filesize` to at least `200M` and `post_max_size` to at least
-`210M` in its PHP configuration. The PHP directory's `.htaccess` selects `home.php`
-as its default page when Apache allows that override.
+Or change into the model folder first:
+
+```powershell
+Set-Location "D:\Metro\AI Project\ASLT\videoModel"
+python -m pip install -r ".\requirements.txt"
+python -m streamlit run ".\streamlit_app.py"
+```
+
+Quote paths that contain spaces. Use `-r` when installing a requirements file;
+without it, pip treats the file path as a package requirement.
+
+The app loads the selected `cnn_gru` or `cnn3d` checkpoint from `models/` and offers:
+
+- **Test a video clip:** upload a video and view its top word predictions. Optionally
+  provide a WLASL video ID to use the annotated signing interval for a full source clip.
+- **Live webcam:** start the camera to get predictions from a rolling window of 16
+  frames, refreshed every 8 incoming frames.
+
+The webcam must be permitted by the browser; camera access generally requires
+`localhost` or an HTTPS connection. Prediction uses the saved model checkpoints and
+does not require the training dataset. For command-line testing, the
+`python -m src.predict_video` command above remains available.
 
 Run the model's automated tests from `videoModel` with
 `python -m unittest discover -s tests`.
