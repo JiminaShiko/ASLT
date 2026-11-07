@@ -11,6 +11,7 @@ This project uses:
 PROJECT FILES
 ==============
 train_model.py                 trains the model
+calibrate_camera.py            captures YOUR hand for every class and fine-tunes the model on it
 preprocess.py                  shared hand detection / crop / background removal (used by training AND the app)
 app.py                         the Streamlit app
 evaluate_official_photos.py    tests the official ASL Alphabet test photos (28 files)
@@ -27,6 +28,9 @@ In PowerShell or Command Prompt, open it with:
 	pip install -r requirements.txt
 2. Train the model (downloads both datasets automatically the first time):
 	python train_model.py
+2b. Teach the model YOUR hand (optional but recommended - see CALIBRATION below):
+	python calibrate_camera.py
+	python train_model.py --calibrate-only
 3. Run Streamlit:
 	streamlit run app.py
 
@@ -61,10 +65,34 @@ FILES CREATED BY THE TRAINING
 ==============================
 sign_photo_model.keras                  the trained model (used by app.py)
 dataset/photo_data_cache.npz            the prepared 96 x 96 images (the next training starts faster)
+dataset/user_calibration/               YOUR hand for every class (made by calibrate_camera.py)
 training_results/checkpoints/           temporary phase weights, deleted automatically after training
 training_results/training_curves.png    accuracy and loss charts
 training_results/confusion_matrix.png   which letters are confused
 training_results/test_results.txt       accuracy of the test sets and of every class
+
+CALIBRATION (TEACH THE MODEL YOUR HAND)
+========================================
+The training photos are other people's hands, so the app can misread YOUR hand
+(for example fist letters like A / E / M / N can all look like S at your camera
+angle). Calibration fixes this:
+
+1.  Run the capture tool. A preview window opens with the same green box as the
+    app. For each class, sign it the way YOU sign it in the app (same distance,
+    same angle), click the window and press ENTER or SPACE, then hold the sign
+    for 6 seconds. "nothing" = take your hand away. q quits (what was captured
+    is kept), b redoes the previous class.
+        python calibrate_camera.py
+    (If you sign with your LEFT hand in the app, add:  --left)
+2.  Teach the model your hand. This fine-tunes sign_photo_model.keras on your
+    images plus a slice of the original training data, so nothing is forgotten:
+        python train_model.py --calibrate-only
+    The old and new accuracies are printed (your hand / Sign MNIST test /
+    ASL Alphabet test), so you can check nothing got worse.
+3.  Restart the app and try the letters in the Live Webcam tab.
+Running plain "python train_model.py" also fine-tunes at the end automatically
+when dataset/user_calibration has images. To undo the calibration, delete the
+dataset/user_calibration folder and retrain.
 
 THE APP
 ========

@@ -5,17 +5,24 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from src.train_model import FrameCNNGRU, ProcessedVideoDataset, VideoCNN3D, compute_metrics
+from src.train_model import FrameCNNGRU, ProcessedVideoDataset, VideoCNN3D, augment_frames, compute_metrics
 
 
 class ModelTrainingTests(unittest.TestCase):
     def test_video_models_return_class_logits(self):
         videos = torch.zeros((2, 16, 3, 112, 112))
-        for model in (FrameCNNGRU(3), VideoCNN3D(3)):
+        for model in (FrameCNNGRU(3, pretrained=False), VideoCNN3D(3)):
             model.eval()
             with torch.inference_mode():
                 logits = model(videos)
             self.assertEqual(tuple(logits.shape), (2, 3))
+
+    def test_augment_frames_preserves_clip_shape(self):
+        frames = np.random.randint(0, 255, (16, 112, 112, 3), dtype=np.uint8)
+        for _ in range(20):
+            augmented = augment_frames(frames)
+            self.assertEqual(augmented.shape, frames.shape)
+            self.assertEqual(augmented.dtype, np.uint8)
 
     def test_processed_dataset_loads_expected_tensor(self):
         with tempfile.TemporaryDirectory() as temporary:

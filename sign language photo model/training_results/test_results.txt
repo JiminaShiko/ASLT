@@ -32,3 +32,8 @@ Accuracy per class:
   space     93.22%   (295 test images)
   del       98.87%   (177 test images)
   nothing  100.00%   (451 test images)
+
+After calibration fine-tune:
+  your hand (calibration val): 98.28%
+  Sign MNIST test:             95.13%
+  ASL Alphabet test:           85.87%

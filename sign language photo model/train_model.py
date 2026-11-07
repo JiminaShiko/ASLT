@@ -9,6 +9,7 @@ import os
 import re
 import shutil
 import string
+import argparse
 
 import cv2
 import numpy as np
@@ -34,6 +35,19 @@ PHASE2_PATH = os.path.join(CHECKPOINT_DIR, "phase2.keras")
 
 SIGN_MNIST_DIR = os.path.join(DATA_DIR, "sign_mnist")
 ASL_ALPHABET_DIR = os.path.join(DATA_DIR, "asl_alphabet")
+CALIBRATION_DIR = os.path.join(DATA_DIR, "user_calibration")   # 96 x 96 images of YOUR hand (calibrate_camera.py)
+
+# Calibration fine-tune settings (teaches the model the user's own hand)
+CAL_TARGET_PER_CLASS = 120   # calibration images repeated up to this many per class
+CAL_ORIGINAL_MIX = 6000      # original training images mixed in, so nothing is forgotten
+CAL_EPOCHS = 8               # maximum fine-tune epochs (early stopping can stop sooner)
+CAL_LR = 1e-4
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--calibrate-only", action="store_true",
+                    help="skip the full training and only fine-tune sign_photo_model.keras "
+                         "on dataset/user_calibration (run calibrate_camera.py first)")
+args = parser.parse_args()
 
 IMG_SIZE = preprocess.IMG_SIZE   # 96 x 96 gray
 MAX_ALPHABET_PER_CLASS = None    # images per ASL class used (None = all 3000, slower, a bit better)
@@ -118,6 +132,148 @@ def resize_mnist(rows):
 def number_in_name(path):
     numbers = re.findall(r"\d+", os.path.basename(path))
     return int(numbers[-1]) if numbers else 0
+
+#------------------------------------------
+# 2b. Calibration (the user's own hand)
+#------------------------------------------
+def load_calibration_data():
+    """Load the 96 x 96 images saved by calibrate_camera.py, or None when the
+    folder does not exist / has no images."""
+    images, labels = [], []
+    if not os.path.isdir(CALIBRATION_DIR):
+        return None
+    for name in CLASS_NAMES:
+        class_dir = os.path.join(CALIBRATION_DIR, name)
+        if not os.path.isdir(class_dir):
+            continue
+        for file_name in sorted(os.listdir(class_dir)):
+            if not file_name.lower().endswith(IMAGE_EXTENSIONS):
+                continue
+            image = cv2.imread(os.path.join(class_dir, file_name), cv2.IMREAD_GRAYSCALE)
+            if image is None or image.shape[:2] != (IMG_SIZE, IMG_SIZE):
+                continue
+            images.append(image)
+            labels.append(CLASS_ID[name])
+    if not images:
+        return None
+    return np.array(images, dtype="uint8"), np.array(labels)
+
+def fine_tune_on_calibration(x_cal, y_cal, x_train, y_train,
+                             x_test_mnist, y_test_mnist, x_test_alpha, y_test_alpha):
+    """Fine-tune sign_photo_model.keras on the user's calibration images plus a
+    slice of the original training data (so the general knowledge is kept).
+    The improved model is saved back to sign_photo_model.keras."""
+    def to4d(array):
+        array = np.asarray(array)
+        return array.reshape(-1, IMG_SIZE, IMG_SIZE, 1) if array.ndim == 3 else array
+
+    x_cal = to4d(x_cal)
+    x_train4 = to4d(x_train)
+
+    # Repeat the calibration images so every class has about the same weight
+    # (12 captured frames alone would disappear inside the original mix).
+    counts = np.bincount(y_cal, minlength=len(CLASS_NAMES))
+    print("\nCalibration images per class:")
+    for name, count in zip(CLASS_NAMES, counts):
+        if count:
+            print(f"  {name:8s} {count}")
+    cal_train_x, cal_train_y = [], []
+    cal_val_x, cal_val_y = [], []
+    rng = np.random.default_rng(7)
+    for class_id in range(len(CLASS_NAMES)):
+        if counts[class_id] == 0:
+            continue
+        idxs = np.where(y_cal == class_id)[0]
+        n_val = max(1, int(round(0.15 * len(idxs))))
+        val_idx = rng.choice(idxs, n_val, replace=False)
+        train_idx = np.array([i for i in idxs if i not in set(val_idx.tolist())])
+        repeats = int(np.ceil(CAL_TARGET_PER_CLASS / len(train_idx)))
+        cal_train_x.append(np.tile(x_cal[train_idx], (repeats, 1, 1, 1))[:CAL_TARGET_PER_CLASS])
+        cal_train_y.append(np.full(cal_train_x[-1].shape[0], class_id))
+        cal_val_x.append(x_cal[val_idx])
+        cal_val_y.append(np.full(len(val_idx), class_id))
+    if not cal_train_x:
+        raise SystemExit("Not enough calibration images to train on.")
+    cal_x = np.concatenate(cal_train_x)
+    cal_y = np.concatenate(cal_train_y)
+    cal_val_x = np.concatenate(cal_val_x)
+    cal_val_y = np.concatenate(cal_val_y)
+
+    # A slice of the original training data keeps the general accuracy.
+    mix_idx = rng.choice(len(x_train4), min(CAL_ORIGINAL_MIX, len(x_train4)), replace=False)
+    mix_x = x_train4[mix_idx]
+    mix_y = y_train[mix_idx]
+
+    x_fit = np.concatenate([cal_x, mix_x])
+    y_fit = np.concatenate([cal_y, mix_y])
+    order = np.random.permutation(len(x_fit))
+    x_fit, y_fit = x_fit[order], y_fit[order]
+
+    def make_ds(x, y, shuffle):
+        dataset = tf.data.Dataset.from_tensor_slices((x, y))
+        if shuffle:
+            dataset = dataset.shuffle(len(x), seed=42)
+        dataset = dataset.batch(BATCH_SIZE)
+        dataset = dataset.map(lambda a, b: (tf.cast(a, tf.float32), b))
+        return dataset.prefetch(tf.data.AUTOTUNE)
+
+    print(f"\nFine-tuning on {len(cal_x)} calibration images + {len(mix_x)} original images "
+          f"(validation: {len(cal_val_x)} calibration images)........")
+
+    model = tf.keras.models.load_model(MODEL_PATH)
+    base_model = None
+    for layer in model.layers:
+        if isinstance(layer, tf.keras.Model):
+            base_model = layer
+            break
+    if base_model is None:
+        raise SystemExit("Could not find the MobileNetV2 base inside the saved model.")
+
+    base_model.trainable = True
+    for layer in base_model.layers[:100]:   # same rule as phase 2
+        layer.trainable = False
+    for layer in base_model.layers:         # BatchNormalization must stay frozen
+        if isinstance(layer, layers.BatchNormalization):
+            layer.trainable = False
+
+    model.compile(optimizer=tf.keras.optimizers.Adam(CAL_LR),
+                  loss="sparse_categorical_crossentropy",
+                  metrics=["accuracy"])
+
+    before = {
+        "cal_val": model.evaluate(make_ds(cal_val_x, cal_val_y, False), verbose=0)[1],
+        "mnist": model.evaluate(make_ds(to4d(x_test_mnist), y_test_mnist, False), verbose=0)[1],
+        "alpha": model.evaluate(make_ds(to4d(x_test_alpha), y_test_alpha, False), verbose=0)[1],
+    }
+    print(f"Before fine-tune - your hand (val): {before['cal_val'] * 100:.1f}% | "
+          f"Sign MNIST test: {before['mnist'] * 100:.1f}% | ASL Alphabet test: {before['alpha'] * 100:.1f}%")
+
+    callbacks = [
+        tf.keras.callbacks.EarlyStopping(monitor="val_accuracy", patience=3, min_delta=0.001,
+                                         restore_best_weights=True, verbose=1),
+        tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=2,
+                                             min_lr=1e-6, verbose=1),
+    ]
+    model.fit(make_ds(x_fit, y_fit, True),
+              validation_data=make_ds(cal_val_x, cal_val_y, False),
+              epochs=CAL_EPOCHS, callbacks=callbacks)
+
+    after = {
+        "cal_val": model.evaluate(make_ds(cal_val_x, cal_val_y, False), verbose=0)[1],
+        "mnist": model.evaluate(make_ds(to4d(x_test_mnist), y_test_mnist, False), verbose=0)[1],
+        "alpha": model.evaluate(make_ds(to4d(x_test_alpha), y_test_alpha, False), verbose=0)[1],
+    }
+    print(f"After fine-tune  - your hand (val): {after['cal_val'] * 100:.1f}% | "
+          f"Sign MNIST test: {after['mnist'] * 100:.1f}% | ASL Alphabet test: {after['alpha'] * 100:.1f}%")
+
+    model.save(MODEL_PATH)
+    print("Calibrated model saved as:", MODEL_PATH)
+
+    with open(os.path.join(RESULTS_DIR, "test_results.txt"), "a") as file:
+        file.write("\nAfter calibration fine-tune:\n")
+        file.write(f"  your hand (calibration val): {after['cal_val'] * 100:.2f}%\n")
+        file.write(f"  Sign MNIST test:             {after['mnist'] * 100:.2f}%\n")
+        file.write(f"  ASL Alphabet test:           {after['alpha'] * 100:.2f}%\n")
 
 #------------------------------------------
 # 3. Load the Data (use the saved cache if it exists)
@@ -207,6 +363,21 @@ else:
                         x_test_mnist=x_test_mnist, y_test_mnist=y_test_mnist,
                         x_test_alpha=x_test_alpha, y_test_alpha=y_test_alpha)
     print("Data saved in:", CACHE_FILE)
+
+if args.calibrate_only:
+    calibration = load_calibration_data()
+    if calibration is None:
+        print("No calibration images found in:", CALIBRATION_DIR)
+        print("Run calibrate_camera.py first to capture YOUR hand for each class.")
+        raise SystemExit
+    if not os.path.exists(MODEL_PATH):
+        print("Model not found:", MODEL_PATH)
+        print("Run python train_model.py once before calibrating.")
+        raise SystemExit
+    x_cal, y_cal = calibration
+    fine_tune_on_calibration(x_cal, y_cal, x_train, y_train,
+                             x_test_mnist, y_test_mnist, x_test_alpha, y_test_alpha)
+    raise SystemExit
 
 print("\nTrain images:     ", x_train.shape)
 print("Validation images:", x_val.shape)
@@ -371,6 +542,16 @@ for i, name in enumerate(CLASS_NAMES):
         line = f"  {name:8s} {(predicted[mask] == i).mean() * 100:6.2f}%   ({mask.sum()} test images)"
         print(line)
         lines.append(line)
+
+#------------------------------------------
+# 15b. Calibration fine-tune (runs automatically when calibration data exists)
+#------------------------------------------
+calibration = load_calibration_data()
+if calibration is not None:
+    print("\nCalibration data found - fine-tuning the model on your hand........")
+    x_cal, y_cal = calibration
+    fine_tune_on_calibration(x_cal, y_cal, x_train, y_train,
+                             x_test_mnist, y_test_mnist, x_test_alpha, y_test_alpha)
 
 #------------------------------------------
 # 16. Save Charts and Results

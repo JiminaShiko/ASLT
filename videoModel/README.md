@@ -42,6 +42,11 @@ The first run, when no processed data exists yet, will:
 5. Train both models from scratch — previous checkpoints are ignored on this
    first run.
 
+The `cnn_gru` model starts from a pretrained MobileNetV3-Small frame encoder.
+Its ImageNet weights (~10 MB) download automatically the first time the model
+is built; if the download fails, training continues with a from-scratch
+encoder and prints a warning.
+
 Later runs reuse the processed manifest and behave incrementally. The manual
 steps remain available:
 
@@ -95,9 +100,31 @@ python download_popsign_targets.py --splits train val test
 The downloader uses the official [PopSign v2.1 dataset](https://signdata.cc.gatech.edu/view/datasets/popsign_v2_1/index.html)
 and its [per-sign download API](https://signdata.cc.gatech.edu/view/guides/downloading_popsign/index.html).
 PopSign is isolated ASL video, but its labels may denote a particular sign variant;
-review the sign and label mapping before merging it into an existing gloss class. The
-downloaded clips are not automatically added to the current processed manifest or
-model training pipeline yet. See `download_manifest.csv` for extracted file paths.
+review the sign and label mapping before merging it into an existing gloss class.
+
+Clips downloaded this way are picked up automatically: the next preprocessing
+run reads `datasets/external/popsign_*/download_manifest.csv` and adds the
+clips to their official splits. Run `download_popsign_targets.py` **before**
+your first training run so the automatic preparation includes them. To add
+them after training, rerun `python -m src.preprocess` (this rebuilds the whole
+manifest) and then train again; the incremental update path keeps the old
+vocabulary and initializes from the previous checkpoint.
+
+## How the models train
+
+- `cnn_gru`: pretrained MobileNetV3-Small encodes each frame, a bidirectional
+  GRU models the sequence, and temporal attention pools the frame features.
+  Phase 1 (default 8 epochs) trains the recurrent head with the backbone
+  frozen; phase 2 unfreezes the last backbone blocks and fine-tunes at
+  `--learning-rate × 0.1`. ImageNet mean/std normalization happens inside the
+  model, so dataset and inference code still feed plain `[0, 1]` RGB.
+- `cnn3d`: a compact residual 3D CNN trained from scratch.
+- Both models use class-weighted cross-entropy with label smoothing (0.1),
+  per-phase linear learning-rate warm-up followed by cosine decay, gradient
+  clipping, and early stopping on validation macro F1.
+- Train-time augmentation: random temporal sub-window resampling (signing
+  speed), horizontal mirror, shared random crop + resize, and brightness
+  jitter. Augmentation is disabled for validation and test.
 
 ## What an incremental run does
 
@@ -106,9 +133,10 @@ model training pipeline yet. See `download_manifest.csv` for extracted file path
   are gone. Validation and test seed anchors remain in their respective splits.
 - Initializes same-architecture layers from the previous checkpoint. Existing output
   rows are copied by gloss name, while new output rows keep their fresh initialization.
-- Uses class-weighted cross entropy over current train data. On retained seed examples
-  of old classes, it adds temperature-scaled KL distillation from the previous model.
-  New-class examples are not forced to imitate old-class outputs.
+- Uses class-weighted cross-entropy with label smoothing over current train data.
+  On retained seed examples of old classes, it adds temperature-scaled KL
+  distillation from the previous model. New-class examples are not forced to
+  imitate old-class outputs.
 - Evaluates the candidate on old-word validation anchors. The candidate is promoted
   to `models/<architecture>.pt` only when every old class has validation support and
   old-word macro recall drops by no more than `--old-class-recall-drop` (default 0.05).
