@@ -144,7 +144,7 @@ python -m streamlit run ".\videoModel\streamlit_app.py"
 Or change into the model folder first:
 
 ```powershell
-Set-Location "D:\sign language project\ASTL project\ASLT\videoModel"
+Set-Location "D:\Metro\AI Project\ASLT\videoModel"
 python -m pip install -r ".\requirements.txt"
 python -m streamlit run ".\streamlit_app.py"
 ```
