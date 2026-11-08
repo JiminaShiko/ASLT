@@ -17,7 +17,7 @@ from PIL import Image
 
 IMG_SIZE = 96
 TASK_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
-TASK_PATH = "hand_landmarker.task"
+TASK_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hand_landmarker.task")
 
 _landmarker = None
 # The app predicts from the Streamlit page thread AND the live video thread,
