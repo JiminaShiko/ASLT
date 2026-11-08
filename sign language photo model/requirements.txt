@@ -1,0 +1,11 @@
+tensorflow
+numpy
+pandas
+pillow
+matplotlib
+kagglehub
+streamlit
+opencv-python
+streamlit-webrtc
+av
+mediapipe
