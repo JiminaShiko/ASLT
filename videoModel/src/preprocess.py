@@ -2,9 +2,10 @@
 
 import csv
 import glob
+import hashlib
 import json
 import math
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import cv2
 import numpy as np
@@ -14,6 +15,7 @@ from src.config import (
     ASL_CITIZEN_METADATA,
     ASL_CITIZEN_SPLITS_DIR,
     ASL_CITIZEN_VIDEOS,
+    DATASETS_DIR,
     FRAME_HEIGHT,
     FRAME_WIDTH,
     NUM_FRAMES,
@@ -26,6 +28,7 @@ from src.config import (
 )
 
 VALID_SPLITS = {"train", "val", "test"}
+VIDEO_SUFFIXES = {".mp4", ".m4v", ".mov", ".avi", ".mkv", ".webm", ".flv", ".3gp"}
 
 
 def wlasl_records() -> list[dict]:
@@ -293,6 +296,43 @@ def write_csv(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
         writer.writerows(rows)
 
 
+def popsign_records() -> list[dict]:
+    """Read clips downloaded by download_popsign_targets.py (optional extra data)."""
+    manifests = sorted((DATASETS_DIR / "external").glob("popsign_*/download_manifest.csv"))
+    records = []
+    for manifest_path in manifests:
+        with manifest_path.open(encoding="utf-8-sig", newline="") as stream:
+            for row in csv.DictReader(stream):
+                gloss = canonicalize_gloss(row.get("gloss", ""))
+                split = str(row.get("split", "")).casefold()
+                if gloss not in TARGET_WORDS or split not in VALID_SPLITS:
+                    continue
+                extracted_dir = row.get("extracted_dir", "")
+                for relative in (row.get("files", "") or "").split("|"):
+                    if not relative or Path(relative).suffix.casefold() not in VIDEO_SUFFIXES:
+                        continue
+                    video_path = manifest_path.parent / extracted_dir / relative
+                    if not video_path.is_file():
+                        continue
+                    raw_id = PurePosixPath(extracted_dir, relative).as_posix()
+                    digest = hashlib.sha1(raw_id.encode("utf-8")).hexdigest()[:6]
+                    video_id = f"{PurePosixPath(raw_id).with_suffix('')}_{digest}"
+                    records.append(
+                        {
+                            "dataset": "popsign",
+                            "video_id": video_id,
+                            "gloss": gloss,
+                            "split": split,
+                            "signer_id": "",
+                            "video_path": video_path,
+                            "frame_start": None,
+                            "frame_end": None,
+                            "annotation_fps": None,
+                        }
+                    )
+    return records
+
+
 def main() -> None:
     records: list[dict] = []
     if WLASL_METADATA.is_file():
@@ -303,6 +343,13 @@ def main() -> None:
         records.extend(asl_citizen_records())
     else:
         print("No ASL Citizen data found; skipping ASL Citizen.")
+    popsign = popsign_records()
+    if popsign:
+        records.extend(popsign)
+        print(f"PopSign: {len(popsign)} extra clips found under datasets/external "
+              "(download_popsign_targets.py); they join their official splits.")
+    else:
+        print("No PopSign downloads found; training with WLASL and ASL Citizen only.")
     if not records:
         raise ValueError("No selected video records were found.")
 
