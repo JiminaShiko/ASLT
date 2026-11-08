@@ -31,14 +31,9 @@ document.addEventListener('DOMContentLoaded', function () {
     s.name = name; s.email = email;
     A.setSession(s);
 
-    // Update the sidebar card without reloading
-    var who = document.querySelector('.user-card .who');
-    if (who) {
-      who.querySelector('b').textContent = name;
-      who.querySelector('span').textContent = levelEl.value;
-    }
-    var av = document.querySelector('.user-card .avatar');
-    if (av) { av.textContent = name.charAt(0).toUpperCase(); }
+    // Update the top bar avatar without reloading
+    var av = document.getElementById('top-avatar');
+    if (av) { av.textContent = name.charAt(0).toUpperCase(); av.title = name; }
     fill();
     A.toast('Changes saved');
   });
