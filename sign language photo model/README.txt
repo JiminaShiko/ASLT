@@ -18,6 +18,11 @@ requirements.txt
 
 COMMANDS
 =========
+All commands below must be run in THIS folder (the folder that contains app.py and requirements.txt).
+In PowerShell or Command Prompt, open it with:
+	cd "D:\sign language project\ASTL project\ASLT\sign language photo model"
+(If the project is saved somewhere else, use the folder where this README is.)
+
 1. Install packages:
 	pip install -r requirements.txt
 2. Train the model (downloads both datasets automatically the first time):
@@ -65,8 +70,13 @@ THE APP
 ========
 Tab 1 - Upload Photo: upload an image of a hand sign, the app shows the letter, its meaning and the top 5 predictions.
 Tab 2 - Camera Photo: take a photo with the camera and get the prediction.
-Tab 3 - Live Webcam: click START, put the hand inside the green box. When the same letter is seen for a moment,
-        it is typed into the text box. "space" adds a space, "del" deletes a letter, "nothing" means no hand.
+Tab 3 - Live Webcam: click START and show the hand sign inside the green box, like the training photos.
+        The green box is a guide only - the app reads the whole picture, so a hand outside the box still works.
+        Keep the palm or the back of your hand turned towards the camera: a hand seen from the side looks
+        like a different letter.
+        The app shows the sign name, the percentage and the top 5 predictions.
+        When the same letter is seen for a moment, it is typed into the text box.
+        "space" adds a space, "del" deletes a letter, "nothing" means no hand.
         Turn on "I sign with my LEFT hand" if you are left-handed, and "Mirror the webcam" for the selfie view.
 Tips: use good light, keep the whole hand in the centre. The app shows the processed 96 x 96 image that the
 model sees, which makes it easy to check that the hand was found correctly.

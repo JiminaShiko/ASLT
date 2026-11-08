@@ -33,13 +33,71 @@ MODEL_DIR = ROOT / "models"
 SPLITS = ("train", "val", "test")
 
 
+def prepare_data_if_needed(seed_manifest: Path) -> bool:
+    """Download missing datasets, preprocess, and seed before the first run.
+
+    Returns True when data was freshly prepared; training should then ignore
+    previous checkpoints because they were fitted to different data.
+    """
+    raw_manifest = PROCESSED_DIR / "manifest.csv"
+    if raw_manifest.is_file():
+        return False
+    print("No processed manifest found; preparing datasets automatically.")
+
+    from src import download_data as data_download
+    from src import preprocess as data_preprocess
+    from src import seed_dataset as data_seed
+
+    print("Read and accept the WLASL C-UDA terms before proceeding: "
+          "https://dxli94.github.io/WLASL/")
+    if not data_download.WLASL_METADATA.is_file():
+        data_download.download_file(data_download.WLASL_METADATA_URL,
+                                    data_download.WLASL_METADATA)
+    entries = data_download.load_wlasl_entries()
+    data_download.download_wlasl_videos(entries)
+
+    if data_download.manual_asl_citizen_present():
+        print(f"ASL Citizen: using the manual dataset at {data_download.ASL_CITIZEN_DIR}.")
+    elif not data_download.ASL_CITIZEN_METADATA.is_file():
+        print("Read and accept the ASL Citizen license terms before proceeding.")
+        data_download.download_asl_citizen()
+
+    data_preprocess.main()
+    report = data_seed.build_seed(
+        raw_manifest, {"train": 20, "val": 5, "test": 5}, seed_manifest.parent
+    )
+    print(f"Seed prepared: {report['records']} clips, {report['bytes'] / 1e6:.1f} MB.")
+    return True
+
+
+def augment_frames(frames: np.ndarray) -> np.ndarray:
+    """Light train-only augmentation: mirror, temporal shift, brightness jitter."""
+    rng = np.random.default_rng()
+    if rng.random() < 0.5:
+        frames = frames[:, :, ::-1, :]
+    if rng.random() < 0.5:
+        shift = int(rng.integers(-2, 3))
+        if shift > 0:
+            frames = np.concatenate(
+                [frames[shift:], np.repeat(frames[-1:], shift, axis=0)], axis=0
+            )
+        elif shift < 0:
+            frames = np.concatenate(
+                [np.repeat(frames[:1], -shift, axis=0), frames[:shift]], axis=0
+            )
+    jitter = float(rng.uniform(0.85, 1.15))
+    frames = np.clip(frames.astype(np.float32) * jitter, 0, 255).astype(np.uint8)
+    return np.ascontiguousarray(frames)
+
+
 class ProcessedVideoDataset(Dataset):
     def __init__(self, rows: list[dict[str, str]], class_to_index: dict[str, int], root: Path = PROCESSED_DIR,
-                 include_seed_flag: bool = False):
+                 include_seed_flag: bool = False, augment: bool = False):
         self.rows = rows
         self.class_to_index = class_to_index
         self.root = root
         self.include_seed_flag = include_seed_flag
+        self.augment = augment
 
     def __len__(self) -> int:
         return len(self.rows)
@@ -52,6 +110,8 @@ class ProcessedVideoDataset(Dataset):
         expected = (NUM_FRAMES, FRAME_HEIGHT, FRAME_WIDTH, 3)
         if frames.shape != expected:
             raise ValueError(f"Unexpected frame shape in {path}: {frames.shape}; expected {expected}.")
+        if self.augment:
+            frames = augment_frames(frames)
         video = torch.from_numpy(np.ascontiguousarray(frames))
         result = (video.permute(0, 3, 1, 2).float().div_(255.0), self.class_to_index[row["gloss"]])
         return (*result, row.get("is_seed") == "1") if self.include_seed_flag else result
@@ -183,7 +243,8 @@ def train_model(name: str, class_names: list[str], splits: dict[str, list[dict[s
                 distillation_weight: float = 0.5, distillation_temperature: float = 2.0,
                 max_old_recall_drop: float = 0.05) -> tuple[dict, list[dict]]:
     mapping = {label: index for index, label in enumerate(class_names)}
-    datasets = {key: ProcessedVideoDataset(rows, mapping, include_seed_flag=(key == "train"))
+    datasets = {key: ProcessedVideoDataset(rows, mapping, include_seed_flag=(key == "train"),
+                                           augment=(key == "train"))
                 for key, rows in splits.items()}
     generator = torch.Generator().manual_seed(seed)
     loaders = {key: DataLoader(ds, batch_size=batch_size, shuffle=key == "train", num_workers=0,
@@ -387,8 +448,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train and evaluate sign-video classifiers.")
     parser.add_argument("--models", default="cnn_gru,cnn3d", help="Comma-separated: cnn_gru, cnn3d, or both.")
     parser.add_argument("--classes", default="", help="Optional comma-separated subset, e.g. eat,drink,thanks.")
-    parser.add_argument("--epochs", type=int, default=20)
-    parser.add_argument("--patience", type=int, default=4)
+    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--patience", type=int, default=6)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--learning-rate", type=float, default=0.001)
     parser.add_argument("--seed", type=int, default=42)
@@ -416,6 +477,9 @@ def main() -> None:
         raise SystemExit("CUDA was requested but is unavailable.")
     if args.distillation_weight < 0 or args.distillation_temperature <= 0 or not 0 <= args.old_class_recall_drop <= 1:
         raise SystemExit("Distillation weight must be nonnegative, temperature positive, and recall-drop in [0, 1].")
+    if prepare_data_if_needed(args.seed_manifest) and not args.fresh:
+        print("Data was freshly prepared; previous checkpoints are ignored for this run.")
+        args.fresh = True
     reference_checkpoint = None
     if not args.fresh:
         reference_path = MODEL_DIR / f"{models[0]}.pt"

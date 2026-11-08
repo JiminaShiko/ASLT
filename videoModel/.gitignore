@@ -1,5 +1,6 @@
 datasets/*
 !datasets/.gitkeep
+ASL_Citizen/
 longVideos/*
 __pycache__/
 *.py[cod]

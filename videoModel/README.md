@@ -7,7 +7,7 @@ video model: each seed item is the existing preprocessed 16-frame, 112×112 RGB
 retained clips; check the reported byte total before deleting raw data.
 
 Run commands from this folder. Install dependencies with `python -m pip install -r
-requirements.txt`; prepare source data using the root README workflow, then run
+requirements.txt`; supply the source datasets as described below, then run
 `python -m src.preprocess`. Training/evaluation artifacts are written to
 `datasets/processed/training_artifacts/`, and standalone checkpoints are written to
 `models/`. Prediction does not require the training dataset or processed arrays:
@@ -19,27 +19,40 @@ python -m src.predict_video "path\to\video.mp4" --model cnn3d
 For a full-length WLASL source video, pass `--wlasl-id <video-id>` so preprocessing
 uses the annotated signing interval.
 
-## Initial preparation
+## Initial preparation (automatic)
 
-1. Prepare and preprocess the dataset as described in the root project README.
-2. Create a seed from the processed manifest:
+Training prepares everything automatically on the first run, like the photo
+model. From `videoModel`, just run:
 
-   ```powershell
-   cd videoModel
-   python -m src.seed_dataset --per-class-train 20 --per-class-val 5 --per-class-test 5
-   ```
+```powershell
+python -m src.train_model --models cnn_gru,cnn3d
+```
 
-   This creates `datasets/processed/seed/manifest.csv`, `metadata.json`, and
-   compressed clips beneath `datasets/processed/seed/{train,val,test}/`. It samples
-   deterministically and round-robins across signer IDs. Increase or reduce the
-   three quotas to fit available storage. Train seeds are replay examples; validation
-   and test seeds are held-out anchors, not training samples.
+The first run, when no processed data exists yet, will:
 
-3. Train the initial model normally:
+1. Download WLASL metadata and the target-word clips. Read and accept the
+   WLASL C-UDA terms before running; clips whose YouTube source is gone are
+   listed in `datasets/WLASL/download_failures.csv`.
+2. Use the manual ASL Citizen folder `videoModel/ASL_Citizen` when present
+   (containing `splits/train.csv`, `splits/val.csv`, `splits/test.csv`, and
+   `videos/<video-id>-<GLOSS>.mp4`). Without a manual folder, the zip is
+   downloaded automatically.
+3. Preprocess everything into 16-frame, 112×112 RGB clips.
+4. Build the seed replay/evaluation set (20/5/5 per-class quotas).
+5. Train both models from scratch — previous checkpoints are ignored on this
+   first run.
 
-   ```powershell
-   python -m src.train_model --models cnn_gru,cnn3d
-   ```
+Later runs reuse the processed manifest and behave incrementally. The manual
+steps remain available:
+
+```powershell
+python -m src.download_data --confirm-wlasl-cuda
+python -m src.preprocess
+python -m src.seed_dataset --per-class-train 20 --per-class-val 5 --per-class-test 5
+```
+
+Add `--fresh` to any training command to deliberately ignore existing
+checkpoints.
 
 ## Add words or examples later
 
