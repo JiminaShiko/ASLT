@@ -6,10 +6,12 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import random
 from collections import Counter
 from pathlib import Path
 
+import cv2
 import matplotlib
 
 matplotlib.use("Agg")
@@ -32,14 +34,84 @@ DEFAULT_OUTPUT_DIR = PROCESSED_DIR / "training_artifacts"
 MODEL_DIR = ROOT / "models"
 SPLITS = ("train", "val", "test")
 
+EPOCHS_PHASE1 = 8          # head warm-up with the pretrained backbone frozen (cnn_gru only)
+FINE_TUNE_LR_FACTOR = 0.1  # phase-2 learning rate relative to --learning-rate
+WARMUP_EPOCHS = 2          # linear LR warm-up at the start of each phase
+LABEL_SMOOTHING = 0.1
+GRAD_CLIP_NORM = 1.0
+BACKBONE_TAIL_BLOCKS = 3   # last MobileNetV3 feature blocks unfrozen in phase 2
+
+
+def prepare_data_if_needed(seed_manifest: Path) -> bool:
+    """Download missing datasets, preprocess, and seed before the first run.
+
+    Returns True when data was freshly prepared; training should then ignore
+    previous checkpoints because they were fitted to different data.
+    """
+    raw_manifest = PROCESSED_DIR / "manifest.csv"
+    if raw_manifest.is_file():
+        return False
+    print("No processed manifest found; preparing datasets automatically.")
+
+    from src import download_data as data_download
+    from src import preprocess as data_preprocess
+    from src import seed_dataset as data_seed
+
+    print("Read and accept the WLASL C-UDA terms before proceeding: "
+          "https://dxli94.github.io/WLASL/")
+    if not data_download.WLASL_METADATA.is_file():
+        data_download.download_file(data_download.WLASL_METADATA_URL,
+                                    data_download.WLASL_METADATA)
+    entries = data_download.load_wlasl_entries()
+    data_download.download_wlasl_videos(entries)
+
+    if data_download.manual_asl_citizen_present():
+        print(f"ASL Citizen: using the manual dataset at {data_download.ASL_CITIZEN_DIR}.")
+    elif not data_download.ASL_CITIZEN_METADATA.is_file():
+        print("Read and accept the ASL Citizen license terms before proceeding.")
+        data_download.download_asl_citizen()
+
+    data_preprocess.main()
+    report = data_seed.build_seed(
+        raw_manifest, {"train": 20, "val": 5, "test": 5}, seed_manifest.parent
+    )
+    print(f"Seed prepared: {report['records']} clips, {report['bytes'] / 1e6:.1f} MB.")
+    return True
+
+
+def augment_frames(frames: np.ndarray) -> np.ndarray:
+    """Train-only augmentation: temporal window (speed), mirror, crop jitter, brightness."""
+    rng = np.random.default_rng()
+    total = frames.shape[0]
+    if rng.random() < 0.7:
+        window = max(2, int(round(total * float(rng.uniform(0.6, 1.0)))))
+        start = int(rng.integers(0, total - window + 1))
+        indices = np.linspace(start, start + window - 1, total).round().astype(np.int64)
+        frames = frames[indices]
+    if rng.random() < 0.5:
+        frames = frames[:, :, ::-1, :]
+    if rng.random() < 0.5:
+        crop = 96
+        top = int(rng.integers(0, FRAME_HEIGHT - crop + 1))
+        left = int(rng.integers(0, FRAME_WIDTH - crop + 1))
+        patch = frames[:, top:top + crop, left:left + crop, :]
+        frames = np.stack(
+            [cv2.resize(frame, (FRAME_WIDTH, FRAME_HEIGHT), interpolation=cv2.INTER_AREA)
+             for frame in patch]
+        )
+    jitter = float(rng.uniform(0.85, 1.15))
+    frames = np.clip(frames.astype(np.float32) * jitter, 0, 255).astype(np.uint8)
+    return np.ascontiguousarray(frames)
+
 
 class ProcessedVideoDataset(Dataset):
     def __init__(self, rows: list[dict[str, str]], class_to_index: dict[str, int], root: Path = PROCESSED_DIR,
-                 include_seed_flag: bool = False):
+                 include_seed_flag: bool = False, augment: bool = False):
         self.rows = rows
         self.class_to_index = class_to_index
         self.root = root
         self.include_seed_flag = include_seed_flag
+        self.augment = augment
 
     def __len__(self) -> int:
         return len(self.rows)
@@ -52,6 +124,8 @@ class ProcessedVideoDataset(Dataset):
         expected = (NUM_FRAMES, FRAME_HEIGHT, FRAME_WIDTH, 3)
         if frames.shape != expected:
             raise ValueError(f"Unexpected frame shape in {path}: {frames.shape}; expected {expected}.")
+        if self.augment:
+            frames = augment_frames(frames)
         video = torch.from_numpy(np.ascontiguousarray(frames))
         result = (video.permute(0, 3, 1, 2).float().div_(255.0), self.class_to_index[row["gloss"]])
         return (*result, row.get("is_seed") == "1") if self.include_seed_flag else result
@@ -122,6 +196,43 @@ def initialize_from_checkpoint(model: nn.Module, checkpoint: dict, old_classes: 
     model.load_state_dict(new_state)
 
 
+def _backbone_parameters(model: nn.Module, name: str):
+    if name == "cnn_gru":
+        return model.backbone.parameters()
+    return ()
+
+
+def _set_backbone_trainable(model: nn.Module, name: str, trainable: bool) -> None:
+    for parameter in _backbone_parameters(model, name):
+        parameter.requires_grad_(trainable)
+
+
+def _unfreeze_backbone_tail(model: nn.Module, name: str) -> None:
+    if name != "cnn_gru":
+        return
+    for block in list(model.backbone.children())[-BACKBONE_TAIL_BLOCKS:]:
+        for parameter in block.parameters():
+            parameter.requires_grad_(True)
+
+
+def _make_optimizer(model: nn.Module, learning_rate: float) -> torch.optim.AdamW:
+    parameters = [parameter for parameter in model.parameters() if parameter.requires_grad]
+    if not parameters:
+        raise RuntimeError("No trainable parameters remain after freezing the backbone.")
+    return torch.optim.AdamW(parameters, lr=learning_rate, weight_decay=1e-4)
+
+
+def _set_learning_rate(optimizer: torch.optim.Optimizer, peak_lr: float, step: int,
+                       total_steps: int, warmup_epochs: int) -> None:
+    if step <= warmup_epochs:
+        scale = step / max(1, warmup_epochs)
+    else:
+        progress = (step - warmup_epochs) / max(1, total_steps - warmup_epochs)
+        scale = 0.5 * (1 + math.cos(math.pi * progress))
+    for group in optimizer.param_groups:
+        group["lr"] = peak_lr * scale
+
+
 def compute_metrics(y_true: list[int], y_pred: list[int], class_names: list[str]) -> tuple[dict, np.ndarray]:
     present = sorted(set(y_true))
     report = classification_report(
@@ -183,7 +294,8 @@ def train_model(name: str, class_names: list[str], splits: dict[str, list[dict[s
                 distillation_weight: float = 0.5, distillation_temperature: float = 2.0,
                 max_old_recall_drop: float = 0.05) -> tuple[dict, list[dict]]:
     mapping = {label: index for index, label in enumerate(class_names)}
-    datasets = {key: ProcessedVideoDataset(rows, mapping, include_seed_flag=(key == "train"))
+    datasets = {key: ProcessedVideoDataset(rows, mapping, include_seed_flag=(key == "train"),
+                                           augment=(key == "train"))
                 for key, rows in splits.items()}
     generator = torch.Generator().manual_seed(seed)
     loaders = {key: DataLoader(ds, batch_size=batch_size, shuffle=key == "train", num_workers=0,
@@ -204,49 +316,72 @@ def train_model(name: str, class_names: list[str], splits: dict[str, list[dict[s
     counts = Counter(row["gloss"] for row in splits["train"])
     weights = torch.tensor([len(splits["train"]) / (len(class_names) * counts[label]) for label in class_names],
                            dtype=torch.float32, device=device)
-    loss_fn = nn.CrossEntropyLoss(weight=weights)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
-    history, best_state, best_f1, best_epoch, stale = [], None, -1.0, 0, 0
-    for epoch in range(1, epochs + 1):
-        model.train()
-        total_loss, total = 0.0, 0
-        for videos, labels, seed_flags in loaders["train"]:
-            videos, labels = videos.to(device), labels.to(device)
-            optimizer.zero_grad(set_to_none=True)
-            logits = model(videos)
-            loss = loss_fn(logits, labels)
-            # Distill only on retained, labeled old-word examples. New examples are not
-            # forced to imitate the teacher's old vocabulary outputs.
-            if teacher is not None and old_classes:
-                old_rows = torch.tensor([class_names[int(label)] in old_classes for label in labels],
-                                        dtype=torch.bool, device=device)
-                replay_rows = seed_flags.to(device) & old_rows
-                if replay_rows.any():
-                    with torch.no_grad():
-                        teacher_logits = teacher(videos[replay_rows])
-                    student_columns = torch.tensor([mapping[label] for label in old_classes], device=device)
-                    temperature = distillation_temperature
-                    distill = nn.functional.kl_div(
-                        nn.functional.log_softmax(logits[replay_rows][:, student_columns] / temperature, dim=1),
-                        nn.functional.softmax(teacher_logits / temperature, dim=1), reduction="batchmean")
-                    loss = loss + distillation_weight * temperature * temperature * distill
-            loss.backward()
-            optimizer.step()
-            total_loss += loss.item() * labels.size(0)
-            total += labels.size(0)
-        val, _ = evaluate(model, loaders["val"], loss_fn, device, class_names)
-        history.append({"epoch": epoch, "train_loss": total_loss / total,
-                        "val_loss": val["loss"], "val_macro_f1": val["macro_f1"]})
-        print(f"{name} epoch {epoch}/{epochs}: train_loss={total_loss / total:.4f}, "
-              f"val_loss={val['loss']:.4f}, val_macro_f1={val['macro_f1']:.4f}")
-        if val["macro_f1"] > best_f1:
-            best_f1, best_epoch, stale = val["macro_f1"], epoch, 0
-            best_state = {key: value.detach().cpu().clone() for key, value in model.state_dict().items()}
-        else:
-            stale += 1
-        if stale >= patience:
-            print(f"{name}: early stopping after epoch {epoch}.")
-            break
+    loss_fn = nn.CrossEntropyLoss(weight=weights, label_smoothing=LABEL_SMOOTHING)
+    pretrained_backbone = name == "cnn_gru"
+    if pretrained_backbone:
+        phase1_epochs = min(EPOCHS_PHASE1, epochs)
+        phases = [(1, phase1_epochs), (2, epochs - phase1_epochs)]
+    else:
+        phase1_epochs = 0
+        phases = [(1, epochs)]
+    _set_backbone_trainable(model, name, pretrained_backbone)
+    optimizer = _make_optimizer(model, learning_rate)
+    history, best_state, best_f1, best_epoch = [], None, -1.0, 0
+    epoch = 0
+    for phase, phase_epochs in phases:
+        if phase_epochs <= 0:
+            continue
+        stale = 0
+        phase_lr = learning_rate if phase == 1 else learning_rate * FINE_TUNE_LR_FACTOR
+        for step in range(1, phase_epochs + 1):
+            epoch += 1
+            _set_learning_rate(optimizer, phase_lr, step, phase_epochs, WARMUP_EPOCHS)
+            current_lr = optimizer.param_groups[0]["lr"]
+            model.train()
+            total_loss, total = 0.0, 0
+            for videos, labels, seed_flags in loaders["train"]:
+                videos, labels = videos.to(device), labels.to(device)
+                optimizer.zero_grad(set_to_none=True)
+                logits = model(videos)
+                loss = loss_fn(logits, labels)
+                # Distill only on retained, labeled old-word examples. New examples are not
+                # forced to imitate the teacher's old vocabulary outputs.
+                if teacher is not None and old_classes:
+                    old_rows = torch.tensor([class_names[int(label)] in old_classes for label in labels],
+                                            dtype=torch.bool, device=device)
+                    replay_rows = seed_flags.to(device) & old_rows
+                    if replay_rows.any():
+                        with torch.no_grad():
+                            teacher_logits = teacher(videos[replay_rows])
+                        student_columns = torch.tensor([mapping[label] for label in old_classes], device=device)
+                        temperature = distillation_temperature
+                        distill = nn.functional.kl_div(
+                            nn.functional.log_softmax(logits[replay_rows][:, student_columns] / temperature, dim=1),
+                            nn.functional.softmax(teacher_logits / temperature, dim=1), reduction="batchmean")
+                        loss = loss + distillation_weight * temperature * temperature * distill
+                loss.backward()
+                nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP_NORM)
+                optimizer.step()
+                total_loss += loss.item() * labels.size(0)
+                total += labels.size(0)
+            val, _ = evaluate(model, loaders["val"], loss_fn, device, class_names)
+            history.append({"epoch": epoch, "phase": phase, "lr": current_lr,
+                            "train_loss": total_loss / total,
+                            "val_loss": val["loss"], "val_macro_f1": val["macro_f1"]})
+            print(f"{name} phase{phase} epoch {epoch}/{epochs}: train_loss={total_loss / total:.4f}, "
+                  f"val_loss={val['loss']:.4f}, val_macro_f1={val['macro_f1']:.4f}, lr={current_lr:.2e}")
+            if val["macro_f1"] > best_f1:
+                best_f1, best_epoch, stale = val["macro_f1"], epoch, 0
+                best_state = {key: value.detach().cpu().clone() for key, value in model.state_dict().items()}
+            else:
+                stale += 1
+            if stale >= patience:
+                print(f"{name}: early stopping in phase {phase} after epoch {epoch}.")
+                break
+        if phase == 1 and pretrained_backbone:
+            model.load_state_dict(best_state)
+            _unfreeze_backbone_tail(model, name)
+            optimizer = _make_optimizer(model, learning_rate * FINE_TUNE_LR_FACTOR)
     if best_state is None:
         raise RuntimeError(f"No best checkpoint was produced for {name}.")
     model.load_state_dict(best_state)
@@ -260,7 +395,12 @@ def train_model(name: str, class_names: list[str], splits: dict[str, list[dict[s
         "class_names": class_names,
         "input_shape": [NUM_FRAMES, FRAME_HEIGHT, FRAME_WIDTH, 3],
         "best_epoch": best_epoch,
-        "normalization": "uint8 RGB scaled to float32 [0, 1]",
+        "normalization": "uint8 RGB scaled to float32 [0, 1]; cnn_gru applies ImageNet mean/std internally",
+        "backbone": {"encoder": "mobilenet_v3_small" if pretrained_backbone else "scratch",
+                     "pretrained": pretrained_backbone},
+        "phase1_epochs": phase1_epochs,
+        "label_smoothing": LABEL_SMOOTHING,
+        "lr_schedule": f"per-phase warmup({WARMUP_EPOCHS}) + cosine decay",
         "seed": seed,
         "class_order_version": 1,
         "incremental_from": old_classes if prior_checkpoint is not None else [],
@@ -349,9 +489,13 @@ def write_artifacts(output: Path, results: dict[str, dict], histories: dict[str,
              Paragraph(f"Official splits: {train_count} train, {val_count} validation, "
                        f"{sum(results[names[0]]['test_support'].values())} test records.", styles["BodyText"]),
              Spacer(1, 8),
-             Paragraph("The comparison uses a frame-wise CNN + GRU and a compact 3D CNN. "
-                       "Frames are scaled to [0, 1]; class-weighted cross-entropy is used. "
-                       "Checkpoints are selected by validation macro F1 and evaluated on the held-out test split.",
+             Paragraph("The comparison uses a MobileNetV3-Small frame encoder with a bidirectional GRU "
+                       "and temporal attention, and a residual 3D CNN. Frames are scaled to [0, 1] "
+                       "(the GRU model applies ImageNet normalization internally); class-weighted "
+                       "cross-entropy with label smoothing is used. The GRU model trains in two phases: "
+                       "the pretrained encoder stays frozen while the recurrent head learns, then its "
+                       "last blocks are fine-tuned at a lower learning rate. Checkpoints are selected by "
+                       "validation macro F1 and evaluated on the held-out test split.",
                        styles["BodyText"]), Spacer(1, 10)]
     table_data = [["Model", "Accuracy", "Macro P", "Macro R", "Macro F1", "Weighted F1", "Epoch"]]
     for name, result in results.items():
@@ -372,9 +516,10 @@ def write_artifacts(output: Path, results: dict[str, dict], histories: dict[str,
                   Paragraph("The data is small and imbalanced, particularly for eat, thanks, and drink. "
                             "Some WLASL clips are missing or undecodable. Uniform 16-frame sampling can "
                             "miss brief motion; signer, background, framing, and signing speed vary. "
-                            "These small models are trained from scratch, so results are baselines, not "
-                            "production-level performance. Confirm with the instructor whether dataset "
-                            "licenses permit sharing trained weights.", styles["BodyText"]),
+                            "The 3D CNN is trained from scratch and both models see limited data, so "
+                            "results are baselines, not production-level performance. Confirm with the "
+                            "instructor whether dataset licenses permit sharing trained weights.",
+                            styles["BodyText"]),
                   Spacer(1, 10), Image(str(output / "model_comparison.png"), width=6.8 * inch, height=3.4 * inch),
                   Image(str(output / "training_curves.png"), width=6.8 * inch, height=2.8 * inch)])
     for name in names:
@@ -387,8 +532,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train and evaluate sign-video classifiers.")
     parser.add_argument("--models", default="cnn_gru,cnn3d", help="Comma-separated: cnn_gru, cnn3d, or both.")
     parser.add_argument("--classes", default="", help="Optional comma-separated subset, e.g. eat,drink,thanks.")
-    parser.add_argument("--epochs", type=int, default=20)
-    parser.add_argument("--patience", type=int, default=4)
+    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--patience", type=int, default=6)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--learning-rate", type=float, default=0.001)
     parser.add_argument("--seed", type=int, default=42)
@@ -416,6 +561,9 @@ def main() -> None:
         raise SystemExit("CUDA was requested but is unavailable.")
     if args.distillation_weight < 0 or args.distillation_temperature <= 0 or not 0 <= args.old_class_recall_drop <= 1:
         raise SystemExit("Distillation weight must be nonnegative, temperature positive, and recall-drop in [0, 1].")
+    if prepare_data_if_needed(args.seed_manifest) and not args.fresh:
+        print("Data was freshly prepared; previous checkpoints are ignored for this run.")
+        args.fresh = True
     reference_checkpoint = None
     if not args.fresh:
         reference_path = MODEL_DIR / f"{models[0]}.pt"

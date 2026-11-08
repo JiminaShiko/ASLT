@@ -10,7 +10,13 @@ WLASL_DIR = DATASETS_DIR / "WLASL"
 WLASL_METADATA = WLASL_DIR / "WLASL_v0.3.json"
 WLASL_VIDEOS = WLASL_DIR / "videos"
 
-ASL_CITIZEN_DIR = DATASETS_DIR / "ASL_Citizen"
+# A manually supplied ASL Citizen folder (splits/*.csv + videos/<id>-<GLOSS>.mp4)
+# takes precedence over the zip-based layout under datasets/.
+_MANUAL_ASL_CITIZEN = ROOT / "ASL_Citizen"
+ASL_CITIZEN_DIR = (
+    _MANUAL_ASL_CITIZEN if _MANUAL_ASL_CITIZEN.is_dir() else DATASETS_DIR / "ASL_Citizen"
+)
+ASL_CITIZEN_SPLITS_DIR = ASL_CITIZEN_DIR / "splits"
 ASL_CITIZEN_ARCHIVE = ASL_CITIZEN_DIR / "ASL_Citizen.zip"
 ASL_CITIZEN_METADATA_DIR = ASL_CITIZEN_DIR / "metadata"
 ASL_CITIZEN_METADATA = ASL_CITIZEN_METADATA_DIR / "selected_videos.csv"
@@ -48,6 +54,11 @@ TARGET_WORDS = (
 
 WORD_ALIASES = {
     "thank you": "thanks",
+    "thankyou": "thanks",
+    "eat1": "eat",
+    "eat2": "eat",
+    "drink1": "drink",
+    "drink2": "drink",
 }
 
 

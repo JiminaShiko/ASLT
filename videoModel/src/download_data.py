@@ -41,7 +41,7 @@ ASL_CITIZEN_URL = (
     "https://download.microsoft.com/download/b/8/8/"
     "b88c0bae-e6c1-43e1-8726-98cf5af36ca4/ASL_Citizen.zip"
 )
-VIDEO_SUFFIXES = {".mp4", ".m4v", ".mov", ".avi", ".mkv", ".webm"}
+VIDEO_SUFFIXES = {".mp4", ".m4v", ".mov", ".avi", ".mkv", ".webm", ".flv", ".3gp"}
 CSV_COLUMN_NAMES = {
     "videoid": "video_id",
     "videofile": "video_id",
@@ -86,6 +86,17 @@ def remote_content_length(url: str) -> int | None:
             return int(value) if value else None
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError):
         return None
+
+
+def manual_asl_citizen_present() -> bool:
+    """Detect the manually supplied ASL Citizen folder (split CSVs + videos)."""
+    splits = ASL_CITIZEN_DIR / "splits"
+    return (
+        splits.is_dir()
+        and any(splits.glob("*.csv"))
+        and ASL_CITIZEN_VIDEOS.is_dir()
+        and any(ASL_CITIZEN_VIDEOS.iterdir())
+    )
 
 
 def check_asl_citizen_space() -> None:
@@ -218,8 +229,12 @@ def download_youtube_video(url: str, destination: Path) -> None:
             "Install it with: python -m pip install yt-dlp"
         ) from error
     options = {
-        "format": "best[ext=mp4]/best",
+        # Many WLASL sources predate MP4-only uploads and only expose adaptive
+        # streams. Merge best video+audio (ffmpeg is bundled with the setup)
+        # and remux legacy containers to MP4; fall back to pre-merged formats.
+        "format": "bv*+ba/b",
         "merge_output_format": "mp4",
+        "remuxvideo": "mp4",
         "outtmpl": str(destination.with_suffix(".%(ext)s")),
         "noplaylist": True,
         "quiet": True,
@@ -554,6 +569,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--skip-asl-citizen",
+        action="store_true",
+        help=(
+            "Only prepare WLASL; skip the ASL Citizen download and license "
+            "check. Implied automatically when a manual ASL_Citizen folder "
+            "with split CSVs and videos is present."
+        ),
+    )
+    parser.add_argument(
         "--confirm-wlasl-cuda",
         action="store_true",
         help="Confirm that you read and accept the WLASL C-UDA terms.",
@@ -568,7 +592,15 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    if not args.confirm_wlasl_cuda or not args.confirm_asl_citizen_license:
+    skip_asl_citizen = args.skip_asl_citizen or manual_asl_citizen_present()
+    if skip_asl_citizen:
+        print(
+            "ASL Citizen: manual dataset detected (or --skip-asl-citizen); "
+            "skipping the ASL Citizen download."
+        )
+    if not args.confirm_wlasl_cuda or (
+        not skip_asl_citizen and not args.confirm_asl_citizen_license
+    ):
         raise SystemExit(
             "Before downloading, read both dataset licenses. Then rerun with "
             "--confirm-wlasl-cuda and --confirm-asl-citizen-license."
@@ -576,7 +608,9 @@ def main() -> None:
 
     DATASETS_DIR.mkdir(parents=True, exist_ok=True)
     if args.manual:
-        required_files = (WLASL_METADATA, ASL_CITIZEN_ARCHIVE)
+        required_files = [WLASL_METADATA]
+        if not skip_asl_citizen:
+            required_files.append(ASL_CITIZEN_ARCHIVE)
         missing_files = [path for path in required_files if not path.is_file()]
         if missing_files:
             formatted = "\n".join(f"  - {path}" for path in missing_files)
@@ -584,7 +618,7 @@ def main() -> None:
                 "Manual mode requires these files to be supplied first:\n"
                 f"{formatted}"
             )
-    else:
+    elif not skip_asl_citizen:
         check_asl_citizen_space()
 
     WLASL_DIR.mkdir(parents=True, exist_ok=True)
@@ -595,7 +629,8 @@ def main() -> None:
         report_manual_wlasl_videos(entries)
     else:
         download_wlasl_videos(entries)
-    download_asl_citizen()
+    if not skip_asl_citizen:
+        download_asl_citizen()
     print(f"\nDataset preparation finished in {DATASETS_DIR}.")
 
 

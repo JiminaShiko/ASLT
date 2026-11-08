@@ -19,42 +19,8 @@
     <main class="page" id="main">
 
     <section class="card" id="translate" aria-labelledby="t-h">
-      <h2 id="t-h">Translate</h2>
-      <div class="seg" role="tablist" aria-label="Translation mode" style="margin-top:16px">
-        <button type="button" role="tab" id="tab-sign" aria-selected="true" aria-controls="panel-sign"><span data-icon="camera"></span>Sign to Text</button>
-        <button type="button" role="tab" id="tab-text" aria-selected="false" aria-controls="panel-text"><span data-icon="type"></span>Text to Sign</button>
-        <button type="button" role="tab" id="tab-upload" aria-selected="false" aria-controls="panel-upload"><span data-icon="upload"></span>Upload Media</button>
-      </div>
-
-      <!-- Sign to Text -->
-      <div class="panel" id="panel-sign" role="tabpanel" aria-labelledby="tab-sign">
-        <div class="cam" id="cam-box">
-          <video id="cam" autoplay playsinline muted hidden></video>
-          <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
-          <div class="ph" id="cam-ph">
-            <span data-icon="hand" data-size="64"></span>
-            <b>Camera is off</b>
-            <span>Start the camera, then capture a 2.25-second signing clip.</span>
-          </div>
-          <button class="icon-btn flip" id="flip" type="button" aria-label="Flip camera" disabled><span data-icon="flip"></span></button>
-        </div>
-        <div class="row">
-          <button class="btn btn-ghost" type="button" id="cam-toggle"><span data-icon="camera"></span><span id="cam-toggle-label">Start camera</span></button>
-          <button class="btn" type="button" id="capture" disabled><span data-icon="check"></span>Capture 2.25s clip</button>
-        </div>
-        <div class="field">
-          <label for="camera-model-choice">Model</label>
-          <select class="input" id="camera-model-choice">
-            <option value="cnn3d">3D CNN</option>
-            <option value="cnn_gru">CNN-GRU</option>
-          </select>
-        </div>
-        <div class="status" id="cam-status" role="status" aria-live="polite"></div>
-        <div class="result" id="sign-result" aria-live="polite"></div>
-      </div>
-
-      <!-- Text to Sign -->
-      <div class="panel" id="panel-text" role="tabpanel" aria-labelledby="tab-text" hidden>
+      <h2 id="t-h">Text to Sign</h2>
+      <div class="panel" id="panel-text">
         <div class="input-row">
           <div class="field">
             <label for="txt">Type your text</label>
@@ -70,29 +36,6 @@
         </div>
       </div>
 
-      <!-- Upload Media -->
-      <div class="panel" id="panel-upload" role="tabpanel" aria-labelledby="tab-upload" hidden>
-        <div class="drop" id="drop">
-          <div class="icon-lg"><span data-icon="upload" data-size="34"></span></div>
-          <div class="big">Upload a video clip of a sign</div>
-          <span class="muted">Drag a file here, or choose one below.</span>
-          <div class="row" style="justify-content:center">
-            <button class="btn" type="button" id="pick-video" style="flex:0 1 auto"><span data-icon="video"></span>Choose video</button>
-          </div>
-          <input type="file" id="file-video" accept="video/*" hidden>
-        </div>
-        <div class="preview" id="preview" hidden></div>
-        <div class="field">
-          <label for="model-choice">Model</label>
-          <select class="input" id="model-choice">
-            <option value="cnn3d">3D CNN</option>
-            <option value="cnn_gru">CNN-GRU</option>
-          </select>
-        </div>
-        <div class="status" id="upload-status" role="status" aria-live="polite"></div>
-        <button class="btn" type="button" id="translate-upload" disabled><span data-icon="sparkle"></span>Translate</button>
-        <div class="result" id="upload-result" aria-live="polite"></div>
-      </div>
     </section>
 
     </main>

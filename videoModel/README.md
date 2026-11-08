@@ -7,7 +7,7 @@ video model: each seed item is the existing preprocessed 16-frame, 112×112 RGB
 retained clips; check the reported byte total before deleting raw data.
 
 Run commands from this folder. Install dependencies with `python -m pip install -r
-requirements.txt`; prepare source data using the root README workflow, then run
+requirements.txt`; supply the source datasets as described below, then run
 `python -m src.preprocess`. Training/evaluation artifacts are written to
 `datasets/processed/training_artifacts/`, and standalone checkpoints are written to
 `models/`. Prediction does not require the training dataset or processed arrays:
@@ -19,27 +19,45 @@ python -m src.predict_video "path\to\video.mp4" --model cnn3d
 For a full-length WLASL source video, pass `--wlasl-id <video-id>` so preprocessing
 uses the annotated signing interval.
 
-## Initial preparation
+## Initial preparation (automatic)
 
-1. Prepare and preprocess the dataset as described in the root project README.
-2. Create a seed from the processed manifest:
+Training prepares everything automatically on the first run, like the photo
+model. From `videoModel`, just run:
 
-   ```powershell
-   cd videoModel
-   python -m src.seed_dataset --per-class-train 20 --per-class-val 5 --per-class-test 5
-   ```
+```powershell
+python -m src.train_model --models cnn_gru,cnn3d
+```
 
-   This creates `datasets/processed/seed/manifest.csv`, `metadata.json`, and
-   compressed clips beneath `datasets/processed/seed/{train,val,test}/`. It samples
-   deterministically and round-robins across signer IDs. Increase or reduce the
-   three quotas to fit available storage. Train seeds are replay examples; validation
-   and test seeds are held-out anchors, not training samples.
+The first run, when no processed data exists yet, will:
 
-3. Train the initial model normally:
+1. Download WLASL metadata and the target-word clips. Read and accept the
+   WLASL C-UDA terms before running; clips whose YouTube source is gone are
+   listed in `datasets/WLASL/download_failures.csv`.
+2. Use the manual ASL Citizen folder `videoModel/ASL_Citizen` when present
+   (containing `splits/train.csv`, `splits/val.csv`, `splits/test.csv`, and
+   `videos/<video-id>-<GLOSS>.mp4`). Without a manual folder, the zip is
+   downloaded automatically.
+3. Preprocess everything into 16-frame, 112×112 RGB clips.
+4. Build the seed replay/evaluation set (20/5/5 per-class quotas).
+5. Train both models from scratch — previous checkpoints are ignored on this
+   first run.
 
-   ```powershell
-   python -m src.train_model --models cnn_gru,cnn3d
-   ```
+The `cnn_gru` model starts from a pretrained MobileNetV3-Small frame encoder.
+Its ImageNet weights (~10 MB) download automatically the first time the model
+is built; if the download fails, training continues with a from-scratch
+encoder and prints a warning.
+
+Later runs reuse the processed manifest and behave incrementally. The manual
+steps remain available:
+
+```powershell
+python -m src.download_data --confirm-wlasl-cuda
+python -m src.preprocess
+python -m src.seed_dataset --per-class-train 20 --per-class-val 5 --per-class-test 5
+```
+
+Add `--fresh` to any training command to deliberately ignore existing
+checkpoints.
 
 ## Add words or examples later
 
@@ -60,6 +78,54 @@ uses the annotated signing interval.
    clean retrain, pass `--fresh` (this does not delete the old checkpoint before a
    successful new model is written).
 
+## Download more examples for the existing 20 words
+
+The repository includes `download_popsign_targets.py`, which retrieves only exact
+matching PopSign sign archives instead of downloading the full dataset. From the
+`videoModel` folder, run:
+
+```powershell
+python download_popsign_targets.py
+```
+
+The default downloads the official `game/train` archives only and writes extracted
+videos beneath `datasets/external/popsign_v2_1/`. It shows matched and unmatched
+labels before downloading and asks you to type `DOWNLOAD`. To get all official
+splits for evaluation as well, run:
+
+```powershell
+python download_popsign_targets.py --splits train val test
+```
+
+The downloader uses the official [PopSign v2.1 dataset](https://signdata.cc.gatech.edu/view/datasets/popsign_v2_1/index.html)
+and its [per-sign download API](https://signdata.cc.gatech.edu/view/guides/downloading_popsign/index.html).
+PopSign is isolated ASL video, but its labels may denote a particular sign variant;
+review the sign and label mapping before merging it into an existing gloss class.
+
+Clips downloaded this way are picked up automatically: the next preprocessing
+run reads `datasets/external/popsign_*/download_manifest.csv` and adds the
+clips to their official splits. Run `download_popsign_targets.py` **before**
+your first training run so the automatic preparation includes them. To add
+them after training, rerun `python -m src.preprocess` (this rebuilds the whole
+manifest) and then train again; the incremental update path keeps the old
+vocabulary and initializes from the previous checkpoint.
+
+## How the models train
+
+- `cnn_gru`: pretrained MobileNetV3-Small encodes each frame, a bidirectional
+  GRU models the sequence, and temporal attention pools the frame features.
+  Phase 1 (default 8 epochs) trains the recurrent head with the backbone
+  frozen; phase 2 unfreezes the last backbone blocks and fine-tunes at
+  `--learning-rate × 0.1`. ImageNet mean/std normalization happens inside the
+  model, so dataset and inference code still feed plain `[0, 1]` RGB.
+- `cnn3d`: a compact residual 3D CNN trained from scratch.
+- Both models use class-weighted cross-entropy with label smoothing (0.1),
+  per-phase linear learning-rate warm-up followed by cosine decay, gradient
+  clipping, and early stopping on validation macro F1.
+- Train-time augmentation: random temporal sub-window resampling (signing
+  speed), horizontal mirror, shared random crop + resize, and brightness
+  jitter. Augmentation is disabled for validation and test.
+
 ## What an incremental run does
 
 - Merges the raw processed manifest and seed manifest by `(dataset, video_id, split)`;
@@ -67,9 +133,10 @@ uses the annotated signing interval.
   are gone. Validation and test seed anchors remain in their respective splits.
 - Initializes same-architecture layers from the previous checkpoint. Existing output
   rows are copied by gloss name, while new output rows keep their fresh initialization.
-- Uses class-weighted cross entropy over current train data. On retained seed examples
-  of old classes, it adds temperature-scaled KL distillation from the previous model.
-  New-class examples are not forced to imitate old-class outputs.
+- Uses class-weighted cross-entropy with label smoothing over current train data.
+  On retained seed examples of old classes, it adds temperature-scaled KL
+  distillation from the previous model. New-class examples are not forced to
+  imitate old-class outputs.
 - Evaluates the candidate on old-word validation anchors. The candidate is promoted
   to `models/<architecture>.pt` only when every old class has validation support and
   old-word macro recall drops by no more than `--old-class-recall-drop` (default 0.05).
@@ -92,28 +159,38 @@ python -m src.seed_dataset --help
 `--old-class-recall-drop` sets the validation acceptance limit. To allow deliberate
 vocabulary change, train as a fresh model and explicitly manage the old checkpoint.
 
-## Test predictions from the web app
+## Standalone Streamlit testing
 
-The Home page sends uploaded or camera-recorded video clips to `PHP/predict.php`,
-which runs the selected checkpoint in this folder. Raw datasets are not needed for
-prediction; the model checkpoints are tracked in Git.
-
-Install the Python requirements, set `PYTHON_EXECUTABLE` to the interpreter that has
-those requirements installed, then start PHP's development server from the repository
-root. For PowerShell:
+The video model can be tested independently of the website or PHP application. From
+the repository root in PowerShell, run:
 
 ```powershell
-python -m pip install -r videoModel/requirements.txt
-$env:PYTHON_EXECUTABLE = (Get-Command python).Source
-php -d upload_max_filesize=200M -d post_max_size=210M -S 127.0.0.1:8000
+python -m pip install -r ".\videoModel\requirements.txt"
+python -m streamlit run ".\videoModel\streamlit_app.py"
 ```
 
-Open `http://127.0.0.1:8000/PHP/home.php`. For macOS/Linux, use `python3` and set
-`PYTHON_EXECUTABLE="$(command -v python3)"` before starting the same PHP command.
-The PHP runtime must have `proc_open` enabled. When using Apache or another PHP
-server, set `upload_max_filesize` to at least `200M` and `post_max_size` to at least
-`210M` in its PHP configuration. The PHP directory's `.htaccess` selects `home.php`
-as its default page when Apache allows that override.
+Or change into the model folder first:
+
+```powershell
+Set-Location "D:\Metro\AI Project\ASLT\videoModel"
+python -m pip install -r ".\requirements.txt"
+python -m streamlit run ".\streamlit_app.py"
+```
+
+Quote paths that contain spaces. Use `-r` when installing a requirements file;
+without it, pip treats the file path as a package requirement.
+
+The app loads the selected `cnn_gru` or `cnn3d` checkpoint from `models/` and offers:
+
+- **Test a video clip:** upload a video and view its top word predictions. Optionally
+  provide a WLASL video ID to use the annotated signing interval for a full source clip.
+- **Live webcam:** start the camera to get predictions from a rolling window of 16
+  frames, refreshed every 8 incoming frames.
+
+The webcam must be permitted by the browser; camera access generally requires
+`localhost` or an HTTPS connection. Prediction uses the saved model checkpoints and
+does not require the training dataset. For command-line testing, the
+`python -m src.predict_video` command above remains available.
 
 Run the model's automated tests from `videoModel` with
 `python -m unittest discover -s tests`.

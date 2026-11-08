@@ -9,11 +9,28 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from src.config import ANNOTATION_FPS, ROOT, TARGET_WORDS, WLASL_METADATA, canonicalize_gloss
+from src.config import (
+    ANNOTATION_FPS,
+    FRAME_HEIGHT,
+    FRAME_WIDTH,
+    NUM_FRAMES,
+    ROOT,
+    TARGET_WORDS,
+    WLASL_METADATA,
+    canonicalize_gloss,
+)
 from src.model_architectures import build_model
 from src.preprocess import extract_frames
 
 CHECKPOINT_DIR = ROOT / "models"
+
+
+def frames_to_tensor(frames: np.ndarray) -> torch.Tensor:
+    expected_shape = (NUM_FRAMES, FRAME_HEIGHT, FRAME_WIDTH, 3)
+    if frames.shape != expected_shape:
+        raise ValueError(f"Unexpected video frame shape: {frames.shape}; expected {expected_shape}.")
+    tensor = torch.from_numpy(np.ascontiguousarray(frames))
+    return tensor.permute(0, 3, 1, 2).float().div_(255.0).unsqueeze(0)
 
 
 def load_wlasl_record(video_id: str, metadata_path: Path = WLASL_METADATA) -> dict:
@@ -41,9 +58,7 @@ def prepare_video(video_path: Path, wlasl_id: str | None = None) -> tuple[torch.
         else {"dataset": "custom", "frame_start": None, "frame_end": None, "annotation_fps": None}
     )
     frames = extract_frames(video_path, record)
-    tensor = torch.from_numpy(np.ascontiguousarray(frames))
-    tensor = tensor.permute(0, 3, 1, 2).float().div_(255.0).unsqueeze(0)
-    return tensor, record.get("gloss")
+    return frames_to_tensor(frames), record.get("gloss")
 
 
 def load_model(model_name: str, device: torch.device) -> tuple[torch.nn.Module, list[str]]:
