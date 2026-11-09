@@ -97,10 +97,16 @@ splits for evaluation as well, run:
 python download_popsign_targets.py --splits train val test
 ```
 
-The downloader uses the official [PopSign v2.1 dataset](https://signdata.cc.gatech.edu/view/datasets/popsign_v2_1/index.html)
-and its [per-sign download API](https://signdata.cc.gatech.edu/view/guides/downloading_popsign/index.html).
-PopSign is isolated ASL video, but its labels may denote a particular sign variant;
-review the sign and label mapping before merging it into an existing gloss class.
+The downloader uses the official [PopSign dataset](https://signdata.cc.gatech.edu/view/datasets/popsign_v1_0/index.html)
+and its [download guide](https://signdata.cc.gatech.edu/view/guides/downloading_popsign/index.html).
+Note: the server removed the PopSign v2.1 archives (its pages remain, but the tar
+files return 404); only `popsign_v1_0` is downloadable, at roughly 3 GB per sign
+for the train split (~60 GB for all 20 words) plus ~450 MB/sign per extra split.
+The script currently needs a v1.0 rewrite (sign slugs and the archive URL layout
+differ) before it can download that version — skip PopSign unless that space and
+time is acceptable. PopSign is isolated ASL video, but its labels may denote a
+particular sign variant; review the sign and label mapping before merging it
+into an existing gloss class.
 
 Clips downloaded this way are picked up automatically: the next preprocessing
 run reads `datasets/external/popsign_*/download_manifest.csv` and adds the
@@ -114,11 +120,15 @@ vocabulary and initializes from the previous checkpoint.
 
 - `cnn_gru`: pretrained MobileNetV3-Small encodes each frame, a bidirectional
   GRU models the sequence, and temporal attention pools the frame features.
-  Phase 1 (default 8 epochs) trains the recurrent head with the backbone
-  frozen; phase 2 unfreezes the last backbone blocks and fine-tunes at
-  `--learning-rate × 0.1`. ImageNet mean/std normalization happens inside the
-  model, so dataset and inference code still feed plain `[0, 1]` RGB.
-- `cnn3d`: a compact residual 3D CNN trained from scratch.
+- `cnn3d`: the same pretrained MobileNetV3-Small encodes each frame, and small
+  3D temporal convolutions pool the resulting 7×7 feature maps over time.
+- Each model trains in two phases: phase 1 (default 8 epochs) learns the
+  temporal head together with the pretrained encoder, then phase 2 fine-tunes
+  the last encoder blocks at `--learning-rate × 0.1`. ImageNet mean/std
+  normalization happens inside the models, so dataset and inference code still
+  feed plain `[0, 1]` RGB. A from-scratch 3D CNN was tried first and could not
+  learn from the small training set (its loss stayed at the uniform-prediction
+  level), which is why `cnn3d` also starts from pretrained features.
 - Both models use class-weighted cross-entropy with label smoothing (0.1),
   per-phase linear learning-rate warm-up followed by cosine decay, gradient
   clipping, and early stopping on validation macro F1.

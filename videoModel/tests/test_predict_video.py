@@ -82,7 +82,7 @@ class PredictVideoTests(unittest.TestCase):
     def test_load_model_uses_standalone_checkpoint_directory(self):
         with tempfile.TemporaryDirectory() as temporary:
             model_dir = Path(temporary)
-            source_model = build_model("cnn3d", 3)
+            source_model = build_model("cnn3d", 3, pretrained=False)
             torch.save(
                 {
                     "architecture": "cnn3d",

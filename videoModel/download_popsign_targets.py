@@ -20,6 +20,7 @@ import csv
 import html.parser
 import re
 import shutil
+import ssl
 import sys
 import tarfile
 import time
@@ -76,9 +77,34 @@ class DirectoryIndex(html.parser.HTMLParser):
             self.hrefs.append(href)
 
 
+def ssl_contexts() -> list[ssl.SSLContext]:
+    """Default CA context, then the certifi bundle for servers with incomplete chains."""
+    contexts = [ssl.create_default_context()]
+    try:
+        import certifi
+        contexts.append(ssl.create_default_context(cafile=certifi.where()))
+    except Exception:
+        pass
+    return contexts
+
+
+def urlopen_fallback(request: urllib.request.Request, timeout: int):
+    """urlopen that retries with certifi when the default chain fails verification."""
+    for context in ssl_contexts():
+        try:
+            return urllib.request.urlopen(request, timeout=timeout, context=context)
+        except urllib.error.URLError as error:
+            if not isinstance(error.reason, ssl.SSLCertVerificationError):
+                raise
+            print("Note: default certificate verification failed; retrying with the "
+                  "certifi CA bundle.", file=sys.stderr)
+            continue
+    raise urllib.error.URLError("Certificate verification failed with all available CA bundles.")
+
+
 def request_bytes(url: str, timeout: int = 60) -> bytes:
     request = urllib.request.Request(url, headers={"User-Agent": "ASLT-PopSign-target-downloader/1.0"})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    with urlopen_fallback(request, timeout) as response:
         return response.read()
 
 
@@ -129,7 +155,7 @@ def download(url: str, destination: Path, retries: int = 3) -> None:
     for attempt in range(1, retries + 1):
         try:
             request = urllib.request.Request(url, headers={"User-Agent": "ASLT-PopSign-target-downloader/1.0"})
-            with urllib.request.urlopen(request, timeout=120) as response, partial.open("wb") as output:
+            with urlopen_fallback(request, 120) as response, partial.open("wb") as output:
                 shutil.copyfileobj(response, output, length=1024 * 1024)
             if partial.stat().st_size == 0:
                 raise OSError("Server returned an empty archive.")
