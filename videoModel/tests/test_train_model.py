@@ -11,7 +11,7 @@ from src.train_model import FrameCNNGRU, ProcessedVideoDataset, VideoCNN3D, augm
 class ModelTrainingTests(unittest.TestCase):
     def test_video_models_return_class_logits(self):
         videos = torch.zeros((2, 16, 3, 112, 112))
-        for model in (FrameCNNGRU(3, pretrained=False), VideoCNN3D(3)):
+        for model in (FrameCNNGRU(3, pretrained=False), VideoCNN3D(3, pretrained=False)):
             model.eval()
             with torch.inference_mode():
                 logits = model(videos)

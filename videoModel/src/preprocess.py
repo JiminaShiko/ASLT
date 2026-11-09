@@ -5,10 +5,12 @@ import glob
 import hashlib
 import json
 import math
+import os
 from pathlib import Path, PurePosixPath
 
 import cv2
 import numpy as np
+import pandas as pd
 
 from src.config import (
     ANNOTATION_FPS,
@@ -132,8 +134,6 @@ def _asl_citizen_split_records() -> list[dict]:
 
 
 def _asl_citizen_metadata_records() -> list[dict]:
-    import pandas as pd
-
     if not ASL_CITIZEN_METADATA.is_file():
         raise FileNotFoundError(
             f"ASL Citizen selected metadata not found at {ASL_CITIZEN_METADATA}. "
@@ -278,7 +278,7 @@ def preprocess_record(record: dict) -> dict:
     temporary.replace(output_path)
     return {
         **base,
-        "source_path": str(video_path.relative_to(PROCESSED_DIR.parent)),
+        "source_path": os.path.relpath(video_path, PROCESSED_DIR.parent),
         "processed_path": str(output_path.relative_to(PROCESSED_DIR)),
         "frames": NUM_FRAMES,
         "height": FRAME_HEIGHT,
