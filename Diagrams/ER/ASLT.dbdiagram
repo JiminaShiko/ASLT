@@ -1,0 +1,100 @@
+{
+  "version": "3.0.0",
+  "darkMode": true,
+  "gridEnabling": false,
+  "currentViewName": null,
+  "defaultView": {
+    "detailLevel": "All",
+    "relationshipMode": "All",
+    "tablePositions": [
+      {
+        "name": "users",
+        "schemaName": "public",
+        "x": 1617,
+        "y": 12
+      },
+      {
+        "name": "otp",
+        "schemaName": "public",
+        "x": 2128,
+        "y": 12
+      },
+      {
+        "name": "login_history",
+        "schemaName": "public",
+        "x": 2128,
+        "y": 314
+      },
+      {
+        "name": "user_sessions",
+        "schemaName": "public",
+        "x": 2128,
+        "y": 584
+      },
+      {
+        "name": "translations",
+        "schemaName": "public",
+        "x": 2128,
+        "y": 950
+      },
+      {
+        "name": "model_accuracy",
+        "schemaName": "public",
+        "x": 337,
+        "y": 12
+      },
+      {
+        "name": "sign_materials",
+        "schemaName": "public",
+        "x": 12,
+        "y": 12
+      },
+      {
+        "name": "quizzes",
+        "schemaName": "public",
+        "x": 2128,
+        "y": 1348
+      },
+      {
+        "name": "quiz_questions",
+        "schemaName": "public",
+        "x": 2702.05,
+        "y": 12
+      },
+      {
+        "name": "quiz_results",
+        "schemaName": "public",
+        "x": 2702.05,
+        "y": 282
+      },
+      {
+        "name": "feedbacks",
+        "schemaName": "public",
+        "x": 2128,
+        "y": 1618
+      },
+      {
+        "name": "cursor_effects",
+        "schemaName": "public",
+        "x": 693,
+        "y": 12
+      },
+      {
+        "name": "user_settings",
+        "schemaName": "public",
+        "x": 1165.5264151615138,
+        "y": -142.34139102662039
+      },
+      {
+        "name": "search_history",
+        "schemaName": "public",
+        "x": 2128,
+        "y": 1952
+      }
+    ],
+    "tableGroupCollapseStates": [],
+    "stickyNoteLayouts": [],
+    "referencePaths": []
+  },
+  "views": {}
+}
