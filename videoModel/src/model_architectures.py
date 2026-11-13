@@ -59,59 +59,41 @@ class FrameCNNGRU(nn.Module):
         return self.head(context)
 
 
-class ResidualBlock3D(nn.Module):
-    """Bottleneck-free 3D residual block with an optional strided shortcut."""
-
-    def __init__(self, in_channels: int, out_channels: int, stride: int = 1):
-        super().__init__()
-        self.conv1 = nn.Conv3d(in_channels, out_channels, 3, stride=stride, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm3d(out_channels)
-        self.conv2 = nn.Conv3d(out_channels, out_channels, 3, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm3d(out_channels)
-        self.shortcut = (
-            nn.Identity()
-            if stride == 1 and in_channels == out_channels
-            else nn.Sequential(
-                nn.Conv3d(in_channels, out_channels, 1, stride=stride, bias=False),
-                nn.BatchNorm3d(out_channels),
-            )
-        )
-        self.relu = nn.ReLU(inplace=True)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        identity = self.shortcut(x)
-        out = self.relu(self.bn1(self.conv1(x)))
-        out = self.bn2(self.conv2(out))
-        return self.relu(out + identity)
-
-
 class VideoCNN3D(nn.Module):
-    """Residual 3D CNN over spatial and temporal dimensions."""
+    """Pretrained MobileNetV3-Small frame features plus small 3D temporal convolutions.
 
-    def __init__(self, num_classes: int):
+    A from-scratch 3D CNN cannot learn from a few hundred training clips; the
+    pretrained spatial backbone carries the appearance signal and only the
+    compact 3D head is learned from the sign data.
+    """
+
+    def __init__(self, num_classes: int, pretrained: bool = True):
         super().__init__()
-        self.features = nn.Sequential(
-            nn.Conv3d(3, 32, 3, padding=1, bias=False),
-            nn.BatchNorm3d(32),
+        self.backbone = _mobilenet_v3_small_features(pretrained)
+        self.temporal = nn.Sequential(
+            nn.Conv3d(576, 256, (3, 3, 3), padding=(1, 1, 1), bias=False),
+            nn.BatchNorm3d(256),
             nn.ReLU(inplace=True),
-            nn.MaxPool3d((1, 2, 2)),
-            ResidualBlock3D(32, 32),
-            ResidualBlock3D(32, 32),
-            ResidualBlock3D(32, 64, stride=(2, 2, 2)),
-            ResidualBlock3D(64, 64),
-            nn.BatchNorm3d(64),
+            nn.Conv3d(256, 128, (3, 3, 3), padding=(1, 1, 1), bias=False),
+            nn.BatchNorm3d(128),
             nn.ReLU(inplace=True),
             nn.AdaptiveAvgPool3d(1),
         )
-        self.head = nn.Sequential(nn.Flatten(), nn.Dropout(0.3), nn.Linear(64, num_classes))
+        self.head = nn.Sequential(nn.Flatten(), nn.Dropout(0.3), nn.Linear(128, num_classes))
+        self.register_buffer("mean", torch.tensor(IMAGENET_MEAN).view(1, 1, 3, 1, 1))
+        self.register_buffer("std", torch.tensor(IMAGENET_STD).view(1, 1, 3, 1, 1))
 
     def forward(self, videos: torch.Tensor) -> torch.Tensor:
-        return self.head(self.features(videos.permute(0, 2, 1, 3, 4)))
+        batch, frames, channels, height, width = videos.shape
+        normalized = (videos - self.mean) / self.std
+        features = self.backbone(normalized.reshape(batch * frames, channels, height, width))
+        features = features.reshape(batch, frames, *features.shape[1:]).permute(0, 2, 1, 3, 4)
+        return self.head(self.temporal(features))
 
 
 def build_model(name: str, class_count: int, pretrained: bool = True) -> nn.Module:
     if name == "cnn_gru":
         return FrameCNNGRU(class_count, pretrained=pretrained)
     if name == "cnn3d":
-        return VideoCNN3D(class_count)
+        return VideoCNN3D(class_count, pretrained=pretrained)
     raise ValueError(f"Unknown model: {name}")

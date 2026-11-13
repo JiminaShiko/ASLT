@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Already signed in? Go straight to the app.
   if (A.getSession() && location.search.indexOf('switch') === -1) {
-    location.replace('home.php');
+    location.replace('home.html');
     return;
   }
 
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   document.getElementById('guest').addEventListener('click', function () {
     A.setSession({ name: 'Guest', email: '', guest: true });
-    location.href = 'home.php ';
+    location.href = 'home.html';
   });
 
   document.getElementById('auth-form').addEventListener('submit', function (e) {
@@ -53,11 +53,11 @@ document.addEventListener('DOMContentLoaded', function () {
         users[email] = { name: name, hash: h };
         A.write('asl_users', users);
         A.setSession({ name: name, email: email });
-        location.href = 'home.php ';
+        location.href = 'home.html';
       } else {
         if (!users[email] || users[email].hash !== h) { err.textContent = 'Email or password is not correct.'; return; }
         A.setSession({ name: users[email].name, email: email });
-        location.href = 'home.php';
+        location.href = 'home.html';
       }
     });
   });

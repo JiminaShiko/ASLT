@@ -91,32 +91,48 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /* ---------- Words ---------- */
-  var wordTabs = $('word-tabs');
+  var wgrid = $('wgrid');
   var wordDetail = $('word-detail');
-  var wordBtns = [];
+  var tileByWord = {};
 
-  WORDS.forEach(function (w, idx) {
+  function markWordTile(id) {
+    var tile = tileByWord[id];
+    if (tile && !tile.querySelector('.done')) {
+      var d = document.createElement('span');
+      d.className = 'done';
+      d.innerHTML = A.icon('check', 14);
+      tile.appendChild(d);
+    }
+  }
+
+  WORDS.forEach(function (w) {
     var b = document.createElement('button');
     b.type = 'button';
-    b.setAttribute('role', 'tab');
-    b.textContent = w.label;
-    b.addEventListener('click', function () { showWord(idx, true); });
-    wordTabs.appendChild(b);
-    wordBtns.push(b);
+    b.className = 'atile wtile';
+    b.setAttribute('aria-label', 'Word ' + w.label);
+    b.appendChild(A.imgBox('signs/words/' + w.id + '.png', w.label, 'ASL sign for ' + w.label));
+    var t = document.createElement('div');
+    t.className = 'letter word'; t.textContent = w.label;
+    b.appendChild(t);
+    tileByWord[w.id] = b;
+    if (A.learned.has('w:' + w.id)) { markWordTile(w.id); }
+    b.addEventListener('click', function () { showWord(w); });
+    wgrid.appendChild(b);
   });
 
-  function showWord(idx, mark) {
-    var w = WORDS[idx];
-    setTabs(wordBtns, wordBtns[idx]);
+  function showWord(w) {
+    Object.keys(tileByWord).forEach(function (k) { tileByWord[k].classList.toggle('sel', k === w.id); });
+    wordDetail.hidden = false;
     wordDetail.innerHTML = '';
     wordDetail.appendChild(A.imgBox('signs/words/' + w.id + '.png', w.label, 'ASL sign for ' + w.label));
     var txt = document.createElement('div');
     txt.className = 'txt';
     txt.innerHTML = '<h3>' + A.esc(w.label) + '</h3><p>' + A.esc(w.note) + '</p>';
     wordDetail.appendChild(txt);
-    if (mark) { A.learned.mark('w:' + w.id); }
+    A.learned.mark('w:' + w.id);
+    markWordTile(w.id);
+    wordDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
-  showWord(0, false);
 
   /* ---------- Quiz ---------- */
   var QUESTIONS = [];

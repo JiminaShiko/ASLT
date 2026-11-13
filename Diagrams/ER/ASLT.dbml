@@ -1,0 +1,153 @@
+Project ASLT {
+  database_type: 'MySQL'
+}
+
+Table users {
+  user_id int [pk, increment]
+  username varchar(100) [unique, not null]
+  email varchar(255) [unique, not null]
+  password_hash varchar(255) [not null]
+  full_name varchar(150)
+  profile_photo varchar(500)
+  role varchar(20) [not null, default: 'user']
+  status varchar(20) [not null, default: 'pending']
+  created_at datetime
+  updated_at datetime
+}
+
+Table otp {
+  otp_id int [pk, increment]
+  user_id int [not null]
+  otp_code varchar(10) [not null]
+  purpose varchar(30) [not null]
+  expires_at datetime [not null]
+  is_verified boolean [default: false]
+  created_at datetime
+}
+
+Table login_history {
+  login_id int [pk, increment]
+  user_id int [not null]
+  login_time datetime
+  login_status varchar(20) [not null]
+  device_info varchar(255)
+  ip_address varchar(45)
+}
+
+Table user_sessions {
+  session_id int [pk, increment]
+  user_id int [not null]
+  refresh_token_hash varchar(255) [unique, not null]
+  device_name varchar(150)
+  platform varchar(30) [not null]
+  created_at datetime
+  expires_at datetime [not null]
+  last_seen_at datetime
+  revoked_at datetime
+}
+
+Table translations {
+  translation_id int [pk, increment]
+  user_id int [not null]
+  mode varchar(30) [not null]
+  input_type varchar(30) [not null]
+  input_file_path varchar(500)
+  input_text text
+  predicted_text text
+  result_type varchar(20)
+  confidence_score decimal(5,2)
+  created_at datetime
+}
+
+Table model_accuracy {
+  accuracy_id int [pk, increment]
+  model_name varchar(150) [not null]
+  model_version varchar(50)
+  total_samples int
+  correct_predictions int
+  accuracy_percentage decimal(5,2)
+  evaluated_at datetime
+}
+
+Table sign_materials {
+  material_id int [pk, increment]
+  category varchar(30) [not null]
+  sign_label varchar(100) [not null]
+  image_path varchar(500)
+  explanation text
+  created_at datetime
+}
+
+Table quizzes {
+  quiz_id int [pk, increment]
+  created_by int [not null]
+  title varchar(150) [not null]
+  description text
+  status varchar(20) [default: 'active']
+  created_at datetime
+}
+
+Table quiz_questions {
+  question_id int [pk, increment]
+  quiz_id int [not null]
+  question_text text
+  image_path varchar(500)
+  correct_answer varchar(255) [not null]
+  options json
+}
+
+Table quiz_results {
+  result_id int [pk, increment]
+  quiz_id int [not null]
+  user_id int [not null]
+  score int
+  total_questions int
+  completed_at datetime
+}
+
+Table feedbacks {
+  feedback_id int [pk, increment]
+  user_id int [not null]
+  message text
+  rating_score int [not null]
+  status varchar(20) [default: 'pending']
+  admin_reply text
+  created_at datetime
+  updated_at datetime
+}
+
+Table cursor_effects {
+  effect_id int [pk, increment]
+  effect_name varchar(100) [not null]
+  effect_path varchar(500)
+  status varchar(20) [default: 'active']
+  created_at datetime
+}
+
+Table user_settings {
+  setting_id int [pk, increment]
+  user_id int [unique, not null]
+  effect_id int
+  updated_at datetime
+}
+
+Table search_history {
+  search_id int [pk, increment]
+  admin_id int [not null]
+  search_keyword varchar(255)
+  search_type varchar(50)
+  searched_at datetime
+}
+
+Ref: otp.user_id > users.user_id
+Ref: login_history.user_id > users.user_id
+Ref: user_sessions.user_id > users.user_id
+Ref: translations.user_id > users.user_id
+Ref: quizzes.created_by > users.user_id
+Ref: quiz_questions.quiz_id > quizzes.quiz_id
+Ref: quiz_results.quiz_id > quizzes.quiz_id
+Ref: quiz_results.user_id > users.user_id
+Ref: feedbacks.user_id > users.user_id
+Ref: user_settings.user_id - users.user_id
+Ref: user_settings.effect_id > cursor_effects.effect_id
+Ref: search_history.admin_id > users.user_id

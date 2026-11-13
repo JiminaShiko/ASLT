@@ -197,7 +197,7 @@ def initialize_from_checkpoint(model: nn.Module, checkpoint: dict, old_classes: 
 
 
 def _backbone_parameters(model: nn.Module, name: str):
-    if name == "cnn_gru":
+    if name in ("cnn_gru", "cnn3d"):
         return model.backbone.parameters()
     return ()
 
@@ -208,7 +208,7 @@ def _set_backbone_trainable(model: nn.Module, name: str, trainable: bool) -> Non
 
 
 def _unfreeze_backbone_tail(model: nn.Module, name: str) -> None:
-    if name != "cnn_gru":
+    if name not in ("cnn_gru", "cnn3d"):
         return
     for block in list(model.backbone.children())[-BACKBONE_TAIL_BLOCKS:]:
         for parameter in block.parameters():
@@ -317,7 +317,7 @@ def train_model(name: str, class_names: list[str], splits: dict[str, list[dict[s
     weights = torch.tensor([len(splits["train"]) / (len(class_names) * counts[label]) for label in class_names],
                            dtype=torch.float32, device=device)
     loss_fn = nn.CrossEntropyLoss(weight=weights, label_smoothing=LABEL_SMOOTHING)
-    pretrained_backbone = name == "cnn_gru"
+    pretrained_backbone = name in ("cnn_gru", "cnn3d")
     if pretrained_backbone:
         phase1_epochs = min(EPOCHS_PHASE1, epochs)
         phases = [(1, phase1_epochs), (2, epochs - phase1_epochs)]
@@ -395,7 +395,7 @@ def train_model(name: str, class_names: list[str], splits: dict[str, list[dict[s
         "class_names": class_names,
         "input_shape": [NUM_FRAMES, FRAME_HEIGHT, FRAME_WIDTH, 3],
         "best_epoch": best_epoch,
-        "normalization": "uint8 RGB scaled to float32 [0, 1]; cnn_gru applies ImageNet mean/std internally",
+        "normalization": "uint8 RGB scaled to float32 [0, 1]; both models apply ImageNet mean/std internally",
         "backbone": {"encoder": "mobilenet_v3_small" if pretrained_backbone else "scratch",
                      "pretrained": pretrained_backbone},
         "phase1_epochs": phase1_epochs,
@@ -489,13 +489,14 @@ def write_artifacts(output: Path, results: dict[str, dict], histories: dict[str,
              Paragraph(f"Official splits: {train_count} train, {val_count} validation, "
                        f"{sum(results[names[0]]['test_support'].values())} test records.", styles["BodyText"]),
              Spacer(1, 8),
-             Paragraph("The comparison uses a MobileNetV3-Small frame encoder with a bidirectional GRU "
-                       "and temporal attention, and a residual 3D CNN. Frames are scaled to [0, 1] "
-                       "(the GRU model applies ImageNet normalization internally); class-weighted "
-                       "cross-entropy with label smoothing is used. The GRU model trains in two phases: "
-                       "the pretrained encoder stays frozen while the recurrent head learns, then its "
-                       "last blocks are fine-tuned at a lower learning rate. Checkpoints are selected by "
-                       "validation macro F1 and evaluated on the held-out test split.",
+             Paragraph("Both models share a pretrained MobileNetV3-Small frame encoder. The GRU model "
+                       "adds a bidirectional GRU with temporal attention; the 3D CNN model adds small "
+                       "3D temporal convolutions on top of the encoder's feature maps. Frames are scaled "
+                       "to [0, 1] and normalized with ImageNet statistics inside the models; class-weighted "
+                       "cross-entropy with label smoothing is used. Each model trains in two phases: the "
+                       "pretrained encoder learns alongside the head first, then its last blocks are "
+                       "fine-tuned at a lower learning rate. Checkpoints are selected by validation macro "
+                       "F1 and evaluated on the held-out test split.",
                        styles["BodyText"]), Spacer(1, 10)]
     table_data = [["Model", "Accuracy", "Macro P", "Macro R", "Macro F1", "Weighted F1", "Epoch"]]
     for name, result in results.items():

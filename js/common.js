@@ -28,6 +28,8 @@
     video: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/>',
     send: '<path d="M21 3L3 11l7 3 3 7z"/><path d="M10 14l11-11"/>',
     alert: '<path d="M12 3l10 18H2z"/><path d="M12 10v5"/><path d="M12 18v.5"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>',
     eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'
   };
 
@@ -93,11 +95,26 @@
   };
 
   var WORDS = [
-    { id: 'mom', label: 'Mom', note: 'Open your hand with fingers spread. Tap your thumb on your chin.' },
-    { id: 'dad', label: 'Dad', note: 'Open your hand with fingers spread. Tap your thumb on your forehead.' },
+    { id: 'eat', label: 'Eat', note: 'Bunch your fingertips together with your thumb. Tap them to your mouth.' },
+    { id: 'family', label: 'Family', note: 'Make F hands with both hands and touch them together. Circle them outward until your little fingers meet.' },
+    { id: 'friend', label: 'Friend', note: 'Hook your index fingers together. Then flip your hands and hook them again the other way.' },
+    { id: 'good', label: 'Good', note: 'Touch your flat hand to your chin. Move it down onto your other palm.' },
     { id: 'hello', label: 'Hello', note: 'Hold a flat hand at your forehead like a salute, then move it away.' },
-    { id: 'thanks', label: 'Thank you', note: 'Touch your fingertips to your chin, then move your hand forward and down.' },
-    { id: 'help', label: 'Help', note: 'Make a fist with your thumb up and rest it on your other open palm. Lift both up.' }
+    { id: 'help', label: 'Help', note: 'Make a fist with your thumb up and rest it on your other open palm. Lift both up.' },
+    { id: 'name', label: 'Name', note: 'Make H hands with your index and middle fingers together. Tap one across the other twice.' },
+    { id: 'sad', label: 'Sad', note: 'Hold both open hands in front of your face. Drop them down slowly with a sad face.' },
+    { id: 'school', label: 'School', note: 'Clap your flat hands together twice.' },
+    { id: 'drink', label: 'Drink', note: 'Shape your hand like you are holding a cup. Tip it toward your mouth.' },
+    { id: 'thanks', label: 'Thanks', note: 'Touch your fingertips to your chin, then move your hand forward and down.' },
+    { id: 'love', label: 'Love', note: 'Cross both fists over your chest, like a hug.' },
+    { id: 'bye', label: 'Bye', note: 'Hold up an open hand and wave it by bending your fingers down and up.' },
+    { id: 'sorry', label: 'Sorry', note: 'Make a fist and rub it in a circle on your chest.' },
+    { id: 'yes', label: 'Yes', note: 'Make a fist and nod it up and down, like a head nodding.' },
+    { id: 'no', label: 'No', note: 'Tap your index and middle fingers against your thumb, like a beak closing.' },
+    { id: 'happy', label: 'Happy', note: 'Brush your flat hand upward on your chest twice, with a smile.' },
+    { id: 'please', label: 'Please', note: 'Rub your flat hand in a circle on your chest.' },
+    { id: 'bad', label: 'Bad', note: 'Touch your fingertips to your chin. Flip your hand down and away, palm down.' },
+    { id: 'home', label: 'Home', note: 'Bunch your fingertips and touch them near your mouth. Then touch them near your cheek.' }
   ];
 
   /* ---------- Stores ---------- */
@@ -129,7 +146,11 @@
   };
 
   var learned = {
-    list: function () { return read('asl_learned', []); },
+    list: function () {
+      var valid = {};
+      WORDS.forEach(function (w) { valid['w:' + w.id] = true; });
+      return read('asl_learned', []).filter(function (id) { return /^[A-Z]$/.test(id) || valid[id]; });
+    },
     has: function (id) { return read('asl_learned', []).indexOf(id) !== -1; },
     mark: function (id) {
       var l = read('asl_learned', []);
@@ -157,7 +178,7 @@
   function setSession(s) { write('asl_session', s); }
   function logout() {
     try { localStorage.removeItem('asl_session'); } catch (e) {}
-    location.href = 'login.php';
+    location.href = 'login.html';
   }
   function getProfile() {
     var s = getSession() || {};
@@ -188,7 +209,7 @@
     img.loading = 'lazy';
     img.src = src;
     img.onerror = function () {
-      box.innerHTML = '<div class="fb">' + esc(label) + '<small>add image</small></div>';
+      box.innerHTML = '<div class="fb' + (String(label).length > 4 ? ' long' : '') + '">' + esc(label) + '<small>add image</small></div>';
     };
     box.appendChild(img);
     return box;
@@ -208,55 +229,115 @@
     toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2600);
   }
 
-  /* ---------- Layout (sidebar + top bar) ---------- */
+
+  /* ---------- Shared history list (used by Home and History pages) ---------- */
+  var KIND_ICON = { 'Sign to Text': 'camera', 'Text to Sign': 'type', 'Upload Media': 'upload' };
+
+  function fmtTime(t) {
+    return new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function historyItemHtml(h) {
+    return '<div class="hitem' + (h.saved ? ' saved' : '') + '">' +
+      '<div class="kind">' + icon(KIND_ICON[h.kind] || 'chat', 22) + '</div>' +
+      '<div class="body"><b>' + esc(h.text) + '</b><small>' + esc(h.kind) + ', ' + fmtTime(h.t) + '</small></div>' +
+      '<div class="acts">' +
+      '<button class="icon-btn" type="button" data-act="save" data-id="' + h.id + '" aria-pressed="' + (h.saved ? 'true' : 'false') + '" aria-label="' + (h.saved ? 'Unsave' : 'Save') + ' ' + esc(h.text) + '">' + icon('bookmark', 20) + '</button>' +
+      '<button class="icon-btn" type="button" data-act="del" data-id="' + h.id + '" aria-label="Delete ' + esc(h.text) + '">' + icon('trash', 20) + '</button>' +
+      '</div></div>';
+  }
+
+  // Save / delete buttons inside a history list
+  function bindHistoryActions(listEl) {
+    listEl.addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-act]');
+      if (!b) { return; }
+      if (b.dataset.act === 'save') { history.toggleSave(b.dataset.id); }
+      if (b.dataset.act === 'del') { history.remove(b.dataset.id); toast('Record deleted'); }
+    });
+  }
+
+  /* ---------- Theme (light / dark) ---------- */
+  function getTheme() {
+    var t = read('asl_theme', null);
+    if (t === 'light' || t === 'dark') { return t; }
+    return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    document.querySelectorAll('.theme-toggle').forEach(function (b) {
+      var dark = t === 'dark';
+      b.innerHTML = icon(dark ? 'sun' : 'moon', 22);
+      b.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      b.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+      b.title = dark ? 'Light mode' : 'Dark mode';
+    });
+  }
+  function toggleTheme() {
+    var next = getTheme() === 'dark' ? 'light' : 'dark';
+    write('asl_theme', next);
+    document.documentElement.classList.add('theme-anim');
+    applyTheme(next);
+    setTimeout(function () { document.documentElement.classList.remove('theme-anim'); }, 400);
+  }
+  function themeButton(extra) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'icon-btn theme-toggle' + (extra ? ' ' + extra : '');
+    b.addEventListener('click', toggleTheme);
+    return b;
+  }
+
+  /* ---------- Layout (top navigation bar) ---------- */
   var NAV = [
-    { key: 'home', href: 'home.php', icon: 'home', label: 'Home' },
-    { key: 'translate', href: 'translation.php', icon: 'chat', label: 'Translation' },
-    { key: 'learning', href: 'learning.php', icon: 'book', label: 'Learning' },
-    { key: 'history', href: 'home.php#history', icon: 'clock', label: 'History' },
-    { key: 'feedback', href: 'feedback.php', icon: 'star', label: 'Feedback' },
-    { key: 'profile', href: 'profile.php', icon: 'user', label: 'Profile Settings' }
+    { key: 'home', href: 'home.html', icon: 'home', label: 'Home' },
+    { key: 'translate', href: 'translation.html', icon: 'chat', label: 'Translation' },
+    { key: 'learning', href: 'learning.html', icon: 'book', label: 'Learning' },
+    { key: 'history', href: 'history.html', icon: 'clock', label: 'History' },
+    { key: 'feedback', href: 'feedback.html', icon: 'star', label: 'Feedback' },
+    { key: 'profile', href: 'profile.html', icon: 'user', label: 'Profile' }
   ];
 
   function buildShell(page) {
-    var side = document.getElementById('sidebar');
     var top = document.getElementById('topbar');
-    if (!side || !top) { return; }
+    if (!top) { return; }
     var p = getProfile();
     var initial = (p.name || 'G').trim().charAt(0).toUpperCase();
 
     var links = NAV.map(function (n) {
       return '<a class="nav-item" href="' + n.href + '"' + (n.key === page ? ' aria-current="page"' : '') + '>' +
-        icon(n.icon, 22) + '<span>' + n.label + '</span></a>';
+        icon(n.icon, 20) + '<span>' + n.label + '</span></a>';
     }).join('');
 
-    side.innerHTML =
-      '<a class="brand" href="home.php"><span class="brand-mark">' + icon('hand', 26) + '</span>' +
-      '<span class="brand-name">ASL Translator<small>Sign language, made visual</small></span></a>' +
-      '<nav aria-label="Main menu" style="display:flex;flex-direction:column;gap:4px">' + links + '</nav>' +
-      '<div class="spacer"></div>' +
-      '<div class="user-card"><div class="avatar" aria-hidden="true">' + esc(initial) + '</div>' +
-      '<div class="who"><b>' + esc(p.name) + '</b><span>' + esc(p.level) + '</span></div>' +
-      '<button class="icon-btn" id="logout-btn" type="button" aria-label="Log out">' + icon('logout', 22) + '</button></div>';
-
     top.innerHTML =
-      '<button class="icon-btn menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false">' + icon('menu', 22) + '</button>' +
-      '<div class="title">' + esc(document.body.dataset.title || '') + '</div>' +
+      '<div class="topbar-in">' +
+      '<a class="brand" href="home.html"><span class="brand-mark">' + icon('hand', 24) + '</span>' +
+      '<span class="brand-name">ASL Translator</span></a>' +
+      '<nav class="topnav" id="topnav" aria-label="Main menu">' + links + '</nav>' +
+      '<div class="top-actions">' +
+      '<button class="icon-btn theme-toggle" id="theme-toggle" type="button"></button>' +
       '<button class="icon-btn" id="fx-toggle" type="button" aria-pressed="true" aria-label="Cursor effects" title="Cursor effects">' + icon('sparkle', 22) + '</button>' +
-      '<a class="icon-btn" href="profile.php" aria-label="Profile">' + icon('user', 22) + '</a>';
+      '<a class="avatar" href="profile.html" id="top-avatar" aria-label="Profile: ' + esc(p.name) + '" title="' + esc(p.name) + '">' + esc(initial) + '</a>' +
+      '<button class="icon-btn" id="logout-btn" type="button" aria-label="Log out" title="Log out">' + icon('logout', 22) + '</button>' +
+      '<button class="icon-btn menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false">' + icon('menu', 22) + '</button>' +
+      '</div></div>';
 
-    var scrim = document.getElementById('scrim');
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    var nav = document.getElementById('topnav');
     var menuBtn = document.getElementById('menu-btn');
     function setMenu(open) {
-      side.classList.toggle('open', open);
-      if (scrim) { scrim.classList.toggle('show', open); }
+      nav.classList.toggle('open', open);
       menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
     }
-    menuBtn.addEventListener('click', function () { setMenu(!side.classList.contains('open')); });
-    if (scrim) { scrim.addEventListener('click', function () { setMenu(false); }); }
-    side.addEventListener('click', function (e) { if (e.target.closest('a.nav-item')) { setMenu(false); } });
+    menuBtn.addEventListener('click', function () { setMenu(!nav.classList.contains('open')); });
+    nav.addEventListener('click', function (e) { if (e.target.closest('a.nav-item')) { setMenu(false); } });
+    document.addEventListener('click', function (e) { if (!top.contains(e.target)) { setMenu(false); } });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { setMenu(false); } });
     document.getElementById('logout-btn').addEventListener('click', logout);
+
+    window.addEventListener('scroll', function () {
+      top.classList.toggle('scrolled', window.scrollY > 8);
+    }, { passive: true });
   }
 
   /* ---------- Cursor effects ---------- */
@@ -346,7 +427,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     var page = document.body.dataset.page || '';
     if (page !== 'login' && !getSession()) {
-      location.replace('login.php');
+      location.replace('login.html');
       return;
     }
     if (page !== 'login') {
@@ -354,7 +435,17 @@
       skip.className = 'skip'; skip.href = '#main'; skip.textContent = 'Skip to content';
       document.body.insertBefore(skip, document.body.firstChild);
       buildShell(page);
+
+      var foot = document.createElement('footer');
+      foot.className = 'footer';
+      foot.innerHTML = '<span><b>ASL Translator</b> &middot; Sign language, made visual</span>' +
+        '<span>Accessible by design. Your data stays in this browser.</span>';
+      var wrap = document.querySelector('.content');
+      if (wrap) { wrap.appendChild(foot); }
+    } else {
+      document.body.appendChild(themeButton('theme-fab'));
     }
+    applyTheme(getTheme());
     paintIcons();
     initFx();
     document.dispatchEvent(new CustomEvent('asl:ready'));
@@ -365,6 +456,7 @@
     history: history, learned: learned, quiz: quiz,
     LETTER_NOTES: LETTER_NOTES, WORDS: WORDS,
     getSession: getSession, setSession: setSession, getProfile: getProfile, logout: logout, hash: hash,
-    imgBox: imgBox, toast: toast
+    imgBox: imgBox, toast: toast, getTheme: getTheme, toggleTheme: toggleTheme,
+    historyItemHtml: historyItemHtml, bindHistoryActions: bindHistoryActions
   };
 })();
