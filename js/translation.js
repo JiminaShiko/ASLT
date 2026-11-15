@@ -15,16 +15,16 @@ document.addEventListener('DOMContentLoaded', function () {
         body: JSON.stringify(payload || {})
       });
     } catch (err) {
-      throw new Error('Could not reach the photo model. Start it with "python api.py" in the photo model folder.');
+      throw new Error('Could not reach the ASL model API. Start it with "python api.py" in the photo model folder.');
     }
     var result;
     try {
       result = await response.json();
     } catch (err) {
-      throw new Error('The photo model returned an invalid response.');
+      throw new Error('The ASL model API returned an invalid response.');
     }
     if (!response.ok) {
-      throw new Error(result.error || 'The photo model could not make a prediction.');
+      throw new Error(result.error || 'The ASL model could not make a prediction.');
     }
     return result;
   }
@@ -132,8 +132,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var liveText = document.getElementById('live-text');
   var liveTop = document.getElementById('live-top');
   var clearLiveBtn = document.getElementById('clear-live');
-  var liveDebugBox = document.getElementById('live-debug-box');
-  var liveDebug = document.getElementById('live-debug');
   var stream = null;
   var liveSession = null;
   var liveActive = false;
@@ -196,10 +194,6 @@ document.addEventListener('DOMContentLoaded', function () {
       empty.className = 'muted';
       empty.textContent = 'Waiting for a sign.';
       liveTop.appendChild(empty);
-    }
-    if (frame.processed_image) {
-      liveDebug.src = frame.processed_image;
-      liveDebugBox.hidden = false;
     }
   }
 
@@ -269,7 +263,6 @@ document.addEventListener('DOMContentLoaded', function () {
       captureLabel.textContent = 'Stop live translation';
       clearLiveBtn.disabled = false;
       liveText.value = '';
-      liveDebugBox.hidden = true;
       liveTop.innerHTML = '<li class="muted">Waiting for a sign.</li>';
       renderResult(signResult, 'idle', 'Waiting for a sign', 'Show your hand inside the green box.');
       setCamStatus('Live translation is on. Hold each sign steady inside the green box.', false);

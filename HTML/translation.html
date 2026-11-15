@@ -63,7 +63,7 @@
         <button type="button" role="tab" id="tab-text" aria-selected="false" aria-controls="panel-text"><span data-icon="type"></span>Text to Sign</button>
         <button type="button" role="tab" id="tab-upload" aria-selected="false" aria-controls="panel-upload"><span data-icon="upload"></span>Upload Media</button>
       </div>
-      <p class="muted" style="margin-top:12px">Predictions use the local ASL model (Flask). Start it with <code>python api.py</code> from the photo model folder. Hold each sign steady inside the green box; remove your hand briefly to repeat a letter.</p>
+      <p class="muted" style="margin-top:12px">Predictions use the local landmark model (Flask). Start it with <code>python api.py</code> from the photo model folder. It recognizes static letters A-I and K-Y; J, Z, space, and delete are not supported. Hold each sign steady inside the green box; remove your hand briefly to repeat a letter.</p>
 
       <!-- Sign to Text -->
       <div class="panel" id="panel-sign" role="tabpanel" aria-labelledby="tab-sign">
@@ -99,10 +99,6 @@
           <textarea class="textarea" id="live-text" rows="3" readonly placeholder="Your translated letters will appear here."></textarea>
         </div>
         <button class="btn btn-ghost" type="button" id="clear-live" disabled><span data-icon="x"></span>Clear text</button>
-        <div>
-          <div class="label">Model input (96 × 96)</div>
-          <div class="preview" id="live-debug-box" hidden><img id="live-debug" alt="Processed camera frame used by the model"></div>
-        </div>
       </div>
 
       <!-- Text to Sign -->
