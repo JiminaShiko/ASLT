@@ -9,3 +9,6 @@ opencv-python
 streamlit-webrtc
 av
 mediapipe
+
+flask
+flask-cors
