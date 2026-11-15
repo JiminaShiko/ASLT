@@ -1,0 +1,140 @@
+{
+  "labels": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y"
+  ],
+  "normalization": {
+    "origin_landmark": 0,
+    "scale_landmarks": [
+      0,
+      9
+    ],
+    "scale_eps": 1e-06,
+    "canonical_handedness": "Right",
+    "mirror_left_to_right": true
+  },
+  "features": {
+    "blocks": [
+      "xy",
+      "tip_dists",
+      "curl",
+      "thumb"
+    ],
+    "dim": 71,
+    "coord_space": "2d_image_plane",
+    "fingertips": [
+      4,
+      8,
+      12,
+      16,
+      20
+    ],
+    "finger_chains": [
+      [
+        1,
+        2,
+        3,
+        4
+      ],
+      [
+        5,
+        6,
+        7,
+        8
+      ],
+      [
+        9,
+        10,
+        11,
+        12
+      ],
+      [
+        13,
+        14,
+        15,
+        16
+      ],
+      [
+        17,
+        18,
+        19,
+        20
+      ]
+    ]
+  },
+  "mediapipe": {
+    "num_hands": 1,
+    "min_hand_detection_confidence": 0.5,
+    "min_hand_presence_confidence": 0.5,
+    "running_mode_static": "vision.RunningMode.IMAGE",
+    "running_mode_live": "vision.RunningMode.VIDEO",
+    "api": "mediapipe.tasks.python.vision.HandLandmarker"
+  },
+  "profile": "all",
+  "profile_note": "every signer trained on equally, nothing down-weighted",
+  "model": {
+    "type": "mlp",
+    "in_dim": 71,
+    "hidden": [
+      128,
+      64
+    ],
+    "dropout": 0.25,
+    "n_classes": 24
+  },
+  "trained_at": "2026-11-15 13:43:46",
+  "cross_dataset_pooled_accuracy": 0.6697831790060396,
+  "cross_dataset_macro_accuracy": 0.759021841706001,
+  "cross_dataset_pooled_accuracy_round1_subset": 0.6916,
+  "cross_dataset_headline": "pooled",
+  "cross_dataset_small_holdouts": [
+    "danrasband"
+  ],
+  "cross_dataset_per_holdout": {
+    "danrasband": 0.9438,
+    "grassknoted": 0.7948,
+    "massey": 0.5384
+  },
+  "optimistic_blocksplit_accuracy": {
+    "danrasband": 0.8261,
+    "grassknoted": 0.9596,
+    "massey": 0.9632
+  },
+  "held_out_group_accuracy": {
+    "massey": 0.8567
+  },
+  "final_model_optimistic_val_accuracy": 0.9635,
+  "sample_counts_per_dataset": {
+    "danrasband": 712,
+    "grassknoted": 61562,
+    "massey": 60085
+  },
+  "landmark_cache_version": 2,
+  "n_training_rows": 122359,
+  "style_weight": 1.0,
+  "divergent_cells": [],
+  "seed": 0,
+  "reproduce_command": "python src/train.py --profile all --dump-preds reports/oof_all.csv"
+}

@@ -1,0 +1,30 @@
+# ASL landmark recognizer - pinned dependencies.
+#
+# IMPORTANT DEVIATION FROM THE ORIGINAL BRIEF (numpy<2):
+#   This machine only has Python 3.13 / 3.14 installed (no 3.10/3.11).
+#   numpy 1.26.x publishes no cp313 wheels, and the installed
+#   mediapipe 1.2.2 / opencv 5.0.0.93 / torch 2.14.1 stack requires numpy>=2.
+#   So numpy<2 is not installable here. These pins are the set that was
+#   actually resolved, installed and smoke-tested together on this machine.
+#
+# Also note: mediapipe>=1.0 removed the legacy `mp.solutions.hands` API.
+# We use the Tasks API (HandLandmarker), which is the supported equivalent.
+
+mediapipe==1.2.2
+opencv-python==5.0.0.93
+numpy==2.5.3
+pandas==3.0.6
+pyarrow==25.0.1
+tqdm==4.70.1
+torch==2.14.1
+scikit-learn==1.9.1
+matplotlib==3.11.2
+seaborn==0.13.2
+onnx==1.23.2
+onnxruntime==1.31.1
+kagglehub==1.0.2
+
+# Browser UI (app.py)
+streamlit==1.64.0
+streamlit-webrtc==0.79.0
+av==17.1.0
