@@ -8,6 +8,45 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/style.css">
+<style>
+  /* Larger camera area (closer to Streamlit feel) */
+  #cam-box.cam {
+    aspect-ratio: 4/3;
+    max-height: 560px;
+    min-height: 380px;
+  }
+  /* Green guide rectangle – same idea as Streamlit BOX_SIZE ≈ 0.45 */
+  .guide-box {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 45%;
+    aspect-ratio: 1/1;
+    transform: translate(-50%, -50%);
+    border: 3px solid #22c55e;
+    border-radius: 12px;
+    pointer-events: none;
+    z-index: 4;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.18);
+    display: none;
+  }
+  #cam-box.live .guide-box { display: block; }
+  .guide-label {
+    position: absolute;
+    left: 50%;
+    bottom: 8px;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+  }
+  #live-top { margin: 0; padding-left: 22px; }
+  #live-top li { margin: 2px 0; }
+</style>
 <script>try{var t=JSON.parse(localStorage.getItem("asl_theme"));if(!t&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches){t="dark"}document.documentElement.setAttribute("data-theme",t||"light")}catch(e){}</script>
 </head>
 <body data-page="translate" data-title="Translation">
@@ -24,26 +63,42 @@
         <button type="button" role="tab" id="tab-text" aria-selected="false" aria-controls="panel-text"><span data-icon="type"></span>Text to Sign</button>
         <button type="button" role="tab" id="tab-upload" aria-selected="false" aria-controls="panel-upload"><span data-icon="upload"></span>Upload Media</button>
       </div>
+      <p class="muted" style="margin-top:12px">Predictions use the local landmark model (Flask). Start it with <code>python api.py</code> from the photo model folder. It recognizes static letters A-I and K-Y; J, Z, space, and delete are not supported. Hold each sign steady inside the green box; remove your hand briefly to repeat a letter.</p>
 
       <!-- Sign to Text -->
       <div class="panel" id="panel-sign" role="tabpanel" aria-labelledby="tab-sign">
         <div class="cam" id="cam-box">
           <video id="cam" autoplay playsinline muted hidden></video>
-          <img class="snap" id="snap" alt="Captured sign" hidden>
+          <div class="guide-box" id="guide-box" aria-hidden="true">
+            <span class="guide-label">Show hand inside this box</span>
+          </div>
           <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
           <div class="ph" id="cam-ph">
             <span data-icon="hand" data-size="64"></span>
             <b>Camera is off</b>
-            <span>Tap "Start camera", then show your sign inside the frame.</span>
+            <span>Start the camera and live translation, then show your sign inside the green box.</span>
           </div>
           <button class="icon-btn flip" id="flip" type="button" aria-label="Flip camera" disabled><span data-icon="flip"></span></button>
         </div>
         <div class="row">
           <button class="btn btn-ghost" type="button" id="cam-toggle"><span data-icon="camera"></span><span id="cam-toggle-label">Start camera</span></button>
-          <button class="btn" type="button" id="capture" disabled><span data-icon="check"></span>Capture sign</button>
+          <button class="btn" type="button" id="capture" disabled><span data-icon="check"></span><span id="capture-label">Start live translation</span></button>
+        </div>
+        <div class="row">
+          <label><input id="mirror-live" type="checkbox"> Mirror the webcam (selfie view)</label>
+          <label><input id="left-hand-live" type="checkbox"> I sign with my LEFT hand</label>
         </div>
         <div class="status" id="cam-status" role="status" aria-live="polite"></div>
         <div class="result" id="sign-result" aria-live="polite"></div>
+        <div class="result" style="flex-direction:column;gap:8px">
+          <div class="label">Top 5 Predictions</div>
+          <ol id="live-top"><li class="muted">Start live translation to see predictions.</li></ol>
+        </div>
+        <div class="field">
+          <label for="live-text">Translated text</label>
+          <textarea class="textarea" id="live-text" rows="3" readonly placeholder="Your translated letters will appear here."></textarea>
+        </div>
+        <button class="btn btn-ghost" type="button" id="clear-live" disabled><span data-icon="x"></span>Clear text</button>
       </div>
 
       <!-- Text to Sign -->

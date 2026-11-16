@@ -1,0 +1,84 @@
+# What this folder is, and what therefore does NOT belong in git
+# ---------------------------------------------------------------
+# Everything here is reproducible from two commands:
+#
+#   pip install -r requirements.txt
+#   python run_all.py          # download -> extract -> train -> report -> ONNX
+#
+# so this file ignores the artefacts those produce and keeps what a reader
+# actually has to review: the code, the settings, the trained weights (80 KB
+# each, so `app.py` runs on a fresh clone without retraining), and the small
+# written reports.  Without these rules the folder offers git 698 files and
+# 116 MB; with them it is ~50 files under 2 MB.
+
+# ------------------------------------------------------------- generated data
+# cache/ is the extracted landmark store: 629 files, 76 MB, and 622 of those
+# files are one-per-clip MSL trajectories.  Rebuilt by
+#   python src/extract_landmarks.py            (~20 min, 12 workers)
+#   python src/extract_msl_landmarks.py  --    (only if the MSL clips are back)
+cache/
+
+# Bulk dataset downloads, if anyone ever points them in here instead of the
+# Kaggle cache.  The images themselves are never committed.
+datasets/
+data/raw/
+*.7z
+*.zip
+*.tar
+*.tar.gz
+*.mp4
+*.mov
+*.avi
+
+# MediaPipe's own hand model (7.5 MB) is *downloaded* by src/download_data.py,
+# and app.py's self-healing path checks for it at runtime.
+models/hand_landmarker.task
+
+# ------------------------------------------------------------- big evidence
+# reports/*.csv dumps are per-frame: reports/oof_all.csv alone is 23 MB and
+# 122,359 rows.  Regenerate with
+#   python src/train.py --profile all --dump-preds reports/oof_all.csv
+# The .md reports and the confusion-matrix PNGs stay in - they are the argument.
+reports/oof_*.csv
+reports/preds_*.csv
+reports/samples/
+*.parquet
+*.parquet.tmp
+*.npz
+*.pkl
+
+# ------------------------------------------------------- python / tool noise
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+
+# Run logs: useful on the machine that ran them, noise in a diff.
+*.log
+train_log.txt
+extract_log.txt
+
+# Scratch / editor / OS leftovers, incl. the temp files this project writes
+# next to its parquet before renaming them into place.
+*.tmp
+*.bak
+*.orig
+*~
+~$*
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ------------------------------------------------------------------- secrets
+# Never commit a Kaggle token or a Streamlit secret.  `download_data.py` reads
+# ~/.kaggle/kaggle.json on purpose so that there is no reason to put one here.
+.env
+.env.*
+kaggle.json
+credentials.json
+.streamlit/secrets.toml
