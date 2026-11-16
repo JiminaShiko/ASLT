@@ -10,5 +10,6 @@ streamlit-webrtc
 av
 mediapipe
 torch
+onnxruntime
 flask
 flask-cors

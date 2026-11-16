@@ -17,6 +17,21 @@ app.py                         the Streamlit app
 evaluate_official_photos.py    tests the official ASL Alphabet test photos (28 files)
 requirements.txt
 
+HTML TRANSLATOR API (LANDMARK MODEL)
+====================================
+The website's HTML/translation.html uses api.py as a Flask bridge to the
+separate landmark recogniser in ../asl_landmark_app. It does NOT use
+sign_photo_model.keras. The camera frame gate, smoothing, J/Z motion rules and
+live overlay are shared with asl_landmark_app/src/live.py.
+
+From this folder, install the requirements and start the bridge:
+	python -m pip install -r requirements.txt
+	python api.py
+
+Open the website from localhost or HTTPS so the browser can access the camera.
+The photo-model Streamlit app below (python app.py) is a separate application
+and still uses sign_photo_model.keras.
+
 COMMANDS
 =========
 All commands below must be run in THIS folder (the folder that contains app.py and requirements.txt).
