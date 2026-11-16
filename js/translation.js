@@ -1,8 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
   var A = window.ASL;
-  var CONF_MIN = 0.6;
   var API_BASE = 'http://127.0.0.1:5000';
-  var LIVE_INTERVAL = 300;
+  var LIVE_INTERVAL = 55;
   var LIVE_MAX_SIDE = 640;
 
   /* ---------- Shared helpers ---------- */
@@ -29,6 +28,79 @@ document.addEventListener('DOMContentLoaded', function () {
     return result;
   }
 
+  async function loadModelInfo() {
+    try {
+      var response = await fetch(API_BASE + '/api/health');
+      if (!response.ok) { throw new Error('HTTP ' + response.status); }
+      var info = await response.json();
+      var profile = document.getElementById('profile-live');
+      profile.innerHTML = '';
+      (info.profiles || []).forEach(function (name) {
+        var option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        profile.appendChild(option);
+      });
+      profile.value = info.default_profile || 'all';
+      var settingControls = {
+        conf: 'conf-live',
+        margin: 'margin-live',
+        vote: 'vote-live',
+        hold: 'hold-live',
+        motion: 'motion-live',
+        landmarks: 'landmarks-live',
+        motion_debug: 'motion-debug-live',
+        mirror: 'mirror-live',
+        recover: 'recover-live',
+        recover_every: 'recover-every-live',
+        recover_conf: 'recover-conf-live',
+        recover_flip: 'recover-flip-live',
+        jz: 'jz-live',
+        calibrate_reps: 'calibrate-reps-live'
+      };
+      Object.keys(settingControls).forEach(function (key) {
+        var value = info.default_settings[key];
+        var control = document.getElementById(settingControls[key]);
+        if (control && value !== null && typeof value !== 'object') {
+          if (control.type === 'checkbox') { control.checked = Boolean(value); }
+          else { control.value = value; }
+        }
+      });
+      applyMirrorPreview();
+      await refreshCameraOptions();
+      return info;
+    } catch (err) {
+      setCamStatus('Could not load model settings. Start the ASL model API with "python api.py".', true);
+      return null;
+    }
+  }
+
+  function liveSettings() {
+    var customMargins = document.getElementById('pair-custom-live').value.trim();
+    var pairMargins = customMargins || (
+      document.getElementById('pairs-live').checked ? null : 'none'
+    );
+    return {
+      profile: document.getElementById('profile-live').value,
+      backend: document.getElementById('backend-live').value,
+      conf: Number(document.getElementById('conf-live').value),
+      margin: Number(document.getElementById('margin-live').value),
+      pair_margins: pairMargins,
+      vote: Number(document.getElementById('vote-live').value),
+      hold: Number(document.getElementById('hold-live').value),
+      motion: document.getElementById('motion-live').checked,
+      landmarks: document.getElementById('landmarks-live').checked,
+      motion_debug: document.getElementById('motion-debug-live').checked,
+      mirror: document.getElementById('mirror-live').checked,
+      recover: Number(document.getElementById('recover-live').value),
+      recover_every: Number(document.getElementById('recover-every-live').value),
+      recover_conf: Number(document.getElementById('recover-conf-live').value),
+      recover_flip: document.getElementById('recover-flip-live').checked,
+      jz: document.getElementById('jz-live').value.trim(),
+      calibrate_reps: Number(document.getElementById('calibrate-reps-live').value)
+    };
+  }
+
   function sourceToDataURL(source, maxSide) {
     var w = source.videoWidth || source.naturalWidth || source.width;
     var h = source.videoHeight || source.naturalHeight || source.height;
@@ -47,11 +119,20 @@ document.addEventListener('DOMContentLoaded', function () {
   /* Single-shot prediction (used by Upload Media) */
   window.predictSign = async function (source) {
     var dataUrl = sourceToDataURL(source, 1280);
-    var result = await modelRequest('/api/predict-photo', { image: dataUrl });
+    var result = await modelRequest('/api/predict-photo', {
+      image: dataUrl,
+      settings: liveSettings()
+    });
     if (result.hand_found === false || result.text === 'nothing') {
       throw new Error('No hand sign was found. Show the whole hand clearly and try again.');
     }
-    return { text: result.text, confidence: result.confidence };
+    return {
+      text: result.text,
+      confidence: result.confidence,
+      uncertain: result.uncertain,
+      low_conf: result.low_conf,
+      top_predictions: result.top_predictions
+    };
   };
 
   async function runPrediction(source) {
@@ -85,9 +166,12 @@ document.addEventListener('DOMContentLoaded', function () {
       renderResult(el, 'idle', 'Your text will appear here', r.error);
       return false;
     }
-    if (typeof r.confidence === 'number' && r.confidence < CONF_MIN) {
+    if (r.uncertain || r.low_conf) {
       renderResult(el, 'warn', 'Not sure: maybe "' + r.text + '"',
-        'Try again with better light and a plain background.', r.confidence);
+        r.uncertain
+          ? 'The frame did not clear the console typer’s top-two margin, so it would cast no vote.'
+          : 'The frame is below the console typer’s confidence threshold, so it would cast no vote.',
+        r.confidence);
       return false;
     }
     renderResult(el, 'ok', r.text, '', r.confidence);
@@ -120,15 +204,18 @@ document.addEventListener('DOMContentLoaded', function () {
   /* ---------- Sign to Text (camera + live) ---------- */
   var camBox = document.getElementById('cam-box');
   var cam = document.getElementById('cam');
+  var camRender = document.getElementById('cam-render');
+  var mirrorToggle = document.getElementById('mirror-live');
   var camPh = document.getElementById('cam-ph');
   var camToggle = document.getElementById('cam-toggle');
   var camLabel = document.getElementById('cam-toggle-label');
   var captureBtn = document.getElementById('capture');
   var captureLabel = document.getElementById('capture-label');
-  var flipBtn = document.getElementById('flip');
+  var commitBtn = document.getElementById('commit-live');
+  var backspaceBtn = document.getElementById('backspace-live');
+  var calibrateBtn = document.getElementById('calibrate-live');
+  var cancelCalibrationBtn = document.getElementById('cancel-calibration-live');
   var camStatus = document.getElementById('cam-status');
-  var mirrorLive = document.getElementById('mirror-live');
-  var leftHandLive = document.getElementById('left-hand-live');
   var liveText = document.getElementById('live-text');
   var liveTop = document.getElementById('live-top');
   var clearLiveBtn = document.getElementById('clear-live');
@@ -138,10 +225,40 @@ document.addEventListener('DOMContentLoaded', function () {
   var liveRunId = 0;
   var nextLiveFrameAt = 0;
   var facing = A.getProfile().camera === 'environment' ? 'environment' : 'user';
+  var calibrationStatus = document.getElementById('calibration-status');
+  var calibrationProgress = document.getElementById('calibration-progress');
+  var calibrationReport = document.getElementById('calibration-report');
 
   function setCamStatus(msg, isError) {
     camStatus.textContent = msg;
     camStatus.className = isError ? 'status error' : 'status';
+  }
+
+  function applyMirrorPreview() {
+    camBox.classList.toggle('mirrored', mirrorToggle.checked);
+  }
+
+  mirrorToggle.addEventListener('change', applyMirrorPreview);
+  applyMirrorPreview();
+
+  async function refreshCameraOptions() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) { return; }
+    try {
+      var selected = document.getElementById('camera-live').value;
+      var devices = await navigator.mediaDevices.enumerateDevices();
+      var selector = document.getElementById('camera-live');
+      selector.innerHTML = '<option value="">Default camera</option>';
+      devices.forEach(function (device, index) {
+        if (device.kind !== 'videoinput') { return; }
+        var option = document.createElement('option');
+        option.value = device.deviceId;
+        option.textContent = device.label || 'Camera ' + (index + 1);
+        selector.appendChild(option);
+      });
+      if (selected) { selector.value = selected; }
+    } catch (err) {
+      setCamStatus('Could not list camera devices: ' + err.message, true);
+    }
   }
 
   async function startCamera() {
@@ -151,50 +268,145 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     stopCamera(true);
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: false });
+      var requestedSize = document.getElementById('camera-size-live').value.split('x');
+      var videoConstraints = {
+        width: { ideal: Number(requestedSize[0]) },
+        height: { ideal: Number(requestedSize[1]) },
+        frameRate: { ideal: 24 }
+      };
+      var selectedCamera = document.getElementById('camera-live').value;
+      if (selectedCamera) {
+        videoConstraints.deviceId = { exact: selectedCamera };
+      } else {
+        videoConstraints.facingMode = { ideal: facing };
+      }
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: videoConstraints,
+        audio: false
+      });
+      await refreshCameraOptions();
       cam.srcObject = stream;
       cam.hidden = false;
+      camRender.hidden = true;
       camPh.hidden = true;
       camBox.classList.add('live');
       captureBtn.disabled = false;
-      flipBtn.disabled = false;
       camLabel.textContent = 'Stop camera';
-      setCamStatus('Camera is on. Start live translation when you are ready.', false);
+      setCamStatus('Camera is on. Start the typer when you are ready.', false);
     } catch (err) {
       setCamStatus('Could not open the camera. Please allow camera permission.', true);
     }
   }
 
   function renderLiveFrame(frame) {
-    if (frame.letter === '-') {
-      renderResult(signResult, 'idle', 'Waiting for a sign', 'Show your hand inside the green box.');
+    if (!frame.hand_found) {
+      renderResult(signResult, 'idle', 'NO HAND', 'Show your whole hand clearly in the camera view.');
+    } else if (frame.held) {
+      renderResult(signResult, 'ok', frame.held.toUpperCase(),
+        'Hold the sign until the progress bar completes.', frame.held_confidence);
+    } else if (frame.uncertain) {
+      var runnerUp = frame.top_predictions && frame.top_predictions[1]
+        ? frame.top_predictions[1].text : '-';
+      var pairNote = frame.pair
+        ? ' - ' + frame.pair[0] + '/' + frame.pair[1] + ' raised pair margin'
+        : '';
+      renderResult(signResult, 'warn', 'UNCERTAIN: ' + (frame.letter || '-'),
+        'Only ' + (frame.margin * 100).toFixed(0) + ' points ahead of ' +
+        runnerUp + ' (needs ' + (frame.required_margin * 100).toFixed(0) +
+        ')' + pairNote + '; this frame casts no vote.', frame.confidence);
+    } else if (frame.low_conf) {
+      renderResult(signResult, 'warn', 'LOW CONFIDENCE: ' + (frame.letter || '-'),
+        'Below the ' + Number(document.getElementById('conf-live').value).toFixed(2) +
+        ' confidence gate; this frame casts no vote.', frame.confidence);
     } else {
-      var isNothing = frame.letter === 'nothing';
-      var note = !frame.hand_found
-        ? 'The camera does not see a hand. Improve the light and keep your whole hand visible.'
-        : (frame.confidence < CONF_MIN
-          ? 'The model is not sure. Show the whole hand clearly and closer to the camera.'
-          : 'Confidence: ' + (frame.confidence * 100).toFixed(2) + '%');
-      renderResult(signResult,
-        frame.hand_found && frame.confidence >= CONF_MIN ? 'ok' : 'warn',
-        isNothing ? 'NO SIGN' : frame.letter.toUpperCase(),
-        note,
-        frame.confidence);
+      renderResult(signResult, 'idle', 'WAITING FOR A SIGN',
+        frame.letter ? 'Raw best: ' + frame.letter + ' (' +
+          (frame.confidence * 100).toFixed(0) + '%).' : '');
     }
 
-    liveText.value = frame.text || '';
+    liveText.textContent = frame.text || '';
     liveTop.innerHTML = '';
     (frame.top_predictions || []).forEach(function (p) {
       var item = document.createElement('li');
-      item.textContent = p.text.toUpperCase() + ': ' + (p.confidence * 100).toFixed(2) + '%';
+      item.textContent = p.text.toUpperCase() + ': ' + (p.confidence * 100).toFixed(0) + '%';
       liveTop.appendChild(item);
     });
     if (!frame.top_predictions || !frame.top_predictions.length) {
       var empty = document.createElement('li');
       empty.className = 'muted';
-      empty.textContent = 'Waiting for a sign.';
+      empty.textContent = frame.hand_found ? 'No model prediction.' : 'No hand detected.';
       liveTop.appendChild(empty);
     }
+    if (frame.frame_image) {
+      camRender.src = frame.frame_image;
+      camRender.hidden = false;
+    }
+    document.getElementById('live-fps').textContent =
+      Number(frame.fps || 0).toFixed(1) + ' fps';
+    document.getElementById('live-hand-rate').textContent =
+      Math.round(100 * (frame.hands || 0) / Math.max(frame.frames || 0, 1)) + '%';
+    document.getElementById('live-hand-count').textContent =
+      (frame.hands || 0) + ' of ' + (frame.frames || 0) + ' frames';
+    document.getElementById('live-frame-ms').textContent =
+      Number(frame.frame_ms || 0).toFixed(0) + ' ms';
+    document.getElementById('live-backend').textContent = frame.backend || 'torch';
+    document.getElementById('live-profile').textContent =
+      (frame.model_profile || 'all') + ' profile';
+    if (frame.calibration) {
+      calibrationStatus.textContent = frame.calibration.prompt;
+      calibrationProgress.value = frame.calibration.progress || 0;
+      calibrationProgress.hidden = false;
+      calibrationReport.hidden = true;
+      cancelCalibrationBtn.disabled = false;
+    } else if (frame.calibration_result) {
+      var consistency = frame.calibration_result.consistency;
+      var baseline = frame.calibration_result.baseline_consistency;
+      calibrationStatus.textContent = 'Calibration complete: ' +
+        frame.calibration_result.n_strokes + ' strokes; ' +
+        consistency.fired + '/' + consistency.n +
+        ' now fire their own letter. Thresholds apply only until the typer stops.';
+      calibrationProgress.value = 1;
+      calibrationProgress.hidden = true;
+      calibrationReport.hidden = false;
+      document.getElementById('calibration-summary').textContent =
+        'Personal thresholds: ' + consistency.fired + '/' + consistency.n +
+        ' strokes fire correctly (shipped thresholds: ' +
+        baseline.fired + '/' + baseline.n + '). No recording or settings are saved.';
+      var thresholds = document.getElementById('calibration-thresholds');
+      thresholds.innerHTML = '';
+      [
+        ['Threshold', 'Shipped', 'This session', 'How it was derived']
+      ].concat(Object.keys(frame.calibration_result.defaults || {}).sort().map(function (key) {
+        return [
+          key,
+          Number(frame.calibration_result.defaults[key]).toFixed(2),
+          Number(frame.calibration_result.thresholds[key]).toFixed(2),
+          frame.calibration_result.notes[key] || ''
+        ];
+      })).forEach(function (row) {
+        row.forEach(function (value) {
+          var cell = document.createElement('div');
+          cell.textContent = value;
+          thresholds.appendChild(cell);
+        });
+      });
+      var command = document.getElementById('calibration-command');
+      command.textContent = frame.calibration_result.spec
+        ? 'To reuse these thresholds in the console: python src/live.py --jz ' +
+          frame.calibration_result.spec
+        : 'Your strokes already fit the shipped thresholds; no console override is needed.';
+      cancelCalibrationBtn.disabled = true;
+    } else {
+      calibrationStatus.textContent = frame.recovery || '';
+      calibrationProgress.hidden = true;
+      calibrationReport.hidden = true;
+      cancelCalibrationBtn.disabled = !liveActive;
+    }
+    calibrateBtn.disabled = !liveActive ||
+      !document.getElementById('motion-live').checked;
+    clearLiveBtn.disabled = !liveActive;
+    commitBtn.disabled = !liveActive;
+    backspaceBtn.disabled = !liveActive;
   }
 
   function drawLiveFrame() {
@@ -228,8 +440,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       var frame = await modelRequest('/api/live/frame', {
         session_id: liveSession,
-        image: image,
-        left_hand: leftHandLive.checked
+        image: image
       });
       if (!liveActive || runId !== liveRunId) { return; }
       renderLiveFrame(frame);
@@ -251,8 +462,10 @@ document.addEventListener('DOMContentLoaded', function () {
     captureBtn.disabled = true;
     setCamStatus('Starting live translation...', false);
     var runId = ++liveRunId;
+    var settings = liveSettings();
+    mirrorToggle.disabled = true;
     try {
-      var result = await modelRequest('/api/live/start', {});
+      var result = await modelRequest('/api/live/start', { settings: settings });
       if (runId !== liveRunId || !stream) {
         modelRequest('/api/live/stop', { session_id: result.session_id }).catch(function () {});
         return;
@@ -260,36 +473,42 @@ document.addEventListener('DOMContentLoaded', function () {
       liveSession = result.session_id;
       liveActive = true;
       captureBtn.disabled = false;
-      captureLabel.textContent = 'Stop live translation';
+      captureLabel.textContent = 'Stop live typer';
       clearLiveBtn.disabled = false;
-      liveText.value = '';
+      liveText.textContent = '';
       liveTop.innerHTML = '<li class="muted">Waiting for a sign.</li>';
-      renderResult(signResult, 'idle', 'Waiting for a sign', 'Show your hand inside the green box.');
-      setCamStatus('Live translation is on. Hold each sign steady inside the green box.', false);
+      renderResult(signResult, 'idle', 'Waiting for a sign', 'Hold each letter steady until it is committed.');
+      setCamStatus('Live typer is on. Space commits; Backspace deletes; C clears; Q or Esc stops.', false);
       nextLiveFrameAt = Date.now();
       captureLiveFrame(runId);
     } catch (err) {
       captureBtn.disabled = !stream;
+      mirrorToggle.disabled = false;
       setCamStatus(err.message, true);
     }
   }
 
   async function stopLiveTranslation(saveHistory) {
     var sessionId = liveSession;
-    var previousText = liveText ? liveText.value : '';
+    var previousText = liveText ? liveText.textContent : '';
     liveActive = false;
     liveSession = null;
     liveRunId++;
-    if (captureLabel) { captureLabel.textContent = 'Start live translation'; }
+    if (mirrorToggle) { mirrorToggle.disabled = false; }
+    if (captureLabel) { captureLabel.textContent = 'Start live typer'; }
     if (captureBtn) { captureBtn.disabled = !stream; }
     if (clearLiveBtn) { clearLiveBtn.disabled = true; }
+    if (commitBtn) { commitBtn.disabled = true; }
+    if (backspaceBtn) { backspaceBtn.disabled = true; }
+    if (calibrateBtn) { calibrateBtn.disabled = true; }
+    if (cancelCalibrationBtn) { cancelCalibrationBtn.disabled = true; }
     if (!sessionId) { return; }
 
     var finalText = previousText;
     try {
       var result = await modelRequest('/api/live/stop', { session_id: sessionId });
       finalText = result.text || '';
-      if (liveText) { liveText.value = finalText; }
+      if (liveText) { liveText.textContent = finalText; }
     } catch (err) {
       if (saveHistory) { setCamStatus(err.message, true); }
     }
@@ -306,9 +525,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     cam.srcObject = null;
     cam.hidden = true;
+    camRender.hidden = true;
+    camRender.removeAttribute('src');
     camBox.classList.remove('live');
     if (captureBtn) { captureBtn.disabled = true; }
-    if (flipBtn) { flipBtn.disabled = true; }
     if (clearLiveBtn) { clearLiveBtn.disabled = true; }
     if (camLabel) { camLabel.textContent = 'Start camera'; }
     if (camPh) { camPh.hidden = false; }
@@ -321,32 +541,45 @@ document.addEventListener('DOMContentLoaded', function () {
   captureBtn.addEventListener('click', function () {
     if (liveActive) {
       stopLiveTranslation(true);
-      setCamStatus('Live translation stopped.', false);
+      setCamStatus('Live typer stopped.', false);
     } else {
       startLiveTranslation();
     }
   });
-  clearLiveBtn.addEventListener('click', async function () {
-    if (!liveSession) {
-      liveText.value = '';
-      return;
-    }
-    clearLiveBtn.disabled = true;
+  async function sendLiveAction(action) {
+    if (!liveSession) { return; }
     try {
-      var result = await modelRequest('/api/live/clear', { session_id: liveSession });
-      liveText.value = result.text || '';
+      var result = await modelRequest('/api/live/action', {
+        session_id: liveSession,
+        action: action
+      });
+      renderLiveFrame(result);
     } catch (err) {
       setCamStatus(err.message, true);
-    } finally {
-      clearLiveBtn.disabled = !liveActive;
     }
+  }
+  commitBtn.addEventListener('click', function () { sendLiveAction('commit'); });
+  backspaceBtn.addEventListener('click', function () { sendLiveAction('backspace'); });
+  clearLiveBtn.addEventListener('click', function () { sendLiveAction('clear'); });
+  calibrateBtn.addEventListener('click', function () { sendLiveAction('calibrate'); });
+  cancelCalibrationBtn.addEventListener('click', function () {
+    sendLiveAction('cancel_calibration');
   });
-  mirrorLive.addEventListener('change', function () {
-    cam.style.transform = mirrorLive.checked ? 'scaleX(-1)' : '';
-  });
-  flipBtn.addEventListener('click', function () {
-    facing = (facing === 'user') ? 'environment' : 'user';
-    startCamera();
+  document.addEventListener('keydown', function (event) {
+    if (!liveActive || event.altKey || event.ctrlKey || event.metaKey ||
+        /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { return; }
+    if (event.code === 'Space') {
+      event.preventDefault();
+      sendLiveAction('commit');
+    } else if (event.key === 'Backspace') {
+      event.preventDefault();
+      sendLiveAction('backspace');
+    } else if (event.key.toLowerCase() === 'c') {
+      sendLiveAction('clear');
+    } else if (event.key.toLowerCase() === 'q' || event.key === 'Escape') {
+      stopLiveTranslation(true);
+      setCamStatus('Live typer stopped.', false);
+    }
   });
 
   /* ---------- Text to Sign ---------- */
@@ -496,4 +729,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var ok = handlePrediction(r, 'Upload Media', uploadResult);
     uploadStatus.textContent = ok ? 'Done.' : 'File loaded.';
   });
+
+  loadModelInfo();
 });
