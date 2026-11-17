@@ -22,7 +22,7 @@
     <span class="brand-title">Signrest</span>
   </header>
 
-  <!-- 3. Top-Right Light / Dark Mode Switch Button (Sun in Light Mode, Moon in Dark Mode) -->
+  <!-- 3. Top-Right Light / Dark Mode Switch Button -->
   <button
     type="button"
     id="themeToggleBtn"
@@ -33,35 +33,53 @@
     <img id="themeIconImg" alt="Theme Toggle Icon" />
   </button>
 
-  <!-- 4. Foreground Scenery Cutout Layer (Rock + Frog group, 3x Reusable Bush, 1x Right Bush) -->
+  <!-- 4. Dual-Theme Popup Notification (3-Leaf for Signup / Megaphone Horn for Login) -->
+  <div id="leafToastWrapper" class="leaf-toast-wrapper" role="alert" aria-live="assertive">
+    <div id="leafToastCard" class="leaf-toast-card" style="padding: 22px 42px 24px 48px;">
+      <img
+        id="leafToastSproutImg"
+        class="leaf-toast-plane"
+        style="top: -34px; left: -34px; width: 92px;"
+        alt=""
+      />
+      <button type="button" id="leafToastCloseBtn" class="leaf-toast-close" aria-label="Close notification">
+        X
+      </button>
+      <p id="leafToastMessage" class="leaf-toast-text">
+        This email is already in use!
+      </p>
+      <!-- 5-segment 5-second countdown line -->
+      <div class="leaf-toast-bars" aria-hidden="true">
+        <span class="leaf-toast-bar" data-step="0"></span>
+        <span class="leaf-toast-bar" data-step="1"></span>
+        <span class="leaf-toast-bar" data-step="2"></span>
+        <span class="leaf-toast-bar" data-step="3"></span>
+        <span class="leaf-toast-bar" data-step="4"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Foreground Scenery Cutout Layer -->
   <div class="scenery-layer" aria-hidden="true">
-    <!-- Anchored Rock + Frog Group -->
     <div class="rock-frog-group">
       <img id="sceneryRock" class="scenery-item scenery-rock" alt="" />
       <div class="frog-lamp-aura"></div>
       <img id="sceneryFrog" class="scenery-item scenery-frog" alt="" />
     </div>
 
-    <!-- Reusable 3-Clump Bush placed in 3 spots (swaps between light & dark mode versions) -->
     <img id="sceneryBush1" class="scenery-item scenery-bush-left" alt="" />
     <img id="sceneryBush2" class="scenery-item scenery-bush-mid-left" alt="" />
     <img id="sceneryBush3" class="scenery-item scenery-bush-mid-right" alt="" />
-
-    <!-- Distinct Grassy Right Bush (swaps between light & dark mode versions) -->
     <img id="sceneryBushRight" class="scenery-item scenery-bush-right" alt="" />
   </div>
 
-  <!-- 5. Centered Auth Form Container -->
+  <!-- 6. Centered Auth Form Container -->
   <main class="relative z-20 min-h-screen flex flex-col items-center justify-center px-6 pb-28 sm:pb-20 pt-10 pointer-events-none">
     <div class="w-full max-w-[290px] pointer-events-auto">
 
-      <!-- Feedback / Validation Message Box -->
-      <div id="statusBanner" class="status-banner" role="alert"></div>
-
-      <!-- Auth Form (Defaults to SIGNUP on initial page load; switches to LOGIN on click) -->
       <form id="authForm" novalidate>
         <!-- Email Field -->
-        <div class="mb-3.5">
+        <div class="mb-2">
           <label for="emailInput" class="field-label">Email</label>
           <input
             type="email"
@@ -71,23 +89,25 @@
             autocomplete="email"
             required
           />
+          <p id="emailErrorMsg" class="field-error-msg" aria-live="polite"></p>
         </div>
 
         <!-- Password Field -->
-        <div class="mb-1.5">
+        <div class="mb-1">
           <label for="passwordInput" class="field-label">Password</label>
           <input
             type="password"
             id="passwordInput"
             name="password"
             class="underlined-field"
-            autocomplete="current-password"
+            autocomplete="new-password"
             required
           />
+          <p id="passwordErrorMsg" class="field-error-msg" aria-live="polite"></p>
         </div>
 
-        <!-- Confirm Password Field (Visible in Signup mode, hidden in Login mode) -->
-        <div id="confirmPasswordGroup" class="mt-3.5 mb-1.5">
+        <!-- Confirm Password Field (Signup mode only) -->
+        <div id="confirmPasswordGroup" class="mt-2 mb-1">
           <label for="confirmPasswordInput" class="field-label">Confirm Password</label>
           <input
             type="password"
@@ -96,29 +116,28 @@
             class="underlined-field"
             autocomplete="new-password"
           />
+          <p id="confirmPasswordErrorMsg" class="field-error-msg" aria-live="polite"></p>
         </div>
 
-        <!-- Forgot Password Link (Shown only in Login mode) -->
+        <!-- Forgot Password Link (Login mode only) -->
         <div id="forgotPswRow" class="hidden justify-end mb-4">
-          <a href="#forgot-password" id="forgotPswLink" class="sub-link">forgot psw?</a>
+          <a href="/forgot-password" id="forgotPswLink" class="sub-link">forgot psw?</a>
         </div>
 
-        <!-- Spacing spacer when forgot password is hidden in Signup mode -->
-        <div id="signupSpacer" class="h-4"></div>
+        <div id="signupSpacer" class="h-3"></div>
 
         <!-- Primary Submit Pill Button -->
-        <button type="submit" id="primarySubmitBtn" class="btn-primary-pill">
+        <button type="submit" id="primarySubmitBtn" class="btn-primary-pill" disabled>
           SIGN UP
         </button>
 
         <!-- Divider text -->
         <div class="text-center my-2 text-[0.88rem] font-medium" style="color: var(--text-primary);">
-          or?
+          or
         </div>
 
         <!-- Google Auth Pill Button -->
         <button type="button" id="googleAuthBtn" class="btn-google-pill">
-          <!-- Clean inline Google G mark -->
           <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="#EA4335" d="M12 5c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 1.77 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/>
@@ -128,10 +147,10 @@
           <span id="googleBtnText">Sign up with Google</span>
         </button>
 
-        <!-- Mode Switch Footer ("already have an acc? login" <-> "don't have an acc? signup") -->
+        <!-- Mode Switch Footer -->
         <div class="flex items-center justify-between mt-3 px-2">
           <span id="switchPromptText" class="text-[0.82rem]" style="color: var(--text-primary);">
-            already have an acc?
+            already had an acc?
           </span>
           <button
             type="button"
@@ -147,82 +166,63 @@
   </main>
 
   <script>
-    /**
-     * =========================================================================
-     * IMAGE ASSET PATH CONFIGURATION
-     * Folder structure:
-     *   root/
-     *   ├── assets/images/          <-- Place all your images here
-     *   └── login_signup_pages/
-     *       └── login_page.html     <-- This file (uses ../assets/images/...)
-     * =========================================================================
-     */
     const ASSETS = {
-      // --- Brand Logo (Uses inline botanical SVG fallback until you add your logo file) ---
-      logo:          "../assets/images/logo.png",              // <-- REPLACE WITH YOUR LOGO PATH WHEN READY
-
-      // --- 4 Background Swatches (Light/Dark x Signup/Login) ---
+      logo:          "../assets/images/logo.png",
+      alertLeaves:   "../assets/images/signup_invalid_noti.png",
+      alertHorn:     "../assets/images/login_invalid_horn.png",
       bgSignupLight: "../assets/images/login_bg_7.jpg",
       bgSignupDark:  "../assets/images/login_bg_night_5.jpg",
       bgLoginLight:  "../assets/images/login_bg_8.jpg",
       bgLoginDark:   "../assets/images/login_bg_night_6.jpg",
-
-      // --- Little Frog (Single photo; CSS lights it up in dark mode) ---
       frog:          "../assets/images/frog-removebg.png",
-
-      // --- Rock (Light & Dark versions) ---
       rockLight:     "../assets/images/stone-removebg.png",
       rockDark:      "../assets/images/rock_night.png",
-
-      // --- Reusable 3-Clump Bush used in 3 places (Light & Dark versions) ---
       bush3xLight:   "../assets/images/bush_bgremove.png",
       bush3xDark:    "../assets/images/bush_night.png",
-
-      // --- Distinct Grassy Far-Right Bush (Light & Dark versions) ---
       bushRightLight:"../assets/images/bush_1_bgremove.png",
       bushRightDark: "../assets/images/bush_1_night.png",
-
-      // --- Top-Right Theme Toggle Icons (Sun shown in Light Mode, Moon shown in Dark Mode) ---
       iconSun:       "../assets/images/sun_bgremove.png",
       iconMoon:      "../assets/images/moon_bgremove.png"
     };
 
-    /**
-     * Inline SVG fallbacks so the preview and logo render cleanly even before
-     * local image files are placed in ../assets/images/
-     */
     const PREVIEW_FALLBACKS = {
       logo:          "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='#3e5d3e'/><path d='M20 40 C20 26, 34 18, 46 20 C44 33, 35 43, 20 40 Z' fill='#b9e396'/><path d='M20 40 C27 33, 35 27, 45 21' fill='none' stroke='#263d26' stroke-width='2.5' stroke-linecap='round'/><circle cx='24' cy='23' r='3' fill='#e6f7d4'/></svg>`),
-      bgSignupLight: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#d8e6d5'/><stop offset='55%' stop-color='#eef3e6'/><stop offset='100%' stop-color='#a4c298'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><circle cx='1250' cy='260' r='220' fill='#ffffff' opacity='0.35'/><circle cx='350' cy='200' r='280' fill='#88a87e' opacity='0.28'/></svg>`),
-      bgSignupDark:  "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#192634'/><stop offset='50%' stop-color='#2b3c4d'/><stop offset='100%' stop-color='#131d27'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><circle cx='1200' cy='240' r='180' fill='#9cc4e4' opacity='0.14'/></svg>`),
-      bgLoginLight:  "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#e4ece2'/><stop offset='65%' stop-color='#f4f7f0'/><stop offset='100%' stop-color='#9cb98e'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><circle cx='1320' cy='320' r='250' fill='#ffffff' opacity='0.45'/></svg>`),
-      bgLoginDark:   "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#1d2c3b'/><stop offset='60%' stop-color='#324659'/><stop offset='100%' stop-color='#16222e'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><circle cx='1280' cy='300' r='210' fill='#b4d8f2' opacity='0.15'/></svg>`),
-      frog:          "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 150'><ellipse cx='80' cy='92' rx='54' ry='42' fill='#9be15d' stroke='#4d6b2a' stroke-width='3'/><ellipse cx='84' cy='100' rx='34' ry='28' fill='#c8f582'/><circle cx='54' cy='58' r='16' fill='#b7ec6e' stroke='#4d6b2a' stroke-width='3'/><circle cx='106' cy='58' r='16' fill='#b7ec6e' stroke='#4d6b2a' stroke-width='3'/><circle cx='52' cy='58' r='8' fill='#2c261b'/><circle cx='108' cy='58' r='8' fill='#2c261b'/><path d='M72 72 Q80 66 88 72' fill='none' stroke='#2c261b' stroke-width='3' stroke-linecap='round'/></svg>`),
-      rockLight:     "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 260'><polygon points='115,220 140,65 210,35 265,195 235,225' fill='#8c745c'/><polygon points='45,220 75,155 135,150 165,220' fill='#9b836b'/><path d='M140,65 Q175,55 210,35 L195,95 Q160,110 132,102 Z' fill='#7cb342'/><ellipse cx='160' cy='224' rx='135' ry='18' fill='#689f38'/></svg>`),
-      rockDark:      "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 260'><polygon points='115,220 140,65 210,35 265,195 235,225' fill='#334152'/><polygon points='45,220 75,155 135,150 165,220' fill='#3e4e63'/><path d='M140,65 Q175,55 210,35 L195,95 Q160,110 132,102 Z' fill='#2c5943'/><ellipse cx='160' cy='224' rx='135' ry='18' fill='#1e3d2f'/></svg>`),
-      bush3xLight:   "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 210'><circle cx='90' cy='135' r='62' fill='#558b2f'/><circle cx='160' cy='105' r='76' fill='#7cb342'/><circle cx='235' cy='140' r='58' fill='#689f38'/><path d='M30,175 Q160,145 290,175 L280,195 L40,195 Z' fill='#37474f'/></svg>`),
-      bush3xDark:    "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 210'><circle cx='90' cy='135' r='62' fill='#28473e'/><circle cx='160' cy='105' r='76' fill='#386155'/><circle cx='235' cy='140' r='58' fill='#2e5248'/><path d='M30,175 Q160,145 290,175 L280,195 L40,195 Z' fill='#16242f'/></svg>`),
-      bushRightLight:"data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 220'><circle cx='195' cy='125' r='82' fill='#7cb342'/><circle cx='135' cy='148' r='58' fill='#8bc34a'/><circle cx='265' cy='148' r='60' fill='#558b2f'/><path d='M55,195 L85,125 L100,195 M75,195 L110,135 L120,195' fill='#689f38'/></svg>`),
-      bushRightDark: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 220'><circle cx='195' cy='125' r='82' fill='#2d5244'/><circle cx='135' cy='148' r='58' fill='#386352'/><circle cx='265' cy='148' r='60' fill='#1f3b31'/><path d='M55,195 L85,125 L100,195 M75,195 L110,135 L120,195' fill='#244538'/></svg>`),
+      alertLeaves:   "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 110 95'><path d='M66 78 C46 58, 28 38, 12 22 C35 24, 56 38, 66 78 Z' fill='#a9c582'/><path d='M69 76 C62 49, 64 25, 72 6 C84 25, 84 52, 69 76 Z' fill='#9bb974'/><path d='M65 81 C46 78, 30 74, 18 67 C34 61, 51 66, 65 81 Z' fill='#9fb97a'/></svg>`),
+      alertHorn:     "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><g transform='rotate(-26 60 60)'><path d='M16 48 L44 48 L44 72 L16 72 Z' fill='#9e2020'/><path d='M44 46 L94 24 L94 96 L44 74 Z' fill='#ece6d6' stroke='#b92525' stroke-width='4'/><path d='M36 72 L44 102 L58 98 L48 72 Z' fill='#d6c9b4'/></g></svg>`),
+      bgSignupLight: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#d8e6d5'/><stop offset='55%' stop-color='#eef3e6'/><stop offset='100%' stop-color='#a4c298'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/></svg>`),
+      bgSignupDark:  "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#192634'/><stop offset='50%' stop-color='#2b3c4d'/><stop offset='100%' stop-color='#131d27'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/></svg>`),
+      bgLoginLight:  "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#e4ece2'/><stop offset='65%' stop-color='#f4f7f0'/><stop offset='100%' stop-color='#9cb98e'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/></svg>`),
+      bgLoginDark:   "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#1d2c3b'/><stop offset='60%' stop-color='#324659'/><stop offset='100%' stop-color='#16222e'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/></svg>`),
+      frog:          "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 150'><ellipse cx='80' cy='92' rx='54' ry='42' fill='#9be15d' stroke='#4d6b2a' stroke-width='3'/><circle cx='54' cy='58' r='16' fill='#b7ec6e' stroke='#4d6b2a' stroke-width='3'/><circle cx='106' cy='58' r='16' fill='#b7ec6e' stroke='#4d6b2a' stroke-width='3'/></svg>`),
+      rockLight:     "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 260'><polygon points='115,220 140,65 210,35 265,195 235,225' fill='#8c745c'/></svg>`),
+      rockDark:      "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 260'><polygon points='115,220 140,65 210,35 265,195 235,225' fill='#334152'/></svg>`),
+      bush3xLight:   "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 210'><circle cx='160' cy='105' r='76' fill='#7cb342'/></svg>`),
+      bush3xDark:    "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 210'><circle cx='160' cy='105' r='76' fill='#386155'/></svg>`),
+      bushRightLight:"data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 220'><circle cx='195' cy='125' r='82' fill='#7cb342'/></svg>`),
+      bushRightDark: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 220'><circle cx='195' cy='125' r='82' fill='#2d5244'/></svg>`),
       iconMoon:      "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#e2e8f0'><path d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/></svg>`),
-      iconSun:       "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#f59e0b' stroke='#f59e0b' stroke-width='2'><circle cx='12' cy='12' r='5'/><line x1='12' y1='1' x2='12' y2='3'/><line x1='12' y1='21' x2='12' y2='23'/><line x1='4.22' y1='4.22' x2='5.64' y2='5.64'/><line x1='18.36' y1='18.36' x2='19.78' y2='19.78'/><line x1='1' y1='12' x2='3' y2='12'/><line x1='21' y1='12' x2='23' y2='12'/><line x1='4.22' y1='19.78' x2='5.64' y2='18.36'/><line x1='18.36' y1='5.64' x2='19.78' y2='4.22'/></svg>`)
+      iconSun:       "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#f59e0b' stroke='#f59e0b' stroke-width='2'><circle cx='12' cy='12' r='5'/></svg>`)
     };
 
-    /**
-     * Backend API endpoints (Ready for Flask login_process.py & signup_process.py)
-     */
     const API_ENDPOINTS = {
       signup: "/api/signup",
-      login: "/api/login"
+      login: "/api/login",
+      googleAuth: "/api/auth/google"
     };
 
-    // Initial state: Always starts on SIGNUP page in LIGHT MODE
+    const savedTheme = localStorage.getItem("signrest_theme");
     const state = {
-      mode: "signup", // "signup" | "login"
-      theme: "light"  // "light"  | "dark"
+      mode: "signup",
+      theme: savedTheme === "dark" ? "dark" : "light",
+      isSubmitting: false
     };
 
-    // DOM Elements
+    const touched = {
+      email: false,
+      password: false,
+      confirmPassword: false
+    };
+
     const bgPhotoLayer = document.getElementById("bgPhotoLayer");
     const brandLogoImg = document.getElementById("brandLogoImg");
     const themeToggleBtn = document.getElementById("themeToggleBtn");
@@ -240,18 +240,28 @@
     const passwordInput = document.getElementById("passwordInput");
     const confirmPasswordGroup = document.getElementById("confirmPasswordGroup");
     const confirmPasswordInput = document.getElementById("confirmPasswordInput");
+
+    const emailErrorMsg = document.getElementById("emailErrorMsg");
+    const passwordErrorMsg = document.getElementById("passwordErrorMsg");
+    const confirmPasswordErrorMsg = document.getElementById("confirmPasswordErrorMsg");
+
     const forgotPswRow = document.getElementById("forgotPswRow");
     const signupSpacer = document.getElementById("signupSpacer");
     const primarySubmitBtn = document.getElementById("primarySubmitBtn");
+    const googleAuthBtn = document.getElementById("googleAuthBtn");
     const googleBtnText = document.getElementById("googleBtnText");
     const switchPromptText = document.getElementById("switchPromptText");
     const switchModeBtn = document.getElementById("switchModeBtn");
-    const statusBanner = document.getElementById("statusBanner");
 
-    /**
-     * Loads the user's local asset image if present; gracefully falls back to
-     * inline preview art if run inside an isolated preview sandbox.
-     */
+    // Notification Toast Elements
+    const leafToastWrapper = document.getElementById("leafToastWrapper");
+    const leafToastCard = document.getElementById("leafToastCard");
+    const leafToastSproutImg = document.getElementById("leafToastSproutImg");
+    const leafToastMessage = document.getElementById("leafToastMessage");
+    const leafToastCloseBtn = document.getElementById("leafToastCloseBtn");
+    const leafToastBars = Array.from(document.querySelectorAll(".leaf-toast-bar"));
+    let toastInterval = null;
+
     function applyImageWithFallback(imgEl, assetKey) {
       imgEl.onerror = () => {
         imgEl.onerror = null;
@@ -260,9 +270,6 @@
       imgEl.src = ASSETS[assetKey];
     }
 
-    /**
-     * Updates the blurred background swatch based on (theme x mode)
-     */
     function applyBackgroundSwatch() {
       let key = "bgSignupLight";
       if (state.theme === "light" && state.mode === "signup") key = "bgSignupLight";
@@ -280,39 +287,164 @@
       testImg.src = ASSETS[key];
     }
 
-    /**
-     * Updates theme (Light <-> Dark), shows Sun in Light Mode & Moon in Dark Mode,
-     * swaps Rock & Bushes, and triggers CSS lamp glow on the single Frog image.
-     */
     function renderTheme() {
       const isDark = state.theme === "dark";
       document.body.classList.toggle("dark-mode", isDark);
+      localStorage.setItem("signrest_theme", state.theme);
 
-      // Brand logo (uses fallback SVG until logo.png is added)
       applyImageWithFallback(brandLogoImg, "logo");
-
-      // Sun shown in Light Mode; Moon shown in Dark Mode
+      applyImageWithFallback(leafToastSproutImg, state.mode === "login" ? "alertHorn" : "alertLeaves");
       applyImageWithFallback(themeIconImg, isDark ? "iconMoon" : "iconSun");
 
-      // Swap light/dark versions of rock & bushes
       applyImageWithFallback(sceneryRock, isDark ? "rockDark" : "rockLight");
       applyImageWithFallback(sceneryBush1, isDark ? "bush3xDark" : "bush3xLight");
       applyImageWithFallback(sceneryBush2, isDark ? "bush3xDark" : "bush3xLight");
       applyImageWithFallback(sceneryBush3, isDark ? "bush3xDark" : "bush3xLight");
       applyImageWithFallback(sceneryBushRight, isDark ? "bushRightDark" : "bushRightLight");
-
-      // Frog always uses the exact same photo; CSS --frog-filter lights it up in dark mode
       applyImageWithFallback(sceneryFrog, "frog");
 
       applyBackgroundSwatch();
     }
 
     /**
-     * Updates form fields & labels between Signup (default) and Login
+     * Triggers the corner popup notification:
+     * - In Signup mode: Sage green card + 3-leaf icon (`signup_invalid_noti.png`)
+     * - In Login mode: Warm stone beige card + angled red megaphone (`login_invalid_horn.png`)
      */
+    function triggerLeafAlert(message) {
+      if (toastInterval) clearInterval(toastInterval);
+
+      const isLoginAlert = state.mode === "login";
+      leafToastCard.classList.toggle("toast-horn", isLoginAlert);
+
+      if (isLoginAlert) {
+        applyImageWithFallback(leafToastSproutImg, "alertHorn");
+        leafToastSproutImg.style.top = "-38px";
+        leafToastSproutImg.style.left = "-40px";
+        leafToastSproutImg.style.width = "102px";
+        leafToastSproutImg.style.transform = "rotate(-22deg)";
+      } else {
+        applyImageWithFallback(leafToastSproutImg, "alertLeaves");
+        leafToastSproutImg.style.top = "-34px";
+        leafToastSproutImg.style.left = "-34px";
+        leafToastSproutImg.style.width = "92px";
+        leafToastSproutImg.style.transform = "none";
+      }
+
+      leafToastMessage.textContent = message;
+      leafToastBars.forEach((bar) => bar.classList.remove("elapsed"));
+      leafToastWrapper.classList.add("show");
+
+      let elapsedSeconds = 0;
+      toastInterval = setInterval(() => {
+        if (elapsedSeconds < 5) {
+          const barIndex = 4 - elapsedSeconds;
+          if (leafToastBars[barIndex]) {
+            leafToastBars[barIndex].classList.add("elapsed");
+          }
+          elapsedSeconds += 1;
+        } else {
+          hideLeafAlert();
+        }
+      }, 1000);
+    }
+
+    function hideLeafAlert() {
+      if (toastInterval) {
+        clearInterval(toastInterval);
+        toastInterval = null;
+      }
+      leafToastWrapper.classList.remove("show");
+    }
+
+    leafToastCloseBtn.addEventListener("click", hideLeafAlert);
+
+    function checkEmailValid(emailVal) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+      if (!emailVal) return { valid: false, msg: "Email is required." };
+      if (!emailRegex.test(emailVal)) return { valid: false, msg: "Please enter a valid email address." };
+      return { valid: true, msg: "" };
+    }
+
+    function checkPasswordValid(pswVal) {
+      if (!pswVal) {
+        return { valid: false, msg: "Password is required." };
+      }
+      if (state.mode === "login") {
+        return { valid: true, msg: "" };
+      }
+      if (pswVal.length < 8) {
+        return { valid: false, msg: "At least 8 characters required." };
+      }
+      if (!/[A-Z]/.test(pswVal)) {
+        return { valid: false, msg: "Include at least one capital letter (A-Z)." };
+      }
+      if (!/[0-9]/.test(pswVal)) {
+        return { valid: false, msg: "Include at least one number (0-9)." };
+      }
+      if (!/[^A-Za-z0-9]/.test(pswVal)) {
+        return { valid: false, msg: "Include at least one special character (!@#$...)." };
+      }
+      return { valid: true, msg: "" };
+    }
+
+    function checkConfirmPasswordValid(pswVal, confirmVal) {
+      if (state.mode === "login") {
+        return { valid: true, msg: "" };
+      }
+      if (!confirmVal) {
+        return { valid: false, msg: "Please confirm your password." };
+      }
+      if (pswVal !== confirmVal) {
+        return { valid: false, msg: "Passwords do not match." };
+      }
+      return { valid: true, msg: "" };
+    }
+
+    function validateFormState(forceShowErrors = false) {
+      const emailVal = emailInput.value.trim();
+      const pswVal = passwordInput.value;
+      const confirmVal = confirmPasswordInput.value;
+
+      const emailRes = checkEmailValid(emailVal);
+      const pswRes = checkPasswordValid(pswVal);
+      const confirmRes = checkConfirmPasswordValid(pswVal, confirmVal);
+
+      emailErrorMsg.textContent = (touched.email || forceShowErrors) && !emailRes.valid ? emailRes.msg : "";
+
+      if (state.mode === "signup") {
+        passwordErrorMsg.textContent = (touched.password || forceShowErrors) && !pswRes.valid ? pswRes.msg : "";
+        confirmPasswordErrorMsg.textContent =
+          (touched.confirmPassword || forceShowErrors) && !confirmRes.valid ? confirmRes.msg : "";
+      } else {
+        passwordErrorMsg.textContent = "";
+        confirmPasswordErrorMsg.textContent = "";
+      }
+
+      const allFieldsFilled =
+        state.mode === "signup"
+          ? Boolean(emailVal && pswVal && confirmVal)
+          : Boolean(emailVal && pswVal);
+
+      const isFormValid = allFieldsFilled && emailRes.valid && pswRes.valid && confirmRes.valid;
+
+      if (!state.isSubmitting) {
+        primarySubmitBtn.disabled = !isFormValid;
+      }
+
+      return isFormValid;
+    }
+
     function renderAuthMode() {
-      clearBanner();
+      hideLeafAlert();
       const isSignup = state.mode === "signup";
+
+      touched.email = false;
+      touched.password = false;
+      touched.confirmPassword = false;
+      emailErrorMsg.textContent = "";
+      passwordErrorMsg.textContent = "";
+      confirmPasswordErrorMsg.textContent = "";
 
       if (isSignup) {
         confirmPasswordGroup.classList.remove("hidden");
@@ -322,7 +454,7 @@
 
         primarySubmitBtn.textContent = "SIGN UP";
         googleBtnText.textContent = "Sign up with Google";
-        switchPromptText.textContent = "already have an acc?";
+        switchPromptText.textContent = "already had an acc?";
         switchModeBtn.textContent = "login";
         passwordInput.setAttribute("autocomplete", "new-password");
       } else {
@@ -339,61 +471,71 @@
       }
 
       applyBackgroundSwatch();
+      validateFormState(false);
     }
 
-    function showBanner(type, message) {
-      statusBanner.className = `status-banner ${type}`;
-      statusBanner.textContent = message;
+    function setButtonLoading(buttonEl, isLoading, defaultHtml) {
+      state.isSubmitting = isLoading;
+      if (isLoading) {
+        buttonEl.disabled = true;
+        buttonEl.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span>`;
+      } else {
+        buttonEl.innerHTML = defaultHtml;
+        validateFormState(false);
+      }
     }
 
-    function clearBanner() {
-      statusBanner.className = "status-banner";
-      statusBanner.textContent = "";
-    }
+    emailInput.addEventListener("input", () => {
+      touched.email = true;
+      validateFormState(false);
+    });
 
-    // Event: Toggle Light / Dark Mode
+    passwordInput.addEventListener("input", () => {
+      touched.password = true;
+      validateFormState(false);
+    });
+
+    confirmPasswordInput.addEventListener("input", () => {
+      touched.confirmPassword = true;
+      validateFormState(false);
+    });
+
     themeToggleBtn.addEventListener("click", () => {
       state.theme = state.theme === "light" ? "dark" : "light";
       renderTheme();
     });
 
-    // Event: Switch between Signup and Login
     switchModeBtn.addEventListener("click", () => {
       state.mode = state.mode === "signup" ? "login" : "signup";
       renderAuthMode();
     });
 
-    // Event: Form Submit (Ready for Flask signup_process.py & login_process.py)
+    googleAuthBtn.addEventListener("click", () => {
+      hideLeafAlert();
+      const originalGoogleHtml = googleAuthBtn.innerHTML;
+      setButtonLoading(googleAuthBtn, true, originalGoogleHtml);
+      primarySubmitBtn.disabled = true;
+
+      setTimeout(() => {
+        window.location.href = `${API_ENDPOINTS.googleAuth}?mode=${state.mode}`;
+      }, 350);
+    });
+
     authForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      clearBanner();
+      hideLeafAlert();
+
+      if (!validateFormState(true)) {
+        return;
+      }
 
       const email = emailInput.value.trim();
       const password = passwordInput.value;
-      const confirmPassword = confirmPasswordInput.value;
-
-      if (!email || !email.includes("@")) {
-        showBanner("error", "Please enter a valid email address.");
-        emailInput.focus();
-        return;
-      }
-
-      if (!password || password.length < 6) {
-        showBanner("error", "Password must be at least 6 characters.");
-        passwordInput.focus();
-        return;
-      }
-
-      if (state.mode === "signup" && password !== confirmPassword) {
-        showBanner("error", "Passwords do not match.");
-        confirmPasswordInput.focus();
-        return;
-      }
 
       const endpoint = state.mode === "signup" ? API_ENDPOINTS.signup : API_ENDPOINTS.login;
-      primarySubmitBtn.disabled = true;
-      const originalLabel = primarySubmitBtn.textContent;
-      primarySubmitBtn.textContent = state.mode === "signup" ? "CREATING..." : "SIGNING IN...";
+      const originalBtnHtml = primarySubmitBtn.innerHTML;
+      setButtonLoading(primarySubmitBtn, true, originalBtnHtml);
+      googleAuthBtn.disabled = true;
 
       try {
         const response = await fetch(endpoint, {
@@ -409,28 +551,24 @@
         const data = await response.json();
 
         if (!response.ok || !data.success) {
-          showBanner("error", data.message || "Authentication failed.");
+          triggerLeafAlert(data.message || "Authentication failed.");
+          setButtonLoading(primarySubmitBtn, false, originalBtnHtml);
+          googleAuthBtn.disabled = false;
         } else {
-          showBanner("success", data.message || "Success! Redirecting...");
-          if (data.redirect_url) {
-            setTimeout(() => {
-              window.location.href = data.redirect_url;
-            }, 650);
+          if (state.mode === "signup") {
+            sessionStorage.setItem("signrest_otp_just_sent", "1");
           }
+          window.location.href =
+            data.redirect_url ||
+            (state.mode === "signup" ? `otp_verify.html?email=${encodeURIComponent(email)}` : "/home");
         }
       } catch (err) {
-        // Helpful UI feedback while previewing frontend before Flask backend is started
-        showBanner(
-          "success",
-          `Frontend validation passed for ${state.mode.toUpperCase()} (${email}). Ready to connect to ${endpoint}.`
-        );
-      } finally {
-        primarySubmitBtn.disabled = false;
-        primarySubmitBtn.textContent = originalLabel;
+        setButtonLoading(primarySubmitBtn, false, originalBtnHtml);
+        googleAuthBtn.disabled = false;
+        triggerLeafAlert("Server connection error. Please try again.");
       }
     });
 
-    // Initialize initial view: Signup Mode + Light Theme
     renderTheme();
     renderAuthMode();
   </script>
