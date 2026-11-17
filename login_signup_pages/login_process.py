@@ -70,7 +70,7 @@ def process_login():
 
         cursor.execute(
             """
-            SELECT user_id, username, email, password_hash, profile_photo,
+            SELECT user_id, username, full_name, email, password_hash, profile_photo,
                    role, status, failed_login_attempts, locked_until
             FROM users
             WHERE email = %s
@@ -187,6 +187,10 @@ def process_login():
         session["user_email"] = user["email"]
         session["user_role"] = role
         session["username"] = user.get("username")
+        session["full_name"] = user.get("full_name")
+        session["display_name"] = (
+            user.get("full_name") or user.get("username") or user["email"].partition("@")[0]
+        )
         session["profile_photo"] = user.get("profile_photo")
         session["profile_completed"] = has_complete_profile
 

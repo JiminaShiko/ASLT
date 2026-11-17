@@ -43,8 +43,22 @@ window.SignrestAPI = (() => {
     const data = await response.json();
     return normalizeMaterial(data.item);
   }
+  function count(value) { if (!Number.isInteger(value) || value < 0) throw new Error('The server returned an invalid overview response.'); return value; }
   return {
     normalizeLog,
+    async overview(params, signal) {
+      const d = await get('/overview', params, signal);
+      if (!d || !d.totals || !Array.isArray(d.activity) || !Array.isArray(d.low_confidence) || !Array.isArray(d.recent_feedback)) throw new Error('The server returned an invalid overview response.');
+      const m = d.model;
+      return {
+        admin_name: typeof d.admin_name === 'string' ? d.admin_name : '',
+        totals: { users: count(d.totals.users), translations: count(d.totals.translations), active_sessions: count(d.totals.active_sessions), pending_feedback: count(d.totals.pending_feedback) },
+        model: m ? { name: m.model_name || 'Model', version: m.model_version, accuracy: percentage(m.accuracy_percentage), evaluatedAt: m.evaluated_at } : null,
+        activity: d.activity.map(a => ({ date: a.date, sign_to_text: count(a.sign_to_text), text_to_sign: count(a.text_to_sign) })),
+        low_confidence: d.low_confidence.map(normalizeLog),
+        recent_feedback: d.recent_feedback.map(f => ({ id: f.feedback_id, user: f.user_name || 'Unknown user', rating: Number(f.rating_score) || 0, message: f.message, status: f.status || 'pending', createdAt: f.created_at }))
+      };
+    },
     async materials(params, signal) {
       const data = await get('/materials', params, signal);
       if (!Array.isArray(data.items) || !Number.isInteger(data.total) || data.total < 0 || !Array.isArray(data.categories) || data.categories.some(c => typeof c !== 'string' || !c)) throw new Error('The server returned an invalid materials response.');
