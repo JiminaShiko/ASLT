@@ -1,0 +1,487 @@
+:root {
+  --text-primary: #141814;
+  --text-muted: #2e382e;
+  --link-color: #2c4a2c;
+  --brand-color: #f4f8f2;
+  --line-color: #2c352c;
+  --btn-main-bg: #000000;
+  --btn-main-text: #ffffff;
+  --btn-google-bg: #445d44;
+  --btn-google-text: #ffffff;
+  --frog-filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.25));
+}
+
+body.dark-mode {
+  --text-primary: #f1f5f9;
+  --text-muted: #cbd5e1;
+  --link-color: #4f8a4f;
+  --brand-color: #e6f2e6;
+  --line-color: #cbd5e1;
+  --btn-main-bg: #050706;
+  --btn-main-text: #ffffff;
+  --btn-google-bg: #3e563e;
+  --btn-google-text: #ffffff;
+  /* Lamp-like warm bioluminescent glow for the same frog photo in dark mode */
+  --frog-filter:
+    brightness(1.22)
+    contrast(1.06)
+    drop-shadow(0 0 8px rgba(215, 255, 130, 0.95))
+    drop-shadow(0 0 22px rgba(175, 245, 95, 0.78))
+    drop-shadow(0 0 46px rgba(140, 225, 70, 0.45));
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-family: 'Lora', Georgia, serif;
+  color: var(--text-primary);
+  transition: color 0.45s ease;
+  background-color: #dce5dc;
+}
+
+body.dark-mode {
+  background-color: #16202a;
+}
+
+/* Fullscreen blurred background photo layer */
+.bg-photo-layer {
+  position: fixed;
+  inset: -18px; /* Overscan prevents white edges from blur() */
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(5px);
+  transform: scale(1.03);
+  transition: background-image 0.55s ease, filter 0.45s ease;
+}
+
+/* Subtle readability veil over background */
+.bg-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04));
+  transition: background 0.45s ease;
+}
+
+body.dark-mode .bg-veil {
+  background: radial-gradient(circle at 50% 42%, rgba(10, 16, 24, 0.18), rgba(8, 13, 20, 0.42));
+}
+
+/* Top-left Brand Logo & "Signrest" earthy typography */
+.brand-header {
+  position: fixed;
+  top: 20px;
+  left: 26px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+}
+
+.brand-logo-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.16));
+  transition: filter 0.35s ease;
+}
+
+body.dark-mode .brand-logo-img {
+  filter: drop-shadow(0 0 8px rgba(185, 235, 160, 0.35));
+}
+
+.brand-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: 0.03em;
+  color: var(--brand-color);
+  line-height: 1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+  transition: color 0.35s ease, text-shadow 0.35s ease;
+}
+
+body.dark-mode .brand-title {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+/* Top-right theme toggle button (Sun in light mode, Moon in dark mode — slightly bigger, borderless) */
+.theme-toggle-btn {
+  position: fixed;
+  top: 18px;
+  right: 24px;
+  z-index: 40;
+  width: 46px;
+  height: 46px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.25s ease, filter 0.3s ease;
+}
+
+.theme-toggle-btn:hover {
+  transform: scale(1.12) rotate(10deg);
+}
+
+.theme-toggle-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.22));
+}
+
+body.dark-mode .theme-toggle-btn img {
+  filter: drop-shadow(0 0 8px rgba(210, 235, 255, 0.45));
+}
+
+/* Compact underlined minimalist inputs */
+.underlined-field {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1.25px solid var(--line-color);
+  padding: 4px 2px;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.3s ease, color 0.3s ease;
+}
+
+.underlined-field::placeholder {
+  color: transparent;
+}
+
+.underlined-field:focus {
+  border-bottom-width: 1.75px;
+}
+
+.field-label {
+  display: block;
+  font-size: 1.02rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+  margin-bottom: 1px;
+  transition: color 0.3s ease;
+}
+
+/* Dark-green hypertext links ("forgot psw?", "login", "signup") */
+.sub-link {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--link-color);
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease, color 0.3s ease;
+}
+
+.sub-link:hover {
+  opacity: 0.78;
+  text-decoration: underline;
+}
+
+/* Compact pill buttons */
+.btn-primary-pill {
+  width: 100%;
+  height: 44px;
+  border-radius: 9999px;
+  background-color: var(--btn-main-bg);
+  color: var(--btn-main-text);
+  font-family: 'Lora', Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.3s ease;
+}
+
+.btn-primary-pill:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.btn-google-pill {
+  width: 100%;
+  height: 44px;
+  border-radius: 9999px;
+  background-color: var(--btn-google-bg);
+  color: var(--btn-google-text);
+  font-family: 'Lora', Georgia, serif;
+  font-size: 0.98rem;
+  font-weight: 400;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.16);
+  transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.3s ease;
+}
+
+.btn-google-pill:hover {
+  transform: translateY(-1px);
+  opacity: 0.93;
+}
+
+/* Foreground nature scenery layers */
+.scenery-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.scenery-item {
+  position: absolute;
+  user-select: none;
+  transition: filter 0.5s ease;
+}
+
+/* Bigger Rock + Frog group sunk into the grass border */
+.rock-frog-group {
+  position: absolute;
+  bottom: -95px;
+  left: 13%;
+  width: clamp(320px, 31vw, 490px);
+  z-index: 7;
+}
+
+.rock-frog-group .scenery-rock {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  z-index: 6;
+}
+
+/* Bigger frog anchored at its base on the stone, breathing slowly */
+.rock-frog-group .scenery-frog {
+  position: absolute;
+  bottom: 29%;
+  left: 15%;
+  width: 38%;
+  height: auto;
+  z-index: 11;
+  pointer-events: auto;
+  cursor: pointer;
+  filter: var(--frog-filter);
+  transform-origin: bottom center;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), filter 0.45s ease;
+  animation: frogSlowBreathe 4.8s ease-in-out infinite;
+}
+
+/* Warm radial ambient light cast around frog in dark mode */
+.rock-frog-group .frog-lamp-aura {
+  position: absolute;
+  bottom: 24%;
+  left: 9%;
+  width: 50%;
+  aspect-ratio: 1 / 1;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(210, 255, 120, 0.52) 0%, rgba(165, 240, 85, 0.18) 48%, rgba(0, 0, 0, 0) 75%);
+  opacity: 0;
+  z-index: 10;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+body.dark-mode .rock-frog-group .frog-lamp-aura {
+  opacity: 1;
+  animation: lampPulse 4.8s ease-in-out infinite;
+}
+
+/* Calm, slow breathing anchored to the stone when NOT hovered */
+@keyframes frogSlowBreathe {
+  0%, 100% {
+    transform: translateY(0) scaleY(1) scaleX(1);
+  }
+  50% {
+    transform: translateY(0) scaleY(1.04) scaleX(1.02);
+  }
+}
+
+/* Gentle breeze swaying anchored at the roots of each bush */
+@keyframes bushBreezeSway {
+  0%, 100% {
+    transform: rotate(0deg) skewX(0deg);
+  }
+  35% {
+    transform: rotate(1.35deg) skewX(-1.1deg);
+  }
+  70% {
+    transform: rotate(-0.95deg) skewX(0.8deg);
+  }
+}
+
+@keyframes lampPulse {
+  0%, 100% { transform: scale(1); opacity: 0.92; }
+  50% { transform: scale(1.08); opacity: 0.78; }
+}
+
+/* Reusable 3-Clump Bushes sunk below viewport edge with staggered breeze sway */
+.scenery-bush-left {
+  bottom: -115px;
+  left: -3%;
+  width: clamp(290px, 28vw, 440px);
+  z-index: 9;
+  transform-origin: bottom center;
+  animation: bushBreezeSway 6.4s ease-in-out infinite;
+}
+
+.scenery-bush-mid-left {
+  bottom: -120px;
+  left: 31%;
+  width: clamp(275px, 26vw, 410px);
+  z-index: 9;
+  transform-origin: bottom center;
+  animation: bushBreezeSway 7.2s ease-in-out 0.9s infinite;
+}
+
+.scenery-bush-mid-right {
+  bottom: -120px;
+  left: 52%;
+  width: clamp(270px, 25vw, 400px);
+  z-index: 9;
+  transform-origin: bottom center;
+  animation: bushBreezeSway 6.8s ease-in-out 1.8s infinite;
+}
+
+/* Distinct Grassy Right Bush — raised slightly above bottom edge with gentle breeze */
+.scenery-bush-right {
+  bottom: -102px;
+  right: -9%;
+  width: clamp(395px, 40vw, 610px);
+  z-index: 8; /* Changed from 10 to 8 so it sits behind the adjacent bush */
+  transform-origin: bottom center;
+  animation: bushBreezeSway 7.6s ease-in-out 0.4s infinite;
+}
+
+/* Status toast message box */
+.status-banner {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  display: none;
+  backdrop-filter: blur(6px);
+}
+
+.status-banner.error {
+  display: block;
+  background: rgba(220, 38, 38, 0.16);
+  border: 1px solid rgba(220, 38, 38, 0.45);
+  color: #991b1b;
+}
+
+body.dark-mode .status-banner.error {
+  background: rgba(239, 68, 68, 0.22);
+  color: #fecaca;
+}
+
+.status-banner.success {
+  display: block;
+  background: rgba(22, 163, 74, 0.18);
+  border: 1px solid rgba(22, 163, 74, 0.45);
+  color: #14532d;
+}
+
+body.dark-mode .status-banner.success {
+  background: rgba(34, 197, 94, 0.22);
+  color: #bbf7d0;
+}
+
+/* Tablet responsive adjustments */
+@media (max-width: 1024px) {
+  .rock-frog-group {
+    left: 6%;
+    bottom: -72px;
+    width: 310px;
+  }
+  .scenery-bush-left {
+    left: -6%;
+    bottom: -92px;
+    width: 280px;
+  }
+  .scenery-bush-mid-left {
+    left: 28%;
+    bottom: -96px;
+    width: 265px;
+  }
+  .scenery-bush-mid-right {
+    left: 50%;
+    bottom: -96px;
+    width: 255px;
+  }
+  .scenery-bush-right {
+    right: -10%;
+    bottom: -64px;
+    width: 395px;
+  }
+}
+
+/* Mobile responsive adjustments (phones) */
+@media (max-width: 640px) {
+  .brand-header {
+    top: 16px;
+    left: 16px;
+    gap: 8px;
+  }
+  .brand-logo-img {
+    width: 30px;
+    height: 30px;
+  }
+  .brand-title {
+    font-size: 1.48rem;
+  }
+  .theme-toggle-btn {
+    top: 14px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+  }
+  .rock-frog-group {
+    left: 2%;
+    bottom: -54px;
+    width: 225px;
+  }
+  .scenery-bush-left {
+    left: -14%;
+    bottom: -68px;
+    width: 195px;
+  }
+  .scenery-bush-mid-left {
+    left: 33%;
+    bottom: -72px;
+    width: 195px;
+  }
+  .scenery-bush-mid-right {
+    display: none;
+  }
+  .scenery-bush-right {
+    right: -18%;
+    bottom: -48px;
+    width: 285px;
+  }
+}
