@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signrest — Overview</title><meta name="description" content="Signrest administrator dashboard for translations, learning materials, and community management."><meta property="og:title" content="Signrest Admin Portal"><meta property="og:description" content="Manage sign language translations, learning, and community."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="overview">
+<div class="app" id="app">
+<div class="mobile-overlay" onclick="closeMobile()"></div>
+<aside class="sidebar"><div class="brand"><span id="brand-icon"></span><span>Signrest</span></div><div class="portal">Admin Portal</div><div class="nav-label">WORKSPACE</div><nav class="nav" id="nav"></nav><div class="side-bottom"><div class="admin"><div class="avatar" id="admin-initials">EW</div><div class="admin-info"><div class="admin-name" id="admin-name">Emma Wilson</div><small>Admin</small></div></div><button class="logout" onclick="logout()" id="logout"></button></div></aside>
+<main class="main"><header><div class="header-start"><button class="collapse" onclick="collapseSidebar()" aria-label="Toggle sidebar" id="collapse"></button><div><div class="header-title" id="page-title">Overview</div><div class="header-sub" id="page-subtitle">A little clarity. A more connected world.</div></div></div><div class="header-right"><button class="icon-button theme-toggle" id="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Switch to dark mode" title="Switch to dark mode"></button><label class="search"><span id="search-icon"></span><input id="search" placeholder="Search..." aria-label="Search dashboard" oninput="searchView(this.value)"><kbd>⌘ K</kbd></label><div class="system"><span class="dot"></span>CNN Model: Online <span>(94.2% Avg)</span></div><div class="avatar header-avatar" id="top-initials">EW</div></div></header><div class="content" id="content"></div></main>
+</div>
+<dialog id="modal"><div class="modal-head"><h2 id="modal-title"></h2><button class="icon-button" id="modal-close" aria-label="Close dialog" onclick="document.getElementById('modal').close()"></button></div><form id="modal-form" onsubmit="saveModal(event)"><div class="form-grid" id="modal-fields"></div><div class="form-actions"><button class="btn outline" type="button" onclick="document.getElementById('modal').close()">Cancel</button><button class="btn" type="submit">Save changes</button></div></form></dialog><div class="toast" id="toast" role="status"></div>
+<script src="js/app.js"></script>
+</body></html>
