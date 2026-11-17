@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signrest — Complete Your Profile</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Great+Vibes&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="auth_style.css" />
+  <style>
+    :root {
+      --env-back: #345837;
+      --env-flap-left: #456e48;
+      --env-flap-right: #3f6642;
+      --env-flap-bottom: #385d3b;
+      --letter-text: #1c2e1e;
+      --letter-muted: #3d5440;
+      --twinkle-base: rgba(31, 51, 33, 0.45);
+      --twinkle-glow: rgba(114, 174, 92, 0.95);
+      --btn-confirm-bg: #1e3d35;
+      --btn-confirm-text: #ffffff;
+      --skip-letter-color: #365239;
+    }
+
+    body.dark-mode {
+      --env-back: #1d3324;
+      --env-flap-left: #284531;
+      --env-flap-right: #243f2d;
+      --env-flap-bottom: #1f3827;
+      /* Paper stays bright handmade ivory in dark mode too */
+      --letter-text: #1c2e1e;
+      --letter-muted: #3d5440;
+      --twinkle-base: rgba(31, 51, 33, 0.45);
+      --twinkle-glow: rgba(114, 174, 92, 0.95);
+      --btn-confirm-bg: #23473e;
+      --btn-confirm-text: #ffffff;
+      --skip-letter-color: #365239;
+    }
+
+    /* Soft light-green botanical blur over background photo */
+    .bg-green-tint {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background: radial-gradient(circle at 50% 45%, rgba(212, 238, 202, 0.52), rgba(154, 198, 146, 0.38));
+      pointer-events: none;
+      transition: background 0.35s ease;
+    }
+
+    body.dark-mode .bg-green-tint {
+      background: radial-gradient(circle at 50% 45%, rgba(20, 44, 30, 0.65), rgba(10, 20, 15, 0.82));
+    }
+
+    /* =========================================================
+       SMOOTH BORDERLESS ENVELOPE WITH SOFT DEPTH SHADOWS
+       ========================================================= */
+    .envelope-stage {
+      position: relative;
+      width: min(780px, 95vw);
+      margin-top: 24px;
+      padding-top: 82px;
+      filter: drop-shadow(0 24px 38px rgba(14, 28, 16, 0.28));
+    }
+
+    .envelope-top-flap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 245px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .envelope-back-body {
+      position: absolute;
+      top: 243px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(180deg, var(--env-back) 0%, color-mix(in srgb, var(--env-back) 88%, #000000) 100%);
+      border-bottom-left-radius: 18px;
+      border-bottom-right-radius: 18px;
+      z-index: 2;
+    }
+
+    /* Torn Handmade Paper ONLY (No rectangular box background behind it) */
+    .letter-card {
+      position: relative;
+      z-index: 5;
+      width: 89%;
+      margin: 0 auto;
+      background-color: transparent;
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-position: center;
+      padding: 46px 68px 132px 68px;
+      filter: drop-shadow(0 12px 24px rgba(14, 26, 15, 0.24));
+      color: var(--letter-text);
+    }
+
+    /* Front Envelope Pocket Flaps (Covers bottom stems of flowers & paper) */
+    .envelope-front-pocket {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 195px;
+      z-index: 12;
+      pointer-events: none;
+      border-bottom-left-radius: 18px;
+      border-bottom-right-radius: 18px;
+      overflow: hidden;
+    }
+
+    /* White Tulip Bouquet: blooms above pocket, lower stems tucked INSIDE envelope pocket */
+    /* Bigger White Tulip Bouquet tucked inside front envelope pocket, clear of text */
+    .tulip-bouquet {
+      position: absolute;
+      right: -3.5%;
+      bottom: 42px;
+      width: clamp(190px, 31vw, 275px);
+      z-index: 9;
+      pointer-events: none;
+      transform: rotate(-12deg);
+      filter: drop-shadow(0 10px 16px rgba(15, 28, 16, 0.22));
+      animation: tulipSway 5.5s ease-in-out infinite;
+    }
+
+    @keyframes tulipSway {
+      0%, 100% { transform: rotate(-12deg) translateY(0); }
+      50%      { transform: rotate(-9.5deg) translateY(-3px); }
+    }
+
+    /* Circular Profile Photo Picker with Soft Ring Border & Elevation Shadow */
+    .avatar-circle-btn {
+      position: relative;
+      width: 106px;
+      height: 106px;
+      border-radius: 9999px;
+      overflow: hidden;
+      border: 3px solid #faf7f0;
+      outline: 1.5px solid rgba(52, 88, 55, 0.25);
+      background: linear-gradient(180deg, #cbe9f8 0%, #e7f5fc 62%, #88b326 62%, #729c1c 100%);
+      cursor: pointer;
+      flex-shrink: 0;
+      box-shadow: 0 8px 20px rgba(22, 40, 24, 0.22);
+      transition: transform 0.22s ease, box-shadow 0.22s ease;
+    }
+
+    .avatar-circle-btn:hover {
+      transform: scale(1.04);
+      box-shadow: 0 12px 24px rgba(22, 40, 24, 0.3);
+    }
+
+    .avatar-camera-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(18, 34, 20, 0.24);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.22s ease, background-color 0.22s ease;
+    }
+
+    .avatar-circle-btn.empty .avatar-camera-overlay,
+    .avatar-circle-btn:hover .avatar-camera-overlay {
+      opacity: 1;
+    }
+
+    .avatar-circle-btn:not(.empty):hover .avatar-camera-overlay {
+      background: rgba(18, 34, 20, 0.44);
+    }
+
+    /* Cursive "Dear," + Slow Twinkling Username Line */
+    .dear-script {
+      font-family: 'Great Vibes', 'Cormorant Garamond', cursive;
+      font-size: 2.65rem;
+      line-height: 1;
+      color: var(--letter-text);
+      user-select: none;
+    }
+
+    .twinkle-field-wrap {
+      position: relative;
+      flex: 1;
+      width: 100%;
+    }
+
+    .username-line-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 4px 4px 6px 4px;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 1.08rem;
+      color: var(--letter-text);
+      outline: none;
+    }
+
+    .username-line-input::placeholder {
+      color: var(--letter-muted);
+      opacity: 0.65;
+      font-style: italic;
+    }
+
+    .twinkle-underline {
+      position: relative;
+      height: 2px;
+      width: 100%;
+      background: var(--twinkle-base);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+
+    .twinkle-underline::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -45%;
+      width: 45%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, var(--twinkle-glow), #ffffff, var(--twinkle-glow), transparent);
+      animation: lineTwinkle 3.8s ease-in-out infinite;
+    }
+
+    @keyframes lineTwinkle {
+      0%   { left: -45%; opacity: 0.25; }
+      50%  { opacity: 1; }
+      100% { left: 105%; opacity: 0.25; }
+    }
+
+    /* Compact Confirm Pill Button */
+    .btn-confirm-pill {
+      min-width: 138px;
+      height: 35px;
+      padding: 0 22px;
+      border-radius: 9999px;
+      border: none;
+      background: var(--btn-confirm-bg);
+      color: var(--btn-confirm-text);
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 5px 14px rgba(18, 42, 34, 0.22);
+      transition: transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+    }
+
+    .btn-confirm-pill:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-confirm-pill:not(:disabled):hover {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+
+    /* Smaller "skip for now" link inside the paper letter */
+    .skip-inside-btn {
+      display: inline-block;
+      margin-top: 8px;
+      background: transparent;
+      border: none;
+      color: var(--skip-letter-color);
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.74rem;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+      opacity: 0.82;
+      transition: opacity 0.2s ease;
+    }
+
+    .skip-inside-btn:hover { opacity: 1; }
+
+    @media (max-width: 640px) {
+      .envelope-stage { padding-top: 58px; }
+      .envelope-top-flap { height: 180px; }
+      .envelope-back-body { top: 178px; }
+      .letter-card { width: 92%; padding: 34px 28px 116px 28px; }
+      .avatar-circle-btn { width: 88px; height: 88px; }
+      .dear-script { font-size: 2.15rem; }
+      .tulip-bouquet { width: 155px; bottom: 40px; right: -3%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Blurred Forest Background with Soft Light-Green Botanical Tint -->
+  <div id="bgPhotoLayer" class="bg-photo-layer"></div>
+  <div class="bg-green-tint"></div>
+
+  <!-- 2. Brand Logo (Exact same header & font as Login/OTP pages) -->
+  <header class="brand-header">
+    <img id="brandLogoImg" class="brand-logo-img" alt="Signrest Logo" />
+    <span class="brand-title">Signrest</span>
+  </header>
+
+  <!-- 3. Light / Dark Mode Switch -->
+  <button
+    type="button"
+    id="themeToggleBtn"
+    class="theme-toggle-btn"
+    aria-label="Toggle Light or Dark Mode"
+    title="Switch Light / Dark Mode"
+  >
+    <img id="themeIconImg" alt="Theme Toggle Icon" />
+  </button>
+
+  <!-- 4. Centered Envelope Setup Stage -->
+  <main class="relative z-10 min-h-screen flex items-center justify-center px-4 py-10">
+    <div class="envelope-stage">
+
+      <!-- Smooth Top Open Envelope Flap -->
+      <svg class="envelope-top-flap" viewBox="0 0 780 245" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="topFlapGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--env-flap-left)" />
+            <stop offset="100%" stop-color="var(--env-back)" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M 0,245 L 384,8 Q 390,3 396,8 L 780,245 Z"
+          fill="url(#topFlapGrad)"
+        />
+      </svg>
+
+      <!-- Envelope Back Body -->
+      <div class="envelope-back-body" aria-hidden="true"></div>
+
+      <!-- White Tulip Bouquet (Lower stems tucked inside envelope pocket, clear of text) -->
+      <img id="tulipBouquetImg" class="tulip-bouquet" alt="" />
+
+      <!-- Handmade Torn Paper Letter Card (No solid box behind it) -->
+      <div id="letterCard" class="letter-card">
+        <input type="file" id="photoFileInput" accept="image/*" class="hidden" />
+
+        <!-- Top Row: Circular Profile Photo + "Dear, [your username]" -->
+        <div class="flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-6">
+          <button
+            type="button"
+            id="avatarCircleBtn"
+            class="avatar-circle-btn empty"
+            aria-label="Upload and crop profile photo"
+            title="Upload Profile Photo"
+          >
+            <svg id="defaultHillSvg" viewBox="0 0 120 120" class="w-full h-full" aria-hidden="true">
+              <defs>
+                <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#bfe3f7" />
+                  <stop offset="100%" stop-color="#eef8fd" />
+                </linearGradient>
+              </defs>
+              <rect width="120" height="120" fill="url(#skyGrad)" />
+              <path d="M44 36 C44 29, 51 24, 58 26 C61 20, 71 20, 75 26 C82 26, 87 31, 86 38 C86 43, 81 46, 75 46 L48 46 C43 46, 40 41, 44 36 Z" fill="#ffffff" />
+              <path d="M0 78 Q38 68 78 80 T120 76 L120 120 L0 120 Z" fill="#a7cb45" />
+              <path d="M0 88 Q55 76 120 92 L120 120 L0 120 Z" fill="#7aa61e" />
+            </svg>
+            <img id="croppedAvatarPreview" class="hidden w-full h-full object-cover" alt="Profile Avatar" />
+
+            <!-- Camera Icon Only -->
+            <div class="avatar-camera-overlay">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            </div>
+          </button>
+
+          <div class="flex-1 w-full flex items-baseline gap-3 pb-2 pr-4 sm:pr-20">
+            <span class="dear-script">Dear,</span>
+            <div class="twinkle-field-wrap">
+              <input
+                type="text"
+                id="usernameInput"
+                class="username-line-input"
+                placeholder="your username"
+                maxlength="40"
+                autocomplete="off"
+              />
+              <div class="twinkle-underline" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sign-Language Community Welcome Message (Padded away from tulip bouquet) -->
+        <div class="mt-6 mb-5 text-center px-2 sm:px-10">
+          <h2 class="text-[1.15rem] sm:text-[1.32rem] font-medium tracking-wide mb-2" style="color: var(--letter-text);">
+            Welcome to Our Signrest Community
+          </h2>
+          <p class="text-[0.82rem] sm:text-[0.88rem] leading-relaxed max-w-[400px] mx-auto" style="color: var(--letter-muted);">
+            Where every gesture speaks, every expression connects, and every hand tells a story. Share your face and name so our signing community can warmly greet you.
+          </p>
+          <p id="formFeedbackMsg" class="mt-1.5 text-[0.78rem] font-medium text-red-700 min-h-[1rem]"></p>
+        </div>
+
+        <!-- Compact Confirm Button + Small Skip for Now Inside the Paper Letter -->
+        <div class="flex flex-col items-center">
+          <button type="button" id="confirmProfileBtn" class="btn-confirm-pill" disabled>
+            Confirm
+          </button>
+          <button type="button" id="skipForNowBtn" class="skip-inside-btn">
+            skip for now
+          </button>
+        </div>
+      </div>
+
+      <!-- Smooth Borderless Front Envelope Pocket Flaps -->
+      <svg class="envelope-front-pocket" viewBox="0 0 780 195" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <filter id="flapShadow" x="-10%" y="-15%" width="120%" height="130%">
+            <feDropShadow dx="0" dy="-3" stdDeviation="5" flood-color="#0b180c" flood-opacity="0.28" />
+          </filter>
+        </defs>
+        <polygon
+          points="0,0 425,138 0,195"
+          style="fill: var(--env-flap-left);"
+          filter="url(#flapShadow)"
+        />
+        <polygon
+          points="780,0 355,138 780,195"
+          style="fill: var(--env-flap-right);"
+          filter="url(#flapShadow)"
+        />
+        <path
+          d="M 0,195 L 384,116 Q 390,113 396,116 L 780,195 Z"
+          style="fill: var(--env-flap-bottom);"
+          filter="url(#flapShadow)"
+        />
+      </svg>
+
+    </div>
+  </main>
+
+  <!-- 5. Interactive Circular Image Cropper Modal -->
+  <div
+    id="cropModal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 backdrop-blur-sm px-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cropModalTitle"
+  >
+    <div class="w-full max-w-[380px] rounded-2xl p-6 shadow-2xl bg-[#f2ede2] text-[#1c2e1e]">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="cropModalTitle" class="text-[1.15rem] font-semibold">Crop Profile Photo</h3>
+        <button type="button" id="closeCropModalBtn" class="text-sm font-bold px-2.5 py-1 rounded-full bg-black/10 hover:bg-black/20">
+          X
+        </button>
+      </div>
+
+      <p class="text-[0.8rem] mb-3 text-[#3d5440]">
+        Drag the photo to center your face, then adjust zoom.
+      </p>
+
+      <div class="relative w-[260px] h-[260px] mx-auto rounded-xl overflow-hidden bg-neutral-900 select-none touch-none">
+        <canvas id="cropCanvas" width="260" height="260" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+        <div
+          class="pointer-events-none absolute inset-0 rounded-full border-2 border-white/90"
+          style="box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.52);"
+        ></div>
+      </div>
+
+      <div class="mt-4 flex items-center gap-3">
+        <span class="text-xs font-medium">Zoom</span>
+        <input type="range" id="cropZoomSlider" min="1" max="3" step="0.02" value="1" class="flex-1 accent-[#2c4a2c]" />
+      </div>
+
+      <div class="mt-5 flex items-center justify-end gap-3">
+        <button
+          type="button"
+          id="cancelCropBtn"
+          class="px-4 py-2 rounded-full text-sm font-medium border border-black/20 hover:bg-black/5"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="applyCropBtn"
+          class="px-5 py-2 rounded-full text-sm font-semibold text-white bg-[#1e3d35]"
+        >
+          Apply Crop
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ASSETS = {
+      logo:      "../assets/images/logo.png",
+      paperPng:  "../assets/images/paper_tag_4.png",
+      paperJpg:  "../assets/images/paper_tag_4.jpg",
+      tulipsPng: "../assets/images/flower_b_1.png",
+      tulipsJpg: "../assets/images/flower_b_1.jpg",
+      bgLight:   "../assets/images/login_bg_7.jpg",
+      bgDark:    "../assets/images/login_bg_night_5.jpg",
+      iconSun:   "../assets/images/sun_bgremove.png",
+      iconMoon:  "../assets/images/moon_bgremove.png"
+    };
+
+    const FALLBACKS = {
+      logo:     "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='#3e5d3e'/><path d='M20 40 C20 26, 34 18, 46 20 C44 33, 35 43, 20 40 Z' fill='#b9e396'/><path d='M20 40 C27 33, 35 27, 45 21' fill='none' stroke='#263d26' stroke-width='2.5' stroke-linecap='round'/><circle cx='24' cy='23' r='3' fill='#e6f7d4'/></svg>`),
+      iconMoon: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#e2e8f0'><path d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/></svg>`),
+      iconSun:  "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#f59e0b' stroke='#f59e0b' stroke-width='2'><circle cx='12' cy='12' r='5'/></svg>`)
+    };
+
+    const savedTheme = localStorage.getItem("signrest_theme");
+    let theme = savedTheme === "dark" ? "dark" : "light";
+
+    const bgPhotoLayer = document.getElementById("bgPhotoLayer");
+    const brandLogoImg = document.getElementById("brandLogoImg");
+    const themeIconImg = document.getElementById("themeIconImg");
+    const letterCard = document.getElementById("letterCard");
+    const tulipBouquetImg = document.getElementById("tulipBouquetImg");
+    const avatarCircleBtn = document.getElementById("avatarCircleBtn");
+    const photoFileInput = document.getElementById("photoFileInput");
+    const defaultHillSvg = document.getElementById("defaultHillSvg");
+    const croppedAvatarPreview = document.getElementById("croppedAvatarPreview");
+    const usernameInput = document.getElementById("usernameInput");
+    const confirmProfileBtn = document.getElementById("confirmProfileBtn");
+    const skipForNowBtn = document.getElementById("skipForNowBtn");
+    const formFeedbackMsg = document.getElementById("formFeedbackMsg");
+
+    const cropModal = document.getElementById("cropModal");
+    const cropCanvas = document.getElementById("cropCanvas");
+    const cropCtx = cropCanvas.getContext("2d");
+    const cropZoomSlider = document.getElementById("cropZoomSlider");
+
+    let rawImage = null;
+    let cropScale = 1;
+    let baseScale = 1;
+    let offsetX = 0;
+    let offsetY = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let croppedBlob = null;
+    let isSubmitting = false;
+
+    function loadPaperTexture() {
+      const testPng = new Image();
+      testPng.onload = () => {
+        letterCard.style.backgroundImage = `url('${ASSETS.paperPng}')`;
+      };
+      testPng.onerror = () => {
+        const testJpg = new Image();
+        testJpg.onload = () => {
+          letterCard.style.backgroundImage = `url('${ASSETS.paperJpg}')`;
+        };
+        testJpg.src = ASSETS.paperJpg;
+      };
+      testPng.src = ASSETS.paperPng;
+    }
+
+    function renderTheme() {
+      const isDark = theme === "dark";
+      document.body.classList.toggle("dark-mode", isDark);
+      localStorage.setItem("signrest_theme", theme);
+
+      brandLogoImg.onerror = () => {
+        brandLogoImg.onerror = null;
+        brandLogoImg.src = FALLBACKS.logo;
+      };
+      brandLogoImg.src = ASSETS.logo;
+
+      const iconKey = isDark ? "iconMoon" : "iconSun";
+      themeIconImg.onerror = () => {
+        themeIconImg.onerror = null;
+        themeIconImg.src = FALLBACKS[iconKey];
+      };
+      themeIconImg.src = ASSETS[iconKey];
+
+      bgPhotoLayer.style.backgroundImage = `url('${isDark ? ASSETS.bgDark : ASSETS.bgLight}')`;
+
+      tulipBouquetImg.onerror = () => {
+        tulipBouquetImg.onerror = null;
+        tulipBouquetImg.src = ASSETS.tulipsJpg;
+      };
+      tulipBouquetImg.src = ASSETS.tulipsPng;
+
+      loadPaperTexture();
+    }
+
+    function updateConfirmButtonState() {
+      const hasUsername = usernameInput.value.trim().length >= 2;
+      const hasPhoto = Boolean(croppedBlob);
+      if (!isSubmitting) {
+        confirmProfileBtn.disabled = !(hasUsername && hasPhoto);
+      }
+    }
+
+    usernameInput.addEventListener("input", () => {
+      formFeedbackMsg.textContent = "";
+      updateConfirmButtonState();
+    });
+
+    avatarCircleBtn.addEventListener("click", () => {
+      photoFileInput.click();
+    });
+
+    photoFileInput.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          rawImage = img;
+          const size = cropCanvas.width;
+          baseScale = Math.max(size / img.width, size / img.height);
+          cropScale = 1;
+          cropZoomSlider.value = "1";
+          offsetX = (size - img.width * baseScale) / 2;
+          offsetY = (size - img.height * baseScale) / 2;
+
+          drawCropPreview();
+          cropModal.classList.remove("hidden");
+          cropModal.classList.add("flex");
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+      photoFileInput.value = "";
+    });
+
+    function clampOffsets() {
+      if (!rawImage) return;
+      const size = cropCanvas.width;
+      const drawW = rawImage.width * baseScale * cropScale;
+      const drawH = rawImage.height * baseScale * cropScale;
+
+      const minX = size - drawW;
+      const minY = size - drawH;
+      offsetX = Math.min(0, Math.max(minX, offsetX));
+      offsetY = Math.min(0, Math.max(minY, offsetY));
+    }
+
+    function drawCropPreview() {
+      if (!rawImage) return;
+      clampOffsets();
+      const size = cropCanvas.width;
+      cropCtx.clearRect(0, 0, size, size);
+      const drawW = rawImage.width * baseScale * cropScale;
+      const drawH = rawImage.height * baseScale * cropScale;
+      cropCtx.drawImage(rawImage, offsetX, offsetY, drawW, drawH);
+    }
+
+    cropZoomSlider.addEventListener("input", () => {
+      if (!rawImage) return;
+      const prevScale = cropScale;
+      const newScale = parseFloat(cropZoomSlider.value);
+      const center = cropCanvas.width / 2;
+
+      offsetX = center - ((center - offsetX) * (newScale / prevScale));
+      offsetY = center - ((center - offsetY) * (newScale / prevScale));
+      cropScale = newScale;
+      drawCropPreview();
+    });
+
+    cropCanvas.addEventListener("pointerdown", (e) => {
+      isDragging = true;
+      dragStartX = e.clientX - offsetX;
+      dragStartY = e.clientY - offsetY;
+      cropCanvas.setPointerCapture(e.pointerId);
+    });
+
+    cropCanvas.addEventListener("pointermove", (e) => {
+      if (!isDragging) return;
+      offsetX = e.clientX - dragStartX;
+      offsetY = e.clientY - dragStartY;
+      drawCropPreview();
+    });
+
+    cropCanvas.addEventListener("pointerup", (e) => {
+      isDragging = false;
+      cropCanvas.releasePointerCapture(e.pointerId);
+    });
+
+    function closeCropModal() {
+      cropModal.classList.add("hidden");
+      cropModal.classList.remove("flex");
+    }
+
+    document.getElementById("closeCropModalBtn").addEventListener("click", closeCropModal);
+    document.getElementById("cancelCropBtn").addEventListener("click", closeCropModal);
+
+    document.getElementById("applyCropBtn").addEventListener("click", () => {
+      if (!rawImage) return;
+
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = 400;
+      exportCanvas.height = 400;
+      const exCtx = exportCanvas.getContext("2d");
+
+      const ratio = 400 / cropCanvas.width;
+      const drawW = rawImage.width * baseScale * cropScale * ratio;
+      const drawH = rawImage.height * baseScale * cropScale * ratio;
+      exCtx.drawImage(rawImage, offsetX * ratio, offsetY * ratio, drawW, drawH);
+
+      exportCanvas.toBlob((blob) => {
+        if (!blob) return;
+        croppedBlob = blob;
+        croppedAvatarPreview.src = URL.createObjectURL(blob);
+        croppedAvatarPreview.classList.remove("hidden");
+        defaultHillSvg.classList.add("hidden");
+        avatarCircleBtn.classList.remove("empty");
+        formFeedbackMsg.textContent = "";
+        updateConfirmButtonState();
+        closeCropModal();
+      }, "image/png", 0.92);
+    });
+
+    confirmProfileBtn.addEventListener("click", async () => {
+      const username = usernameInput.value.trim();
+      if (!croppedBlob || username.length < 2) return;
+
+      isSubmitting = true;
+      confirmProfileBtn.disabled = true;
+      confirmProfileBtn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span>`;
+      formFeedbackMsg.textContent = "";
+
+      try {
+        const formData = new FormData();
+        formData.append("username", username);
+        formData.append("profile_photo", croppedBlob, "avatar.png");
+
+        const res = await fetch("/api/profile/setup", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          formFeedbackMsg.textContent = data.message || "Could not save profile.";
+          isSubmitting = false;
+          confirmProfileBtn.textContent = "Confirm";
+          updateConfirmButtonState();
+        } else {
+          window.location.href = data.redirect_url || "/home";
+        }
+      } catch (err) {
+        formFeedbackMsg.textContent = "Connection error while uploading profile.";
+        isSubmitting = false;
+        confirmProfileBtn.textContent = "Confirm";
+        updateConfirmButtonState();
+      }
+    });
+
+    skipForNowBtn.addEventListener("click", async () => {
+      try {
+        const res = await fetch("/api/profile/skip", { method: "POST" });
+        const data = await res.json();
+        window.location.href = data.redirect_url || "/home";
+      } catch (err) {
+        window.location.href = "/home";
+      }
+    });
+
+    document.getElementById("themeToggleBtn").addEventListener("click", () => {
+      theme = theme === "light" ? "dark" : "light";
+      renderTheme();
+    });
+
+    renderTheme();
+  </script>
+</body>
+</html>
