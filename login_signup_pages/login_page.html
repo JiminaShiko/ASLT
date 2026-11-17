@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signrest — Login &amp; Signup</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="auth_style.css" />
+</head>
+<body>
+
+  <!-- 1. Fullscreen Blurred Background Photo Layer -->
+  <div id="bgPhotoLayer" class="bg-photo-layer"></div>
+  <div class="bg-veil"></div>
+
+  <!-- 2. Top-Left Brand Logo & "Signrest" Name -->
+  <header class="brand-header">
+    <img id="brandLogoImg" class="brand-logo-img" alt="Signrest Logo" />
+    <span class="brand-title">Signrest</span>
+  </header>
+
+  <!-- 3. Top-Right Light / Dark Mode Switch Button (Sun in Light Mode, Moon in Dark Mode) -->
+  <button
+    type="button"
+    id="themeToggleBtn"
+    class="theme-toggle-btn"
+    aria-label="Toggle Light or Dark Mode"
+    title="Switch Light / Dark Mode"
+  >
+    <img id="themeIconImg" alt="Theme Toggle Icon" />
+  </button>
+
+  <!-- 4. Foreground Scenery Cutout Layer (Rock + Frog group, 3x Reusable Bush, 1x Right Bush) -->
+  <div class="scenery-layer" aria-hidden="true">
+    <!-- Anchored Rock + Frog Group -->
+    <div class="rock-frog-group">
+      <img id="sceneryRock" class="scenery-item scenery-rock" alt="" />
+      <div class="frog-lamp-aura"></div>
+      <img id="sceneryFrog" class="scenery-item scenery-frog" alt="" />
+    </div>
+
+    <!-- Reusable 3-Clump Bush placed in 3 spots (swaps between light & dark mode versions) -->
+    <img id="sceneryBush1" class="scenery-item scenery-bush-left" alt="" />
+    <img id="sceneryBush2" class="scenery-item scenery-bush-mid-left" alt="" />
+    <img id="sceneryBush3" class="scenery-item scenery-bush-mid-right" alt="" />
+
+    <!-- Distinct Grassy Right Bush (swaps between light & dark mode versions) -->
+    <img id="sceneryBushRight" class="scenery-item scenery-bush-right" alt="" />
+  </div>
+
+  <!-- 5. Centered Auth Form Container -->
+  <main class="relative z-20 min-h-screen flex flex-col items-center justify-center px-6 pb-28 sm:pb-20 pt-10 pointer-events-none">
+    <div class="w-full max-w-[290px] pointer-events-auto">
+
+      <!-- Feedback / Validation Message Box -->
+      <div id="statusBanner" class="status-banner" role="alert"></div>
+
+      <!-- Auth Form (Defaults to SIGNUP on initial page load; switches to LOGIN on click) -->
+      <form id="authForm" novalidate>
+        <!-- Email Field -->
+        <div class="mb-3.5">
+          <label for="emailInput" class="field-label">Email</label>
+          <input
+            type="email"
+            id="emailInput"
+            name="email"
+            class="underlined-field"
+            autocomplete="email"
+            required
+          />
+        </div>
+
+        <!-- Password Field -->
+        <div class="mb-1.5">
+          <label for="passwordInput" class="field-label">Password</label>
+          <input
+            type="password"
+            id="passwordInput"
+            name="password"
+            class="underlined-field"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+
+        <!-- Confirm Password Field (Visible in Signup mode, hidden in Login mode) -->
+        <div id="confirmPasswordGroup" class="mt-3.5 mb-1.5">
+          <label for="confirmPasswordInput" class="field-label">Confirm Password</label>
+          <input
+            type="password"
+            id="confirmPasswordInput"
+            name="confirm_password"
+            class="underlined-field"
+            autocomplete="new-password"
+          />
+        </div>
+
+        <!-- Forgot Password Link (Shown only in Login mode) -->
+        <div id="forgotPswRow" class="hidden justify-end mb-4">
+          <a href="#forgot-password" id="forgotPswLink" class="sub-link">forgot psw?</a>
+        </div>
+
+        <!-- Spacing spacer when forgot password is hidden in Signup mode -->
+        <div id="signupSpacer" class="h-4"></div>
+
+        <!-- Primary Submit Pill Button -->
+        <button type="submit" id="primarySubmitBtn" class="btn-primary-pill">
+          SIGN UP
+        </button>
+
+        <!-- Divider text -->
+        <div class="text-center my-2 text-[0.88rem] font-medium" style="color: var(--text-primary);">
+          or?
+        </div>
+
+        <!-- Google Auth Pill Button -->
+        <button type="button" id="googleAuthBtn" class="btn-google-pill">
+          <!-- Clean inline Google G mark -->
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#EA4335" d="M12 5c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 1.77 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+            <path fill="#34A853" d="M12 23c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          </svg>
+          <span id="googleBtnText">Sign up with Google</span>
+        </button>
+
+        <!-- Mode Switch Footer ("already have an acc? login" <-> "don't have an acc? signup") -->
+        <div class="flex items-center justify-between mt-3 px-2">
+          <span id="switchPromptText" class="text-[0.82rem]" style="color: var(--text-primary);">
+            already have an acc?
+          </span>
+          <button
+            type="button"
+            id="switchModeBtn"
+            class="sub-link bg-transparent border-none p-0 text-[0.84rem]"
+          >
+            login
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </main>
+
+  <script>
+    /**
+     * =========================================================================
+     * IMAGE ASSET PATH CONFIGURATION
+     * Folder structure:
+     *   root/
+     *   ├── assets/images/          <-- Place all your images here
+     *   └── login_signup_pages/
+     *       └── login_page.html     <-- This file (uses ../assets/images/...)
+     * =========================================================================
+     */
+    const ASSETS = {
+      // --- Brand Logo (Uses inline botanical SVG fallback until you add your logo file) ---
+      logo:          "../assets/images/logo.png",              // <-- REPLACE WITH YOUR LOGO PATH WHEN READY
+
+      // --- 4 Background Swatches (Light/Dark x Signup/Login) ---
+      bgSignupLight: "../assets/images/login_bg_7.jpg",
+      bgSignupDark:  "../assets/images/login_bg_night_5.jpg",
+      bgLoginLight:  "../assets/images/login_bg_8.jpg",
+      bgLoginDark:   "../assets/images/login_bg_night_6.jpg",
+
+      // --- Little Frog (Single photo; CSS lights it up in dark mode) ---
+      frog:          "../assets/images/frog-removebg.png",
+
+      // --- Rock (Light & Dark versions) ---
+      rockLight:     "../assets/images/stone-removebg.png",
+      rockDark:      "../assets/images/rock_night.png",
+
+      // --- Reusable 3-Clump Bush used in 3 places (Light & Dark versions) ---
+      bush3xLight:   "../assets/images/bush_bgremove.png",
+      bush3xDark:    "../assets/images/bush_night.png",
+
+      // --- Distinct Grassy Far-Right Bush (Light & Dark versions) ---
+      bushRightLight:"../assets/images/bush_1_bgremove.png",
+      bushRightDark: "../assets/images/bush_1_night.png",
+
+      // --- Top-Right Theme Toggle Icons (Sun shown in Light Mode, Moon shown in Dark Mode) ---
+      iconSun:       "../assets/images/sun_bgremove.png",
+      iconMoon:      "../assets/images/moon_bgremove.png"
+    };
+
+    /**
+     * Inline SVG fallbacks so the preview and logo render cleanly even before
+     * local image files are placed in ../assets/images/
+     */
+    const PREVIEW_FALLBACKS = {
+      logo:          "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='#3e5d3e'/><path d='M20 40 C20 26, 34 18, 46 20 C44 33, 35 43, 20 40 Z' fill='#b9e396'/><path d='M20 40 C27 33, 35 27, 45 21' fill='none' stroke='#263d26' stroke-width='2.5' stroke-linecap='round'/><circle cx='24' cy='23' r='3' fill='#e6f7d4'/></svg>`),
+      bgSignupLight: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#d8e6d5'/><stop offset='55%' stop-color='#eef3e6'/><stop offset='100%' stop-color='#a4c298'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><circle cx='1250' cy='260' r='220' fill='#ffffff' opacity='0.35'/><circle cx='350' cy='200' r='280' fill='#88a87e' opacity='0.28'/></svg>`),
+      bgSignupDark:  "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#192634'/><stop offset='50%' stop-color='#2b3c4d'/><stop offset='100%' stop-color='#131d27'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><circle cx='1200' cy='240' r='180' fill='#9cc4e4' opacity='0.14'/></svg>`),
+      bgLoginLight:  "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#e4ece2'/><stop offset='65%' stop-color='#f4f7f0'/><stop offset='100%' stop-color='#9cb98e'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><circle cx='1320' cy='320' r='250' fill='#ffffff' opacity='0.45'/></svg>`),
+      bgLoginDark:   "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#1d2c3b'/><stop offset='60%' stop-color='#324659'/><stop offset='100%' stop-color='#16222e'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><circle cx='1280' cy='300' r='210' fill='#b4d8f2' opacity='0.15'/></svg>`),
+      frog:          "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 150'><ellipse cx='80' cy='92' rx='54' ry='42' fill='#9be15d' stroke='#4d6b2a' stroke-width='3'/><ellipse cx='84' cy='100' rx='34' ry='28' fill='#c8f582'/><circle cx='54' cy='58' r='16' fill='#b7ec6e' stroke='#4d6b2a' stroke-width='3'/><circle cx='106' cy='58' r='16' fill='#b7ec6e' stroke='#4d6b2a' stroke-width='3'/><circle cx='52' cy='58' r='8' fill='#2c261b'/><circle cx='108' cy='58' r='8' fill='#2c261b'/><path d='M72 72 Q80 66 88 72' fill='none' stroke='#2c261b' stroke-width='3' stroke-linecap='round'/></svg>`),
+      rockLight:     "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 260'><polygon points='115,220 140,65 210,35 265,195 235,225' fill='#8c745c'/><polygon points='45,220 75,155 135,150 165,220' fill='#9b836b'/><path d='M140,65 Q175,55 210,35 L195,95 Q160,110 132,102 Z' fill='#7cb342'/><ellipse cx='160' cy='224' rx='135' ry='18' fill='#689f38'/></svg>`),
+      rockDark:      "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 260'><polygon points='115,220 140,65 210,35 265,195 235,225' fill='#334152'/><polygon points='45,220 75,155 135,150 165,220' fill='#3e4e63'/><path d='M140,65 Q175,55 210,35 L195,95 Q160,110 132,102 Z' fill='#2c5943'/><ellipse cx='160' cy='224' rx='135' ry='18' fill='#1e3d2f'/></svg>`),
+      bush3xLight:   "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 210'><circle cx='90' cy='135' r='62' fill='#558b2f'/><circle cx='160' cy='105' r='76' fill='#7cb342'/><circle cx='235' cy='140' r='58' fill='#689f38'/><path d='M30,175 Q160,145 290,175 L280,195 L40,195 Z' fill='#37474f'/></svg>`),
+      bush3xDark:    "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 210'><circle cx='90' cy='135' r='62' fill='#28473e'/><circle cx='160' cy='105' r='76' fill='#386155'/><circle cx='235' cy='140' r='58' fill='#2e5248'/><path d='M30,175 Q160,145 290,175 L280,195 L40,195 Z' fill='#16242f'/></svg>`),
+      bushRightLight:"data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 220'><circle cx='195' cy='125' r='82' fill='#7cb342'/><circle cx='135' cy='148' r='58' fill='#8bc34a'/><circle cx='265' cy='148' r='60' fill='#558b2f'/><path d='M55,195 L85,125 L100,195 M75,195 L110,135 L120,195' fill='#689f38'/></svg>`),
+      bushRightDark: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 220'><circle cx='195' cy='125' r='82' fill='#2d5244'/><circle cx='135' cy='148' r='58' fill='#386352'/><circle cx='265' cy='148' r='60' fill='#1f3b31'/><path d='M55,195 L85,125 L100,195 M75,195 L110,135 L120,195' fill='#244538'/></svg>`),
+      iconMoon:      "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#e2e8f0'><path d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/></svg>`),
+      iconSun:       "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#f59e0b' stroke='#f59e0b' stroke-width='2'><circle cx='12' cy='12' r='5'/><line x1='12' y1='1' x2='12' y2='3'/><line x1='12' y1='21' x2='12' y2='23'/><line x1='4.22' y1='4.22' x2='5.64' y2='5.64'/><line x1='18.36' y1='18.36' x2='19.78' y2='19.78'/><line x1='1' y1='12' x2='3' y2='12'/><line x1='21' y1='12' x2='23' y2='12'/><line x1='4.22' y1='19.78' x2='5.64' y2='18.36'/><line x1='18.36' y1='5.64' x2='19.78' y2='4.22'/></svg>`)
+    };
+
+    /**
+     * Backend API endpoints (Ready for Flask login_process.py & signup_process.py)
+     */
+    const API_ENDPOINTS = {
+      signup: "/api/signup",
+      login: "/api/login"
+    };
+
+    // Initial state: Always starts on SIGNUP page in LIGHT MODE
+    const state = {
+      mode: "signup", // "signup" | "login"
+      theme: "light"  // "light"  | "dark"
+    };
+
+    // DOM Elements
+    const bgPhotoLayer = document.getElementById("bgPhotoLayer");
+    const brandLogoImg = document.getElementById("brandLogoImg");
+    const themeToggleBtn = document.getElementById("themeToggleBtn");
+    const themeIconImg = document.getElementById("themeIconImg");
+
+    const sceneryRock = document.getElementById("sceneryRock");
+    const sceneryFrog = document.getElementById("sceneryFrog");
+    const sceneryBush1 = document.getElementById("sceneryBush1");
+    const sceneryBush2 = document.getElementById("sceneryBush2");
+    const sceneryBush3 = document.getElementById("sceneryBush3");
+    const sceneryBushRight = document.getElementById("sceneryBushRight");
+
+    const authForm = document.getElementById("authForm");
+    const emailInput = document.getElementById("emailInput");
+    const passwordInput = document.getElementById("passwordInput");
+    const confirmPasswordGroup = document.getElementById("confirmPasswordGroup");
+    const confirmPasswordInput = document.getElementById("confirmPasswordInput");
+    const forgotPswRow = document.getElementById("forgotPswRow");
+    const signupSpacer = document.getElementById("signupSpacer");
+    const primarySubmitBtn = document.getElementById("primarySubmitBtn");
+    const googleBtnText = document.getElementById("googleBtnText");
+    const switchPromptText = document.getElementById("switchPromptText");
+    const switchModeBtn = document.getElementById("switchModeBtn");
+    const statusBanner = document.getElementById("statusBanner");
+
+    /**
+     * Loads the user's local asset image if present; gracefully falls back to
+     * inline preview art if run inside an isolated preview sandbox.
+     */
+    function applyImageWithFallback(imgEl, assetKey) {
+      imgEl.onerror = () => {
+        imgEl.onerror = null;
+        imgEl.src = PREVIEW_FALLBACKS[assetKey];
+      };
+      imgEl.src = ASSETS[assetKey];
+    }
+
+    /**
+     * Updates the blurred background swatch based on (theme x mode)
+     */
+    function applyBackgroundSwatch() {
+      let key = "bgSignupLight";
+      if (state.theme === "light" && state.mode === "signup") key = "bgSignupLight";
+      if (state.theme === "dark"  && state.mode === "signup") key = "bgSignupDark";
+      if (state.theme === "light" && state.mode === "login")  key = "bgLoginLight";
+      if (state.theme === "dark"  && state.mode === "login")  key = "bgLoginDark";
+
+      const testImg = new Image();
+      testImg.onload = () => {
+        bgPhotoLayer.style.backgroundImage = `url('${ASSETS[key]}')`;
+      };
+      testImg.onerror = () => {
+        bgPhotoLayer.style.backgroundImage = `url('${PREVIEW_FALLBACKS[key]}')`;
+      };
+      testImg.src = ASSETS[key];
+    }
+
+    /**
+     * Updates theme (Light <-> Dark), shows Sun in Light Mode & Moon in Dark Mode,
+     * swaps Rock & Bushes, and triggers CSS lamp glow on the single Frog image.
+     */
+    function renderTheme() {
+      const isDark = state.theme === "dark";
+      document.body.classList.toggle("dark-mode", isDark);
+
+      // Brand logo (uses fallback SVG until logo.png is added)
+      applyImageWithFallback(brandLogoImg, "logo");
+
+      // Sun shown in Light Mode; Moon shown in Dark Mode
+      applyImageWithFallback(themeIconImg, isDark ? "iconMoon" : "iconSun");
+
+      // Swap light/dark versions of rock & bushes
+      applyImageWithFallback(sceneryRock, isDark ? "rockDark" : "rockLight");
+      applyImageWithFallback(sceneryBush1, isDark ? "bush3xDark" : "bush3xLight");
+      applyImageWithFallback(sceneryBush2, isDark ? "bush3xDark" : "bush3xLight");
+      applyImageWithFallback(sceneryBush3, isDark ? "bush3xDark" : "bush3xLight");
+      applyImageWithFallback(sceneryBushRight, isDark ? "bushRightDark" : "bushRightLight");
+
+      // Frog always uses the exact same photo; CSS --frog-filter lights it up in dark mode
+      applyImageWithFallback(sceneryFrog, "frog");
+
+      applyBackgroundSwatch();
+    }
+
+    /**
+     * Updates form fields & labels between Signup (default) and Login
+     */
+    function renderAuthMode() {
+      clearBanner();
+      const isSignup = state.mode === "signup";
+
+      if (isSignup) {
+        confirmPasswordGroup.classList.remove("hidden");
+        forgotPswRow.classList.add("hidden");
+        forgotPswRow.classList.remove("flex");
+        signupSpacer.classList.remove("hidden");
+
+        primarySubmitBtn.textContent = "SIGN UP";
+        googleBtnText.textContent = "Sign up with Google";
+        switchPromptText.textContent = "already have an acc?";
+        switchModeBtn.textContent = "login";
+        passwordInput.setAttribute("autocomplete", "new-password");
+      } else {
+        confirmPasswordGroup.classList.add("hidden");
+        forgotPswRow.classList.remove("hidden");
+        forgotPswRow.classList.add("flex");
+        signupSpacer.classList.add("hidden");
+
+        primarySubmitBtn.textContent = "LOGIN";
+        googleBtnText.textContent = "Login with Google";
+        switchPromptText.textContent = "don’t have an acc?";
+        switchModeBtn.textContent = "signup";
+        passwordInput.setAttribute("autocomplete", "current-password");
+      }
+
+      applyBackgroundSwatch();
+    }
+
+    function showBanner(type, message) {
+      statusBanner.className = `status-banner ${type}`;
+      statusBanner.textContent = message;
+    }
+
+    function clearBanner() {
+      statusBanner.className = "status-banner";
+      statusBanner.textContent = "";
+    }
+
+    // Event: Toggle Light / Dark Mode
+    themeToggleBtn.addEventListener("click", () => {
+      state.theme = state.theme === "light" ? "dark" : "light";
+      renderTheme();
+    });
+
+    // Event: Switch between Signup and Login
+    switchModeBtn.addEventListener("click", () => {
+      state.mode = state.mode === "signup" ? "login" : "signup";
+      renderAuthMode();
+    });
+
+    // Event: Form Submit (Ready for Flask signup_process.py & login_process.py)
+    authForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearBanner();
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
+
+      if (!email || !email.includes("@")) {
+        showBanner("error", "Please enter a valid email address.");
+        emailInput.focus();
+        return;
+      }
+
+      if (!password || password.length < 6) {
+        showBanner("error", "Password must be at least 6 characters.");
+        passwordInput.focus();
+        return;
+      }
+
+      if (state.mode === "signup" && password !== confirmPassword) {
+        showBanner("error", "Passwords do not match.");
+        confirmPasswordInput.focus();
+        return;
+      }
+
+      const endpoint = state.mode === "signup" ? API_ENDPOINTS.signup : API_ENDPOINTS.login;
+      primarySubmitBtn.disabled = true;
+      const originalLabel = primarySubmitBtn.textContent;
+      primarySubmitBtn.textContent = state.mode === "signup" ? "CREATING..." : "SIGNING IN...";
+
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            password,
+            platform: "web"
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          showBanner("error", data.message || "Authentication failed.");
+        } else {
+          showBanner("success", data.message || "Success! Redirecting...");
+          if (data.redirect_url) {
+            setTimeout(() => {
+              window.location.href = data.redirect_url;
+            }, 650);
+          }
+        }
+      } catch (err) {
+        // Helpful UI feedback while previewing frontend before Flask backend is started
+        showBanner(
+          "success",
+          `Frontend validation passed for ${state.mode.toUpperCase()} (${email}). Ready to connect to ${endpoint}.`
+        );
+      } finally {
+        primarySubmitBtn.disabled = false;
+        primarySubmitBtn.textContent = originalLabel;
+      }
+    });
+
+    // Initialize initial view: Signup Mode + Light Theme
+    renderTheme();
+    renderAuthMode();
+  </script>
+</body>
+</html>
