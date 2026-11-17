@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signrest — OTP Verification</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="auth_style.css" />
+</head>
+<body>
+
+  <!-- 1. Fullscreen Blurred Background Photo Layer -->
+  <div id="bgPhotoLayer" class="bg-photo-layer"></div>
+  <div class="bg-veil"></div>
+
+  <!-- 2. Top-Left Brand Logo & "Signrest" Name -->
+  <header class="brand-header">
+    <img id="brandLogoImg" class="brand-logo-img" alt="Signrest Logo" />
+    <span class="brand-title">Signrest</span>
+  </header>
+
+  <!-- 3. Top-Right Light / Dark Mode Switch Button -->
+  <button
+    type="button"
+    id="themeToggleBtn"
+    class="theme-toggle-btn"
+    aria-label="Toggle Light or Dark Mode"
+    title="Switch Light / Dark Mode"
+  >
+    <img id="themeIconImg" alt="Theme Toggle Icon" />
+  </button>
+
+  <!-- 4. Leaf Paper-Airplane Popup Notification with 5-Segment 5-Second Countdown -->
+  <div id="leafToastWrapper" class="leaf-toast-wrapper" role="status" aria-live="polite">
+    <div class="leaf-toast-card">
+      <img id="leafToastPlaneImg" class="leaf-toast-plane" alt="" />
+      <button type="button" id="leafToastCloseBtn" class="leaf-toast-close" aria-label="Close notification">
+        X
+      </button>
+      <p id="leafToastMessage" class="leaf-toast-text">
+        your otp is already sent to your mail!<br />
+        pls check your inbox
+      </p>
+      <div class="leaf-toast-bars" aria-hidden="true">
+        <span class="leaf-toast-bar" data-step="0"></span>
+        <span class="leaf-toast-bar" data-step="1"></span>
+        <span class="leaf-toast-bar" data-step="2"></span>
+        <span class="leaf-toast-bar" data-step="3"></span>
+        <span class="leaf-toast-bar" data-step="4"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Foreground Scenery Cutout Layer -->
+  <div class="scenery-layer" aria-hidden="true">
+    <div class="rock-frog-group">
+      <img id="sceneryRock" class="scenery-item scenery-rock" alt="" />
+      <div class="frog-lamp-aura"></div>
+      <img id="sceneryFrog" class="scenery-item scenery-frog" alt="" />
+    </div>
+
+    <img id="sceneryBush1" class="scenery-item scenery-bush-left" alt="" />
+    <img id="sceneryBush2" class="scenery-item scenery-bush-mid-left" alt="" />
+    <img id="sceneryBush3" class="scenery-item scenery-bush-mid-right" alt="" />
+    <img id="sceneryBushRight" class="scenery-item scenery-bush-right" alt="" />
+  </div>
+
+  <!-- 6. Centered Minimalist OTP Verification Section -->
+  <main class="relative z-20 min-h-screen flex flex-col items-center justify-center px-6 pb-28 sm:pb-20 pt-10 pointer-events-none">
+    <div class="w-full max-w-[360px] pointer-events-auto text-center">
+
+      <!-- Validation / Error Banner -->
+      <div id="statusBanner" class="status-banner text-left" role="alert"></div>
+
+      <!-- Heading -->
+      <h1
+        class="text-[2rem] sm:text-[2.3rem] font-normal tracking-wide mb-10"
+        style="color: var(--text-primary); font-family: 'Lora', Georgia, serif;"
+      >
+        OTP Verification
+      </h1>
+
+      <!-- 6 Horizontal Dash Inputs -->
+      <form id="otpForm" novalidate>
+        <div class="otp-dash-row mb-9" id="otpInputsRow">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-dash-input" aria-label="Digit 1" required />
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-dash-input" aria-label="Digit 2" required />
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-dash-input" aria-label="Digit 3" required />
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-dash-input" aria-label="Digit 4" required />
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-dash-input" aria-label="Digit 5" required />
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-dash-input" aria-label="Digit 6" required />
+        </div>
+
+        <!-- "can be resent in    00:59s" row -->
+        <div class="flex items-center justify-between max-w-[295px] mx-auto text-[0.95rem] px-1">
+          <span style="color: var(--text-primary);">
+            can be
+            <button
+              type="button"
+              id="resendOtpBtn"
+              class="bg-transparent border-none p-0 font-semibold transition-opacity"
+              style="color: var(--link-color); cursor: not-allowed; opacity: 0.75;"
+              disabled
+            >
+              resent
+            </button>
+            in
+          </span>
+
+          <span id="resendTimerText" class="font-medium tabular-nums" style="color: var(--text-primary);">
+            00:59s
+          </span>
+        </div>
+
+        <!-- Subtle loading indicator when verifying 6th digit -->
+        <div id="verifyingStatusRow" class="hidden items-center justify-center gap-2 mt-6 text-[0.86rem]" style="color: var(--text-primary);">
+          <span class="btn-spinner" style="border-color: rgba(44,74,44,0.25); border-top-color: var(--link-color);"></span>
+          <span>Verifying OTP...</span>
+        </div>
+      </form>
+
+    </div>
+  </main>
+
+  <script>
+    const ASSETS = {
+      logo:          "../assets/images/logo.png",
+      mailPlane:     "../assets/images/mail_sending_bgremove_1.png",
+      bgSignupLight: "../assets/images/login_bg_7.jpg",
+      bgSignupDark:  "../assets/images/login_bg_night_5.jpg",
+      bgLoginLight:  "../assets/images/login_bg_8.jpg",
+      bgLoginDark:   "../assets/images/login_bg_night_6.jpg",
+      frog:          "../assets/images/frog-removebg.png",
+      rockLight:     "../assets/images/stone-removebg.png",
+      rockDark:      "../assets/images/rock_night.png",
+      bush3xLight:   "../assets/images/bush_bgremove.png",
+      bush3xDark:    "../assets/images/bush_night.png",
+      bushRightLight:"../assets/images/bush_1_bgremove.png",
+      bushRightDark: "../assets/images/bush_1_night.png",
+      iconSun:       "../assets/images/sun_bgremove.png",
+      iconMoon:      "../assets/images/moon_bgremove.png"
+    };
+
+    const PREVIEW_FALLBACKS = {
+      logo:      "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='#3e5d3e'/><path d='M20 40 C20 26, 34 18, 46 20 C44 33, 35 43, 20 40 Z' fill='#b9e396'/></svg>`),
+      mailPlane: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 80'><polygon points='10,45 110,12 55,65 42,48' fill='#b8c49e' stroke='#6b7856' stroke-width='2'/><polygon points='42,48 110,12 50,55' fill='#8e9c76'/></svg>`)
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const email = (params.get("email") || "").trim();
+    const purpose = (params.get("purpose") || "signup").trim().toLowerCase();
+    const isForgotPassword = purpose === "forgot_password";
+
+    const VERIFY_ENDPOINT = isForgotPassword
+      ? "/api/forgot-password/verify-otp"
+      : "/api/signup/verify-otp";
+    const RESEND_ENDPOINT = isForgotPassword
+      ? "/api/forgot-password/resend-otp"
+      : "/api/signup/resend-otp";
+
+    const savedTheme = localStorage.getItem("signrest_theme");
+    let theme = savedTheme === "dark" ? "dark" : "light";
+
+    const bgPhotoLayer = document.getElementById("bgPhotoLayer");
+    const statusBanner = document.getElementById("statusBanner");
+    const otpBoxes = Array.from(document.querySelectorAll(".otp-dash-input"));
+    const resendOtpBtn = document.getElementById("resendOtpBtn");
+    const resendTimerText = document.getElementById("resendTimerText");
+    const verifyingStatusRow = document.getElementById("verifyingStatusRow");
+
+    const leafToastWrapper = document.getElementById("leafToastWrapper");
+    const leafToastCloseBtn = document.getElementById("leafToastCloseBtn");
+    const leafToastBars = Array.from(document.querySelectorAll(".leaf-toast-bar"));
+    let toastInterval = null;
+
+    function applyImageWithFallback(imgEl, assetKey) {
+      if (PREVIEW_FALLBACKS[assetKey]) {
+        imgEl.onerror = () => {
+          imgEl.onerror = null;
+          imgEl.src = PREVIEW_FALLBACKS[assetKey];
+        };
+      }
+      imgEl.src = ASSETS[assetKey];
+    }
+
+    function renderTheme() {
+      const isDark = theme === "dark";
+      document.body.classList.toggle("dark-mode", isDark);
+      localStorage.setItem("signrest_theme", theme);
+
+      applyImageWithFallback(document.getElementById("brandLogoImg"), "logo");
+      applyImageWithFallback(document.getElementById("leafToastPlaneImg"), "mailPlane");
+      document.getElementById("themeIconImg").src = isDark ? ASSETS.iconMoon : ASSETS.iconSun;
+
+      document.getElementById("sceneryRock").src = isDark ? ASSETS.rockDark : ASSETS.rockLight;
+      document.getElementById("sceneryBush1").src = isDark ? ASSETS.bush3xDark : ASSETS.bush3xLight;
+      document.getElementById("sceneryBush2").src = isDark ? ASSETS.bush3xDark : ASSETS.bush3xLight;
+      document.getElementById("sceneryBush3").src = isDark ? ASSETS.bush3xDark : ASSETS.bush3xLight;
+      document.getElementById("sceneryBushRight").src = isDark ? ASSETS.bushRightDark : ASSETS.bushRightLight;
+      document.getElementById("sceneryFrog").src = ASSETS.frog;
+
+      // Use Login backgrounds for forgot_password, Signup backgrounds for signup
+      const bgUrl = isForgotPassword
+        ? (isDark ? ASSETS.bgLoginDark : ASSETS.bgLoginLight)
+        : (isDark ? ASSETS.bgSignupDark : ASSETS.bgSignupLight);
+      bgPhotoLayer.style.backgroundImage = `url('${bgUrl}')`;
+    }
+
+    function showBanner(type, message) {
+      statusBanner.className = `status-banner ${type}`;
+      statusBanner.textContent = message;
+    }
+
+    function clearBanner() {
+      statusBanner.className = "status-banner";
+      statusBanner.textContent = "";
+    }
+
+    function triggerLeafNotification() {
+      if (toastInterval) clearInterval(toastInterval);
+      leafToastBars.forEach((bar) => bar.classList.remove("elapsed"));
+      leafToastWrapper.classList.add("show");
+
+      let elapsedSeconds = 0;
+      toastInterval = setInterval(() => {
+        if (elapsedSeconds < 5) {
+          const barIndex = 4 - elapsedSeconds;
+          if (leafToastBars[barIndex]) {
+            leafToastBars[barIndex].classList.add("elapsed");
+          }
+          elapsedSeconds += 1;
+        } else {
+          hideLeafNotification();
+        }
+      }, 1000);
+    }
+
+    function hideLeafNotification() {
+      if (toastInterval) {
+        clearInterval(toastInterval);
+        toastInterval = null;
+      }
+      leafToastWrapper.classList.remove("show");
+    }
+
+    leafToastCloseBtn.addEventListener("click", hideLeafNotification);
+
+    let resendCountdownInterval = null;
+    function startResendCountdown(seconds = 59) {
+      if (resendCountdownInterval) clearInterval(resendCountdownInterval);
+
+      let remaining = seconds;
+      resendOtpBtn.disabled = true;
+      resendOtpBtn.style.cursor = "not-allowed";
+      resendOtpBtn.style.opacity = "0.75";
+      resendOtpBtn.style.textDecoration = "none";
+
+      const updateLabel = () => {
+        const formatted = String(remaining).padStart(2, "0");
+        resendTimerText.textContent = `00:${formatted}s`;
+      };
+      updateLabel();
+
+      resendCountdownInterval = setInterval(() => {
+        remaining -= 1;
+        if (remaining > 0) {
+          updateLabel();
+        } else {
+          clearInterval(resendCountdownInterval);
+          resendTimerText.textContent = "00:00s";
+          resendOtpBtn.disabled = false;
+          resendOtpBtn.style.cursor = "pointer";
+          resendOtpBtn.style.opacity = "1";
+          resendOtpBtn.style.textDecoration = "underline";
+        }
+      }, 1000);
+    }
+
+    async function submitOtpVerification() {
+      clearBanner();
+      const otp = otpBoxes.map((b) => b.value.trim()).join("");
+      if (otp.length !== 6) return;
+
+      verifyingStatusRow.classList.remove("hidden");
+      verifyingStatusRow.classList.add("flex");
+      otpBoxes.forEach((b) => (b.disabled = true));
+
+      try {
+        const res = await fetch(VERIFY_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, otp })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          showBanner("error", data.message || "Invalid OTP code.");
+          otpBoxes.forEach((b) => {
+            b.disabled = false;
+            b.value = "";
+          });
+          otpBoxes[0].focus();
+        } else {
+          showBanner("success", data.message || "OTP verified! Redirecting...");
+          setTimeout(() => {
+            window.location.href =
+              data.redirect_url || (isForgotPassword ? "/reset-password" : "/profile-setup");
+          }, 650);
+        }
+      } catch (err) {
+        showBanner("error", "Could not connect to verification server.");
+        otpBoxes.forEach((b) => (b.disabled = false));
+      } finally {
+        verifyingStatusRow.classList.add("hidden");
+        verifyingStatusRow.classList.remove("flex");
+      }
+    }
+
+    otpBoxes.forEach((box, idx) => {
+      box.addEventListener("input", (e) => {
+        const cleaned = e.target.value.replace(/\D/g, "");
+        e.target.value = cleaned.slice(-1);
+
+        if (e.target.value) {
+          if (idx < otpBoxes.length - 1) {
+            otpBoxes[idx + 1].focus();
+          } else {
+            submitOtpVerification();
+          }
+        }
+      });
+
+      box.addEventListener("keydown", (e) => {
+        if (e.key === "Backspace" && !box.value && idx > 0) {
+          otpBoxes[idx - 1].focus();
+        }
+      });
+
+      box.addEventListener("paste", (e) => {
+        e.preventDefault();
+        const pasted = (e.clipboardData.getData("text") || "").replace(/\D/g, "").slice(0, 6);
+        pasted.split("").forEach((digit, i) => {
+          if (otpBoxes[i]) otpBoxes[i].value = digit;
+        });
+        if (pasted.length === 6) {
+          submitOtpVerification();
+        } else {
+          otpBoxes[Math.min(pasted.length, otpBoxes.length - 1)].focus();
+        }
+      });
+    });
+
+    resendOtpBtn.addEventListener("click", async () => {
+      if (resendOtpBtn.disabled) return;
+      clearBanner();
+      startResendCountdown(59);
+      triggerLeafNotification();
+
+      try {
+        const res = await fetch(RESEND_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          showBanner("error", data.message || "Could not resend OTP.");
+        }
+      } catch (err) {
+        showBanner("error", "Could not connect to server.");
+      }
+    });
+
+    document.getElementById("themeToggleBtn").addEventListener("click", () => {
+      theme = theme === "light" ? "dark" : "light";
+      renderTheme();
+    });
+
+    renderTheme();
+    startResendCountdown(59);
+    triggerLeafNotification();
+    sessionStorage.removeItem("signrest_otp_just_sent");
+    otpBoxes[0].focus();
+  </script>
+</body>
+</html>
