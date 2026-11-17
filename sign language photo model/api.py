@@ -12,9 +12,13 @@ import base64
 import io
 import math
 import os
+import re
 import sys
 import threading
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
 from functools import lru_cache
 from pathlib import Path
@@ -25,7 +29,7 @@ os.environ.setdefault("ABSL_PROPAGATE_CXX_STD", "1")
 
 import cv2
 import numpy as np
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 from PIL import Image
 
@@ -40,6 +44,10 @@ import normalize  # type: ignore[reportMissingImports]  # noqa: E402
 
 PORT = 5000
 MAX_SIDE = 640
+TTS_MAX_CHARS = 500
+TTS_CHUNK_CHARS = 200
+TTS_TIMEOUT = 15
+TTS_LANG_PATTERN = re.compile(r"^[a-z]{2,3}(?:-[a-z]{2,4})?$")
 DEFAULT_SETTINGS = {
     "profile": landmark_config.PROFILE_DEFAULT,
     "backend": "torch",
@@ -459,6 +467,83 @@ def predict_photo(image, settings):
         "pair": call["pair"] if call["collide"] else "",
         "features": normalize.features(hand.landmarks).tolist(),
     }
+
+
+def tts_chunks(text, limit=TTS_CHUNK_CHARS):
+    chunks = []
+    current = ""
+    for word in text.split():
+        if len(word) > limit:
+            if current:
+                chunks.append(current)
+                current = ""
+            chunks.extend(
+                word[index:index + limit]
+                for index in range(0, len(word), limit)
+            )
+        elif not current:
+            current = word
+        elif len(current) + 1 + len(word) <= limit:
+            current += " " + word
+        else:
+            chunks.append(current)
+            current = word
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+@lru_cache(maxsize=16)
+def synthesize_speech(text, lang, slow):
+    audio = b""
+    for chunk in tts_chunks(text):
+        query = urllib.parse.urlencode({
+            "ie": "UTF-8", "q": chunk, "tl": lang, "client": "tw-ob",
+            "ttsspeed": "0.3" if slow else "1",
+        })
+        request_url = "https://translate.google.com/translate_tts?" + query
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "Referer": "https://translate.google.com/",
+        }
+        with urllib.request.urlopen(
+            urllib.request.Request(request_url, headers=headers),
+            timeout=TTS_TIMEOUT,
+        ) as response:
+            audio += response.read()
+    if not audio:
+        raise RuntimeError("Google returned an empty audio response.")
+    return audio
+
+
+@app.post("/api/tts")
+def text_to_speech():
+    data = request.get_json(silent=True) or {}
+    text = str(data.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "No text provided."}), 400
+    if len(text) > TTS_MAX_CHARS:
+        return jsonify({
+            "error": f"Text is too long (maximum {TTS_MAX_CHARS} characters)."
+        }), 400
+    lang = str(data.get("lang") or "en").strip().lower()
+    if not TTS_LANG_PATTERN.match(lang):
+        return jsonify({
+            "error": "lang must be a language code such as 'en' or 'en-gb'."
+        }), 400
+    slow = bool(data.get("slow", False))
+    try:
+        audio = synthesize_speech(text, lang, slow)
+    except urllib.error.HTTPError as error:
+        return jsonify({
+            "error": f"Google TTS refused the request (HTTP {error.code})."
+        }), 502
+    except Exception as error:
+        return jsonify({"error": f"Google TTS failed: {error}"}), 502
+    return send_file(
+        io.BytesIO(audio), mimetype="audio/mpeg",
+        download_name="speech.mp3", max_age=0,
+    )
 
 
 @app.get("/api/health")

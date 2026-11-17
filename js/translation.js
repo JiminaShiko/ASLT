@@ -219,6 +219,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var liveText = document.getElementById('live-text');
   var liveTop = document.getElementById('live-top');
   var clearLiveBtn = document.getElementById('clear-live');
+  var readBtn = document.getElementById('read-live');
   var stream = null;
   var liveSession = null;
   var liveActive = false;
@@ -325,6 +326,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     liveText.textContent = frame.text || '';
+    refreshReadButton();
     liveTop.innerHTML = '';
     (frame.top_predictions || []).forEach(function (p) {
       var item = document.createElement('li');
@@ -476,6 +478,7 @@ document.addEventListener('DOMContentLoaded', function () {
       captureLabel.textContent = 'Stop live typer';
       clearLiveBtn.disabled = false;
       liveText.textContent = '';
+      refreshReadButton();
       liveTop.innerHTML = '<li class="muted">Waiting for a sign.</li>';
       renderResult(signResult, 'idle', 'Waiting for a sign', 'Hold each letter steady until it is committed.');
       setCamStatus('Live typer is on. Space commits; Backspace deletes; C clears; Q or Esc stops.', false);
@@ -502,6 +505,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (backspaceBtn) { backspaceBtn.disabled = true; }
     if (calibrateBtn) { calibrateBtn.disabled = true; }
     if (cancelCalibrationBtn) { cancelCalibrationBtn.disabled = true; }
+    refreshReadButton();
     if (!sessionId) { return; }
 
     var finalText = previousText;
@@ -509,6 +513,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var result = await modelRequest('/api/live/stop', { session_id: sessionId });
       finalText = result.text || '';
       if (liveText) { liveText.textContent = finalText; }
+      refreshReadButton();
     } catch (err) {
       if (saveHistory) { setCamStatus(err.message, true); }
     }
@@ -561,6 +566,66 @@ document.addEventListener('DOMContentLoaded', function () {
   commitBtn.addEventListener('click', function () { sendLiveAction('commit'); });
   backspaceBtn.addEventListener('click', function () { sendLiveAction('backspace'); });
   clearLiveBtn.addEventListener('click', function () { sendLiveAction('clear'); });
+
+  var speechAudio = null;
+  var speechUrl = null;
+  var speechLoading = false;
+
+  function refreshReadButton() {
+    readBtn.disabled = speechLoading || !(liveText.textContent || '').trim();
+  }
+
+  async function readTypedText() {
+    var text = (liveText.textContent || '').trim();
+    if (!text) {
+      setCamStatus('There is no typed text to read yet.', true);
+      return;
+    }
+    speechLoading = true;
+    refreshReadButton();
+    setCamStatus('Loading the Google voice...', false);
+    try {
+      var response;
+      try {
+        response = await fetch(API_BASE + '/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text, lang: 'en' })
+        });
+      } catch (err) {
+        throw new Error('Could not reach the speech API. Start it with "python api.py" in the photo model folder.');
+      }
+      if (!response.ok) {
+        var message = 'Google TTS could not read the text.';
+        try {
+          var result = await response.json();
+          if (result && result.error) { message = result.error; }
+        } catch (err) {}
+        throw new Error(message);
+      }
+      var blob = await response.blob();
+      if (speechAudio) { speechAudio.pause(); }
+      if (speechUrl) { URL.revokeObjectURL(speechUrl); }
+      speechUrl = URL.createObjectURL(blob);
+      var audio = new Audio(speechUrl);
+      speechAudio = audio;
+      audio.addEventListener('ended', function () {
+        if (speechAudio === audio && speechUrl) {
+          URL.revokeObjectURL(speechUrl);
+          speechUrl = null;
+        }
+      });
+      await audio.play();
+      setCamStatus('Reading the typed text aloud.', false);
+    } catch (err) {
+      setCamStatus(err.message || 'Google TTS could not read the text.', true);
+    } finally {
+      speechLoading = false;
+      refreshReadButton();
+    }
+  }
+  readBtn.addEventListener('click', readTypedText);
+
   calibrateBtn.addEventListener('click', function () { sendLiveAction('calibrate'); });
   cancelCalibrationBtn.addEventListener('click', function () {
     sendLiveAction('cancel_calibration');
