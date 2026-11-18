@@ -153,12 +153,18 @@
     const email = (params.get("email") || "").trim();
     const purpose = (params.get("purpose") || "signup").trim().toLowerCase();
     const isForgotPassword = purpose === "forgot_password";
+    const isLoginOtp = purpose === "login";
 
     const VERIFY_ENDPOINT = isForgotPassword
       ? "/api/forgot-password/verify-otp"
+      : isLoginOtp
+      ? "/api/login/verify-otp"
       : "/api/signup/verify-otp";
+
     const RESEND_ENDPOINT = isForgotPassword
       ? "/api/forgot-password/resend-otp"
+      : isLoginOtp
+      ? "/api/login/resend-otp"
       : "/api/signup/resend-otp";
 
     const savedTheme = localStorage.getItem("signrest_theme");
@@ -202,8 +208,9 @@
       document.getElementById("sceneryBushRight").src = isDark ? ASSETS.bushRightDark : ASSETS.bushRightLight;
       document.getElementById("sceneryFrog").src = ASSETS.frog;
 
-      // Use Login backgrounds for forgot_password, Signup backgrounds for signup
-      const bgUrl = isForgotPassword
+      // Use Login backgrounds for login & forgot_password, Signup backgrounds for signup
+      const useLoginBg = isForgotPassword || isLoginOtp;
+      const bgUrl = useLoginBg
         ? (isDark ? ASSETS.bgLoginDark : ASSETS.bgLoginLight)
         : (isDark ? ASSETS.bgSignupDark : ASSETS.bgSignupLight);
       bgPhotoLayer.style.backgroundImage = `url('${bgUrl}')`;
@@ -307,7 +314,8 @@
           showBanner("success", data.message || "OTP verified! Redirecting...");
           setTimeout(() => {
             window.location.href =
-              data.redirect_url || (isForgotPassword ? "/reset-password" : "/profile-setup");
+              data.redirect_url ||
+              (isForgotPassword ? "/reset-password" : isLoginOtp ? "/home" : "/profile-setup");
           }, 650);
         }
       } catch (err) {
