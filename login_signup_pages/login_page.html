@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Signrest — Login &amp; Signup</title>
+  <title>Signrest — Login &amp; Sign-up</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -121,7 +121,7 @@
 
         <!-- Forgot Password Link (Login mode only) -->
         <div id="forgotPswRow" class="hidden justify-end mb-4">
-          <a href="/forgot-password" id="forgotPswLink" class="sub-link">forgot psw?</a>
+          <a href="/forgot-password" id="forgotPswLink" class="sub-link">forgot password?</a>
         </div>
 
         <div id="signupSpacer" class="h-3"></div>
@@ -150,7 +150,7 @@
         <!-- Mode Switch Footer -->
         <div class="flex items-center justify-between mt-3 px-2">
           <span id="switchPromptText" class="text-[0.82rem]" style="color: var(--text-primary);">
-            already had an acc?
+            already had an account?
           </span>
           <button
             type="button"
@@ -454,7 +454,7 @@
 
         primarySubmitBtn.textContent = "SIGN UP";
         googleBtnText.textContent = "Sign up with Google";
-        switchPromptText.textContent = "already had an acc?";
+        switchPromptText.textContent = "already had an account?";
         switchModeBtn.textContent = "login";
         passwordInput.setAttribute("autocomplete", "new-password");
       } else {
@@ -465,8 +465,8 @@
 
         primarySubmitBtn.textContent = "LOGIN";
         googleBtnText.textContent = "Login with Google";
-        switchPromptText.textContent = "don’t have an acc?";
-        switchModeBtn.textContent = "signup";
+        switchPromptText.textContent = "don’t have an account?";
+        switchModeBtn.textContent = "sign-up";
         passwordInput.setAttribute("autocomplete", "current-password");
       }
 
