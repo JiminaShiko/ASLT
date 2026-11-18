@@ -146,7 +146,7 @@ def google_callback():
 
         cursor.execute(
             """
-            SELECT user_id, username, email, profile_photo, role, status
+            SELECT user_id, username, full_name, email, profile_photo, role, status
             FROM users
             WHERE email = %s
             LIMIT 1
@@ -195,6 +195,7 @@ def google_callback():
                 )
 
             username = existing_user.get("username")
+            full_name = existing_user.get("full_name")
             profile_photo = existing_user.get("profile_photo")
 
         else:
@@ -214,6 +215,7 @@ def google_callback():
             user_id = cursor.lastrowid
             role = "user"
             username = None
+            full_name = None
             profile_photo = None
             is_new_account = True
 
@@ -241,6 +243,13 @@ def google_callback():
         session["user_email"] = email
         session["user_role"] = role
         session["username"] = username
+        session["full_name"] = full_name
+        session["display_name"] = (
+            google_user.get("name")
+            or full_name
+            or username
+            or email.partition("@")[0]
+        )
         session["profile_photo"] = profile_photo
         session["profile_completed"] = has_complete_profile
 

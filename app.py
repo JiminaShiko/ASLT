@@ -11,6 +11,7 @@ from login_signup_pages.signup_process import ensure_auth_tables, signup_bp
 from login_signup_pages.profile_process import profile_bp
 
 BASE_DIR = Path(__file__).resolve().parent
+ADMIN_DIR = BASE_DIR / "HTML" / "Admin"
 load_dotenv(BASE_DIR / ".env")
 
 app = Flask(__name__)
@@ -97,11 +98,32 @@ def user_home_placeholder():
 def admin_dashboard_placeholder():
     if not session.get("user_email") or session.get("user_role") != "admin":
         return redirect("/login")
-    return (
-        f"<h2>Signrest Admin Dashboard</h2>"
-        f"<p>Welcome Admin: {session.get('user_email')}</p>"
-        f"<a href='/api/logout'>Logout</a>"
+    return redirect("/admin-dashboard/")
+
+
+@app.route("/admin-dashboard/", defaults={"filename": "admin_dashboard.html"})
+@app.route("/admin-dashboard/<path:filename>")
+def serve_admin_dashboard(filename):
+    if not session.get("user_email") or session.get("user_role") != "admin":
+        return redirect("/login")
+    return send_from_directory(ADMIN_DIR, filename)
+
+
+@app.route("/api/admin/me")
+def admin_profile():
+    if not session.get("user_email"):
+        return jsonify({"message": "Authentication required."}), 401
+    if session.get("user_role") != "admin":
+        return jsonify({"message": "Administrator access required."}), 403
+
+    email = session["user_email"]
+    display_name = (
+        session.get("display_name")
+        or session.get("full_name")
+        or session.get("username")
+        or email.partition("@")[0]
     )
+    return jsonify({"name": display_name, "email": email})
 
 
 # Serves relative files inside login_signup_pages/ (e.g., auth_style.css)
