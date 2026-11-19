@@ -482,16 +482,34 @@ body.dark-mode .sub-link {
 }
 
 /* Bigger frog anchored at its base on the stone, breathing slowly */
-.rock-frog-group .scenery-frog {
+.rock-frog-group .frog-theme-toggle {
   position: absolute;
   bottom: 29%;
   left: 15%;
   width: 38%;
-  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
   z-index: 11;
+  cursor: pointer;
+  line-height: 0;
+  pointer-events: auto;
+}
+
+.rock-frog-group .scenery-frog {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
   filter: var(--frog-filter);
   transform-origin: bottom center;
   animation: frogSlowBreathe 4.8s ease-in-out infinite;
+}
+
+.rock-frog-group .frog-theme-toggle:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+  border-radius: 50%;
 }
 
 /* Warm radial ambient light cast around frog in dark mode */

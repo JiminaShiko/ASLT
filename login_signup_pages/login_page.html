@@ -64,7 +64,15 @@
     <div class="rock-frog-group">
       <img id="sceneryRock" class="scenery-item scenery-rock" alt="" />
       <div class="frog-lamp-aura"></div>
-      <img id="sceneryFrog" class="scenery-item scenery-frog" alt="" />
+      <button
+        type="button"
+        id="frogThemeToggleBtn"
+        class="frog-theme-toggle"
+        aria-label="Switch to dark mode"
+        title="Switch to dark mode"
+      >
+        <img id="sceneryFrog" class="scenery-item scenery-frog" alt="" />
+      </button>
     </div>
 
     <img id="sceneryBush1" class="scenery-item scenery-bush-left" alt="" />
@@ -229,6 +237,7 @@
     const themeIconImg = document.getElementById("themeIconImg");
 
     const sceneryRock = document.getElementById("sceneryRock");
+    const frogThemeToggleBtn = document.getElementById("frogThemeToggleBtn");
     const sceneryFrog = document.getElementById("sceneryFrog");
     const sceneryBush1 = document.getElementById("sceneryBush1");
     const sceneryBush2 = document.getElementById("sceneryBush2");
@@ -289,8 +298,11 @@
 
     function renderTheme() {
       const isDark = state.theme === "dark";
+      const nextThemeLabel = `Switch to ${isDark ? "light" : "dark"} mode`;
       document.body.classList.toggle("dark-mode", isDark);
       localStorage.setItem("signrest_theme", state.theme);
+      frogThemeToggleBtn.setAttribute("aria-label", nextThemeLabel);
+      frogThemeToggleBtn.title = nextThemeLabel;
 
       applyImageWithFallback(brandLogoImg, "logo");
       applyImageWithFallback(leafToastSproutImg, state.mode === "login" ? "alertHorn" : "alertLeaves");
@@ -500,10 +512,13 @@
       validateFormState(false);
     });
 
-    themeToggleBtn.addEventListener("click", () => {
+    function toggleTheme() {
       state.theme = state.theme === "light" ? "dark" : "light";
       renderTheme();
-    });
+    }
+
+    themeToggleBtn.addEventListener("click", toggleTheme);
+    frogThemeToggleBtn.addEventListener("click", toggleTheme);
 
     switchModeBtn.addEventListener("click", () => {
       state.mode = state.mode === "signup" ? "login" : "signup";
