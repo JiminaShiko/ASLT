@@ -2,14 +2,13 @@ import os
 from pathlib import Path
 import mysql.connector
 from mysql.connector import Error
-from dotenv import load_dotenv
+from config.environment import load_environment
 
 # Resolve project root directory (root/config/database/db_connection.py -> root/)
 BASE_DIR = Path(__file__).resolve().parents[2]
 CURRENT_DIR = Path(__file__).resolve().parent
 
-# Loads .env on localhost; safely skips on Render where env vars are injected by the platform
-load_dotenv(BASE_DIR / ".env")
+load_environment()
 
 
 def _resolve_ssl_ca_path() -> str | None:

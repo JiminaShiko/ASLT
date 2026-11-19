@@ -6,10 +6,10 @@ import urllib.request
 import json
 import uuid
 from pathlib import Path
-from dotenv import load_dotenv
+from config.environment import load_environment
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-load_dotenv(BASE_DIR / ".env")
+load_environment()
 
 
 def _get_cloudinary_config() -> tuple[str, str, str]:
