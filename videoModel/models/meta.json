@@ -1,0 +1,165 @@
+{
+ "model": "isolated ASL word recognizer (landmarks, not pixels)",
+ "created": "2026-11-18 22:37:42",
+ "labels": [
+  "eat",
+  "family",
+  "friend",
+  "good",
+  "hello",
+  "help",
+  "name",
+  "sad",
+  "school",
+  "drink",
+  "thanks",
+  "love",
+  "bye",
+  "sorry",
+  "yes",
+  "no",
+  "happy",
+  "please",
+  "bad",
+  "home",
+  "REST",
+  "OTHER"
+ ],
+ "num_classes": 22,
+ "vocab_batches": [
+  1
+ ],
+ "feature_dim": 200,
+ "num_frames": 64,
+ "landmark_version": 2,
+ "feature_version": 3,
+ "train_words_top1": 0.954,
+ "arch": {
+  "in_dim": 200,
+  "num_classes": 22,
+  "hidden": 96,
+  "gru_layers": 2,
+  "conv_channels": [
+   64,
+   96
+  ],
+  "kernel": 5,
+  "dropout": 0.3
+ },
+ "params": 378230,
+ "regularization": {
+  "preset": "none",
+  "dropout": 0.3,
+  "weight_decay": 0.0001,
+  "label_smoothing": 0.05,
+  "hidden": null,
+  "gru_layers": null,
+  "conv_channels": null,
+  "aug": {},
+  "aug_effective": {
+   "scale": 0.1,
+   "translate": 0.06,
+   "rotate": 8.0,
+   "jitter": 0.015,
+   "speed": [
+    0.8,
+    1.2
+   ],
+   "frame_dropout": 0.05,
+   "mirror": 0.5
+  }
+ },
+ "train_samples": 1700,
+ "train_signers": 91,
+ "train_videos": 1100,
+ "best_val_top1": 0.6589,
+ "epochs_ran": 59,
+ "seed": 20261116,
+ "smoke": false,
+ "sample_fingerprint": "cd63c83d4762",
+ "eval": {
+  "train": {
+   "n": 1700,
+   "top1_all": 0.7259,
+   "top1_words_only": 0.954,
+   "top1_words_only_n": 500,
+   "note": "train split with the released weights: the memorisation check, not a held-out number"
+  },
+  "val": {
+   "n_samples": 384,
+   "n_videos": 234,
+   "n_signers": 5,
+   "top1_all": 0.6589,
+   "top5_all": 0.8802,
+   "macro_top1_words": 0.8675,
+   "n_words_scored": 20,
+   "background": {
+    "rest_n": 150,
+    "rest_acc": 0.9267,
+    "rest_as_word": 9,
+    "rest_as_word_rate": 0.06,
+    "other_n": 150,
+    "other_acc": 0.2667,
+    "other_as_word": 104,
+    "other_as_word_rate": 0.6933,
+    "word_as_extra": 1,
+    "word_as_extra_rate": 0.0119
+   },
+   "top1_words_only": 0.881,
+   "top1_words_only_n": 84,
+   "top5_words_only": 0.9762
+  },
+  "test": {
+   "n_samples": 869,
+   "n_videos": 569,
+   "n_signers": 11,
+   "top1_all": 0.6951,
+   "top5_all": 0.8918,
+   "macro_top1_words": 0.886,
+   "n_words_scored": 20,
+   "background": {
+    "rest_n": 300,
+    "rest_acc": 0.9467,
+    "rest_as_word": 15,
+    "rest_as_word_rate": 0.05,
+    "other_n": 300,
+    "other_acc": 0.27,
+    "other_as_word": 208,
+    "other_as_word_rate": 0.6933,
+    "word_as_extra": 7,
+    "word_as_extra_rate": 0.026
+   },
+   "top1_words_only": 0.8996,
+   "top1_words_only_n": 269,
+   "top5_words_only": 0.9777
+  },
+  "ps_test": {
+   "n_samples": 120,
+   "n_videos": 120,
+   "n_signers": 18,
+   "top1_all": 0.8417,
+   "top5_all": 0.9833,
+   "macro_top1_words": 0.8417,
+   "n_words_scored": 3,
+   "background": {
+    "rest_n": 0,
+    "rest_acc": null,
+    "rest_as_word": 0,
+    "rest_as_word_rate": 0.0,
+    "other_n": 0,
+    "other_acc": null,
+    "other_as_word": 0,
+    "other_as_word_rate": 0.0,
+    "word_as_extra": 0,
+    "word_as_extra_rate": 0.0
+   },
+   "top1_words_only": 0.8417,
+   "top1_words_only_n": 120,
+   "top5_words_only": 0.9833
+  }
+ },
+ "test_top1": 0.6951,
+ "test_n_signers": 11,
+ "licence": "trained on ASL Citizen under the terms in D:\\sign language project\\ASTL project\\ASLT\\videoModel\\ASL_Citizen\\use.txt; non-commercial research only",
+ "note": "scored on the official signer-disjoint split; no webcam data was used for training or calibration, and nothing from a camera is ever written to disk"
+}

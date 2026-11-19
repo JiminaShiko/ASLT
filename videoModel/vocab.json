@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "enabled_batches": [1],
+  "dataset": "ASL Citizen (splits/train.csv, splits/val.csv, splits/test.csv)",
+  "gloss_matching": "exact raw Gloss string from the official split CSVs",
+  "how_to_read": [
+    "word      : the label the recogniser prints",
+    "batch     : 1 = core twenty (built first), 2 = the optional second batch",
+    "glosses   : the ASL Citizen Gloss values folded into this word. Numeric",
+    "            suffixes (EAT1 / EAT2) are separate ASL-LEX entries: they are",
+    "            different realisations of the same English word, so merging",
+    "            them doubles within-class variation. Merge only if you accept",
+    "            that; the table in reports/vocab.md shows the per-gloss counts.",
+    "min_videos: warn if fewer official train videos than this",
+    "status    : ok | flag | unavailable - informational, re-checked by src/vocab.py"
+  ],
+  "words": [
+    {"word": "eat",     "batch": 1, "glosses": ["EAT1", "EAT2"],          "min_videos": 15, "note": "two different signs (B_02_002, B_03_082), merged as one word"},
+    {"word": "family",  "batch": 1, "glosses": ["FAMILY"],                "min_videos": 15},
+    {"word": "friend",  "batch": 1, "glosses": ["FRIEND"],                "min_videos": 15},
+    {"word": "good",    "batch": 1, "glosses": ["GOOD"],                  "min_videos": 15},
+    {"word": "hello",   "batch": 1, "glosses": ["HELLO"],                 "min_videos": 15},
+    {"word": "help",    "batch": 1, "glosses": ["HELP"],                  "min_videos": 15},
+    {"word": "name",    "batch": 1, "glosses": ["NAME"],                  "min_videos": 15},
+    {"word": "sad",     "batch": 1, "glosses": ["SAD"],                   "min_videos": 15},
+    {"word": "school",  "batch": 1, "glosses": ["SCHOOL"],                "min_videos": 15},
+    {"word": "drink",   "batch": 1, "glosses": ["DRINK1", "DRINK2"],      "min_videos": 15, "note": "two different signs (B_02_012, K_03_092), merged as one word"},
+    {"word": "thanks",  "batch": 1, "glosses": ["THANKYOU"],              "min_videos": 15, "note": "THANKSGIVING is a different word and is NOT merged"},
+    {"word": "love",    "batch": 1, "glosses": ["LOVE"],                  "min_videos": 15},
+    {"word": "bye",     "batch": 1, "glosses": ["BYE"],                   "min_videos": 15},
+    {"word": "sorry",   "batch": 1, "glosses": ["SORRY"],                 "min_videos": 15},
+    {"word": "yes",     "batch": 1, "glosses": ["YES"],                   "min_videos": 15},
+    {"word": "no",      "batch": 1, "glosses": ["NO"],                    "min_videos": 15, "note": "NOON1 / NOON2 are 'noon', not 'no'"},
+    {"word": "happy",   "batch": 1, "glosses": ["HAPPY"],                 "min_videos": 15},
+    {"word": "please",  "batch": 1, "glosses": ["PLEASE"],                "min_videos": 15},
+    {"word": "bad",     "batch": 1, "glosses": ["BAD"],                   "min_videos": 15},
+    {"word": "home",    "batch": 1, "glosses": ["HOME"],                  "min_videos": 15, "note": "HOMEWORK is a different sign and is NOT merged"},
+
+    {"word": "me",          "batch": 2, "glosses": ["ME"],                "min_videos": 15, "note": "MEET / MELT / MESS are different words"},
+    {"word": "my",          "batch": 2, "glosses": ["MY"],                "min_videos": 15},
+    {"word": "you",         "batch": 2, "glosses": ["YOU"],               "min_videos": 15, "note": "YOUNG / YOURSELF are different words"},
+    {"word": "your",        "batch": 2, "glosses": ["YOUR"],              "min_videos": 15},
+    {"word": "what",        "batch": 2, "glosses": ["WHAT1", "WHAT2"],    "min_videos": 15, "note": "W.H.A.T (fingerspelled) excluded by default; add it here if you want it folded in"},
+    {"word": "where",       "batch": 2, "glosses": ["WHERE"],             "min_videos": 15, "note": "WHOLE is a different word"},
+    {"word": "who",         "batch": 2, "glosses": ["WHO"],               "min_videos": 15},
+    {"word": "want",        "batch": 2, "glosses": ["WANT1", "WANT2"],    "min_videos": 15, "note": "DONTWANT is a different sign"},
+    {"word": "need",        "batch": 2, "glosses": ["NEED"],              "min_videos": 15, "note": "DONTNEED / NEEDLE are different signs"},
+    {"word": "like",        "batch": 2, "glosses": ["LIKE"],              "min_videos": 15},
+    {"word": "go",          "batch": 2, "glosses": ["GO"],                "min_videos": 15, "note": "GOAL / GOD / GOAT / GONE / GO_AHEAD are different signs"},
+    {"word": "come",        "batch": 2, "glosses": ["COME"],              "min_videos": 15, "note": "COMEHERE / COMEOUT are different signs"},
+    {"word": "stop",        "batch": 2, "glosses": ["STOP"],              "min_videos": 15, "note": "STOPWATCH excluded; FINISH is a different sign"},
+    {"word": "more",        "batch": 2, "glosses": ["MORE"],              "min_videos": 15},
+    {"word": "water",       "batch": 2, "glosses": ["WATER"],             "min_videos": 15, "note": "WATERDROP / WATERSKI are different signs"},
+    {"word": "food",        "batch": 2, "glosses": [],                    "min_videos": 15, "status": "unavailable", "note": "ASL Citizen has no FOOD gloss at all (checked every one of the 2,731 glosses). EAT and MEAT are different signs, so there is nothing to merge into. Dropped unless another public source is added."},
+    {"word": "understand",  "batch": 2, "glosses": ["UNDERSTAND"],        "min_videos": 15, "note": "NOTUNDERSTAND / MISUNDERSTAND are different signs"},
+    {"word": "now",         "batch": 2, "glosses": ["NOW"],               "min_videos": 15, "note": "NOTYET / NOWHERE are different signs"},
+    {"word": "today",       "batch": 2, "glosses": ["TODAY"],             "min_videos": 15},
+    {"word": "work",        "batch": 2, "glosses": ["WORK"],              "min_videos": 15, "note": "WORKOUT / WORKSHOP are different signs"}
+  ],
+  "extra_classes": {
+    "REST": {
+      "what": "idle start/end frames of the same videos, trimmed by src/extract.py",
+      "cap_train": 600, "cap_val": 150, "cap_test": 300,
+      "min_frames": 4, "max_frames": 96
+    },
+    "OTHER": {
+      "what": "capped deterministic sample of non-vocabulary signs, official split only",
+      "cap_train": 600, "cap_val": 150, "cap_test": 300,
+      "per_gloss_max": 2, "seed": 20261116
+    }
+  },
+  "excluded_glosses_deliberately": [
+    "Sign Language MNIST: not used anywhere in this project",
+    "WLASL and PopSign: pixel datasets from the deleted model, not used here",
+    "any word whose gloss list is empty (only 'food' today)"
+  ]
+}

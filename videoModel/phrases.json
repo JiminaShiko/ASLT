@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "max_buffer_words": 8,
+  "how_it_works": [
+    "src/phrases.py keeps the last max_buffer_words committed words.",
+    "It tries the longest rule first (word counts descending), left to right,",
+    "and replaces the matched run with the rule's text. Unmatched words are",
+    "typed as themselves, space separated. REST and OTHER are never committed,",
+    "so they can never break a phrase.",
+    "Edit this file and restart the demo - no code change is needed."
+  ],
+  "word_forms": {
+    "me": "I",
+    "thanks": "thank you"
+  },
+  "word_forms_note": "applied to a single committed word when no multi-word rule matched",
+  "rules": [
+    {"pattern": ["me", "name"],  "text": "my name",     "needs": "batch 2 (me)"},
+    {"pattern": ["my", "name"],  "text": "my name",     "needs": "batch 2 (my)"},
+    {"pattern": ["me", "friend"],"text": "my friend",   "needs": "batch 2 (me)"},
+    {"pattern": ["good", "friend"], "text": "good friend", "needs": "core 20"},
+    {"pattern": ["bad", "friend"],  "text": "bad friend",  "needs": "core 20"},
+    {"pattern": ["help", "me"],  "text": "help me",     "needs": "batch 2 (me)"},
+    {"pattern": ["i", "am", "sad"], "text": "I am sad", "needs": "batch 2 (me -> I)"},
+    {"pattern": ["not", "good"], "text": "not good",    "needs": "batch 2 (no -> not)"},
+    {"pattern": ["what", "name"],"text": "what is your name", "needs": "batch 2"},
+    {"pattern": ["school", "friend"], "text": "school friend", "needs": "core 20"},
+    {"pattern": ["home", "school"], "text": "home and school", "needs": "core 20"}
+  ],
+  "grammar_notes": [
+    "ASL has no copula: there is no separate sign for 'am'/'is'. Signing ME SAD",
+    "means 'I am sad', so this module does not invent an 'am' - a rule that",
+    "expands ME SAD to 'I am sad' is only a written-English convenience and is",
+    "listed above as an example you can delete.",
+    "Signing order is preserved; English word order is not reordered.",
+    "no -> 'not' only inside a rule; a lone NO is typed as 'no'."
+  ]
+}

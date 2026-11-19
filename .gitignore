@@ -1,3 +1,6 @@
 .env
 ca.pem
-
+*.env
+*.pyc
+__pycache__/
+*.py[cod]

@@ -4,15 +4,13 @@ import secrets
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
-from pathlib import Path
-from dotenv import load_dotenv
 from flask import Blueprint, redirect, request, session, url_for
 from werkzeug.security import generate_password_hash
 
+from config.environment import load_environment
 from config.database import get_db_connection
 
-BASE_DIR = Path(__file__).resolve().parents[1]
-load_dotenv(BASE_DIR / ".env")
+load_environment()
 
 google_bp = Blueprint("google_bp", __name__)
 
