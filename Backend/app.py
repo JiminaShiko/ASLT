@@ -10,8 +10,11 @@ from login_signup_pages.login_process import ensure_login_columns, login_bp
 from login_signup_pages.signup_process import ensure_auth_tables, signup_bp
 from login_signup_pages.profile_process import profile_bp
 
-BASE_DIR = Path(__file__).resolve().parent
-ADMIN_DIR = BASE_DIR / "HTML" / "Admin"
+BACKEND_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BACKEND_DIR.parent
+FRONTEND_DIR = PROJECT_ROOT / "Front-end"
+LOGIN_PAGES_DIR = FRONTEND_DIR / "login_signup_pages"
+ADMIN_DIR = FRONTEND_DIR / "HTML" / "Admin"
 load_environment()
 
 app = Flask(__name__)
@@ -41,24 +44,24 @@ def index():
 
 @app.route("/login")
 def login_signup_view():
-    return send_from_directory(BASE_DIR / "login_signup_pages", "login_page.html")
+    return send_from_directory(LOGIN_PAGES_DIR, "login_page.html")
 
 
 @app.route("/forgot-password")
 def forgot_password_view():
-    return send_from_directory(BASE_DIR / "login_signup_pages", "forgot_password.html")
+    return send_from_directory(LOGIN_PAGES_DIR, "forgot_password.html")
 
 
 @app.route("/verify-otp")
 def verify_otp_view():
-    return send_from_directory(BASE_DIR / "login_signup_pages", "otp_verify.html")
+    return send_from_directory(LOGIN_PAGES_DIR, "otp_verify.html")
 
 
 @app.route("/reset-password")
 def reset_password_view():
     if not session.get("password_reset_verified_email"):
         return redirect("/forgot-password")
-    return send_from_directory(BASE_DIR / "login_signup_pages", "password_reset.html")
+    return send_from_directory(LOGIN_PAGES_DIR, "password_reset.html")
 
 
 @app.route("/api/auth/oauth-flash", methods=["GET"])
@@ -72,9 +75,9 @@ def consume_oauth_flash():
 def profile_setup_placeholder():
     if not session.get("user_email"):
         return redirect("/login")
-    profile_form = BASE_DIR / "login_signup_pages" / "profile_form.html"
+    profile_form = LOGIN_PAGES_DIR / "profile_form.html"
     if profile_form.is_file():
-        return send_from_directory(BASE_DIR / "login_signup_pages", "profile_form.html")
+        return send_from_directory(LOGIN_PAGES_DIR, "profile_form.html")
     return (
         f"<h2>Profile Setup (profile_form.html coming next)</h2>"
         f"<p>Logged in as {session.get('user_email')}</p>"
@@ -126,19 +129,19 @@ def admin_profile():
     return jsonify({"name": display_name, "email": email})
 
 
-# Serves relative files inside login_signup_pages/ (e.g., auth_style.css)
+# Serves relative files inside Front-end/login_signup_pages/ (e.g., auth_style.css)
 @app.route("/<path:filename>")
 def serve_login_page_assets(filename):
-    target = BASE_DIR / "login_signup_pages" / filename
+    target = LOGIN_PAGES_DIR / filename
     if target.is_file():
-        return send_from_directory(BASE_DIR / "login_signup_pages", filename)
+        return send_from_directory(LOGIN_PAGES_DIR, filename)
     return "Not Found", 404
 
 
-# Serves ../assets/images/... cleanly for both localhost and Render
+# Serves Front-end/assets/images/... cleanly for both localhost and Render
 @app.route("/assets/<path:filename>")
 def serve_global_assets(filename):
-    return send_from_directory(BASE_DIR / "assets", filename)
+    return send_from_directory(FRONTEND_DIR / "assets", filename)
 
 
 if __name__ == "__main__":
