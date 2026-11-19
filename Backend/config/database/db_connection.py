@@ -4,8 +4,9 @@ import mysql.connector
 from mysql.connector import Error
 from config.environment import load_environment
 
-# Resolve project root directory (root/config/database/db_connection.py -> root/)
+# Resolve backend root directory (Backend/config/database/db_connection.py -> Backend/)
 BASE_DIR = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 CURRENT_DIR = Path(__file__).resolve().parent
 
 load_environment()
@@ -21,8 +22,9 @@ def _resolve_ssl_ca_path() -> str | None:
 
     candidate_paths = [
         Path(ssl_ca),                         # Absolute path or relative to CWD
-        BASE_DIR / ssl_ca,                    # Relative to project root (e.g., ASLT/ca.pem)
-        CURRENT_DIR / ssl_ca,                 # Relative to config/database/ca.pem
+        BASE_DIR / ssl_ca,                    # Relative to backend root (e.g., Backend/ca.pem)
+        PROJECT_ROOT / ssl_ca,                # Relative to project root
+        CURRENT_DIR / ssl_ca,                 # Relative to Backend/config/database/
         Path("/etc/secrets") / Path(ssl_ca).name,  # Render Secret Files default location
     ]
 

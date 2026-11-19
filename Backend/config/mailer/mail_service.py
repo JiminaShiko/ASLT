@@ -7,8 +7,10 @@ from email.utils import formataddr
 from pathlib import Path
 from config.environment import load_environment
 
-# Resolve project root directory (root/config/mailer/mail_service.py -> root/)
-BASE_DIR = Path(__file__).resolve().parents[2]
+# Resolve backend / project root directories (Backend/config/mailer/mail_service.py)
+BACKEND_DIR = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = BACKEND_DIR.parent
+FRONTEND_DIR = PROJECT_ROOT / "Front-end"
 
 load_environment()
 
@@ -29,7 +31,9 @@ def _resolve_paper_image_path() -> Path | None:
 
     candidates = [
         Path(configured),
-        BASE_DIR / configured,
+        PROJECT_ROOT / configured,
+        FRONTEND_DIR / configured,
+        BACKEND_DIR / configured,
     ]
     for path in candidates:
         if path.is_file():
