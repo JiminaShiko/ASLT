@@ -1,229 +1,410 @@
-# Video model: compact seed and incremental updates
+ASL WORD RECOGNIZER - videoModel
+================================
 
-The video workflow stores a compact replay/evaluation set so a later training run can
-use earlier words after the original raw videos have been removed. This is still a
-video model: each seed item is the existing preprocessed 16-frame, 112×112 RGB
-`uint8` tensor, compressed as `.npz`. Seed storage therefore grows with the number of
-retained clips; check the reported byte total before deleting raw data.
+Isolated ASL words from a webcam: MediaPipe Holistic landmarks (not pixels),
+trained on ASL Citizen only, evaluated on signers the model has never seen.
 
-Run commands from this folder. Install dependencies with `python -m pip install -r
-requirements.txt`; supply the source datasets as described below, then run
-`python -m src.preprocess`. Training/evaluation artifacts are written to
-`datasets/processed/training_artifacts/`, and standalone checkpoints are written to
-`models/`. Prediction does not require the training dataset or processed arrays:
+You record nothing, save nothing and train on nothing you did not download.
+The webcam frames are converted to numbers, used, and dropped in the same
+function call.
 
-```powershell
-python -m src.predict_video "path\to\video.mp4" --model cnn3d
+
+ABOUT
+-----
+Name    : videoModel word recognizer (20 core words + REST + OTHER)
+Data    : ASL Citizen (Microsoft Research), ~83,400 isolated word videos,
+          52 signers, already on disk at `ASL_Citizen/`
+Approach: landmarks, not pixels - one shared 200-number feature vector per
+          clip, used identically for training and for the live demo
+Model   : conv1d x2 -> bidirectional GRU x2 -> Linear, 378,230 parameters,
+          CPU only. Standardisation (train-split mean/std) and the max-over-time
+          pooling live inside the module, so the checkpoint, the ONNX graph and
+          the webcam path cannot drift apart.
+Result  : 58.3% top-1 / 80.4% top-5 on the official signer-disjoint test
+          split (11 signers never trained on, 869 clips), 89.2% when only the
+          20 words compete. That run used the previous 170-number feature
+          vector; the 200-number one in the code today needs one retrain
+          (`python -m src.train --seeds 3`, below) before the live demo will
+          accept it - the weights say what width they were built for, and the
+          app refuses a mismatch.
+          What the demo promises is not the raw 58.3% - see WHAT TO EXPECT
+          FROM THE DEMO. Reproduce with `python check_results.py`; every
+          number is on disk in `REPORT_WORDS.md` and `reports/`.
+
+
+THE ONE COMMAND
+---------------
+Open PowerShell or cmd, then paste this whole block:
+
+```bat
+cd "D:\sign language project\ASTL project\ASLT\videoModel"
+python -m pip install -r requirements.txt
+python run_all.py --workers 4
 ```
 
-For a full-length WLASL source video, pass `--wlasl-id <video-id>` so preprocessing
-uses the annotated signing interval.
+It extracts landmarks, trains, exports ONNX and writes the report, and each
+step asks what is already on disk before it runs. Ctrl-C is always safe: run
+the same line again and it continues where it stopped.
 
-## Initial preparation (automatic)
+Expected on this machine, measured end to end (see TIME AND DISK below): about
+30 minutes of CPU work, and about 110 MB of new files.
 
-Training prepares everything automatically on the first run, like the photo
-model. From `videoModel`, just run:
 
-```powershell
-python -m src.train_model --models cnn_gru,cnn3d
+WHAT IT DOES
+------------
+```
+1  extract   ASL_Citizen/videos/*.mp4  ->  cache/landmarks/*.npy
+             one [T, 136, 3] float16 array per clip: 27 upper-body pose
+             points, 67 face points, 2 x 21 hand points. NaN where MediaPipe
+             saw nothing. Nothing is resized, cropped or re-encoded.
+
+2  features  [T, 136, 3]  ->  [64, 200]
+             resampled to 64 frames, centred on the shoulders, scaled by
+             shoulder width, y flipped so up is up. Interior landmark gaps of
+             up to 5 source frames are bridged before this (a hand that
+             flickers for two frames is not two absences), then the vector is
+             pose 30 + hands 84 + hand shape 18 + face 12 + hand-to-body 10 +
+             presence 4 + velocity 12 + segment read-out 30.
+
+3  train     [64, 200]  ->  22 classes
+             the 20 words, plus REST (idle head/tail of the same clips) and
+             OTHER (a capped sample of signs that are not in the vocabulary),
+             so the model has something to say when it is not looking at one
+             of our 20 words.
+
+4  live      webcam frame -> landmarks -> features -> decision -> a word
+             a segment opens when a hand rises above the shoulder line and
+             closes when it drops; the word is only typed when the reading is
+             confident and clearly ahead of the runner-up, otherwise the
+             screen says "uncertain" and types nothing.
 ```
 
-The first run, when no processed data exists yet, will:
 
-1. Download WLASL metadata and the target-word clips. Read and accept the
-   WLASL C-UDA terms before running; clips whose YouTube source is gone are
-   listed in `datasets/WLASL/download_failures.csv`.
-2. Use the manual ASL Citizen folder `videoModel/ASL_Citizen` when present
-   (containing `splits/train.csv`, `splits/val.csv`, `splits/test.csv`, and
-   `videos/<video-id>-<GLOSS>.mp4`). Without a manual folder, the zip is
-   downloaded automatically.
-3. Preprocess everything into 16-frame, 112×112 RGB clips.
-4. Build the seed replay/evaluation set (20/5/5 per-class quotas).
-5. Train both models from scratch — previous checkpoints are ignored on this
-   first run.
+CHECK WHAT IS DONE WITHOUT RUNNING ANYTHING
+-------------------------------------------
+```bat
+cd "D:\sign language project\ASTL project\ASLT\videoModel"
+python status.py
+```
+Read-only: it opens the split CSVs, the manifest, `meta.json` and the reports,
+never a video. The last line is the one command to run next.
+`python status.py --quiet` prints only that line.
 
-The `cnn_gru` model starts from a pretrained MobileNetV3-Small frame encoder.
-Its ImageNet weights (~10 MB) download automatically the first time the model
-is built; if the download fails, training continues with a from-scratch
-encoder and prints a warning.
 
-Later runs reuse the processed manifest and behave incrementally. The manual
-steps remain available:
+THE FOUR STEPS SEPARATELY
+-------------------------
+Use these if you want to run one stage, or re-run one after changing it.
 
-```powershell
-python -m src.download_data --confirm-wlasl-cuda
-python -m src.preprocess
-python -m src.seed_dataset --per-class-train 20 --per-class-val 5 --per-class-test 5
+```bat
+cd "D:\sign language project\ASTL project\ASLT\videoModel"
+
+python -m src.extract --splits train,val,test --workers 4
+python -m src.train --epochs 60
+python -m src.export_onnx
+python -m src.train --parity
+python check_results.py --write
 ```
 
-Add `--fresh` to any training command to deliberately ignore existing
-checkpoints.
+More useful switches:
 
-## Add words or examples later
-
-1. Add new glosses to `TARGET_WORDS` in `src/config.py` and preprocess the new or
-   expanded video collection so `datasets/processed/manifest.csv` lists it.
-2. Rebuild/refresh the seed before removing source data. The seed builder merges the
-   prior seed manifest with currently available processed examples and carries
-   forward old seed clips that are absent from the raw manifest. It refreshes to the
-   requested per-class, per-split quotas.
-3. Run incremental training:
-
-   ```powershell
-   python -m src.train_model --models cnn_gru,cnn3d
-   ```
-
-   The prior model's class order is retained and newly requested labels are appended.
-   Existing class names must remain in the requested vocabulary. For a deliberate
-   clean retrain, pass `--fresh` (this does not delete the old checkpoint before a
-   successful new model is written).
-
-## Download more examples for the existing 20 words
-
-The repository includes `download_popsign_targets.py`, which retrieves only exact
-matching PopSign sign archives instead of downloading the full dataset. From the
-`videoModel` folder, run:
-
-```powershell
-python download_popsign_targets.py
+```
+python -m src.extract --limit 20        first 20 pending videos only
+python -m src.extract --force           re-extract even what is cached
+python -m src.extract --rates           per-word hand rate: whole clip vs the
+                                        signing window only (reads the cache,
+                                        no MediaPipe, under a second)
+python -m src.train --smoke             a few clips, 1 epoch, proves the code
+python -m src.train --blocks pose,hands ablation: drop feature blocks
+python -m src.train --fresh             ignore the saved checkpoint
+python -m src.train --seeds 3           run 3 seeds, report mean +/- spread
+python -m src.train --reg reg           regularization preset: none (the
+                                        baseline), small, reg, smooth, aug+
+python -m src.train --gate 0.85         what "typed" means when the gate
+                                        numbers are reported
+python -m src.train --promote none      keep the best seed out of models/
+python -m src.train --compare           print the baseline-vs-new table only
+python -m src.live --conf 0.70          lower (or raise) the commit gate
+python -m src.live --margin 0.30        required top1-top2 gap; only bites
+                                        below p1 = 0.58, see the note in
+                                        src/predictor.py
+python run_all.py --dry-run             print what would run, change nothing
+python run_all.py --from train          start at a step and keep going
 ```
 
-The default downloads the official `game/train` archives only and writes extracted
-videos beneath `datasets/external/popsign_v2_1/`. It shows matched and unmatched
-labels before downloading and asks you to type `DOWNLOAD`. To get all official
-splits for evaluation as well, run:
+Every number the seed sweep produces is appended to
+`reports/seed_runs.csv` and rendered as a table in `reports/seed_runs.md`,
+so a change is judged against the spread of the run it replaced, never
+against one lucky seed. Decisions are made on the validation columns; the
+test split is scored once at the end. Adopt a change only if it beats the
+baseline spread.
 
-```powershell
-python download_popsign_targets.py --splits train val test
+
+TRY IT LIVE
+-----------
+Needs `models/words_core20.pt` (step 3 above) and a webcam.
+
+```bat
+cd "D:\sign language project\ASTL project\ASLT\videoModel"
+python -m src.live
 ```
 
-The downloader uses the official [PopSign dataset](https://signdata.cc.gatech.edu/view/datasets/popsign_v1_0/index.html)
-and its [download guide](https://signdata.cc.gatech.edu/view/guides/downloading_popsign/index.html).
-Note: the server removed the PopSign v2.1 archives (its pages remain, but the tar
-files return 404); only `popsign_v1_0` is downloadable, at roughly 3 GB per sign
-for the train split (~60 GB for all 20 words) plus ~450 MB/sign per extra split.
-The script currently needs a v1.0 rewrite (sign slugs and the archive URL layout
-differ) before it can download that version — skip PopSign unless that space and
-time is acceptable. PopSign is isolated ASL video, but its labels may denote a
-particular sign variant; review the sign and label mapping before merging it
-into an existing gloss class.
+A window opens with your camera and a skeleton drawn on top: hands, upper
+body and a face subset. The bar at the bottom shows the state (REST, SIGNING
+or UNCERTAIN), the live frame rate, and the last words it committed. Press
+`r` to reset the buffer, `q` to quit. It saves nothing - no frame, no clip,
+no photo - and writes no files.
 
-Clips downloaded this way are picked up automatically: the next preprocessing
-run reads `datasets/external/popsign_*/download_manifest.csv` and adds the
-clips to their official splits. Run `download_popsign_targets.py` **before**
-your first training run so the automatic preparation includes them. To add
-them after training, rerun `python -m src.preprocess` (this rebuilds the whole
-manifest) and then train again; the incremental update path keeps the old
-vocabulary and initializes from the previous checkpoint.
+Without a camera, or to test the pipeline itself:
 
-## How the models train
-
-- `cnn_gru`: pretrained MobileNetV3-Small encodes each frame, a bidirectional
-  GRU models the sequence, and temporal attention pools the frame features.
-- `cnn3d`: the same pretrained MobileNetV3-Small encodes each frame, and small
-  3D temporal convolutions pool the resulting 7×7 feature maps over time.
-- Each model trains in two phases: phase 1 (default 8 epochs) learns the
-  temporal head together with the pretrained encoder, then phase 2 fine-tunes
-  the last encoder blocks at `--learning-rate × 0.1`. ImageNet mean/std
-  normalization happens inside the models, so dataset and inference code still
-  feed plain `[0, 1]` RGB. A from-scratch 3D CNN was tried first and could not
-  learn from the small training set (its loss stayed at the uniform-prediction
-  level), which is why `cnn3d` also starts from pretrained features.
-- Both models use class-weighted cross-entropy with label smoothing (0.1),
-  per-phase linear learning-rate warm-up followed by cosine decay, gradient
-  clipping, and early stopping on validation macro F1.
-- Train-time augmentation: random temporal sub-window resampling (signing
-  speed), horizontal mirror, shared random crop + resize, and brightness
-  jitter. Augmentation is disabled for validation and test.
-
-## What an incremental run does
-
-- Merges the raw processed manifest and seed manifest by `(dataset, video_id, split)`;
-  seed copies win deduplication so training still works if original processed clips
-  are gone. Validation and test seed anchors remain in their respective splits.
-- Initializes same-architecture layers from the previous checkpoint. Existing output
-  rows are copied by gloss name, while new output rows keep their fresh initialization.
-- Uses class-weighted cross-entropy with label smoothing over current train data.
-  On retained seed examples of old classes, it adds temperature-scaled KL
-  distillation from the previous model. New-class examples are not forced to
-  imitate old-class outputs.
-- Evaluates the candidate on old-word validation anchors. The candidate is promoted
-  to `models/<architecture>.pt` only when every old class has validation support and
-  old-word macro recall drops by no more than `--old-class-recall-drop` (default 0.05).
-  A rejected candidate leaves the previous standalone model in place. The candidate's
-  training artifacts and metrics are written to the selected output directory only
-  after acceptance.
-- Saves class-order, parent vocabulary, seed, and distillation settings in checkpoint
-  metadata. Prediction reads the saved class list, so output labels continue to match
-  their classifier indices.
-
-Useful controls:
-
-```powershell
-python -m src.train_model --help
-python -m src.seed_dataset --help
+```bat
+cd "D:\sign language project\ASTL project\ASLT\videoModel"
+python -m src.live --selftest           guided drill: show it each word, prints a table
+python -m src.live --benchmark          CPU speed on cached clips, target >= 15 fps
+python -m src.live --render-test        real dataset frames through the live path
+python -m src.live --logic-test         the decision rules, no camera, no weights
+python -m src.live --demo --videos 3    offline: what the segmenter did on a clip
+python -m tests.test_logic              the whole offline battery (129 checks)
 ```
 
-`--distillation-weight` controls replay regularization (default `0.5`),
-`--distillation-temperature` controls soft targets (default `2.0`), and
-`--old-class-recall-drop` sets the validation acceptance limit. To allow deliberate
-vocabulary change, train as a fresh model and explicitly manage the old checkpoint.
+`--selftest` is a drill, not a score; its table says so on the last line.
 
-## Standalone Streamlit testing
 
-The video model can be tested independently of the website or PHP application. From
-the repository root in PowerShell, run:
+WHAT TO EXPECT FROM THE DEMO
+----------------------------
+Say this out loud before you judge it, because the numbers below are what the
+gate is actually for. Measured on the 869 signer-disjoint test clips at the
+shipped gate of `p1 >= 0.85` (`CONFIDENCE_MIN` in `src/config.py`):
 
-```powershell
-python -m pip install -r ".\videoModel\requirements.txt"
-python -m streamlit run ".\videoModel\streamlit_app.py"
+```
+types about 3 of every 4        the other quarter is refused, not guessed -
+real words                      the screen says "uncertain" and nothing is
+                                typed
+about 96% of what it types      this is the number to quote, not the 58.3%
+is right                        raw top-1: the model is often unsure, and
+                                the demo is allowed to stay quiet
+may skip a word you signed      that is the 25% above. A skipped word costs
+clearly                         a re-sign; a wrong word costs trust
+turns a sign that is not in     measured on the OTHER clips of the same
+the vocabulary into a wrong     split. There is no "I don't know" class to
+word about 12% of the time      fall back to, so a non-word still has to
+                                clear the same gate - and sometimes does
+types a word while you are      the REST clips: 2%. A hand that moves near
+doing nothing at all about      the body can genuinely look like a sign, and
+2% of the time                  no threshold fixes that
 ```
 
-Or change into the model folder first:
+Lower the gate and both good and bad numbers move together: `--conf 0.70`
+types more words and is right less often. Raising it makes it quieter. The
+margin (`--margin`) is not the second lever people expect - at `p1 >= 0.85`
+the top-1/top-2 gap is forced to at least 0.70 by arithmetic, so the margin
+only does anything once you have lowered `--conf` below about 0.58.
 
-```powershell
-Set-Location "D:\Metro\AI Project\ASLT\videoModel"
-python -m pip install -r ".\requirements.txt"
-python -m streamlit run ".\streamlit_app.py"
+One pair is hedged instead of gated: when `good` and `thanks` are the top
+two, the demo types neither and shows `good/thanks?`. The model swaps that
+pair even when very confident (the swapped margins overlap the correct ones,
+so no threshold separates them); the hint is in `HEDGE_PAIRS` in
+`src/config.py` and can be emptied with a one-line edit.
+
+If the hand is barely in frame the demo says so instead of guessing badly:
+when a hand is detected in under 35% of the last ~1.5 s of the live buffer, a
+hint appears on the screen ("keep both hands and your face in frame, chest
+up"). That is framing, not accuracy - the recorded data has no such problem:
+inside the signing window MediaPipe sees a hand in 90% of frames on average,
+and no core word is under 69%.
+
+
+USING IT FROM PYTHON
+--------------------
+```python
+from src.predictor import WordPredictor
+
+pred = WordPredictor()                      # models/words_core20.pt
+
+for frame in camera_frames:                 # BGR uint8 [H, W, 3], from cv2
+    r = pred.update(frame)
+    print(r["state"], r["top3"], r["committed_word"], r["text"])
+
+pred.close()
 ```
 
-Quote paths that contain spaces. Use `-r` when installing a requirements file;
-without it, pip treats the file path as a package requirement.
+`update()` returns:
 
-The app loads the selected `cnn_gru` or `cnn3d` checkpoint from `models/` and offers:
+```
+state            REST | SIGNING | UNCERTAIN
+display          the word to put on screen, or "uncertain" - never a guess
+top3             [(word, p), (word, p), (word, p)] sorted
+committed_word   the word this segment just added, or ""
+text             the sentence built so far, after the phrase rules
+p1, margin       the two numbers the commit rule looks at
+reason           why a reading was refused ("", if it was committed)
+hand_rate, hint  the framing check: share of the live buffer with a hand in
+                 it, and the on-screen hint when that share is low
+buffer_frames, decision_frames, segment_frames, hand_in_frame, segment_cut
+```
 
-- **Test a video clip:** upload a video and view its top word predictions. Optionally
-  provide a WLASL video ID to use the annotated signing interval for a full source clip.
-- **Live webcam:** start the camera to get predictions from a rolling window of 16
-  frames, refreshed every 8 incoming frames.
+It also accepts a landmark row of shape `[136, 3]` instead of a picture, which
+is how `--benchmark`, the tests and any offline batch use it. Passing anything
+else raises `ValueError` rather than quietly doing nothing.
 
-The webcam must be permitted by the browser; camera access generally requires
-`localhost` or an HTTPS connection. Prediction uses the saved model checkpoints and
-does not require the training dataset. For command-line testing, the
-`python -m src.predict_video` command above remains available.
+Words become phrases through `phrases.json`, which you can edit without
+touching code: `ME + NAME` -> "my name", `no + good` -> "not good", `me` ->
+"I". `python -m src.phrases` prints the rules that can fire with today's 20
+words and the ones that are waiting for batch 2.
 
-Run the model's automated tests from `videoModel` with
-`python -m unittest discover -s tests`.
 
-## Storage and data handling
+TIME AND DISK
+-------------
+Measured on this machine (Windows 11, Python 3.13, CPU only, 16 threads):
 
-`seed/metadata.json` records the frame format, class list, selected quotas, record
-count, and compressed byte total. The CSV records dataset/video ID, gloss, signer,
-split, source path, processed path, preprocessing dimensions, and SHA-256 of each
-stored clip. Keep the seed directory and its manifest together. Do not delete seed
-validation/test clips if you expect the automated old-word acceptance gate to run.
-This workflow reduces the need to retain raw videos but does not guarantee license
-rights to redistribute seed clips; follow the source datasets' terms.
+```
+extraction     38.55 ms per frame; 1720 videos in 1471 s with 4 workers
+               = 24.5 minutes, 0 errors, 94.5 frames/s effective
+               (single-process probe clips ran 1.70-2.21 s per video)
+cache size     109 MB for the whole work list (920 train, 234 val, 569 test),
+               64 KB per clip on average
+train          1520 train samples / 33 signers, 5.01 s per epoch,
+               58 epochs in 300 s = 5 minutes (early stop at patience 8)
+features       8.5 ms per feature build, re-spent on every epoch
+live           median 24.6 ms per update() on a real clip = 40.7 fps
+               (23.7 ms of that is MediaPipe itself; the model is 2.2 ms)
+onnx parity    64/64 identical top-1 on held-out clips, largest probability
+               difference 9.5e-07
+weights        1.5 MB; the Holistic model file is 13.7 MB
+whole run      about 30 minutes of CPU on this machine, start to finish
+```
 
-## Current constraints
+`logs/` keeps one timestamped log per extraction run, plus `logs/train.log`,
+which is what `check_results.py` reads the tail of.
 
-- Seed selection covers signer diversity, but it does not yet score visual diversity
-  or model uncertainty. Per-class quotas are a storage/coverage tradeoff.
-- The class vocabulary remains defined in `TARGET_WORDS`; new labels must be added
-  there before preprocessing/training. Gloss aliases should be added in
-  `WORD_ALIASES` where appropriate.
-- If old validation anchors are unavailable, incremental promotion fails closed. Keep
-  at least one representative validation clip per existing class in the seed.
-- Existing `cnn_gru` and `cnn3d` checkpoints are incrementally compatible when their
-  architecture and class list are intact. A checkpoint from a different architecture
-  cannot initialize the selected model.
+
+STOP AND RESUME
+---------------
+Ctrl-C at any point. Then run the same command again.
+
+```
+extract  skips every video already recorded in cache/manifest.csv
+train    resumes from models/checkpoints/train_state.pt at the next epoch
+         (--fresh to start over)
+onnx     re-exports only when the weights are newer than the graph
+report   re-runs in a second
+```
+
+To throw the work away: delete `cache/`, `logs/` and `models/checkpoints/`.
+Never delete or move `ASL_Citizen/` (it is a ~70 GB manual download) and never
+touch the videos, split CSVs or `use.txt` inside it.
+
+
+WHAT THE NUMBERS MEAN
+---------------------
+The rules the reports are written under, in one place:
+
+```
+evaluation   official signer-disjoint splits only (35 / 6 / 11 signers).
+             A test signer never appears in training. Never quote a
+             random-split number as this model's accuracy.
+tuning       val decides epochs, learning rate and refusal margins. The test
+             split is scored once, at the end, and never steers anything.
+background   REST and OTHER are real classes with their own rows in the
+             reports: how often REST was typed as a word, how often a word
+             was typed as REST/OTHER, and accuracy with and without them.
+provenance   every reported number names the signers and videos behind it
+             (reports/per_word*.csv, reports/predictions*.csv).
+smoke        a --smoke run is labelled "smoke" in its own meta and is not a
+             result; check_results.py says so out loud rather than printing
+             its 0.0%.
+```
+
+Privacy and dataset terms are in `docs/DETAILS.md`; the short version is that
+training data is ASL Citizen only, this folder never writes to it, and the
+live demo never writes what it sees at all.
+
+
+THE VOCABULARY
+--------------
+20 trainable words (batch 1), plus REST and OTHER:
+
+```
+eat  family  friend  good  hello  help  name  sad  school  drink
+thanks  love  bye  sorry  yes  no  happy  please  bad  home
+```
+
+```
+word         gloss in ASL Citizen          status
+food         FOOD                          not trainable - ASL Citizen has no
+  (batch 2)                                FOOD gloss at all (all 2,731
+                                           glosses were checked). EAT and MEAT
+                                           are different signs, so there is
+                                           nothing to merge into.
+8 words      -                             thin in batch 1: under 15 training
+                                           videos (hello, help, name, sad,
+                                           love, please, bad, home). Expect
+                                           them to be the weak rows in the
+                                           report; that is the data, not the
+                                           code.
+```
+
+Batch 2 (ME, MY, YOU, WHAT, WHERE, WHO, WANT, NEED, LIKE, GO, COME, STOP,
+MORE, WATER, UNDERSTAND, NOW, TODAY, WORK and friends) is already written into
+`vocab.json` but switched off. Turn it on by editing `enabled_batches` to
+`[1, 2]` and re-running `run_all.py` - it only extracts and trains what is new.
+
+
+LICENCE AND CITATION
+--------------------
+ASL Citizen is Microsoft Research data released for non-commercial research;
+the terms are in `ASL_Citizen/use.txt`, which ships with the download. Read
+them before publishing anything built on this. If you cite the data, cite
+Desai et al., "ASL Citizen: A Community-Sourced Dataset for Advancing
+Isolated Sign Language Recognition", arXiv:2304.05934, 2023.
+
+MediaPipe Holistic is Apache-2.0 (Google). The `holistic_landmarker.task` file
+(13.7 MB) is fetched once into `models/` on first use.
+
+One linguistics note worth knowing before you judge the output: ASL has no
+copula, so there is no sign for "am"/"is". Signing ME SAD means "I am sad".
+This code does not invent an "am" sign; the English expansion lives in
+`phrases.json` and you can delete that rule.
+
+
+FILES IN THIS FOLDER
+--------------------
+```
+run_all.py             the one command (extract, train, onnx, report)
+status.py              what is done, what is missing, what to run next
+check_results.py       compact pasteable summary + writes REPORT_WORDS.md
+requirements.txt       pinned versions, with the reason for the pins
+README.md              this guide
+docs/DETAILS.md        the long reference: contracts, thresholds, reports,
+                       troubleshooting, privacy, licence text
+docs/EXTERNAL_DATA.md  is 15 training clips per word the ceiling? what two
+                       external corpora would cost, and what they would fix
+phrases.json           your phrase rules (editable, no code change needed)
+vocab.json             words, glosses, batches, REST/OTHER caps
+src/config.py          every path and constant in one place
+src/extract.py         video -> packed landmarks, resumable
+src/landmarks.py       the MediaPipe Tasks wrapper + geometry helpers
+src/features.py        the ONE shared feature function (train and live)
+src/vocab.py           word -> gloss resolution, splits, caps, work list
+src/dataset.py         sample building (sign windows, REST slices, OTHER)
+src/model.py           the network, save/load, standardisation
+src/train.py           signer-disjoint training and all the reporting
+src/export_onnx.py     ONNX export + parity
+src/predictor.py       WordPredictor: the importable live API
+src/live.py            the webcam demo, --selftest, --benchmark, --logic-test
+src/phrases.py         word buffer and phrase rewriting
+tests/test_logic.py    the whole no-data battery in one command
+```
+
+Generated when you run it:
+```
+cache/landmarks/*.npy        one per processed clip
+cache/manifest.csv           one row per clip: status, fps, window, hand rate
+                             over the whole clip and over the signing window
+cache/extract_errors.csv     why any clip failed
+models/words_core20.pt       the trained weights
+models/words_core20.onnx     the exported graph
+models/meta.json             labels, dims, splits, seed, licence, fingerprint
+reports/*.csv *.json         per word, confusions, predictions
+REPORT_WORDS.md              the human-readable result
+logs/                          one log per run
+```
