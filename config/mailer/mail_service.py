@@ -5,13 +5,12 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
 from pathlib import Path
-from dotenv import load_dotenv
+from config.environment import load_environment
 
 # Resolve project root directory (root/config/mailer/mail_service.py -> root/)
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-# Loads .env on localhost; safely skips on Render where env vars are injected by the platform
-load_dotenv(BASE_DIR / ".env", override=True)
+load_environment()
 
 
 def _get_required_env(key: str) -> str:

@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, request, send_from_directory, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from config.environment import load_environment
 from login_signup_pages.forgot_password_process import forgot_password_bp
 from login_signup_pages.google_auth import google_bp
 from login_signup_pages.login_process import ensure_login_columns, login_bp
@@ -14,7 +15,7 @@ from login_signup_pages.profile_process import profile_bp
 
 BASE_DIR = Path(__file__).resolve().parent
 ADMIN_DIR = BASE_DIR / "HTML" / "Admin"
-load_dotenv(BASE_DIR / ".env")
+load_environment()
 
 app = Flask(__name__)
 

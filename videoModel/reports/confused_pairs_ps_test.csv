@@ -1,0 +1,4 @@
+pair,swapped,a_as_b,b_as_a,n_a,n_b,swap_rate
+good / thanks,11,1,10,40,40,0.1375
+good / happy,7,0,7,40,40,0.0875
+thanks / happy,1,0,1,40,40,0.0125

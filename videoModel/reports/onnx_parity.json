@@ -1,0 +1,20 @@
+{
+ "verified": true,
+ "source_split": "test",
+ "n_samples": 64,
+ "max_prob_difference": 1.37e-06,
+ "same_top1": "64/64",
+ "opset": 17,
+ "input": [
+  1,
+  64,
+  200
+ ],
+ "feature_version": 3,
+ "output": [
+  1,
+  22
+ ],
+ "onnx_mb": 1.52,
+ "weights_mb": 1.52
+}
