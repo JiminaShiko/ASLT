@@ -19,18 +19,24 @@ requirements.txt
 
 HTML TRANSLATOR API (LANDMARK MODEL)
 ====================================
-The website's HTML/translation.html uses api.py as a Flask bridge to the
-separate landmark recogniser in ../asl_landmark_app. It does NOT use
-sign_photo_model.keras. The camera frame gate, smoothing, J/Z motion rules and
-live overlay are shared with asl_landmark_app/src/live.py.
-
-From this folder, install the requirements and start the bridge:
+The new website page at ../user_homepage/translation.html uses the API
+blueprint in this folder's api.py. The root ASLT app registers that blueprint,
+so run the website and translator together from the repository root:
 	python -m pip install -r requirements.txt
-	python api.py
+	python app.py
 
-Open the website from localhost or HTTPS so the browser can access the camera.
-The photo-model Streamlit app below (python app.py) is a separate application
-and still uses sign_photo_model.keras.
+The translator uses the separate landmark recogniser in
+../asl_landmark_app; it does NOT use sign_photo_model.keras. Its camera frame
+gate, smoothing, J/Z motion rules and live overlay are shared with
+asl_landmark_app/src/live.py. Sign in to the website and open the Translation
+page. Use localhost or HTTPS so the browser can access the camera.
+
+For the old standalone HTML page only, api.py can still be run as a separate
+local bridge from this folder. Do not run it at the same time as the root
+website on port 5000.
+
+The photo-model Streamlit app below (this folder's python app.py) is a separate
+application and still uses sign_photo_model.keras.
 
 COMMANDS
 =========

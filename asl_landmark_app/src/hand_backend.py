@@ -25,8 +25,11 @@ os.environ.setdefault("GLOG_minloglevel", "2")
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
 os.environ.setdefault("ABSL_PROPAGATE_CXX_STD", "1")
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import config  # noqa: E402
+if __package__:
+    from . import config  # noqa: E402
+else:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import config  # noqa: E402
 
 import mediapipe as mp  # noqa: E402
 from mediapipe.tasks import python as mp_python  # noqa: E402
@@ -106,7 +109,10 @@ def create_detector(model_path: Path | None = None, static: bool = True,
     """
     model_path = Path(model_path or config.HAND_MODEL_PATH)
     if not model_path.is_file():
-        from download_data import ensure_hand_model
+        if __package__:
+            from .download_data import ensure_hand_model
+        else:
+            from download_data import ensure_hand_model
 
         model_path = ensure_hand_model(quiet=True)
     mode = RunningMode.IMAGE if static else RunningMode.VIDEO
@@ -134,7 +140,10 @@ def _unpack(result) -> HandResult:
     label = None
     if result.handedness and result.handedness[0]:
         label = result.handedness[0][0].category_name
-    from normalize import palm_cross_sign
+    if __package__:
+        from .normalize import palm_cross_sign
+    else:
+        from normalize import palm_cross_sign
 
     return HandResult(arr, label, palm_cross_sign(arr))
 

@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signrest — Translation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --sage-bar: rgba(203, 214, 188, 0.94);
+      --sage-bar-border: rgba(44, 74, 44, 0.28);
+      --forest-dark: #28462c;
+      --forest-mid: #3a5f3e;
+      --cam-bg: rgba(255, 255, 255, 0.94);
+      --cam-border: #2c4a2c;
+      --paper-ink: #1e3522;
+      --paper-box-border: rgba(30, 53, 34, 0.55);
+      --paper-box-bg: rgba(255, 255, 255, 0.42);
+      --typed-text-color: #1c311e;
+      --sub-panel-bg: rgba(242, 245, 236, 0.9);
+      --input-line: #2c4a2c;
+    }
+
+    body.dark-mode {
+      --sage-bar: rgba(34, 52, 39, 0.94);
+      --sage-bar-border: rgba(175, 212, 175, 0.26);
+      --forest-dark: #3d6b43;
+      --forest-mid: #4e8054;
+      --cam-bg: rgba(18, 28, 22, 0.92);
+      --cam-border: #6f9e73;
+      /* Paper ink stays dark forest green on the cream typewriter sheet */
+      --paper-ink: #1e3522;
+      --paper-box-border: rgba(30, 53, 34, 0.55);
+      --paper-box-bg: rgba(255, 255, 255, 0.42);
+      --typed-text-color: #eef5ec;
+      --sub-panel-bg: rgba(22, 35, 27, 0.9);
+      --input-line: #8ab88e;
+    }
+
+    .translate-root {
+      width: 100%;
+      max-width: 980px;
+      margin: 0 auto;
+      font-family: 'Lora', Georgia, serif;
+      color: var(--typed-text-color);
+    }
+
+    /* =========================================================
+       TOP 3-MODE SEGMENTED BAR WITH LIQUID WATER-FLOW SLIDER
+       ========================================================= */
+    .mode-switcher-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .mode-seg {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      background: var(--sage-bar);
+      border: 1px solid var(--sage-bar-border);
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 6px 18px rgba(15, 28, 16, 0.12);
+    }
+
+    /* Liquid water-flow active pill indicator */
+    .mode-water-pill {
+      position: absolute;
+      top: 5px;
+      left: 10px;
+      width: 58px;
+      height: 36px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--forest-mid), var(--forest-dark));
+      box-shadow: 0 4px 12px rgba(15, 30, 18, 0.28);
+      transition: transform 0.48s cubic-bezier(0.22, 1.28, 0.36, 1),
+                  border-radius 0.35s ease;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .mode-water-pill.flowing {
+      border-radius: 18px 8px 18px 8px;
+    }
+
+    .mode-tab-btn {
+      position: relative;
+      z-index: 2;
+      width: 58px;
+      height: 36px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .mode-tab-btn:hover {
+      transform: scale(1.06);
+    }
+
+    .mode-t-glyph {
+      font-family: 'Lora', Georgia, serif;
+      font-size: 1.5rem;
+      font-weight: 500;
+      line-height: 1;
+      color: #ffffff;
+    }
+
+    /* Smooth water-flow panel transition */
+    .flow-panel {
+      animation: waterFadeIn 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .flow-panel[hidden] {
+      display: none !important;
+    }
+
+    @keyframes waterFadeIn {
+      0% {
+        opacity: 0;
+        transform: translateY(10px) scale(0.985);
+        filter: blur(3px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+      }
+    }
+
+    /* =========================================================
+       PANEL 1: SIGN TO TEXT (WEBCAM + TYPEWRITER PAPER + TYPED BAR)
+       ========================================================= */
+    .sign-stage-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 20px;
+      align-items: end;
+      justify-content: center;
+    }
+
+    /* Webcam Card: Compacted vertically so Typed Text box sits higher in viewport */
+    .cam-card {
+      position: relative;
+      width: 100%;
+      max-width: 530px;
+      margin: 0 auto 20px auto;
+      height: clamp(305px, 47vh, 385px);
+      background: var(--cam-bg);
+      border: 2.5px solid var(--cam-border);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 12px 28px rgba(15, 28, 16, 0.16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #cam, #cam-render {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #cam { z-index: 1; }
+    #cam-render { z-index: 2; object-fit: contain; background: #0f1812; }
+    #cam-box.mirrored video,
+    #cam-box.mirrored #cam-render {
+      transform: scaleX(-1);
+    }
+
+    .cam-placeholder {
+      position: relative;
+      z-index: 3;
+      text-align: center;
+      padding: 20px;
+      max-width: 290px;
+      color: var(--typed-text-color);
+      opacity: 0.78;
+      font-size: 0.88rem;
+    }
+
+    /* Top-right Circular Mirror Toggle Arrow */
+    .cam-mirror-circle {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      z-index: 10;
+      width: 36px;
+      height: 36px;
+      border-radius: 9999px;
+      border: 1.5px solid rgba(44, 74, 44, 0.28);
+      background: rgba(255, 255, 255, 0.88);
+      color: #1c311e;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
+      transition: transform 0.25s ease, background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .cam-mirror-circle:hover {
+      transform: scale(1.08);
+    }
+
+    .cam-mirror-circle.active {
+      background: #2c4a2c;
+      color: #ffffff;
+      transform: scaleX(-1);
+    }
+
+    /* Bottom-center Circular Camera Start/Stop Button */
+    .cam-shutter-btn {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: 44px;
+      height: 44px;
+      border-radius: 9999px;
+      border: 2.5px solid #2c4a2c;
+      background: rgba(203, 214, 188, 0.92);
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .cam-shutter-btn:hover {
+      transform: translateX(-50%) scale(1.08);
+    }
+
+    .cam-shutter-btn.recording {
+      background: #9f2323;
+      border-color: #ffffff;
+      animation: pulseRing 1.6s infinite;
+    }
+
+    @keyframes pulseRing {
+      0%   { box-shadow: 0 0 0 0 rgba(159, 35, 35, 0.55); }
+      70%  { box-shadow: 0 0 0 10px rgba(159, 35, 35, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(159, 35, 35, 0); }
+    }
+
+    /* =========================================================
+       VINTAGE TYPEWRITER & CREAM PAPER (`assets/images/paper_tag_5.png`)
+       Bottom horizontal base sits flush on the Typed Text border
+       ========================================================= */
+    .typewriter-tag-wrap {
+      position: relative;
+      z-index: 4;
+      width: 330px;
+      height: 455px;
+      margin: -24px auto -1px auto;
+      background-image: url('../assets/images/paper_tag_5.png');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-position: bottom center;
+      filter: drop-shadow(0 12px 24px rgba(12, 24, 14, 0.24));
+      padding: 68px 67px 182px 67px;
+      color: var(--paper-ink);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .tag-result-box {
+      border: 1.4px solid var(--paper-box-border);
+      border-radius: 3px;
+      padding: 4px 8px;
+      min-height: 44px;
+      background: var(--paper-box-bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .tag-result-box .label {
+      font-size: 0.66rem;
+      font-weight: 600;
+      opacity: 0.85;
+      color: var(--paper-ink);
+    }
+
+    .tag-result-box .text {
+      font-size: 0.94rem;
+      font-weight: 700;
+      margin-top: 1px;
+      color: var(--paper-ink);
+      word-break: break-word;
+    }
+
+    .tag-result-box .note {
+      font-size: 0.56rem;
+      opacity: 0.82;
+      line-height: 1.15;
+      color: var(--paper-ink);
+    }
+
+    .meter {
+      height: 3.5px;
+      background: rgba(30, 53, 34, 0.18);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 3px;
+    }
+
+    .meter > i {
+      display: block;
+      height: 100%;
+      background: #2c5e34;
+    }
+
+    /* Lower Split inside Cream Paper: Left (`predictions %`) + Right (4 stacked metric boxes) */
+    .tag-lower-grid {
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: 5px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .tag-predictions-box {
+      border: 1.4px solid var(--paper-box-border);
+      border-radius: 3px;
+      padding: 4px 6px;
+      background: var(--paper-box-bg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .tag-box-heading {
+      font-size: 0.62rem;
+      font-weight: 600;
+      margin-bottom: 3px;
+      color: var(--paper-ink);
+    }
+
+    #live-top {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 0.62rem;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      color: var(--paper-ink);
+    }
+
+    #live-top li {
+      padding: 1.5px 4px;
+      border-radius: 2px;
+      background: rgba(30, 53, 34, 0.08);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tag-metrics-stack {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 2.5px;
+    }
+
+    .tag-mini-metric {
+      border: 1.4px solid var(--paper-box-border);
+      border-radius: 3px;
+      padding: 2px 3px;
+      background: var(--paper-box-bg);
+      text-align: center;
+      line-height: 1.02;
+      color: var(--paper-ink);
+    }
+
+    .tag-mini-metric b {
+      display: block;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: var(--paper-ink);
+    }
+
+    .tag-mini-metric span {
+      display: block;
+      font-size: 0.46rem;
+      opacity: 0.82;
+      color: var(--paper-ink);
+    }
+
+    /* =========================================================
+       BOTTOM TYPED TEXT BAR (Sits right beneath Typewriter base)
+       ========================================================= */
+    .typed-text-bar {
+      position: relative;
+      z-index: 6;
+      margin-top: 0;
+      background: var(--sage-bar);
+      border-top: 2px solid #234227;
+      border-left: 1px solid var(--sage-bar-border);
+      border-right: 1px solid var(--sage-bar-border);
+      border-bottom: 1px solid var(--sage-bar-border);
+      border-radius: 4px 4px 8px 8px;
+      backdrop-filter: blur(8px);
+      padding: 8px 16px;
+      min-height: 58px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 4px;
+      box-shadow: 0 8px 20px rgba(15, 28, 16, 0.14);
+    }
+
+    .typed-readout-line {
+      font-size: 1.05rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      min-height: 22px;
+      word-break: break-word;
+    }
+
+    .typed-readout-line:empty::before {
+      content: "Typed text....";
+      opacity: 0.72;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+    }
+
+    .typed-bar-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .typed-helper-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .subtle-tool-btn {
+      background: transparent;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-family: inherit;
+      font-size: 0.72rem;
+      color: inherit;
+      cursor: pointer;
+      opacity: 0.8;
+    }
+
+    .subtle-tool-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .subtle-tool-btn:not(:disabled):hover {
+      opacity: 1;
+    }
+
+    .typed-action-pills {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill-back-btn {
+      background: #1c352d;
+      color: #ffffff;
+      border: none;
+      border-radius: 9999px;
+      padding: 4px 16px;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.15s ease;
+    }
+
+    .pill-clear-btn {
+      background: #7c2222;
+      color: #ffffff;
+      border: none;
+      border-radius: 9999px;
+      padding: 4px 16px;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.15s ease;
+    }
+
+    .pill-back-btn:disabled,
+    .pill-clear-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .status-line {
+      margin-top: 4px;
+      font-size: 0.76rem;
+      min-height: 16px;
+      opacity: 0.88;
+    }
+
+    .status-line.error {
+      color: #b53030;
+      font-weight: 500;
+    }
+
+    /* =========================================================
+       PANEL 2 (TEXT TO SIGN) & PANEL 3 (UPLOAD MEDIA)
+       ========================================================= */
+    .botanical-card {
+      background: var(--sub-panel-bg);
+      border: 1px solid var(--sage-bar-border);
+      border-radius: 20px;
+      padding: 22px 24px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 26px rgba(15, 28, 16, 0.12);
+    }
+
+    .underlined-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1.8px solid var(--input-line);
+      padding: 8px 4px;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 1.05rem;
+      color: inherit;
+      outline: none;
+    }
+
+    .forest-pill-btn {
+      background: var(--forest-dark);
+      color: #ffffff;
+      border: none;
+      border-radius: 9999px;
+      padding: 9px 22px;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .forest-pill-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .forest-outline-btn {
+      background: transparent;
+      color: inherit;
+      border: 1.5px solid var(--input-line);
+      border-radius: 9999px;
+      padding: 8px 18px;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tiles-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .tile {
+      width: 82px;
+      background: rgba(255, 255, 255, 0.88);
+      color: #1c311e;
+      border: 1.5px solid #2c4a2c;
+      border-radius: 12px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .tile .imgbox {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 4px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tile img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .tile .letter {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .sgap { width: 24px; }
+
+    .drop-zone {
+      border: 2px dashed var(--input-line);
+      border-radius: 18px;
+      padding: 32px 20px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.25);
+      transition: background-color 0.2s ease;
+    }
+
+    .drop-zone.over {
+      background: rgba(44, 74, 44, 0.16);
+    }
+
+    .preview-box {
+      margin-top: 14px;
+      text-align: center;
+    }
+
+    .preview-box img,
+    .preview-box video {
+      max-height: 230px;
+      border-radius: 14px;
+      border: 2px solid var(--cam-border);
+    }
+
+    @media (max-width: 820px) {
+      .sign-stage-grid {
+        grid-template-columns: 1fr;
+      }
+      .cam-card {
+        margin-bottom: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div id="translatePageRoot" class="translate-root">
+
+  <!-- Top Segmented Mode Bar with Liquid Water-Flow Slider -->
+  <div class="mode-switcher-wrap">
+    <div class="mode-seg" id="modeSegBar" role="tablist" aria-label="Translation mode">
+      <span class="mode-water-pill" id="modeWaterPill" aria-hidden="true"></span>
+
+      <button type="button" role="tab" id="tab-sign" data-index="0" class="mode-tab-btn" aria-selected="true" aria-controls="panel-sign" title="Sign to Text (Webcam)">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+          <circle cx="12" cy="13" r="4" />
+        </svg>
+      </button>
+
+      <button type="button" role="tab" id="tab-text" data-index="1" class="mode-tab-btn" aria-selected="false" aria-controls="panel-text" title="Text to Sign">
+        <span class="mode-t-glyph">T</span>
+      </button>
+
+      <button type="button" role="tab" id="tab-upload" data-index="2" class="mode-tab-btn" aria-selected="false" aria-controls="panel-upload" title="Upload Media">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PANEL 1: SIGN TO TEXT (WEBCAM + TYPEWRITER PAPER + TYPED BAR)
+       ========================================================= -->
+  <div id="panel-sign" class="flow-panel" role="tabpanel" aria-labelledby="tab-sign">
+    <div class="sign-stage-grid">
+
+      <!-- Left: Rounded Webcam Card -->
+      <div class="cam-card" id="cam-box">
+        <video id="cam" autoplay playsinline muted hidden></video>
+        <img id="cam-render" alt="Rendered camera frame" hidden />
+
+        <div class="cam-placeholder" id="cam-ph">
+          <p style="font-weight:600; margin-bottom:4px;">Camera is off</p>
+          <p style="font-size:0.8rem;">Tap the bottom circle to start camera and live translation.</p>
+        </div>
+
+        <!-- Top-right Arrow: Toggle Mirror View -->
+        <button type="button" id="mirror-arrow-btn" class="cam-mirror-circle" title="Switch Mirror View" aria-label="Switch Mirror View">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="23 4 23 10 17 10" />
+            <polyline points="1 20 1 14 7 14" />
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          </svg>
+        </button>
+
+        <!-- Bottom-center Circle: Start / Stop Camera & Live Typer -->
+        <button type="button" id="cam-main-circle" class="cam-shutter-btn" title="Start / Stop Camera" aria-label="Start or Stop Camera"></button>
+      </div>
+
+      <!-- Right: Vintage Typewriter & Cream Paper (`assets/images/paper_tag_5.png`) -->
+      <div class="typewriter-tag-wrap" id="paperTagWrap">
+        <!-- Top Result Box on Cream Sheet -->
+        <div class="tag-result-box" id="sign-result" aria-live="polite">
+          <div class="label">Result......</div>
+          <div class="text">—</div>
+        </div>
+
+        <!-- Lower Split: Predictions % + 4 Live Metric Boxes -->
+        <div class="tag-lower-grid">
+          <div class="tag-predictions-box">
+            <div class="tag-box-heading">predictions %</div>
+            <ol id="live-top">
+              <li style="opacity:0.78;">Waiting...</li>
+            </ol>
+          </div>
+
+          <div class="tag-metrics-stack">
+            <div class="tag-mini-metric">
+              <b id="live-fps">0.0 fps</b>
+              <span>processed</span>
+            </div>
+            <div class="tag-mini-metric">
+              <b id="live-hand-rate">0%</b>
+              <span id="live-hand-count">hand found</span>
+            </div>
+            <div class="tag-mini-metric">
+              <b id="live-frame-ms">0 ms</b>
+              <span>per frame</span>
+            </div>
+            <div class="tag-mini-metric">
+              <b id="live-backend">torch</b>
+              <span id="live-profile">all profile</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Sage-Green Typed Text Bar (Flush beneath Typewriter Base) -->
+    <div class="typed-text-bar">
+      <div id="live-text" class="typed-readout-line" aria-live="polite"></div>
+
+      <div class="typed-bar-footer">
+        <div class="typed-helper-links">
+          <button type="button" id="commit-live" class="subtle-tool-btn" disabled>Commit</button>
+          <button type="button" id="read-live" class="subtle-tool-btn" disabled>Speak</button>
+          <button type="button" id="calibrate-live" class="subtle-tool-btn" disabled>Calibrate J/Z</button>
+          <button type="button" id="cancel-calibration-live" class="subtle-tool-btn" hidden disabled>Cancel</button>
+        </div>
+
+        <div class="typed-action-pills">
+          <button type="button" id="backspace-live" class="pill-back-btn" disabled>back</button>
+          <button type="button" id="clear-live" class="pill-clear-btn" disabled>clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-line" id="cam-status" role="status" aria-live="polite"></div>
+    <div class="status-line" id="calibration-status" role="status" aria-live="polite"></div>
+    <progress id="calibration-progress" max="1" value="0" hidden style="width:100%;"></progress>
+    <details id="calibration-report" hidden style="margin-top:4px; font-size:0.8rem;">
+      <summary>J / Z calibration results</summary>
+      <p id="calibration-summary"></p>
+      <div id="calibration-thresholds"></div>
+      <p id="calibration-command"></p>
+    </details>
+
+    <!-- Collapsible Typer Settings -->
+    <details style="margin-top:4px; font-size:0.8rem; opacity:0.86;">
+      <summary style="cursor:pointer;">Typer &amp; Camera Settings</summary>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(165px, 1fr)); gap:8px; margin-top:8px; padding:10px; border-radius:12px; background:var(--sage-bar);">
+        <label><input id="mirror-live" type="checkbox" /> Mirror preview</label>
+        <label><input id="pairs-live" type="checkbox" checked /> Pair margins</label>
+        <label><input id="motion-live" type="checkbox" checked /> J / Z motion</label>
+        <label><input id="landmarks-live" type="checkbox" checked /> Draw landmarks</label>
+        <label><input id="motion-debug-live" type="checkbox" /> J / Z diagnostics</label>
+        <label><input id="recover-flip-live" type="checkbox" checked /> Retry mirrored</label>
+        <div>Profile: <select id="profile-live"><option value="all">all</option><option value="standard">standard</option></select></div>
+        <div>Backend: <select id="backend-live"><option value="torch">torch</option><option value="onnx">onnx</option></select></div>
+        <div>Camera: <select id="camera-live"><option value="">Default</option></select></div>
+        <div>Size: <select id="camera-size-live"><option value="640x480">640x480</option><option value="1280x720">1280x720</option></select></div>
+        <div>Conf: <input id="conf-live" type="number" step="0.05" value="0.7" style="width:60px;" /></div>
+        <div>Margin: <input id="margin-live" type="number" step="0.02" value="0.1" style="width:60px;" /></div>
+        <div>Vote: <input id="vote-live" type="number" value="7" style="width:50px;" /></div>
+        <div>Hold (s): <input id="hold-live" type="number" step="0.1" value="0.5" style="width:50px;" /></div>
+        <div>Pair custom: <input id="pair-custom-live" type="text" placeholder="PQ=0.40" style="width:85px;" /></div>
+        <div>Recover: <input id="recover-live" type="number" value="1" style="width:48px;" /></div>
+        <div>Retry K: <input id="recover-every-live" type="number" value="3" style="width:48px;" /></div>
+        <div>Rec conf: <input id="recover-conf-live" type="number" step="0.05" value="0.3" style="width:50px;" /></div>
+        <div>J/Z overrides: <input id="jz-live" type="text" style="width:85px;" /></div>
+        <div>Calib reps: <input id="calibrate-reps-live" type="number" value="3" style="width:48px;" /></div>
+      </div>
+    </details>
+  </div>
+
+  <!-- =========================================================
+       PANEL 2: TEXT TO SIGN
+       ========================================================= -->
+  <div id="panel-text" class="flow-panel" role="tabpanel" aria-labelledby="tab-text" hidden>
+    <div class="botanical-card">
+      <label for="txt" style="font-size:0.92rem; font-weight:600; display:block; margin-bottom:6px;">Type your text</label>
+      <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
+        <input class="underlined-input" id="txt" type="text" placeholder="For example: hello" autocomplete="off" />
+        <button type="button" id="voice" class="forest-outline-btn">
+          <span id="voice-label">Speak</span>
+        </button>
+      </div>
+
+      <button type="button" id="show-sign" class="forest-pill-btn">Show signs</button>
+      <div class="status-line" id="text-status" role="status" aria-live="polite"></div>
+
+      <div style="margin-top:16px;">
+        <div style="font-size:0.85rem; opacity:0.8;">Sign images</div>
+        <div class="tiles-grid" id="signs">
+          <p style="opacity:0.72; font-size:0.9rem;">Type a word, then tap "Show signs".</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PANEL 3: UPLOAD MEDIA
+       ========================================================= -->
+  <div id="panel-upload" class="flow-panel" role="tabpanel" aria-labelledby="tab-upload" hidden>
+    <div class="botanical-card">
+      <div class="drop-zone" id="drop">
+        <p style="font-size:1.05rem; font-weight:600; margin-bottom:4px;">Upload a photo or video of a sign</p>
+        <p style="font-size:0.85rem; opacity:0.78; margin-bottom:14px;">Drag a file here, or choose one below.</p>
+        <div style="display:flex; justify-content:center; gap:12px;">
+          <button type="button" id="pick-photo" class="forest-pill-btn">Photo</button>
+          <button type="button" id="pick-video" class="forest-outline-btn">Video</button>
+        </div>
+        <input type="file" id="file-photo" accept="image/*" hidden />
+        <input type="file" id="file-video" accept="video/*" hidden />
+      </div>
+
+      <div class="preview-box" id="preview" hidden></div>
+      <div class="status-line" id="upload-status" role="status" aria-live="polite"></div>
+
+      <div style="margin-top:14px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <button type="button" id="translate-upload" class="forest-pill-btn" disabled>Translate</button>
+        <div id="upload-result" aria-live="polite" style="flex:1; min-width:220px;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function initSignrestTranslation() {
+  const API_BASE = "";
+  const LIVE_INTERVAL = 55;
+  const LIVE_MAX_SIDE = 640;
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+  }
+
+  function saveHistory(kind, text) {
+    try {
+      const list = JSON.parse(localStorage.getItem("asl_history") || "[]");
+      list.unshift({ id: Date.now() + "", kind, text, t: Date.now(), saved: false });
+      localStorage.setItem("asl_history", JSON.stringify(list.slice(0, 50)));
+    } catch (e) {}
+  }
+
+  /* ---------- 1. Liquid Water-Flow Mode Switcher (Camera | T | Upload) ---------- */
+  const waterPill = document.getElementById("modeWaterPill");
+  const modeTabs = [
+    { tab: document.getElementById("tab-sign"),   panel: document.getElementById("panel-sign"),   index: 0 },
+    { tab: document.getElementById("tab-text"),   panel: document.getElementById("panel-text"),   index: 1 },
+    { tab: document.getElementById("tab-upload"), panel: document.getElementById("panel-upload"), index: 2 }
+  ];
+
+  function activateMode(targetItem) {
+    if (waterPill) {
+      const offsetX = targetItem.index * (58 + 8);
+      waterPill.classList.add("flowing");
+      waterPill.style.transform = `translateX(${offsetX}px)`;
+      setTimeout(() => waterPill.classList.remove("flowing"), 380);
+    }
+
+    modeTabs.forEach((item) => {
+      const isSelected = item === targetItem;
+      item.tab.setAttribute("aria-selected", isSelected ? "true" : "false");
+      if (isSelected) {
+        item.panel.hidden = false;
+        item.panel.classList.remove("flow-panel");
+        void item.panel.offsetWidth;
+        item.panel.classList.add("flow-panel");
+      } else {
+        item.panel.hidden = true;
+      }
+    });
+
+    if (targetItem.tab.id !== "tab-sign") {
+      stopCameraAndLive(true);
+    }
+  }
+
+  modeTabs.forEach((item) => {
+    item.tab.addEventListener("click", () => activateMode(item));
+  });
+
+  /* ---------- 2. Verify `paper_tag_5.png` loads cleanly ---------- */
+  const paperTagWrap = document.getElementById("paperTagWrap");
+  if (paperTagWrap) {
+    const tagProbe = new Image();
+    tagProbe.onerror = () => {
+      paperTagWrap.style.backgroundImage = "url('../assets/images/paper_tag_5.jpg')";
+    };
+    tagProbe.src = "../assets/images/paper_tag_5.png";
+  }
+
+  /* ---------- 3. Model Request & Settings Helpers ---------- */
+  async function modelRequest(path, payload) {
+    let response;
+    try {
+      response = await fetch(API_BASE + path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload || {})
+      });
+    } catch (err) {
+      throw new Error('Could not reach the ASL API. Start the website with "python app.py" from the repository root.');
+    }
+    let result;
+    try {
+      result = await response.json();
+    } catch (err) {
+      throw new Error("The ASL model API returned an invalid response.");
+    }
+    if (!response.ok) {
+      throw new Error(result.error || "The ASL model could not make a prediction.");
+    }
+    return result;
+  }
+
+  function liveSettings() {
+    const customMargins = document.getElementById("pair-custom-live").value.trim();
+    const pairMargins = customMargins || (document.getElementById("pairs-live").checked ? null : "none");
+    return {
+      profile: document.getElementById("profile-live").value,
+      backend: document.getElementById("backend-live").value,
+      conf: Number(document.getElementById("conf-live").value),
+      margin: Number(document.getElementById("margin-live").value),
+      pair_margins: pairMargins,
+      vote: Number(document.getElementById("vote-live").value),
+      hold: Number(document.getElementById("hold-live").value),
+      motion: document.getElementById("motion-live").checked,
+      landmarks: document.getElementById("landmarks-live").checked,
+      motion_debug: document.getElementById("motion-debug-live").checked,
+      mirror: document.getElementById("mirror-live").checked,
+      recover: Number(document.getElementById("recover-live").value),
+      recover_every: Number(document.getElementById("recover-every-live").value),
+      recover_conf: Number(document.getElementById("recover-conf-live").value),
+      recover_flip: document.getElementById("recover-flip-live").checked,
+      jz: document.getElementById("jz-live").value.trim(),
+      calibrate_reps: Number(document.getElementById("calibrate-reps-live").value)
+    };
+  }
+
+  /* ---------- 4. Mirror Arrow Button & Bottom Circle Camera Toggle ---------- */
+  const camBox = document.getElementById("cam-box");
+  const cam = document.getElementById("cam");
+  const camRender = document.getElementById("cam-render");
+  const camPh = document.getElementById("cam-ph");
+  const mirrorArrowBtn = document.getElementById("mirror-arrow-btn");
+  const mirrorCheckbox = document.getElementById("mirror-live");
+  const camMainCircle = document.getElementById("cam-main-circle");
+  const camStatus = document.getElementById("cam-status");
+  const signResult = document.getElementById("sign-result");
+  const liveText = document.getElementById("live-text");
+  const liveTop = document.getElementById("live-top");
+  const commitBtn = document.getElementById("commit-live");
+  const backspaceBtn = document.getElementById("backspace-live");
+  const clearLiveBtn = document.getElementById("clear-live");
+  const readBtn = document.getElementById("read-live");
+  const calibrateBtn = document.getElementById("calibrate-live");
+  const cancelCalibrationBtn = document.getElementById("cancel-calibration-live");
+  const calibrationStatus = document.getElementById("calibration-status");
+  const calibrationProgress = document.getElementById("calibration-progress");
+
+  let stream = null;
+  let liveSession = null;
+  let liveActive = false;
+  let liveRunId = 0;
+  let nextLiveFrameAt = 0;
+
+  function setCamStatus(msg, isError) {
+    camStatus.textContent = msg;
+    camStatus.className = isError ? "status-line error" : "status-line";
+  }
+
+  function syncMirrorState(isMirrored) {
+    mirrorCheckbox.checked = isMirrored;
+    camBox.classList.toggle("mirrored", isMirrored);
+    mirrorArrowBtn.classList.toggle("active", isMirrored);
+  }
+
+  mirrorArrowBtn.addEventListener("click", () => {
+    syncMirrorState(!mirrorCheckbox.checked);
+  });
+  mirrorCheckbox.addEventListener("change", () => {
+    syncMirrorState(mirrorCheckbox.checked);
+  });
+
+  function renderTagResult(label, mainText, note, conf) {
+    const meter = typeof conf === "number"
+      ? `<div class="meter"><i style="width:${Math.round(conf * 100)}%"></i></div>`
+      : "";
+    signResult.innerHTML =
+      `<div class="label">${esc(label)}</div>` +
+      `<div class="text">${esc(mainText)}</div>` +
+      (note ? `<div class="note">${esc(note)}</div>` : "") +
+      meter;
+  }
+
+  function renderLiveFrame(frame) {
+    if (!frame.hand_found) {
+      renderTagResult("Result......", "NO HAND", "Show hand clearly in view.");
+    } else if (frame.held) {
+      renderTagResult("Holding...", frame.held.toUpperCase(), "Hold steady to commit.", frame.held_confidence);
+    } else if (frame.uncertain) {
+      renderTagResult("Uncertain", (frame.letter || "-").toUpperCase(), "Low margin", frame.confidence);
+    } else if (frame.low_conf) {
+      renderTagResult("Low Conf", (frame.letter || "-").toUpperCase(), "Below threshold", frame.confidence);
+    } else {
+      renderTagResult(
+        "Result......",
+        frame.letter ? frame.letter.toUpperCase() : "READY",
+        frame.confidence ? `${(frame.confidence * 100).toFixed(0)}% confidence` : ""
+      );
+    }
+
+    liveText.textContent = frame.text || "";
+    readBtn.disabled = !(liveText.textContent || "").trim();
+
+    liveTop.innerHTML = "";
+    (frame.top_predictions || []).slice(0, 3).forEach((p) => {
+      const li = document.createElement("li");
+      li.textContent = `${p.text.toUpperCase()}: ${(p.confidence * 100).toFixed(0)}%`;
+      liveTop.appendChild(li);
+    });
+    if (!frame.top_predictions || !frame.top_predictions.length) {
+      liveTop.innerHTML = `<li style="opacity:0.75;">${frame.hand_found ? "No match" : "No hand"}</li>`;
+    }
+
+    if (frame.frame_image) {
+      camRender.src = frame.frame_image;
+      camRender.hidden = false;
+    }
+
+    document.getElementById("live-fps").textContent = Number(frame.fps || 0).toFixed(1) + " fps";
+    document.getElementById("live-hand-rate").textContent =
+      Math.round((100 * (frame.hands || 0)) / Math.max(frame.frames || 0, 1)) + "%";
+    document.getElementById("live-hand-count").textContent = `${frame.hands || 0}/${frame.frames || 0} frames`;
+    document.getElementById("live-frame-ms").textContent = Number(frame.frame_ms || 0).toFixed(0) + " ms";
+    document.getElementById("live-backend").textContent = frame.backend || "torch";
+    document.getElementById("live-profile").textContent = (frame.model_profile || "all") + " profile";
+
+    if (frame.calibration) {
+      calibrationStatus.textContent = frame.calibration.prompt;
+      calibrationProgress.value = frame.calibration.progress || 0;
+      calibrationProgress.hidden = false;
+      cancelCalibrationBtn.hidden = false;
+      cancelCalibrationBtn.disabled = false;
+    } else {
+      calibrationStatus.textContent = frame.recovery || "";
+      calibrationProgress.hidden = true;
+      cancelCalibrationBtn.hidden = true;
+    }
+
+    calibrateBtn.disabled = !liveActive || !document.getElementById("motion-live").checked;
+    clearLiveBtn.disabled = !liveActive;
+    commitBtn.disabled = !liveActive;
+    backspaceBtn.disabled = !liveActive;
+  }
+
+  function drawLiveFrame() {
+    const width = cam.videoWidth;
+    const height = cam.videoHeight;
+    if (!width || !height) return null;
+    const scale = Math.min(1, LIVE_MAX_SIDE / Math.max(width, height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(cam, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.85);
+  }
+
+  async function captureLiveFrame(runId) {
+    if (!liveActive || runId !== liveRunId || !stream) return;
+    const image = drawLiveFrame();
+    if (!image) {
+      setTimeout(() => captureLiveFrame(runId), 100);
+      return;
+    }
+    try {
+      const frame = await modelRequest("/api/live/frame", { session_id: liveSession, image });
+      if (!liveActive || runId !== liveRunId) return;
+      renderLiveFrame(frame);
+    } catch (err) {
+      if (runId === liveRunId) {
+        await stopCameraAndLive(true);
+        setCamStatus(err.message, true);
+      }
+      return;
+    }
+    nextLiveFrameAt += LIVE_INTERVAL;
+    setTimeout(() => captureLiveFrame(runId), Math.max(0, nextLiveFrameAt - Date.now()));
+  }
+
+  async function startCameraAndLive() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCamStatus("Camera is not available. Open on localhost or HTTPS.", true);
+      return;
+    }
+    try {
+      const requestedSize = document.getElementById("camera-size-live").value.split("x");
+      const videoConstraints = {
+        width: { ideal: Number(requestedSize[0]) },
+        height: { ideal: Number(requestedSize[1]) },
+        frameRate: { ideal: 24 }
+      };
+      const selectedCamera = document.getElementById("camera-live").value;
+      if (selectedCamera) {
+        videoConstraints.deviceId = { exact: selectedCamera };
+      } else {
+        videoConstraints.facingMode = { ideal: "user" };
+      }
+
+      stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+      cam.srcObject = stream;
+      cam.hidden = false;
+      camRender.hidden = true;
+      camPh.hidden = true;
+      camMainCircle.classList.add("recording");
+      setCamStatus("Camera active. Connecting to live ASL model...", false);
+
+      const runId = ++liveRunId;
+      try {
+        const result = await modelRequest("/api/live/start", { settings: liveSettings() });
+        if (runId !== liveRunId || !stream) {
+          modelRequest("/api/live/stop", { session_id: result.session_id }).catch(() => {});
+          return;
+        }
+        liveSession = result.session_id;
+        liveActive = true;
+        clearLiveBtn.disabled = false;
+        commitBtn.disabled = false;
+        backspaceBtn.disabled = false;
+        calibrateBtn.disabled = false;
+        setCamStatus("Live translation running. Hold a sign steady to type.", false);
+        nextLiveFrameAt = Date.now();
+        captureLiveFrame(runId);
+      } catch (apiErr) {
+        await stopCameraAndLive(true);
+        setCamStatus(apiErr.message, true);
+      }
+    } catch (err) {
+      setCamStatus("Could not open camera. Please allow camera permission.", true);
+    }
+  }
+
+  async function stopCameraAndLive(keepStatus) {
+    const sessionId = liveSession;
+    const prevText = liveText ? liveText.textContent : "";
+    liveActive = false;
+    liveSession = null;
+    liveRunId++;
+
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+      stream = null;
+    }
+    cam.srcObject = null;
+    cam.hidden = true;
+    camRender.hidden = true;
+    camRender.removeAttribute("src");
+    camPh.hidden = false;
+    camMainCircle.classList.remove("recording");
+
+    clearLiveBtn.disabled = true;
+    commitBtn.disabled = true;
+    backspaceBtn.disabled = true;
+    calibrateBtn.disabled = true;
+
+    if (sessionId) {
+      try {
+        const res = await modelRequest("/api/live/stop", { session_id: sessionId });
+        if (res.text) liveText.textContent = res.text;
+      } catch (e) {}
+    }
+    if ((liveText.textContent || prevText).trim()) {
+      saveHistory("Sign to Text", (liveText.textContent || prevText).trim());
+    }
+    if (!keepStatus) setCamStatus("", false);
+  }
+
+  camMainCircle.addEventListener("click", () => {
+    if (stream || liveActive) {
+      stopCameraAndLive(false);
+    } else {
+      startCameraAndLive();
+    }
+  });
+
+  async function sendLiveAction(action) {
+    if (!liveSession) return;
+    try {
+      const result = await modelRequest("/api/live/action", { session_id: liveSession, action });
+      renderLiveFrame(result);
+    } catch (err) {
+      setCamStatus(err.message, true);
+    }
+  }
+
+  commitBtn.addEventListener("click", () => sendLiveAction("commit"));
+  backspaceBtn.addEventListener("click", () => sendLiveAction("backspace"));
+  clearLiveBtn.addEventListener("click", () => sendLiveAction("clear"));
+  calibrateBtn.addEventListener("click", () => sendLiveAction("calibrate"));
+  cancelCalibrationBtn.addEventListener("click", () => sendLiveAction("cancel_calibration"));
+
+  readBtn.addEventListener("click", async () => {
+    const text = (liveText.textContent || "").trim();
+    if (!text) return;
+    readBtn.disabled = true;
+    try {
+      const res = await fetch(API_BASE + "/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, lang: "en" })
+      });
+      if (!res.ok) throw new Error("TTS unavailable.");
+      const blob = await res.blob();
+      const audio = new Audio(URL.createObjectURL(blob));
+      await audio.play();
+    } catch (err) {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+      } else {
+        setCamStatus(err.message, true);
+      }
+    } finally {
+      readBtn.disabled = !(liveText.textContent || "").trim();
+    }
+  });
+
+  /* ---------- 5. Text to Sign Panel ---------- */
+  const txtInput = document.getElementById("txt");
+  const signsGrid = document.getElementById("signs");
+  const textStatus = document.getElementById("text-status");
+
+  function showSigns() {
+    const raw = txtInput.value.trim();
+    const up = raw.toUpperCase();
+    signsGrid.innerHTML = "";
+    let count = 0;
+
+    for (let i = 0; i < up.length; i++) {
+      const ch = up.charAt(i);
+      if (ch >= "A" && ch <= "Z") {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+
+        const imgBox = document.createElement("div");
+        imgBox.className = "imgbox";
+        const img = document.createElement("img");
+        img.alt = "ASL sign for " + ch;
+        img.src = "../assets/signs/" + ch + ".png";
+        img.onerror = () => {
+          imgBox.innerHTML = `<strong style="font-size:1.45rem;">${ch}</strong>`;
+        };
+        imgBox.appendChild(img);
+
+        const letterDiv = document.createElement("div");
+        letterDiv.className = "letter";
+        letterDiv.textContent = ch;
+
+        tile.appendChild(imgBox);
+        tile.appendChild(letterDiv);
+        signsGrid.appendChild(tile);
+        count++;
+      } else if (ch === " ") {
+        const gap = document.createElement("div");
+        gap.className = "sgap";
+        signsGrid.appendChild(gap);
+      }
+    }
+
+    if (count === 0) {
+      signsGrid.innerHTML = '<p style="opacity:0.72; font-size:0.9rem;">Type letters A to Z to see the signs.</p>';
+      textStatus.textContent = "";
+      return;
+    }
+    textStatus.textContent = "";
+    saveHistory("Text to Sign", raw);
+  }
+
+  document.getElementById("show-sign").addEventListener("click", showSigns);
+  txtInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") showSigns();
+  });
+
+  const voiceBtn = document.getElementById("voice");
+  const voiceLabel = document.getElementById("voice-label");
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    voiceBtn.disabled = true;
+  } else {
+    const rec = new SR();
+    rec.lang = "en-US";
+    rec.onresult = (e) => {
+      txtInput.value = e.results[0][0].transcript;
+      showSigns();
+    };
+    rec.onend = () => { voiceLabel.textContent = "Speak"; };
+    voiceBtn.addEventListener("click", () => {
+      voiceLabel.textContent = "Listening...";
+      try { rec.start(); } catch (e) {}
+    });
+  }
+
+  /* ---------- 6. Upload Media Panel ---------- */
+  const preview = document.getElementById("preview");
+  const uploadStatus = document.getElementById("upload-status");
+  const translateUploadBtn = document.getElementById("translate-upload");
+  const uploadResult = document.getElementById("upload-result");
+  const filePhoto = document.getElementById("file-photo");
+  const fileVideo = document.getElementById("file-video");
+  const dropZone = document.getElementById("drop");
+  let currentMedia = null;
+  let currentUrl = null;
+
+  document.getElementById("pick-photo").addEventListener("click", () => filePhoto.click());
+  document.getElementById("pick-video").addEventListener("click", () => fileVideo.click());
+
+  function loadMediaFile(file) {
+    if (!file) return;
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+    if (!isImage && !isVideo) {
+      uploadStatus.textContent = "Please choose a photo or a video.";
+      uploadStatus.className = "status-line error";
+      return;
+    }
+    if (currentUrl) URL.revokeObjectURL(currentUrl);
+    currentUrl = URL.createObjectURL(file);
+    preview.innerHTML = "";
+    const el = document.createElement(isImage ? "img" : "video");
+    if (!isImage) {
+      el.controls = true;
+      el.playsInline = true;
+    }
+    el.src = currentUrl;
+    preview.appendChild(el);
+    preview.hidden = false;
+    currentMedia = el;
+    translateUploadBtn.disabled = false;
+    uploadStatus.textContent = file.name;
+    uploadStatus.className = "status-line";
+    uploadResult.innerHTML = "";
+  }
+
+  filePhoto.addEventListener("change", () => { loadMediaFile(filePhoto.files[0]); filePhoto.value = ""; });
+  fileVideo.addEventListener("change", () => { loadMediaFile(fileVideo.files[0]); fileVideo.value = ""; });
+
+  ["dragenter", "dragover"].forEach((ev) => {
+    dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add("over"); });
+  });
+  ["dragleave", "drop"].forEach((ev) => {
+    dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.remove("over"); });
+  });
+  dropZone.addEventListener("drop", (e) => loadMediaFile(e.dataTransfer.files[0]));
+
+  translateUploadBtn.addEventListener("click", async () => {
+    if (!currentMedia) return;
+    uploadStatus.textContent = "Reading your sign...";
+    try {
+      const w = currentMedia.videoWidth || currentMedia.naturalWidth || currentMedia.width;
+      const h = currentMedia.videoHeight || currentMedia.naturalHeight || currentMedia.height;
+      const scale = Math.min(1, 1280 / Math.max(w, h));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(w * scale));
+      canvas.height = Math.max(1, Math.round(h * scale));
+      canvas.getContext("2d").drawImage(currentMedia, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
+
+      const res = await modelRequest("/api/predict-photo", { image: dataUrl, settings: liveSettings() });
+      if (res.hand_found === false || res.text === "nothing") {
+        uploadResult.innerHTML = `<strong>No hand sign detected.</strong>`;
+      } else {
+        uploadResult.innerHTML = `<strong>Result:</strong> ${esc(res.text)} (${Math.round((res.confidence || 0) * 100)}%)`;
+        saveHistory("Upload Media", res.text);
+      }
+      uploadStatus.textContent = "Done.";
+    } catch (err) {
+      uploadStatus.textContent = err.message;
+      uploadStatus.className = "status-line error";
+    }
+  });
+})();
+</script>
+</body>
+</html>
