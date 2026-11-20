@@ -61,12 +61,15 @@ import time
 from collections import Counter, deque
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 import numpy as np  # noqa: E402
 
-import config  # noqa: E402
-import hand_backend as hb  # noqa: E402
-import normalize  # noqa: E402
+if __package__:
+    from . import config, hand_backend as hb, normalize  # noqa: E402
+else:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import config  # noqa: E402
+    import hand_backend as hb  # noqa: E402
+    import normalize  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -99,7 +102,10 @@ class TorchBackend:
     def __init__(self, weights: Path, profile: str | None = None):
         import torch
 
-        import model as M
+        if __package__:
+            from . import model as M
+        else:
+            import model as M
 
         meta = json.loads(config.meta_path(profile).read_text(encoding="utf-8"))
         self.labels = meta["labels"]

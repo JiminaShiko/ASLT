@@ -220,16 +220,22 @@ FINGER_CHAINS = [
 ]
 # The real definition lives in src/normalize.py (single source of truth);
 # mirror it here for reporting. Override with ASL_FEATURE_BLOCKS=xyz,tip_dists,curl
-import normalize as _nz  # noqa: E402
+if __package__:
+    from . import normalize as _nz  # noqa: E402
+else:
+    import normalize as _nz  # noqa: E402
 
 FEATURE_BLOCKS = _nz.FEATURE_BLOCKS
 
 
 def feature_dim() -> int:
     """Computed from normalize itself, so the two can never disagree."""
-    import normalize
+    if __package__:
+        from . import normalize as normalizer
+    else:
+        import normalize as normalizer
 
-    return int(normalize.features_from_normalized_batch(np.zeros((1, 21, 3))).shape[1])
+    return int(normalizer.features_from_normalized_batch(np.zeros((1, 21, 3))).shape[1])
 
 
 
