@@ -6,6 +6,15 @@ are HTML index pages, not data, or (b) this project's own cache and logs, which 
 measured on this machine. Where a number could not be established without a download
 it is labelled UNMEASURED.
 
+**Current implementation note (2026-11-19):** the project now uses the bounded
+communication vocabulary in `vocab.json` and the PopSign v2.1 downloader is
+implemented. Its default subset is 60 train plus 20 validation and 20 test clips
+for each of `bye`, `please`, `sleep`, and `chicken`; the files stay under
+`Model/videoModel/datasets/external/`. This subset is for training and a separate
+PopSign held-out evaluation. `school` remains Citizen-only because no verified
+PopSign school folder was established. The earlier options and questions below
+are historical research notes, not pending decisions.
+
 The question: ASL Citizen is exhausted for our 20 words (15 training clips per
 word), so 58.3% signer-disjoint top-1 is a data ceiling, not a model ceiling. What
 would it cost to add a second corpus, and would it actually move the number?

@@ -33,7 +33,8 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, field
+import time
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -177,9 +178,9 @@ class Segmenter:
     frames: int = 0
 
     def update(self, is_signing: bool) -> str:
-        self.frames += 1
         self.run_sign = self.run_sign + 1 if is_signing else 0
         self.run_rest = 0 if is_signing else self.run_rest + 1
+        self.frames = self.frames + 1 if self.signing else self.run_sign
         if not self.signing and self.run_sign >= self.hold:
             self.signing = True
         elif self.signing and self.run_rest >= self.rest:
@@ -214,7 +215,8 @@ class WordPredictor:
                  hedge_pairs=None,
                  net: "model.WordNet | None" = None,
                  meta: dict | None = None,
-                 log=None) -> None:
+                 log=None,
+                 manual: bool = False) -> None:
         self.log = log or config.logger_for("predictor")
         weights = weights or config.FOR_RELEASE
         loaded_from_file = net is None
@@ -231,7 +233,15 @@ class WordPredictor:
         # where the weights came from: "in memory" only when a caller injected
         # a net, so a log line can never claim a file was read that was not
         self.source = "from file" if loaded_from_file else "in memory"
-        self.labels: list[str] = self.meta.get("labels") or vocab.load_vocab().labels
+        labels = self.meta.get("labels")
+        self.labels: list[str] = list(vocab.load_vocab().labels if labels is None
+                                     else labels)
+        classes = getattr(self.net.arch, "num_classes", None)
+        if classes is not None and len(self.labels) != classes:
+            raise ValueError(f"checkpoint labels ({len(self.labels)}) do not match "
+                             f"net.arch.num_classes ({classes})")
+        if len(self.labels) < 2:
+            raise ValueError("at least two checkpoint labels are required")
         self.words_only = [i for i, l in enumerate(self.labels)
                            if l not in (config.REST_LABEL, config.OTHER_LABEL)]
         # which feature layout these weights were trained on: the checkpoint
@@ -261,9 +271,17 @@ class WordPredictor:
         self.hedge_pairs = hedge_pairs
         self.buf_s = float(buffer_seconds or config.BUFFER_SECONDS)
         self.buffer = features.RingBuffer(maxlen=max(8, int(self.buf_s * self.fps)))
-        # this segment's signing frames only; the decision is built from these
+        # Contiguous accepted rows, bounded independently of segment duration.
+        # A pending rest tail is held separately so closing debounce cannot
+        # evict the final signing frames from a full rolling window.
         self.seg_rows: list[np.ndarray] = []
+        self._onset_rows: list[np.ndarray] = []
+        self._rest_rows: list[np.ndarray] = []
+        self._previous_row: np.ndarray | None = None
         self.seg = Segmenter()
+        self.manual = bool(manual)
+        self.manual_open = False
+        self._decision_hand_rate: float | None = None
         self.n_reads = 0
         self.n_decisions = 0
         self._decision_frames = 0
@@ -293,8 +311,7 @@ class WordPredictor:
             # a camera frame: run MediaPipe on it, in memory
             if self.tracker is None:
                 self.tracker = landmarks.Tracker()
-            ts = self._n_in * (1000.0 / max(self.fps, 1.0)) if ts_ms is None \
-                else float(ts_ms)
+            ts = time.monotonic() * 1000.0 if ts_ms is None else float(ts_ms)
             self._n_in += 1
             ts = int(max(ts, self._last_ts + 1))
             self._last_ts = ts
@@ -312,70 +329,148 @@ class WordPredictor:
         return None if not b or b == "all" else list(b)
 
     def _decision_rows(self) -> list[np.ndarray]:
-        """The frames the reading is built from: this segment's signing frames,
-        capped to the rolling window.
+        """Contiguous window with one onset/end context frame, as offline.
 
-        The five rest frames that close a segment are deliberately not in it -
-        training windows came from src/landmarks.signing_window(), which trims
-        exactly those idle frames, so including them would feed the model a
-        distribution it never saw.
+        Internal inactive dips are backfilled if activity resumes. Only the
+        first frame of an unconfirmed/closing rest tail is end context; the
+        remaining debounce frames never replace useful frames in the window.
         """
-        return self.seg_rows[-self.buffer.maxlen:]
+        return (self.seg_rows + self._rest_rows[:1])[-self.buffer.maxlen:]
+
+    def _append_segment(self, rows: list[np.ndarray]) -> None:
+        self.seg_rows.extend(rows)
+        del self.seg_rows[:-self.buffer.maxlen]
+
+    def _clear_segment(self) -> None:
+        self.seg_rows.clear()
+        self._onset_rows.clear()
+        self._rest_rows.clear()
+        self._previous_row = None
+        self.seg.reset()
+        self.manual_open = False
+
+    def begin_segment(self) -> dict:
+        """Enter manual mode and start an empty, in-memory segment.
+
+        Repeated begin calls do not discard an open manual segment. Switching
+        from auto deliberately discards its partial onset/segment, not text.
+        """
+        if self.manual_open:
+            return self.result()
+        self._clear_segment()
+        self.buffer.clear()
+        self.manual = self.manual_open = True
+        self.seg.signing = True
+        self.last = None
+        self._decision_frames = 0
+        self._decision_hand_rate = None
+        self.state = "SIGNING"
+        return self.result()
+
+    def end_segment(self) -> dict:
+        """Cut a manual segment once, including an explicit too-short refusal."""
+        if not self.manual_open:
+            out = self.result()
+            out["reason"] = "no open manual segment"
+            return out
+        return self._finish_segment()
+
+    def _finish_segment(self) -> dict:
+        self.last = self._reading()   # always read at the cut, never peak-pick
+        committed = ""
+        if commitable(self.last):
+            committed = self.last.word
+            self.phrases.commit(committed)
+        rate = self._decision_hand_rate
+        self._clear_segment()
+        self.state = "REST"
+        # Keep the bounded live buffer for the current overlay. Cut visibility
+        # is measured on the exact decision rows, not that debounce buffer.
+        out = self.result()
+        out.update(committed_word=committed, segment_cut=True,
+                   hand_rate=rate,
+                   hint=(config.FRAMING_HINT if rate is not None and
+                         rate < config.FRAMING_HAND_RATE_MIN else ""))
+        return out
+
+    def _refresh_reading(self) -> None:
+        self.state = "SIGNING"
+        if reading_due(self._frame_i, self.stride) or self.last is None:
+            self.last = self._reading()
+            self.n_reads += 1
+        if self.last is not None and not self.last.certain:
+            self.state = "UNCERTAIN"
 
     def update(self, frame_or_landmarks: np.ndarray,
                ts_ms: int | None = None) -> dict:
         row = self._row(frame_or_landmarks, ts_ms)
-        committed = ""
         if row is None:
             return self.result()
         self._frame_i += 1
         self.buffer.append(row)
+        if self.manual:
+            if self.manual_open:
+                self._append_segment([row])
+                self.seg.frames += 1
+                self._refresh_reading()
+            return self.result()
+
         flag = landmarks.hands_above_shoulders(row)
-        if flag:
-            self.seg_rows.append(row)
+        was_signing = self.seg.signing
+        onset_length = self.seg.run_sign
         step = self.seg.update(flag)
-        if step == "END":
-            # the segment just closed: decide once, on the whole segment
-            reading = self._reading()
-            if commitable(reading):
-                committed = reading.word
-                self.phrases.commit(committed)
-            self.buffer.clear()
-            self.seg_rows = []
-            self.state = "REST"
-            self.last = reading
-        elif self.seg.signing:
-            self.state = "SIGNING"
-            # stride = run the model on every Nth frame; the geometry test
-            # above still runs on all of them, because it costs nothing
-            if reading_due(self._frame_i, self.stride) or self.last is None:
-                self.last = self._reading()
-                self.n_reads += 1
-            if self.last is not None and not self.last.certain:
-                self.state = "UNCERTAIN"
+        if was_signing:
+            if flag:
+                self._append_segment(self._rest_rows + [row])
+                self._rest_rows.clear()
+            else:
+                self._rest_rows.append(row)
+            if step == "END":
+                out = self._finish_segment()
+                self._previous_row = row
+                return out
+        elif flag:
+            if onset_length == 0:
+                self._onset_rows = ([] if self._previous_row is None else
+                                    [self._previous_row])
+                self.last = None
+                self._decision_frames = 0
+                self._decision_hand_rate = None
+            self._onset_rows.append(row)
+            if self.seg.signing:
+                self._append_segment(self._onset_rows)
+                self._onset_rows.clear()
+        else:
+            if onset_length:
+                self.last = Reading("", 0.0, 0.0, 0.0, [], False,
+                                    f"too short: onset has {onset_length} active "
+                                    f"frames; needs {self.seg.hold} consecutive")
+            self._onset_rows.clear()  # never carry a failed onset into a word
+        self._previous_row = row
+        if self.seg.signing:
+            self._refresh_reading()
         else:
             self.state = "REST"
-        out = self.result()
-        out["committed_word"] = committed
-        out["segment_cut"] = step == "END"
-        out["text"] = self.phrases.text()
-        return out
+        return self.result()
 
-    def _reading(self) -> Reading | None:
+    def _reading(self) -> Reading:
         rows = self._decision_rows()
         self.n_decisions += 1
-        if len(rows) < 4:
-            return None
-        feats = features.sequence(np.stack(rows), blocks=self._blocks(),
-                                  version=self.fver)
         self._decision_frames = len(rows)
+        arr = np.stack(rows) if rows else None
+        self._decision_hand_rate = (landmarks.hand_share(arr)
+                                    if arr is not None else None)
+        # An accepted three-frame onset is readable even at stream start,
+        # where no preceding context exists. Manual segments use the same min.
+        if len(rows) < self.seg.hold:
+            return Reading("", 0.0, 0.0, 0.0, [], False,
+                           f"too short: {len(rows)} frames; needs {self.seg.hold}")
+        if self._decision_hand_rate == 0.0:
+            return Reading("", 0.0, 0.0, 0.0, [], False,
+                           "no hands detected in segment")
         if self.stale:
-            # The weights were built for a vector this code cannot build (or
-            # a version it does not know). Feeding a wrong-width matrix would
-            # raise inside torch, and silently trimming the vector would
-            # invent readings. Refuse instead, once per frame, with the
-            # command that fixes it.
             return Reading("", 0.0, 0.0, 0.0, [], False, self.stale)
+        feats = features.sequence(arr, blocks=self._blocks(), version=self.fver)
         probs = self.net.predict(feats[None])[0]
         return decide(probs, self.labels, self.pair_margins, self.hedge_pairs,
                       self.min_conf, self.min_margin)
@@ -421,21 +516,24 @@ class WordPredictor:
 
     def reset(self) -> None:
         self.buffer.clear()
-        self.seg_rows = []
-        self.seg.reset()
+        self._clear_segment()
         self.phrases.reset()
         self.last = None
         self.state = "REST"
         self._frame_i = 0
         self._decision_frames = 0
+        self._decision_hand_rate = None
         if self.tracker is not None:
             self.tracker.restart()
         self._last_ts, self._n_in = -1, 0
 
     def close(self) -> None:
-        if self.tracker is not None:
-            self.tracker.close()
+        try:
+            if self.tracker is not None:
+                self.tracker.close()
+        finally:
             self.tracker = None
+            self.reset()
 
 
 # ---------------------------------------------------------------------------

@@ -106,8 +106,8 @@ def t_vocab():
           spec.labels[-2:] == [config.REST_LABEL, config.OTHER_LABEL])
     check(S, "no duplicate word", len({w.word for w in spec.words})
           == len(spec.words))
-    check(S, "every active word has at least one gloss",
-          all(w.glosses for w in spec.active))
+    check(S, "every active word has a genuine source gloss",
+          all(w.glosses or w.external_glosses for w in spec.active))
     check(S, "no gloss maps to two words",
           len(spec.gloss_to_word) == sum(len(w.glosses) for w in spec.active))
     check(S, "batch 2 stays off until asked for",
@@ -454,7 +454,7 @@ def t_model():
     mu, sd = model.standardise(np.concatenate([x, x * 2], axis=0))
     check(S, "standardise gives finite mean and positive std",
           np.isfinite(mu).all() and (sd > 0).all())
-    with tempfile.TemporaryDirectory() as td:
+    with tempfile.TemporaryDirectory(dir=ROOT) as td:
         path = Path(td) / "roundtrip.pt"
         model.save(net, path, {"labels": ["a"] * 22, "seed": 1})
         net2, meta = model.load(path)
@@ -601,9 +601,20 @@ def t_trained():
              "the shipped weights predate this feature vector - retrain "
              "(Stage E command block), then run this again")
         return
-    rc = T.parity(log=config.logger_for("test-parity"))
-    (ok if rc == 0 else fail)(S, "live feature path == training feature path",
-                              "" if rc == 0 else f"parity returned {rc}")
+    if not config.MANIFEST_CSV.is_file():
+        skip(S, "live feature path == training feature path",
+             "no local landmark cache (normal in a clean checkout)")
+    elif labels != vocab.load_vocab().labels:
+        skip(S, "live feature path == training feature path",
+             "expanded vocabulary is not trained yet; deployed weights stay unchanged")
+    else:
+        rc = T.parity(log=config.logger_for("test-parity"))
+        if rc == 2:
+            skip(S, "live feature path == training feature path",
+                 "no usable cached clips for parity")
+        else:
+            (ok if rc == 0 else fail)(S, "live feature path == training feature path",
+                                      "" if rc == 0 else f"parity returned {rc}")
     check(S, "the feature dim matches the model input",
           net.arch.in_dim == full.get("feature_dim") == features.FEATURE_DIM,
           f"{net.arch.in_dim} vs {full.get('feature_dim')}")
@@ -629,6 +640,7 @@ CHECKS = [t_config, t_vocab, t_features, t_landmarks, t_dataset, t_model,
 
 
 def main(argv=None) -> int:
+    RESULTS.clear()
     print("videoModel logic battery - no camera, no training, no dataset "
           "writes\n")
     failures = []
@@ -655,6 +667,11 @@ def main(argv=None) -> int:
           if not tr or any(n.startswith("SKIP") for n in tr) else
           "the code is sound, and the trained weights pass the same checks")
     return 0
+
+
+def test_logic_battery():
+    """Expose the same no-training battery to pytest discovery."""
+    assert main([]) == 0
 
 
 if __name__ == "__main__":

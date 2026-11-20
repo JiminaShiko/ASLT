@@ -2,7 +2,8 @@ ASL WORD RECOGNIZER - videoModel
 ================================
 
 Isolated ASL words from a webcam: MediaPipe Holistic landmarks (not pixels),
-trained on ASL Citizen only, evaluated on signers the model has never seen.
+trained for a bounded communication vocabulary using signer-disjoint ASL Citizen
+data and a small, optional PopSign subset.
 
 You record nothing, save nothing and train on nothing you did not download.
 The webcam frames are converted to numbers, used, and dropped in the same
@@ -11,7 +12,7 @@ function call.
 
 ABOUT
 -----
-Name    : videoModel word recognizer (20 core words + REST + OTHER)
+Name    : videoModel word recognizer (94 active words + REST + OTHER)
 Data    : ASL Citizen (Microsoft Research), ~83,400 isolated word videos,
           52 signers, already on disk at `ASL_Citizen/`
 Approach: landmarks, not pixels - one shared 200-number feature vector per
@@ -20,34 +21,33 @@ Model   : conv1d x2 -> bidirectional GRU x2 -> Linear, 378,230 parameters,
           CPU only. Standardisation (train-split mean/std) and the max-over-time
           pooling live inside the module, so the checkpoint, the ONNX graph and
           the webcam path cannot drift apart.
-Result  : 58.3% top-1 / 80.4% top-5 on the official signer-disjoint test
-          split (11 signers never trained on, 869 clips), 89.2% when only the
-          20 words compete. That run used the previous 170-number feature
-          vector; the 200-number one in the code today needs one retrain
-          (`python -m src.train --seeds 3`, below) before the live demo will
-          accept it - the weights say what width they were built for, and the
-          app refuses a mismatch.
-          What the demo promises is not the raw 58.3% - see WHAT TO EXPECT
-          FROM THE DEMO. Reproduce with `python check_results.py`; every
-          number is on disk in `REPORT_WORDS.md` and `reports/`.
+Result  : the shipped 20-word checkpoint is a historical baseline. The
+          expanded vocabulary and live segmentation fixes have not been
+          trained or webcam-validated yet. Train into a candidate folder and
+          review its held-out results before using it in the live demo.
 
 
-THE ONE COMMAND
----------------
-Open PowerShell or cmd, then paste this whole block:
+CURRENT CANDIDATE WORKFLOW
+--------------------------
+Run the downloader first; it asks before downloading. Then extract the current
+vocabulary and train into an isolated candidate directory:
 
-```bat
-cd "D:\sign language project\ASTL project\ASLT\videoModel"
+```powershell
+cd "D:\sign language project\ASTL project\ASLT\Model\videoModel"
 python -m pip install -r requirements.txt
-python run_all.py --workers 4
+python download_popsign_targets.py
+python -m src.extract --splits train,val,test --workers 4
+python -m src.train --candidate communication_v2 --seeds 3 --eval-splits val,test,ps_test
+python check_results.py --candidate communication_v2 --write
 ```
 
-It extracts landmarks, trains, exports ONNX and writes the report, and each
-step asks what is already on disk before it runs. Ctrl-C is always safe: run
-the same line again and it continues where it stopped.
-
-Expected on this machine, measured end to end (see TIME AND DISK below): about
-30 minutes of CPU work, and about 110 MB of new files.
+The downloader defaults to 60 training and 20 each validation/test clips for
+bye, please, sleep, and chicken. The other new signs come from the existing
+ASL Citizen split files and are extracted from the local dataset. Existing
+landmark cache entries are reused. The training outputs stay under
+`candidates/communication_v2/`; the shipped model is not overwritten. Do not
+use `run_all.py` for this candidate, since its default output scope is the
+shipped model directory.
 
 
 WHAT IT DOES
@@ -66,11 +66,10 @@ WHAT IT DOES
              pose 30 + hands 84 + hand shape 18 + face 12 + hand-to-body 10 +
              presence 4 + velocity 12 + segment read-out 30.
 
-3  train     [64, 200]  ->  22 classes
-             the 20 words, plus REST (idle head/tail of the same clips) and
-             OTHER (a capped sample of signs that are not in the vocabulary),
-             so the model has something to say when it is not looking at one
-             of our 20 words.
+3  train     [64, 200]  ->  96 classes
+             94 active communication words, plus REST (idle head/tail of the
+             same clips) and OTHER (a capped sample of signs outside the
+             vocabulary).
 
 4  live      webcam frame -> landmarks -> features -> decision -> a word
              a segment opens when a hand rises above the shoulder line and
@@ -83,7 +82,7 @@ WHAT IT DOES
 CHECK WHAT IS DONE WITHOUT RUNNING ANYTHING
 -------------------------------------------
 ```bat
-cd "D:\sign language project\ASTL project\ASLT\videoModel"
+cd "D:\sign language project\ASTL project\ASLT\Model\videoModel"
 python status.py
 ```
 Read-only: it opens the split CSVs, the manifest, `meta.json` and the reports,
@@ -96,7 +95,7 @@ THE FOUR STEPS SEPARATELY
 Use these if you want to run one stage, or re-run one after changing it.
 
 ```bat
-cd "D:\sign language project\ASTL project\ASLT\videoModel"
+cd "D:\sign language project\ASTL project\ASLT\Model\videoModel"
 
 python -m src.extract --splits train,val,test --workers 4
 python -m src.train --epochs 60
@@ -144,7 +143,7 @@ TRY IT LIVE
 Needs `models/words_core20.pt` (step 3 above) and a webcam.
 
 ```bat
-cd "D:\sign language project\ASTL project\ASLT\videoModel"
+cd "D:\sign language project\ASTL project\ASLT\Model\videoModel"
 python -m src.live
 ```
 
@@ -157,7 +156,7 @@ no photo - and writes no files.
 Without a camera, or to test the pipeline itself:
 
 ```bat
-cd "D:\sign language project\ASTL project\ASLT\videoModel"
+cd "D:\sign language project\ASTL project\ASLT\Model\videoModel"
 python -m src.live --selftest           guided drill: show it each word, prints a table
 python -m src.live --benchmark          CPU speed on cached clips, target >= 15 fps
 python -m src.live --render-test        real dataset frames through the live path
@@ -171,8 +170,9 @@ python -m tests.test_logic              the whole offline battery (129 checks)
 
 WHAT TO EXPECT FROM THE DEMO
 ----------------------------
-Say this out loud before you judge it, because the numbers below are what the
-gate is actually for. Measured on the 869 signer-disjoint test clips at the
+These are historical baseline readings only; they do not describe the expanded
+model until it has been trained and checked. Measured on the 869 signer-disjoint
+test clips at the
 shipped gate of `p1 >= 0.85` (`CONFIDENCE_MIN` in `src/config.py`):
 
 ```
@@ -314,39 +314,68 @@ smoke        a --smoke run is labelled "smoke" in its own meta and is not a
              its 0.0%.
 ```
 
-Privacy and dataset terms are in `docs/DETAILS.md`; the short version is that
-training data is ASL Citizen only, this folder never writes to it, and the
-live demo never writes what it sees at all.
+Privacy and dataset terms are in `docs/DETAILS.md`; the live demo never writes
+webcam frames. The new PopSign video subset is downloaded by the script below
+into `Model/videoModel/datasets/external/` and is excluded from Git.
 
 
 THE VOCABULARY
 --------------
-20 trainable words (batch 1), plus REST and OTHER:
+94 active words across four batches, plus REST and OTHER (96 classifier
+labels total). `me` is one visual class that the phrase layer displays as “I”.
 
 ```
 eat  family  friend  good  hello  help  name  sad  school  drink
 thanks  love  bye  sorry  yes  no  happy  please  bad  home
+me  my  you  your  what  where  who  want  need  like  go  come
+stop  more  water  understand  now  today  work
+wait  finish  sleep  bathroom  hungry  thirsty  when  why  how
+apple  bread  chicken  tomorrow  sick  hurt  doctor  medicine
+meat  vegetable  milk  coffee  tea  fruit  fish  egg  potato  carrot
+tomato  orange  park  hospital  restaurant  library  hotel  church  bank  office
+police  nurse  teacher  mother  father  child  man
+car  boat  bicycle  airplane  bus  train  motorcycle
+phone  money  book  key
 ```
 
 ```
-word         gloss in ASL Citizen          status
-food         FOOD                          not trainable - ASL Citizen has no
-  (batch 2)                                FOOD gloss at all (all 2,731
-                                           glosses were checked). EAT and MEAT
-                                           are different signs, so there is
-                                           nothing to merge into.
-8 words      -                             thin in batch 1: under 15 training
-                                           videos (hello, help, name, sad,
-                                           love, please, bad, home). Expect
-                                           them to be the weak rows in the
-                                           report; that is the data, not the
-                                           code.
+food         unavailable in ASL Citizen; EAT is not relabelled as FOOD
+chicken      PopSign only; HEN is not relabelled as CHICKEN
+school       ASL Citizen only; no unverified PopSign substitute is used
 ```
 
-Batch 2 (ME, MY, YOU, WHAT, WHERE, WHO, WANT, NEED, LIKE, GO, COME, STOP,
-MORE, WATER, UNDERSTAND, NOW, TODAY, WORK and friends) is already written into
-`vocab.json` but switched off. Turn it on by editing `enabled_batches` to
-`[1, 2]` and re-running `run_all.py` - it only extracts and trains what is new.
+The new signs include pronouns and possessives, questions, requests, daily
+needs, common food, basic health, places, people, transportation, and everyday
+objects. The newest batch adds 38 signs: meat, vegetable, milk, coffee, tea,
+fruit, fish, egg, potato, carrot, tomato, orange, park, hospital, restaurant,
+library, hotel, church, bank, office, police, nurse, teacher, mother, father,
+child, man, car, boat, bicycle, airplane, bus, train, motorcycle, phone, money,
+book, and key. `I` and `me` deliberately share the `me` visual class. These
+remain isolated-word predictions, not continuous ASL sentence translation.
+
+The local training split has 12–18 examples for most new individual glosses;
+the grouped variant classes have more. These are labels available to train,
+not claims about their eventual accuracy. `POLICEMAN` is presented as `police`;
+there is no verified `STATION` gloss, so “police station” is not a single class.
+
+To add the focused PopSign clips, run these commands from PowerShell. The
+downloader prints the selected clips and estimated total before prompting;
+the default is 60 training clips and 20 each from validation and test for
+`bye`, `please`, `sleep`, and `chicken` (about 400 clips). Data is saved under
+`datasets/external/popsign_v2_1/` and is never added to Git.
+
+```powershell
+cd "D:\sign language project\ASTL project\ASLT\Model\videoModel"
+python download_popsign_targets.py
+python -m src.extract --splits train,val,test --workers 4
+python -m src.train --candidate communication_v2 --seeds 3 --eval-splits val,test,ps_test
+python check_results.py --candidate communication_v2 --write
+```
+
+Extraction reuses cached ASL Citizen landmarks and processes only missing
+videos. Candidate weights and reports stay under `candidates/communication_v2/`;
+the shipped model is not overwritten. The training command is intentionally
+left for the project owner to run.
 
 
 LICENCE AND CITATION

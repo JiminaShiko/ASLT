@@ -41,7 +41,7 @@ SPLITS = ("train", "val", "test")
 BASE_URL = "https://signdata.cc.gatech.edu/data"
 SEED = 20261116      # must match config.SEED: vocab.external_jobs re-picks the
                      # same subset with the same round-robin, seed and order
-DEFAULT_WORDS = ["good", "thanks", "happy"]   # the approved weak-word subset
+DEFAULT_WORDS = ["bye", "please", "sleep", "chicken"]
 TARGET_ALIASES = {
     "eat": ("eat",),
     "family": ("family",),
@@ -61,6 +61,8 @@ TARGET_ALIASES = {
     "no": ("no",),
     "happy": ("happy",),
     "please": ("please",),
+    "sleep": ("sleep",),
+    "chicken": ("chicken",),
     "bad": ("bad",),
     "home": ("home",),
 }
@@ -516,9 +518,11 @@ def parse_args() -> argparse.Namespace:
                         help="Output directory (defaults to datasets/external/<dataset-version>).")
     parser.add_argument("--keep-archives", action="store_true", help="Keep downloaded tar files after extraction.")
     parser.add_argument("--yes", action="store_true", help="Skip the confirmation prompt after showing matches.")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="List the selected subset; no video downloads, HEAD sizing or file writes.")
     parser.add_argument("--words", nargs="+", default=None,
                         help=f"Words to fetch in the per-clip branch (default: "
-                             f"{' '.join(DEFAULT_WORDS)}).")
+                        f"{' '.join(DEFAULT_WORDS)}; focused communication signs).")
     parser.add_argument("--clips-per-word", type=int, default=60,
                         help="Train clips per word, signer-spread (default 60).")
     parser.add_argument("--heldout-clips", type=int, default=20,

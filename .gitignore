@@ -1,6 +1,29 @@
+# Local secrets (examples without real credentials can still be committed).
 .env
-ca.pem
+.env.*
 *.env
-*.pyc
+!.env.example
+ca.pem
+
+# Dependencies and generated files, wherever a subproject lives.
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+node_modules/
+*.part
+.DS_Store
+Thumbs.db
+
+# Retired model locations after source moved into Model/.
+# These contain local datasets/caches, not the canonical application code.
+# Keep the files on disk; Model/* source and deployed weights remain included.
+/asl_landmark_app/
+/sign language photo model/
+/videoModel/
+
+# Raw MNIST downloads used by the EDA script, not runtime dependencies.
+# Keep the EDA code, charts, tables, source link and results in Git.
+/Model/EDA/mnist dataset/dataset/*.csv

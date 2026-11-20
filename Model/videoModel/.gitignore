@@ -21,6 +21,8 @@ longVideos/*
 cache/
 logs/
 models/checkpoints/
+# User-run experiments stay local until a validated candidate is adopted.
+candidates/
 
 # the MediaPipe Holistic graph (13,683,609 bytes) is fetched once into models/
 # by src/landmarks.py, or pointed at with ASL_WORDS_HOLISTIC_MODEL. Too big for

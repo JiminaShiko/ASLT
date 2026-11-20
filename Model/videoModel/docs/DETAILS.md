@@ -6,8 +6,13 @@ reference: the data contract, the feature contract, every threshold, what
 each report column means, what each verification mode proves, and how to
 change things.
 
-There is no trained accuracy number anywhere in this project until
-`run_all.py` has been run for real. Nothing here invents one.
+The reported accuracy in this reference is for the historical 20-word model.
+The expanded candidate has not been trained yet.
+
+**Current-work note (2026-11-19):** most of this long reference describes the
+original 20-word model. The active vocabulary now has 94 signs. Use the current
+candidate workflow in `README.md`; the default `run_all.py` output scope writes
+to the shipped-model directory and is not the command for this expansion.
 
 
 1. WHAT THIS MODULE IS AND IS NOT
@@ -638,11 +643,11 @@ add a word      vocab.json: give it its exact gloss label(s), then
                 python -m src.extract (resumable, only the new clips) and
                 python -m src.train. Check the table first: a word with no
                 gloss in the dataset is MISSING and will not become a class.
-enable batch 2  vocab.json: enabled_batches [1] -> [1, 2]. That adds me, my,
-                you, your, what, where, who, want, need, like, go, come, stop,
-                more, water, food, understand, now, today, work - and FOOD is
-                still missing, so batch 2 is 19 new words, not 20.
-                Then extract + train again.
+The current `vocab.json` enables batches 1 through 4. It defines 94 active
+words (including external-only chicken) plus REST and OTHER. Generic FOOD has
+no verified ASL Citizen gloss, so individual food signs are included instead;
+do not relabel EAT or MEAT as FOOD. Use the candidate workflow in `README.md`
+to extract and train; candidate weights are isolated from the shipped model.
 change caps     vocab.json: extra_classes.rest / .other (cap_train, cap_val,
                 cap_test, min_frames, max_frames, per_gloss_max, seed).
                 Caps keep a background class from eating the vocabulary.
