@@ -19,9 +19,10 @@ requirements.txt
 
 HTML TRANSLATOR API (LANDMARK MODEL)
 ====================================
-The new website page at ../user_homepage/translation.html uses the API
-blueprint in this folder's api.py. The root ASLT app registers that blueprint,
-so run the website and translator together from the repository root:
+The new website page at ../../Front-end/user_homepage/translation.html uses the
+API blueprint in this folder's api.py. The root ASLT app registers that
+blueprint, so run the website and translator together from the Backend folder:
+	cd ../../Backend
 	python -m pip install -r requirements.txt
 	python app.py
 
