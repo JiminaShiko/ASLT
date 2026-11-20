@@ -74,7 +74,8 @@ def _xy(row: np.ndarray, r: int, w: int, h: int, mirror: bool):
     x, y = float(row[r, 0]), float(row[r, 1])
     if np.isnan(x) or np.isnan(y):
         return None
-    return (int((1.0 - x if mirror else x) * w), int(y * h))
+    px = int(x * w)
+    return (w - 1 - px if mirror else px, int(y * h))
 
 
 def _draw(img, row, pairs, colour, mirror, dots=False, rows=()):
@@ -108,6 +109,8 @@ def overlay(rgb: np.ndarray, row: np.ndarray, mirror: bool = True) -> np.ndarray
     group is skipped while its points are NaN.
     """
     img = cv2.cvtColor(np.ascontiguousarray(rgb), cv2.COLOR_RGB2BGR)
+    if mirror:
+        img = cv2.flip(img, 1)
     pose_rows = [config.pose_row(i) for i in range(27)]
     _draw(img, row, [(config.pose_row(a), config.pose_row(b))
                      for a, b in POSE_CONN], GREEN, mirror, True, pose_rows)
@@ -127,7 +130,8 @@ def overlay(rgb: np.ndarray, row: np.ndarray, mirror: bool = True) -> np.ndarray
     return img
 
 
-def hud(img: np.ndarray, r: dict, fps: float, hint: str = "") -> np.ndarray:
+def hud(img: np.ndarray, r: dict, fps: float, hint: str = "",
+        manual: bool = False, segment_open: bool = False) -> np.ndarray:
     """State, what it heard, sentence and top-3. Only numbers and labels are
     drawn - never a pixel of the frame is kept."""
     h, w = img.shape[:2]
@@ -150,6 +154,12 @@ def hud(img: np.ndarray, r: dict, fps: float, hint: str = "") -> np.ndarray:
         cv2.rectangle(img, (0, 30), (w, 66), DARK, -1)
         cv2.putText(img, r["text"][:64], (8, 55),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, GREEN, 2, cv2.LINE_AA)
+    prompt = (("MANUAL: Space ends segment" if segment_open else
+               "MANUAL: Space starts segment") if manual else
+              "AUTO: raise hands to start; lower hands to end")
+    cv2.rectangle(img, (0, 68), (w, 94), DARK, -1)
+    cv2.putText(img, prompt, (8, 86), cv2.FONT_HERSHEY_SIMPLEX,
+                0.5, YELLOW, 1, cv2.LINE_AA)
     y = h - 108
     for word, p in list(r["top3"])[:3]:
         cv2.rectangle(img, (0, y - 18), (200, y + 6), DARK, -1)
@@ -177,7 +187,7 @@ def build_predictor(args, log=None) -> predictor.WordPredictor:
         fps=args.fps, stride=args.stride, buffer_seconds=args.buffer,
         min_conf=None if args.conf < 0 else args.conf,
         min_margin=None if getattr(args, "margin", -1.0) < 0 else args.margin,
-        log=log)
+        log=log, manual=getattr(args, "manual", False))
 
 
 def open_camera(index: int, want_fps: float = 30.0):
@@ -208,6 +218,9 @@ def live(args) -> int:
     if config.HEDGE_PAIRS:
         log.info("hedged pairs (type neither, show the hint instead): %s",
                  ", ".join(str(v) for v in config.HEDGE_PAIRS.values()))
+    if p.manual:
+        log.info("manual mode: Space starts/ends an in-memory segment; "
+                 "shoulder activity is bypassed, confidence/hedge gates remain")
     hinted = False
     try:
         while True:
@@ -230,40 +243,88 @@ def live(args) -> int:
                 log.info("framing %s: hand in %.0f%% of the last %.1f s",
                          "hint on" if hinted else "ok",
                          100 * (r["hand_rate"] or 0.0), p.buf_s)
-            if args.headless:
-                hud(frame, r, ema, r["hint"])
-            else:
-                cv2.imshow("ASL word recognizer - in memory only",
-                           hud(frame, r, ema, r["hint"]))
+            frame = hud(frame, r, ema, r["hint"], manual=p.manual,
+                        segment_open=p.manual_open)
+            if not args.headless:
+                cv2.imshow("ASL word recognizer - in memory only", frame)
                 k = cv2.waitKey(1) & 0xFF
                 if k in (27, ord("q")):
                     break
                 if k == ord("r"):
                     p.reset()
+                elif k == ord(" ") and p.manual:
+                    r = p.end_segment() if p.manual_open else p.begin_segment()
+                    if r["segment_cut"] and r["reason"]:
+                        log.info("manual segment: %s (hand share %s)",
+                                 r["reason"], r["hand_rate"])
             if r["committed_word"]:
                 log.info("committed %s (p1 %.2f)", r["committed_word"], r["p1"])
     finally:
         cap.release()
+        log.info("closed after %d frames; sentence was '%s'", p._n_in,
+                 p.phrases.text())
         p.close()
         if not args.headless:
             cv2.destroyAllWindows()
-    log.info("closed after %d frames; sentence was '%s'", p._n_in,
-             p.phrases.text())
     return 0
 
 
 # ---------------------------------------------------------------------------
 # --selftest: guided drill, one terminal table, nothing written
 # ---------------------------------------------------------------------------
-def selftest(args) -> int:
-    spec = vocab.load_vocab()
-    active = [w.word for w in spec.active]
-    words = [w.lower() for w in args.words] or active
-    unknown = [w for w in words if w not in active]
+def selftest_words(p: predictor.WordPredictor, requested) -> list[str]:
+    """Use trained label order, never the possibly expanded vocabulary file."""
+    active = [w for w in p.labels
+              if w not in (config.REST_LABEL, config.OTHER_LABEL)]
+    by_lower = {w.lower(): w for w in active}
+    unknown = [w for w in requested if w.lower() not in by_lower]
     if unknown:
-        raise SystemExit(f"not in the current vocabulary: {unknown}\n"
-                         f"active words: {active}")
+        raise SystemExit(f"not in the checkpoint labels: {unknown}\n"
+                         f"trained words: {active}")
+    return [by_lower[w.lower()] for w in requested] if requested else active
+
+
+def selftest_row(want: str, cut: dict | None, intermediate: dict | None,
+                 opened: bool, too_short: str = "") -> dict:
+    """Final cut and last intermediate are different observations, not votes."""
+    final, mid = cut or {}, intermediate or {}
+    hand = final.get("hand_rate")
+    notes = []
+    if hand is not None and hand < config.FRAMING_HAND_RATE_MIN:
+        notes.append(f"hands in only {100 * hand:.0f}% of cut frames, "
+                     f"{config.FRAMING_HINT}")
+    if cut is not None:
+        if final.get("reason"):
+            notes.append(final["reason"])
+    elif opened:
+        notes.append("still open: segment did not end before timeout")
+    elif too_short:
+        notes.append(too_short)
+    else:
+        notes.append("no open segment: no accepted onset")
+    return {
+        "wanted": want, "segment": cut is not None,
+        "committed": final.get("committed_word", ""),
+        "top1": (final.get("top3") or [["", 0.0]])[0][0],
+        "p1": round(final.get("p1", 0.0), 3),
+        "margin": round(final.get("margin", 0.0), 3),
+        "hand": hand, "reason": "; ".join(notes),
+        "intermediate_top1": (mid.get("top3") or [["", 0.0]])[0][0],
+        "intermediate_p1": round(mid.get("p1", 0.0), 3),
+        "intermediate_margin": round(mid.get("margin", 0.0), 3),
+    }
+
+
+def selftest(args) -> int:
+    if getattr(args, "manual", False):
+        raise SystemExit("--manual --selftest is unsupported; use interactive "
+                         "live --manual for Space-delimited segments")
     p = build_predictor(args)
+    try:
+        words = selftest_words(p, args.words)
+    except SystemExit:
+        p.close()
+        raise
     cap = open_camera(args.camera, args.fps)
     rows: list[dict] = []
     print(f"\n{len(words)} words. For each: raise your hands, sign the word "
@@ -276,10 +337,10 @@ def selftest(args) -> int:
             if quit_early:
                 break
             print(f"--- sign: {want.upper()}", flush=True)
-            deadline = time.time() + args.seconds
-            cut, best = None, None
-            seen: list[float] = []
-            while time.time() < deadline:
+            deadline = time.monotonic() + args.seconds
+            cut, intermediate = None, None
+            opened, too_short = False, ""
+            while time.monotonic() < deadline:
                 ok, bgr = cap.read()
                 if not ok:
                     print("camera dropped out", flush=True)
@@ -287,14 +348,15 @@ def selftest(args) -> int:
                     break
                 rgb = landmarks.bgr_to_rgb(bgr)
                 r = p.update(rgb)
-                if r["top3"] and (best is None or r["p1"] > best["p1"]):
-                    best = r
-                if r["hand_rate"] is not None:
-                    seen.append(r["hand_rate"])
+                if p.seg.signing:
+                    opened = True
+                    intermediate = r
+                if r["reason"].startswith("too short"):
+                    too_short = r["reason"]
                 buf = p.buffer.array()
                 frame = overlay(rgb, buf[-1] if len(buf) else
                                 np.full((config.P_TOTAL, 3), np.nan,
-                                        np.float32))
+                                        np.float32), mirror=not args.no_mirror)
                 cap_txt = f"sign: {want}"
                 if r["hint"]:
                     cap_txt += f"  |  {r['hint']}"
@@ -309,27 +371,10 @@ def selftest(args) -> int:
                 if r["segment_cut"]:
                     cut = r
                     break
-            hand = round(float(np.mean(seen)), 3) if seen else None
-            notes = []
-            if hand is not None and hand < config.FRAMING_HAND_RATE_MIN:
-                notes.append(f"hands in only {100 * hand:.0f}% of frames, "
-                             f"{config.FRAMING_HINT}")
-            if (cut or best or {}).get("reason"):
-                notes.append((cut or best)["reason"])
-            if not cut:
-                notes.append("no segment - the hands never rested")
-            rows.append({
-                "wanted": want,
-                "segment": bool(cut),
-                "committed": (cut or {}).get("committed_word", ""),
-                "top1": (best or {}).get("top3", [["_", 0.0]])[0][0],
-                "p1": round((best or {}).get("p1", 0.0), 3),
-                "margin": round((best or {}).get("margin", 0.0), 3),
-                # the framing check for this word: MediaPipe had a hand in this
-                # fraction of the buffered frames while you signed it
-                "hand": hand,
-                "reason": "; ".join(notes),
-            })
+            if not opened and p.seg.run_sign:
+                too_short = (f"too short: onset has {p.seg.run_sign} active "
+                             f"frames; needs {p.seg.hold} consecutive")
+            rows.append(selftest_row(want, cut, intermediate, opened, too_short))
             p.reset()
     finally:
         cap.release()
@@ -337,8 +382,9 @@ def selftest(args) -> int:
         if not args.headless:
             cv2.destroyAllWindows()
 
-    hdr = (f"{'word':<10s} {'seg':>3s} {'heard':<10s} {'top1':<10s} "
-           f"{'p1':>5s} {'margin':>7s} {'hand':>5s}  note")
+    hdr = (f"{'word':<10s} {'seg':>3s} {'heard':<10s} {'cut-top1':<10s} "
+           f"{'p1':>5s} {'margin':>7s} {'hand':>5s} "
+           f"{'mid-top1':<10s} {'mid-p1':>6s}  note")
     print("\n" + hdr)
     print("-" * (len(hdr) + 8))
     n_ok = 0
@@ -348,7 +394,9 @@ def selftest(args) -> int:
         hr = "-" if r["hand"] is None else f"{r['hand']:.2f}"
         print(f"{r['wanted']:<10s} {'y' if r['segment'] else 'n':>3s} "
               f"{r['committed'] or '-':<10s} {r['top1'] or '-':<10s} "
-              f"{r['p1']:5.2f} {r['margin']:7.2f} {hr:>5s}  "
+              f"{r['p1']:5.2f} {r['margin']:7.2f} {hr:>5s} "
+              f"{r['intermediate_top1'] or '-':<10s} "
+              f"{r['intermediate_p1']:6.2f}  "
               f"{'correct' if ok else r['reason'] or 'wrong word'}")
     print("-" * (len(hdr) + 8))
     print(f"{n_ok}/{len(rows)} signed correctly in this session. This is not a "
@@ -358,9 +406,9 @@ def selftest(args) -> int:
     low = [r["wanted"] for r in rows
            if r["hand"] is not None and r["hand"] < config.FRAMING_HAND_RATE_MIN]
     if low:
-        print("the hand was barely in frame for: " + ", ".join(low) +
-              f" - {config.FRAMING_HINT}. No gate can read a sign it cannot "
-              "see, so those words are not a model result.")
+        print("framing hint for: " + ", ".join(low) +
+              f" - {config.FRAMING_HINT}. This is an advisory, not an "
+              "additional confidence threshold.")
     if args.json:
         print(json.dumps(rows, indent=1))
     return 0
@@ -396,7 +444,7 @@ def benchmark(args) -> int:
             if idx % args.stride:
                 continue
             t0 = time.perf_counter()
-            r = p.update(rgb)
+            r = p.update(rgb, ts_ms=ts)
             t1 = time.perf_counter()
             full.append((t1 - t0) * 1000.0)
             if frames >= 5:                       # ignore the warm-up frames
@@ -761,9 +809,9 @@ def logic_test(args) -> int:
           got[0]["state"] == "REST" and got[6]["state"] == "SIGNING"
           and cuts[0]["state"] == "REST",
           str([g["state"] for g in got]))
-    check("the decision uses the signing frames of the segment, not the "
-          "rest frames that closed it",
-          cuts[0]["decision_frames"] == 12,
+    check("the decision includes one onset/end context frame, not the "
+          "remaining closing debounce frames",
+          cuts[0]["decision_frames"] == 14,
           str(cuts[0]["decision_frames"]))
     got2 = run(ro, rise_rest)          # OTHER on top
     cuts2 = [g for g in got2 if g["segment_cut"]]
@@ -910,6 +958,10 @@ def main(argv=None) -> int:
                          "only bite when --conf is below 0.58")
     ap.add_argument("--weights", default=None)
     ap.add_argument("--phrases", default=None)
+    ap.add_argument("--manual", action="store_true",
+                    help="Space starts/ends an in-memory segment; bypasses "
+                         "shoulder activity only (interactive live mode)")
+    ap.add_argument("words", nargs="*", help="--selftest: trained words to try")
     ap.add_argument("--no-mirror", action="store_true",
                     help="show the frame un-mirrored (the overlay follows)")
     ap.add_argument("--headless", action="store_true",
@@ -929,6 +981,10 @@ def main(argv=None) -> int:
     g.add_argument("--demo", action="store_true",
                    help="the API demo on cached landmark rows (no camera)")
     a = ap.parse_args(argv)
+    if a.manual and (a.selftest or a.benchmark or a.render_test or
+                     a.logic_test or a.demo or a.headless):
+        ap.error("--manual requires interactive live mode; it cannot be combined "
+                 "with --selftest, --headless or offline test modes")
     if a.selftest:
         return selftest(a)
     if a.benchmark:

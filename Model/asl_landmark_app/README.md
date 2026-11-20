@@ -70,14 +70,11 @@ WHAT YOU NEED
   About 3 GB free for the public datasets (2.92 GB measured, see DATASETS USED).
   A Kaggle account only if a dataset is missing from your local Kaggle cache.
 ```
-Datasets download into the kagglehub cache, not into this folder. If C: is short
-of space, point the cache somewhere else before step 2 - verified that kagglehub
-1.0.2 honours it:
-
-```
-  cmd:         set KAGGLEHUB_CACHE=D:\kaggle_cache
-  powershell:  $env:KAGGLEHUB_CACHE = "D:\kaggle_cache"
-```
+Datasets download into this folder's ignored `datasets/kagglehub/` directory.
+This keeps training independent of a machine-global cache and keeps raw data
+out of Git. The three currently available datasets are reused from that folder
+on later runs. Extracted landmarks and generated caches also stay under this
+folder in `cache/`.
 
 Kaggle credentials, only if a download is needed: kaggle.com/settings ->
 "Create New Token" -> save the file as `C:\Users\<you>\.kaggle\kaggle.json`.
@@ -88,7 +85,7 @@ HOW TO RUN
 0. Open a terminal in this folder. Everything below assumes you did:
 
 ```
-     cd "D:\sign language project\ASTL project\ASLT\asl_landmark_app"
+     cd "D:\sign language project\ASTL project\ASLT\Model\asl_landmark_app"
 ```
 
    On another machine, `cd` into wherever you put asl_landmark_app.

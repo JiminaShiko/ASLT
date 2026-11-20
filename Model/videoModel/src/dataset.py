@@ -72,6 +72,16 @@ def _manifest(splits: tuple[str, ...] = ("train", "val", "test"),
     if require_files:
         have = {v for v in df["video"] if extract.landmark_file(v).is_file()}
         df = df[df["video"].isin(have)]
+        if len(df) and config.dataset_available():
+            # A resumable cache can contain previous vocabularies/subsets. Do
+            # not silently train on their stale OTHER pool or extra PopSign
+            # clips. The current deterministic work list defines this run.
+            source_splits = tuple(s for s in splits if s != "ps_test")
+            if "ps_test" in splits:
+                source_splits = tuple(dict.fromkeys((*source_splits, "val", "test")))
+            planned = vocab.videos_to_process(source_splits)
+            wanted = planned.loc[planned["split"].isin(splits), "video"]
+            df = df[df["video"].isin(wanted)]
     return df.drop_duplicates("video", keep="last").reset_index(drop=True)
 
 
@@ -94,7 +104,11 @@ def sign_samples(split: str, spec: vocab.VocabSpec,
     # vocab.EXTERNAL_GLOSS_WORDS, so trust it where the gloss does not map
     via_word = df["word"].astype(str).isin(core) & df["label"].isna()
     df.loc[via_word, "label"] = df["word"]
-    df.loc[df["word"].astype(str) == config.OTHER_LABEL, "label"] = config.OTHER_LABEL
+    # A previously off-vocabulary clip may become a real word after expansion.
+    # Its cached landmarks are reusable; the old manifest label is not authority.
+    old_other = ((df["word"].astype(str) == config.OTHER_LABEL)
+                 & df["label"].isna())
+    df.loc[old_other, "label"] = config.OTHER_LABEL
     df["kind"] = "sign"
     df["start"] = df["sign_start"].astype(int)
     df["end"] = df["sign_end"].astype(int)
@@ -283,8 +297,9 @@ def check_disjoint(man: pd.DataFrame) -> list[str]:
 
 def cache_fingerprint(samples: pd.DataFrame) -> str:
     """Stable hash of the exact sample list, so a report can name its data."""
-    key = "|".join(f"{r.video}:{r.kind}:{r.start}:{r.end}"
-                   for r in samples.sort_values(["video", "start", "end"])
+    key = "|".join(f"{r.video}:{r.kind}:{r.start}:{r.end}:"
+                   f"{r.label}:{r.split}:{r.participant}"
+                   for r in samples.sort_values(["video", "start", "end", "label"])
                    .itertuples(index=False))
     return hashlib.sha1(key.encode()).hexdigest()[:12]
 

@@ -1,6 +1,29 @@
+# Local secrets (examples without real credentials can still be committed).
 .env
-ca.pem
+.env.*
 *.env
-*.pyc
+!.env.example
+ca.pem
+
+# Dependencies and generated files, wherever a subproject lives.
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+node_modules/
+*.part
+.DS_Store
+Thumbs.db
+
+# Local legacy videoModel data, caches, downloads, and old checkpoints stay on
+# this machine. Active code and the one tracked deployed model set live under
+# Model/videoModel/. New PopSign downloads go under its ignored datasets/ folder.
+/asl_landmark_app/
+/sign language photo model/
+/videoModel/
+
+# Raw MNIST downloads used by the EDA script, not runtime dependencies.
+# Keep the EDA code, charts, tables, source link and results in Git.
+/Model/EDA/mnist dataset/dataset/*.csv

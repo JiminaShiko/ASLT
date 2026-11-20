@@ -36,7 +36,7 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from src import config  # noqa: E402
-from src.seedreport import compare_table, latest_fair_tags, fair_table  # noqa: E402
+from src.seedreport import compare_table, latest_fair_tags, fair_table, candidate_name  # noqa: E402
 
 
 def _read_json(path: Path) -> dict | None:
@@ -72,19 +72,23 @@ def _num(x) -> str:
 
 
 def gather() -> dict:
-    out: dict = {"missing": [], "files": {}}
+    out: dict = {"missing": [], "files": {}, "candidate": candidate_name()}
     summary = _read_json(config.REPORTS_DIR / "words_summary.json")
     meta = _read_json(config.META_JSON)
     if summary is None:
         out["missing"].append("reports/words_summary.json - training has not "
                               "finished (or wrote to the smoke folder)")
     if meta is None:
-        out["missing"].append("models/meta.json - no shipped model yet")
+        out["missing"].append(f"{config.META_JSON} - no completed model in this output scope")
     out["summary"], out["meta"] = summary, meta
     out["per_word"] = _read_csv(config.REPORTS_DIR / "per_word.csv")
     out["pairs"] = _read_csv(config.REPORTS_DIR / "confused_pairs.csv")
     out["per_word_val"] = _read_csv(config.REPORTS_DIR / "per_word_val.csv")
     out["pairs_val"] = _read_csv(config.REPORTS_DIR / "confused_pairs_val.csv")
+    # Never display leftover split CSVs from an older promotion as this run.
+    for split, suffix in (("test", ""), ("val", "_val")):
+        if split not in ((summary or {}).get("eval") or {}):
+            out[f"per_word{suffix}"] = out[f"pairs{suffix}"] = None
     out["manifest"] = _read_csv(config.MANIFEST_CSV)
     out["errors"] = _read_csv(config.ERRORS_CSV)
     for key, path in (("words_summary", config.REPORTS_DIR / "words_summary.json"),
@@ -106,6 +110,12 @@ def headline(d: dict) -> dict:
     b = test.get("background") or {}
     data = s.get("data") or {}
     return {
+        "candidate": d.get("candidate") or s.get("candidate"),
+        "label_set_id": s.get("label_set_id"),
+        "evaluation_id": s.get("evaluation_id"),
+        "commit_policy": s.get("commit_policy"),
+        "groups": {split: stats.get("groups", {}) for split, stats in ev.items()},
+        "commit_metrics": {split: stats.get("gate", {}) for split, stats in ev.items()},
         "smoke": bool(s.get("smoke")),
         "epochs_ran": s.get("epochs_ran"),
         "best_val_top1": s.get("best_val_top1"),
@@ -197,41 +207,20 @@ def rates_are_cached(man: pd.DataFrame | None) -> bool:
 
 
 def gate_point(d: dict) -> str:
-    """What the live confidence gate would have done with these readings.
-
-    Read from reports/predictions.csv, which training wrote: no model is
-    re-run here. Returns "" when the file is missing.
-    """
-    p = config.REPORTS_DIR / "predictions.csv"
-    if not p.is_file():
-        return ""
-    try:
-        r = pd.read_csv(p)
-    except Exception:                                   # noqa: BLE001
-        return ""
-    if "p1" not in r or "correct" not in r:
-        return ""
-    bg = [config.REST_LABEL, config.OTHER_LABEL]
-    word = r[~r["label"].isin(bg)]
-    if not len(word):
-        return ""
-    pick = None
-    for c in (0.95, 0.90, 0.85, 0.80, 0.70, 0.60):      # boldest that still
-        kept = word["p1"].ge(c)                         # types most words
-        if float(kept.mean()) >= 0.70:
-            pick = c
-            break
-    if pick is None:
-        pick = 0.60
-    kept = word["p1"].ge(pick)
-    prec = float(word.loc[kept, "correct"].mean())
-    oth = float(r[r["label"].eq(config.OTHER_LABEL)]["p1"].ge(pick).mean())
-    rst = float(r[r["label"].eq(config.REST_LABEL)]["p1"].ge(pick).mean())
-    return (f" Measured on these readings: committing only at p1 >= {pick:.2f} "
-            f"still types {float(kept.mean())*100:.0f}% of real words, and the "
-            f"words it does type are right {prec*100:.0f}% of the time "
-            f"(OTHER slips through {oth*100:.0f}%, REST {rst*100:.0f}%). That "
-            f"number, not the raw top-1, is what the demo should promise.")
+    """Validation-only policy evidence. Never search thresholds on test rows."""
+    val = ((d.get("summary") or {}).get("eval") or {}).get("val") or {}
+    gate = val.get("gate") or {}
+    policy = gate.get("policy") or {}
+    if not policy:
+        return ("No saved validation commit-policy metrics. No threshold is recommended; "
+                "historical confidence-only CSVs do not establish hedge-aware commits.")
+    return (f"VAL only, fixed p1 >= {_num(policy.get('confidence_min'))}, "
+            f"margin >= {_num(policy.get('margin_min'))}, with saved pair/hedge rules: "
+            f"word commit share {_pct(gate.get('typed_share'))}, "
+            f"correct-commit recall {_pct(gate.get('correct_commit_recall'))}, "
+            f"commit precision {_pct(gate.get('typed_precision'))}. "
+            "Any future policy selection must use validation only, then be frozen "
+            "before final test scoring. These are offline clips, not live accuracy.")
 
 
 def verdict(d: dict, h: dict) -> list[str]:
@@ -239,41 +228,24 @@ def verdict(d: dict, h: dict) -> list[str]:
     v: list[str] = []
     if d["missing"]:
         v += [f"BLOCKED: {m}" for m in d["missing"]]
-        v.append("Run: python -m src.extract --splits train,val,test "
-                 "--workers 4   then   python -m src.train")
+        scope = f" --candidate {h['candidate']}" if h.get("candidate") else ""
+        v.append("After extracting the active vocabulary's train,val cache, run: "
+                 f"python -m src.train{scope} --seeds 3 --eval-splits val,test,ps_test")
         return v
     if h["smoke"]:
-        v.append("THIS IS THE SMOKE RUN. Its numbers mean nothing except that "
-                 "the code runs. Train for real before reading anything else.")
-    if h["test_top1"] is None:
-        v.append("The test split was never scored - rerun with "
-                 "--eval-splits val,test")
-        return v
-    t = float(h["test_top1"])
-    val = float(h["best_val_top1"] or 0.0)
-    if val - t > 0.12:
-        v.append(f"val {_pct(val)} vs test {_pct(t)}: the gap is bigger than "
-                 "run-to-run noise. Check that no threshold was tuned on "
-                 "test, then compare a second seed before believing either.")
-    if h["test_macro_words"] is not None and t - float(h["test_macro_words"]) > 0.15:
-        v.append("The pooled number is carried by the easy words; the per-word "
-                 "table is the honest one. Look at the weakest words first.")
-    if h["rest_as_word_rate"] is not None and float(h["rest_as_word_rate"]) > 0.15:
-        v.append(f"REST is typed as a word {_pct(h['rest_as_word_rate'])} of "
-                 "the time: raise CONFIDENCE_MIN or MARGIN_MIN in src/config.py "
-                 "before using the live demo, otherwise idle hands invent words.")
-    ow = h.get("other_as_word_rate")
-    if ow is not None and float(ow) > 0.50:
-        v.append(f"OTHER is typed as a word {_pct(ow)} of the time, and that is "
-                 "not a bug worth chasing: OTHER is ~1000 unrelated signs, not a "
-                 "category, so no network can learn it as one class. Rejection "
-                 "has to come from the confidence gate, never from the OTHER "
-                 "logit." + gate_point(d))
-    if h["word_as_extra_rate"] is not None and float(h["word_as_extra_rate"]) > 0.25:
-        v.append(f"{_pct(h['word_as_extra_rate'])} of real signs are pushed to "
-                 "REST/OTHER: the model rarely dares. Check the REST/OTHER caps "
-                 "in vocab.json - too much background can swallow the words.")
-    per = d.get("per_word")
+        return ["SMOKE ONLY: scratch numbers are not evaluation results."]
+    if h["val_top1"] is None:
+        return ["No genuine validation results: no configuration or gate recommendation."]
+    v.append("Recommendations below use VAL only. Test/ps_test remain final, "
+             "fixed-policy measurements, not configuration-selection inputs.")
+    v.append(gate_point(d))
+    val_ev = ((d.get("summary") or {}).get("eval") or {}).get("val") or {}
+    t = float(h["val_top1"])
+    macro = val_ev.get("macro_top1_words")
+    if macro is not None and t - float(macro) > 0.15:
+        v.append("VAL pooled accuracy exceeds macro word accuracy: inspect the "
+                 "validation per-word counts before choosing further experiments.")
+    per = d.get("per_word_val")
     if per is not None:
         zero = per[(~per["label"].isin([config.REST_LABEL, config.OTHER_LABEL]))
                    & (per["n_samples"] >= 5) & (per["top1"] <= 0.05)]
@@ -286,9 +258,11 @@ def verdict(d: dict, h: dict) -> list[str]:
         v.append(f"{len(d['errors'])} videos failed extraction "
                  "(cache/extract_errors.csv). Under ~1% is normal; read the "
                  "reasons before ignoring them.")
-    hr = hand_rate_per_word(d.get("manifest"))
+    man = d.get("manifest")
+    val_man = man[man["split"].eq("val")] if man is not None and "split" in man else None
+    hr = hand_rate_per_word(val_man)
     if hr:
-        if not rates_are_cached(d.get("manifest")):
+        if not rates_are_cached(val_man):
             v.append("The manifest only carries the clip-wide hand rate, "
                      "which counts the idle head and tail of a sentence clip "
                      "and so reads low for everything. Fill the window one: "
@@ -302,7 +276,7 @@ def verdict(d: dict, h: dict) -> list[str]:
                      f"{np.mean(list(full.values())):.2f}): the low clip "
                      "number is the hands resting between signs, not a "
                      "detection failure, and it is not the ceiling.")
-            per = d.get("per_word")
+            per = d.get("per_word_val")
             bg = {config.REST_LABEL, config.OTHER_LABEL}
             acc = ({} if per is None or "top1" not in per.columns else
                    dict(zip(per["label"].astype(str), per["top1"])))
@@ -323,8 +297,8 @@ def verdict(d: dict, h: dict) -> list[str]:
                          + ", ".join(low[:8]) + " - framing helps these, and "
                          "only these.")
     if t < 0.35:
-        v.append(f"{_pct(t)} on 22 classes is above chance (4.5%) but not "
-                 "usable for a sentence. Next lever with the cache complete: "
+        v.append(f"VAL {_pct(t)} across {len(h['labels'] or [])} classes remains low. "
+                 "One validation-only experiment with the cache complete: "
                  "an ablation run (--blocks pose,hands) to see whether the "
                  "face and mask blocks are helping or just noise.")
     elif t < 0.60:
@@ -341,7 +315,7 @@ def verdict(d: dict, h: dict) -> list[str]:
                          "the model has memorised the training signers. More "
                          "epochs cannot fix that - more signers, or stronger "
                          "regularisation, can.")
-        v.append(f"{_pct(t)}: real signal, still fragile. "
+        v.append(f"VAL {_pct(t)}: further validation is needed. "
                  + (f"Early stopping fired (best epoch {best_ep} of {ran} run, "
                     f"{want} asked), so the run had levelled off - longer "
                     "training is not the lever. The seed-to-seed spread is "
@@ -354,9 +328,8 @@ def verdict(d: dict, h: dict) -> list[str]:
                     "reports/seed_runs.md and the data lever is "
                     "docs/EXTERNAL_DATA.md."))
     else:
-        v.append(f"{_pct(t)} is a number worth building on. Try the live demo "
-                 "and the guided drill - that is where the remaining problems "
-                 "show up.")
+        v.append(f"VAL {_pct(t)} is an offline result only. Check core20 retention "
+                 "and new-word coverage separately; it does not establish live accuracy.")
     v.append("Nothing was re-run to produce this page. Every number came from "
              "the files training wrote.")
     return v
@@ -366,7 +339,11 @@ def render(d: dict) -> str:
     h = headline(d)
     L: list[str] = []
     A = L.append
-    A("# Word recognizer - results")
+    A(f"# Word recognizer - candidate {h['candidate']} results" if h.get("candidate")
+      else "# Word recognizer - offline results")
+    if h.get("candidate"):
+        A("Candidate outputs only; not deployed. Shipped weights and published reports are unchanged.")
+    A("Offline held-out clip evaluation, not measured live/webcam accuracy.")
     A("")
     A(f"Written by check_results.py on {config.timestamp()}. "
       "Read-only: it re-ran nothing.")
@@ -396,6 +373,8 @@ def render(d: dict) -> str:
     A(f"| features | {_num(h['feature_dim'])} dims, blocks "
       f"{h['feature_blocks']}, {config.NUM_FRAMES} frames |")
     A(f"| classes | {len(h['labels'] or [])} |")
+    A(f"| label-set identity | {h['label_set_id'] or 'unknown (historical)'} |")
+    A(f"| evaluation identity | {h['evaluation_id'] or 'unknown (historical)'} |")
     A(f"| parameters | {_num(h['params'])} |")
     A(f"| seed / seconds | {h['seed']} / {_num(h['seconds'])} "
       f"({_num(h['sec_per_epoch'])} s per epoch) |")
@@ -408,7 +387,7 @@ def render(d: dict) -> str:
         A("")
         A("| group | videos | top-1 | words-only top-1 |")
         A("|---|---|---|---|")
-        A(f"| ASL Citizen test signers (the live-app number) | "
+        A(f"| ASL Citizen official test signers (offline) | "
           f"{_num(h['n_test_videos'])} | {_pct(h['test_top1'])} | "
           f"{_pct(h['test_words_only_top1'])} |")
         A(f"| PopSign val+test signers (second, independent style) | "
@@ -418,8 +397,7 @@ def render(d: dict) -> str:
         A(f"Training saw {_num(h['n_train_ps_videos'])} PopSign clips on top of "
           "the ASL Citizen train set. Each row is the signer-disjoint split of "
           "its own corpus; a number that pooled them would be meaningless and "
-          "is not reported. The claim about the live webcam stays tied to the "
-          "ASL Citizen row.")
+          "is not reported. Neither row is a measurement of live webcam accuracy.")
         A("")
     if h["split_check"] is not None:
         A("## Signer-disjointness check")
@@ -431,15 +409,46 @@ def render(d: dict) -> str:
             A("- no problem found: no (source, signer) pair appears in train "
               "and in a held-out split")
         A("")
-    A("## Background classes")
+    A("## Retention and expansion (full-classifier argmax)")
+    A("")
+    A("Core20 is active batch 1; new_words is the active later batches. "
+      "Expanded-total accuracy is not an improvement over an old smaller-vocabulary baseline.")
+    source = (d.get("summary") or {}).get("weak6_source")
+    A(f"Weak-six membership: {source or 'not recorded'}; fixed from VAL for every final split.")
+    A("")
+    A("| split | group | samples | words scored | top-1 | macro | correct-commit recall | labels |")
+    A("|---|---|---|---|---|---|---|---|")
+    for split, groups in h["groups"].items():
+        for name, stats in groups.items():
+            A(f"| {split} | {name} | {_num(stats.get('n_samples'))} | "
+              f"{_num(stats.get('n_words_scored'))} | {_pct(stats.get('top1'))} | "
+              f"{_pct(stats.get('macro_top1'))} | {_pct(stats.get('correct_commit_recall'))} | "
+              f"{', '.join(stats.get('labels', []))} |")
+    A("")
+    A("## Fixed commit policy (offline clips)")
+    A("")
+    A("Policy is saved with this run; test is not re-thresholded by this report. "
+      "Missing historical policy metrics are not reconstructed from rounded CSVs.")
+    A(f"Saved policy: `{json.dumps(h['commit_policy'], sort_keys=True)}`")
+    A("")
+    A("| split | commits | precision | word commit share | correct-commit recall | hedge refusals | REST slip | OTHER slip |")
+    A("|---|---|---|---|---|---|---|---|")
+    for split, gate in h["commit_metrics"].items():
+        if gate:
+            A(f"| {split} | {_num(gate.get('n_committed'))} | {_pct(gate.get('typed_precision'))} | "
+              f"{_pct(gate.get('typed_share'))} | {_pct(gate.get('correct_commit_recall'))} | "
+              f"{_num(gate.get('n_hedge_refused'))} | {_pct(gate.get('rest_slip'))} | "
+              f"{_pct(gate.get('other_slip'))} |")
+    A("")
+    A("## Background classes (raw argmax, before commit policy)")
     A("")
     A("| | |")
     A("|---|---|")
-    A(f"| REST typed as a word | {_pct(h['rest_as_word_rate'])} |")
-    A(f"| OTHER typed as a word | {_pct(h['other_as_word_rate'])} |")
-    A(f"| a real word typed as REST/OTHER | {_pct(h['word_as_extra_rate'])} |")
+    A(f"| REST predicted as a word | {_pct(h['rest_as_word_rate'])} |")
+    A(f"| OTHER predicted as a word | {_pct(h['other_as_word_rate'])} |")
+    A(f"| a real word predicted as REST/OTHER | {_pct(h['word_as_extra_rate'])} |")
     A("")
-    A("## Weakest words")
+    A("## Weakest words (test description only, not selection)")
     A("")
     wk = weakest(d.get("per_word"))
     A("\n".join(f"- {x}" for x in wk) if wk else "- nothing readable in "
@@ -493,13 +502,13 @@ def render(d: dict) -> str:
       "words only\" scores the gate's commits on clips that really are "
       "vocabulary words, while \"typed precision, everything typed\" also "
       "counts the commits it makes over REST/OTHER clips - all of which are "
-      "wrong - so the second is never higher, and the second is what the "
-      "live demo actually delivers.")
+      "wrong. These are offline commit-policy measurements, not a promise of "
+      "live segmentation or sentence accuracy.")
     A("")
     A("Each row is the mean over the seeds of one config, with its half-range. "
       "Configs are chosen on the val columns only; the test columns are "
-      "reported, never used to decide. A gain smaller than the baseline's own "
-      "spread is not a gain.")
+      "reported, never used to decide. Comparisons require explicit matching "
+      "label-set and evaluation identities; unknown historical identities do not qualify.")
     A("")
     A("## What to fix")
     A("")
@@ -527,11 +536,21 @@ def render(d: dict) -> str:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Read the results (read only).")
+    ap.add_argument("--candidate", help="read/write only the named candidate outputs")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--write", action="store_true",
-                    help="write REPORT_WORDS.md as well")
-    ap.add_argument("--out", default=str(ROOT / "REPORT_WORDS.md"))
+                    help="write REPORT_WORDS.md in the selected output scope")
+    ap.add_argument("--out", default=None)
     a = ap.parse_args(argv)
+    try:
+        candidate_root = config.use_candidate(a.candidate) if a.candidate else None
+    except ValueError as exc:
+        ap.error(str(exc))
+    out = Path(a.out) if a.out else (
+        config.REPORTS_DIR / "REPORT_WORDS.md" if candidate_root is not None
+        else ROOT / "REPORT_WORDS.md")
+    if candidate_root is not None and not out.resolve().is_relative_to(candidate_root.resolve()):
+        ap.error("candidate --out must stay inside its candidate directory")
     d = gather()
     h = headline(d)
     if a.json:
@@ -543,7 +562,7 @@ def main(argv=None) -> int:
     else:
         print(render(d))
     if a.write:
-        out = Path(a.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(render(d), encoding="utf-8")
         print(f"\nwrote {out}", file=sys.stderr)
     return 1 if d["missing"] else 0

@@ -18,8 +18,8 @@
 #   python src/extract_msl_landmarks.py  --    (only if the MSL clips are back)
 cache/
 
-# Bulk dataset downloads, if anyone ever points them in here instead of the
-# Kaggle cache.  The images themselves are never committed.
+# KaggleHub stores dataset downloads here. The images are local training data
+# and must never be committed.
 datasets/
 data/raw/
 *.7z

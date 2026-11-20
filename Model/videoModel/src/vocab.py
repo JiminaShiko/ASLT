@@ -36,6 +36,7 @@ class Word:
     min_videos: int = 15
     note: str = ""
     status: str = "ok"
+    external_glosses: tuple[str, ...] = ()
 
 
 @dataclass
@@ -50,7 +51,8 @@ class VocabSpec:
     def active(self) -> list[Word]:
         """Words that are enabled and actually resolvable in the dataset."""
         return [w for w in self.words
-                if w.batch in self.enabled_batches and w.glosses]
+                if w.batch in self.enabled_batches
+                and (w.glosses or w.external_glosses)]
 
     @property
     def skipped(self) -> list[Word]:
@@ -73,7 +75,8 @@ def load_vocab(path=None) -> VocabSpec:
                   glosses=tuple(w.get("glosses", ())),
                   min_videos=int(w.get("min_videos", 15)),
                   note=str(w.get("note", "")),
-                  status=str(w.get("status", "ok")))
+                  status=str(w.get("status", "ok")),
+                  external_glosses=tuple(w.get("external_glosses", ())))
              for w in spec["words"]]
     seen: set[str] = set()
     for w in words:
@@ -150,7 +153,8 @@ def resolve_table(vocab_path=None) -> pd.DataFrame:
             rows.append(dict(word=w.word, batch=w.batch, gloss="(none)",
                              train_videos=0, train_signers=0, val_videos=0,
                              test_videos=0, test_signers=0,
-                             status="MISSING", note=w.note))
+                             status=("external-only" if w.external_glosses
+                                     else "MISSING"), note=w.note))
             continue
         for gloss in w.glosses:
             present = gloss in all_glosses
@@ -272,15 +276,15 @@ def other_videos(split: str, vocab_path=None) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 EXTERNAL_JOBS_COLUMNS = ["video", "split", "participant", "gloss", "word"]
 
-# Which PopSign glosses feed which of our words. Clip counts per split live in
-# external_jobs() defaults; the approved first subset (2026-11-18) is the
-# three weak words only: thanks/happy/good.
-EXTERNAL_GLOSS_WORDS = {"thankyou": "thanks", "happy": "happy", "good": "good"}
+# Exact external mappings share the vocabulary spec with the downloader.
+# Chicken is external-only; it must not masquerade as an ASL Citizen gloss.
+EXTERNAL_GLOSS_WORDS = {g: w.word for w in load_vocab().active
+                        for g in w.external_glosses}
 
 
 def external_jobs(splits=("train", "val", "test"), per_word_train: int = 60,
                   per_word_held: int = 20,
-                  dataset: str = "popsign_v2_1") -> pd.DataFrame:
+                  dataset: str = "popsign_v2_1", vocab_path=None) -> pd.DataFrame:
     """The PopSign subset, walked from the folders the downloader wrote.
 
     One row per clip with a namespaced id (ps:<dataset>/<split>/<gloss>/<file>),
@@ -289,20 +293,26 @@ def external_jobs(splits=("train", "val", "test"), per_word_train: int = 60,
     as-is and our resolved word via EXTERNAL_GLOSS_WORDS. Clips are picked by
     a seeded round-robin over signers, so the subset maximises signer spread
     instead of taking one signer's 60 takes. Splits are the official PopSign
-    signer-disjoint splits: train clips join the train split, val+test clips
-    become the 'ps_test' held-out group so they are never pooled with the
-    ASL Citizen val/test numbers. Missing folders contribute nothing (a run
+    signer-disjoint splits: train clips join the train split, validation clips
+    become 'ps_val' and test clips become 'ps_test'. No validation/test or
+    ASL Citizen/PopSign evaluation numbers are pooled. Missing folders contribute nothing (a run
     before the download just sees the ASL Citizen rows).
     """
-    root = config.EXTERNAL_DIR / dataset
+    mappings = {g: w.word for w in load_vocab(vocab_path).active
+                for g in w.external_glosses}
     rows: list[dict] = []
     for split in splits:
-        for gloss, word in EXTERNAL_GLOSS_WORDS.items():
-            folder = root / split / gloss
-            if not folder.is_dir():
-                continue
-            clips = sorted(f for f in folder.iterdir()
-                           if f.suffix.lower() == ".mp4")
+        for gloss, word in mappings.items():
+            # New downloads use the canonical project. Previously downloaded
+            # clips are read in place after Model/ relocation, never copied.
+            files: dict[str, Path] = {}
+            for root in config.EXTERNAL_READ_DIRS:
+                folder = root / dataset / split / gloss
+                if folder.is_dir():
+                    for f in folder.iterdir():
+                        if f.is_file() and f.suffix.lower() == ".mp4":
+                            files.setdefault(f.name, f)
+            clips = [files[name] for name in sorted(files)]
             by_signer: dict[str, list[Path]] = {}
             for f in clips:
                 signer = f.name[:4]                    # <signer>-<gloss>-...
@@ -321,7 +331,7 @@ def external_jobs(splits=("train", "val", "test"), per_word_train: int = 60,
                 if pool:
                     picked.append(pool.pop(0))
                 k += 1
-            out_split = split if split == "train" else "ps_test"
+            out_split = {"train": "train", "val": "ps_val", "test": "ps_test"}[split]
             for f in picked:
                 rows.append({
                     "video": f"ps:{dataset}/{split}/{gloss}/{f.name}",
@@ -341,7 +351,7 @@ def videos_to_process(splits=("train", "val", "test"), vocab_path=None) -> pd.Da
         o = other_videos(split, vocab_path).assign(split=split)
         frames.append(pd.concat([w, o], ignore_index=True))
     df = pd.concat(frames, ignore_index=True)
-    ext = external_jobs(splits)
+    ext = external_jobs(splits, vocab_path=vocab_path)
     if len(ext):
         df = pd.concat([df, ext], ignore_index=True)
     df = df.drop_duplicates("video", keep="first").reset_index(drop=True)

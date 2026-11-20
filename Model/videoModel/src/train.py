@@ -129,6 +129,65 @@ def make_batcher(split: str, labels: list[str], limit: int | None,
                    version)
 
 
+def validate_training_samples(train_samples: pd.DataFrame | None,
+                              val_samples: pd.DataFrame | None,
+                              spec: vocab.VocabSpec,
+                              official_val: pd.DataFrame | None = None,
+                              *, smoke: bool = False) -> None:
+    """Fail before feature building/fitting when the active cache is incomplete.
+
+    Validation must contain genuine official ASL Citizen rows, not external
+    held-out clips or a fallback to the training set. Caps of zero explicitly
+    disable the corresponding background requirement for that split.
+    """
+    if smoke:
+        return
+    words = [w.word for w in spec.active]
+    problems = []
+    for split, samples in (("train", train_samples), ("val", val_samples)):
+        required = words + [label for label, cfg in
+                            ((config.REST_LABEL, spec.rest),
+                             (config.OTHER_LABEL, spec.other))
+                            if label in spec.labels
+                            and int(cfg.get(f"cap_{split}", 0)) > 0]
+        if samples is None or samples.empty:
+            problems.append(f"{split}: no samples (missing {', '.join(required)})")
+            continue
+        usable = samples[samples["split"].eq(split)]
+        if split == "val":
+            if official_val is None:
+                problems.append("val: official ASL Citizen validation table is required")
+                continue
+            keys = ["video", "participant", "gloss"]
+            official = official_val[keys + ["word"]].drop_duplicates(keys)
+            usable = usable.merge(official, on=keys, how="inner")
+            usable = usable[~usable["video"].astype(str).str.startswith("ps:")]
+            valid_label = usable["label"].isin(BG) | usable["label"].eq(usable["word"])
+            usable = usable[valid_label]
+            if len(usable) != len(samples):
+                problems.append("val: contains rows outside the official ASL Citizen validation split")
+        present = set(usable["label"])
+        missing = [w for w in required if w not in present]
+        if missing:
+            problems.append(f"{split}: missing samples for {', '.join(missing)}")
+    if problems:
+        raise ValueError("Training blocked: " + "; ".join(problems)
+                         + ". Extract the active vocabulary's train,val cache first; "
+                         "test/ps_test cannot replace validation.")
+
+
+def evaluation_splits(splits, *, smoke: bool = False) -> tuple[str, ...]:
+    """Validate requested reporting splits before any run or output writes."""
+    values = splits.split(",") if isinstance(splits, str) else splits
+    out = tuple(dict.fromkeys(str(s).strip() for s in values if str(s).strip()))
+    unknown = set(out) - {"train", "val", "test", "ps_test"}
+    if unknown:
+        raise ValueError(f"unknown evaluation splits: {', '.join(sorted(unknown))}")
+    if not smoke and "val" not in out:
+        raise ValueError("--eval-splits must include val: validation alone selects runs")
+    return out
+
+
 # ---------------------------------------------------------------------------
 # one epoch / one evaluation
 # ---------------------------------------------------------------------------
@@ -261,6 +320,82 @@ def gate_metrics(pred: pd.DataFrame, gate: float,
     return out
 
 
+def commit_policy(gate: float | None = None) -> dict:
+    """Freeze the configured policy in the report; never tune it on test."""
+    from .predictor import _pair_key
+    def pairs(mapping):
+        return {"|".join(sorted(_pair_key(k))): v for k, v in mapping.items()}
+    return {"version": "predictor.decide/commitable-v1",
+            "confidence_min": float(config.CONFIDENCE_MIN if gate is None else gate),
+            "margin_min": float(config.MARGIN_MIN),
+            "pair_margins": pairs(config.PAIR_MARGINS),
+            "hedge_pairs": pairs(config.HEDGE_PAIRS),
+            "scope": "offline clip decisions; not measured live accuracy"}
+
+
+def gate_stats(res: dict, labels: list[str], policy: dict | None = None) -> dict:
+    """Score full-precision probabilities with the actual predictor commit rule."""
+    from .predictor import decide, commitable
+    policy = policy or commit_policy()
+    kw = dict(min_conf=policy["confidence_min"],
+              min_margin=policy["margin_min"],
+              pair_margins=policy["pair_margins"],
+              hedge_pairs=policy["hedge_pairs"])
+    readings = [decide(p, labels, **kw) for p in res["probs"]]
+    committed = np.array([commitable(r) for r in readings], dtype=bool)
+    # Count refusals caused by the hedge, not already-refused low-confidence rows.
+    unhedged = {**kw, "hedge_pairs": {}}
+    hedge_refused = np.array([
+        not commitable(r) and commitable(decide(p, labels, **unhedged))
+        for p, r in zip(res["probs"], readings)], dtype=bool)
+    truth = np.asarray([labels[int(i)] for i in res["y"]])
+    words = ~np.isin(truth, BG)
+    correct = np.asarray([r.word for r in readings]) == truth
+    nw, nc = int(words.sum()), int(committed.sum())
+    ncorrect = int((committed & words & correct).sum())
+    out = {"policy": policy, "n_rows": len(readings), "n_words": nw,
+           "n_committed": nc, "n_correct_committed": ncorrect,
+           "n_hedge_refused": int(hedge_refused.sum()),
+           "typed_share": _num((committed & words).sum() / nw) if nw else None,
+           "correct_commit_recall": _num(ncorrect / nw) if nw else None,
+           "typed_precision": _num(ncorrect / nc) if nc else None,
+           "typed_precision_words": (_num(ncorrect / int((committed & words).sum()))
+                                     if (committed & words).any() else None),
+           "committed": committed, "hedge_refused": hedge_refused,
+           "refusal_reason": [r.reason if not commitable(r) else "" for r in readings]}
+    for name in BG:
+        mask = truth == name
+        n = int(mask.sum())
+        out[f"{name.lower()}_n"] = n
+        out[f"{name.lower()}_slip"] = _num((committed & mask).sum() / n) if n else None
+    return out
+
+
+def word_groups(spec: vocab.VocabSpec, weak_words=()) -> dict[str, list[str]]:
+    """Batch-one retention and expansion are separate, never pooled gains."""
+    active = {w.word for w in spec.active}
+    core = [w.word for w in spec.words if w.batch == 1 and w.word in active]
+    return {"core20": core, "weak6": [w for w in weak_words if w in core],
+            "new_words": [w.word for w in spec.active if w.batch != 1]}
+
+
+def group_stats(res: dict, per: pd.DataFrame, labels: list[str],
+                groups: dict[str, list[str]], committed: np.ndarray) -> dict:
+    """Group accuracy keeps the full classifier argmax, including new labels."""
+    out = {}
+    for name, members in groups.items():
+        mask = np.isin(res["y"], [labels.index(w) for w in members if w in labels])
+        n = int(mask.sum())
+        vals = per[per["label"].isin(members) & per["n_samples"].gt(0)]["top1"]
+        correct = res["pred"] == res["y"]
+        out[name] = {"labels": members, "n_samples": n, "n_words_scored": len(vals),
+                     "top1": _num(correct[mask].mean()) if n else None,
+                     "macro_top1": _num(vals.mean()) if len(vals) else None,
+                     "correct_commit_recall": (_num((committed & correct & mask).sum() / n)
+                                               if n else None)}
+    return out
+
+
 def pair_swaps(pred: pd.DataFrame, a: str, b: str) -> int:
     """Clips of a read as b plus clips of b read as a - the swap count."""
     if pred is None or not len(pred):
@@ -279,6 +414,9 @@ def collect_metrics(rep: Path, pairs: list[tuple[str, str]], gate: float,
         out["epochs_ran"] = s.get("epochs_ran")
         out["best_val_top1"] = (s.get("best_val_top1"))
         out["sec_per_epoch"] = s.get("sec_per_epoch")
+        for key in ("candidate", "label_set_id", "evaluation_id"):
+            out[key] = s.get(key)
+        out["labels"] = json.dumps(s.get("labels"))
         for sp in splits:
             ev = (s.get("eval") or {}).get(sp) or {}
             out[f"{sp}_top1"] = ev.get("top1_all")
@@ -287,13 +425,18 @@ def collect_metrics(rep: Path, pairs: list[tuple[str, str]], gate: float,
             out[f"{sp}_macro_words"] = ev.get("macro_top1_words")
             out[f"{sp}_other_as_word"] = ((ev.get("background") or {})
                                           .get("other_as_word_rate"))
+            # Saved predictor-policy metrics, not a re-tuned gate on test CSVs.
+            for k, v in (ev.get("gate") or {}).items():
+                if k != "policy":
+                    out[f"{sp}_{k}"] = v
+            for group, stats in (ev.get("groups") or {}).items():
+                for k in ("top1", "macro_top1", "n_samples", "correct_commit_recall"):
+                    out[f"{sp}_{group}_{k}"] = stats.get(k)
     for sp in splits:
         p = rep / (f"predictions.csv" if sp == "test" else f"predictions_{sp}.csv")
         if not p.is_file():
             continue
         pred = pd.read_csv(p)
-        for k, v in gate_metrics(pred, gate).items():
-            out[f"{sp}_{k}"] = v
         for a, b in pairs:
             out[f"{sp}_swap_{a}_{b}"] = pair_swaps(pred, a, b)
             sub = pred[pred["label"].isin([a, b])]
@@ -509,7 +652,9 @@ def seed_sweep(seeds: list[int], *, epochs=None, batch=None, limit=None,
                pairs: list[tuple[str, str]] | None = None,
                gate: float | None = None, tag: str = "",
                promote_best: bool = True, log=None,
-               feature_version: int | None = None) -> pd.DataFrame:
+               feature_version: int | None = None,
+               eval_splits=("val", "test", "ps_test"),
+               smoke: bool = False) -> pd.DataFrame:
     """Train N seeds of one config and write the mean +- spread table.
 
     The point is the spread: with ~430 training clips a seed can move the
@@ -517,6 +662,12 @@ def seed_sweep(seeds: list[int], *, epochs=None, batch=None, limit=None,
     when its gain is larger than that. The deciding column is always VAL;
     TEST is reported alongside it and used for nothing.
     """
+    eval_splits = evaluation_splits(eval_splits, smoke=smoke)
+    if not seeds:
+        raise ValueError("seed sweep requires at least one seed")
+    if tag and (Path(tag).name != tag or "/" in tag or "\\" in tag or tag in (".", "..")):
+        raise ValueError("sweep tag must be a single directory name")
+    promote_best = promote_best and not smoke
     log = log or config.logger_for("sweep")
     pairs = pairs or [("good", "thanks"), ("happy", "please")]
     gate = float(config.CONFIDENCE_MIN if gate is None else gate)
@@ -529,9 +680,11 @@ def seed_sweep(seeds: list[int], *, epochs=None, batch=None, limit=None,
              features.feature_dim(fver), gate,
              ", ".join(f"{a}/{b}" for a, b in pairs))
     rows: list[dict] = []
+    report_root = config.CKPT_DIR / "smoke" / "reports" if smoke else config.REPORTS_DIR
+    checkpoint_root = config.CKPT_DIR / "smoke" if smoke else config.CKPT_DIR
     for sd in seeds:
-        run_dir = config.CKPT_DIR / f"seed{sd}"
-        rep = config.REPORTS_DIR / "seeds" / f"{tag}-seed{sd}"
+        run_dir = checkpoint_root / f"seed{sd}"
+        rep = report_root / "seeds" / f"{tag}-seed{sd}"
         run_dir.mkdir(parents=True, exist_ok=True)
         rep.mkdir(parents=True, exist_ok=True)
         lg = config.logger_for("train", rep / "train.log")
@@ -540,12 +693,12 @@ def seed_sweep(seeds: list[int], *, epochs=None, batch=None, limit=None,
                     fresh=True, blocks=blocks, log=lg, reg=r,
                     release=run_dir / "words.pt", ckpt=run_dir / "state.pt",
                     reports_dir=rep, meta_json=rep / "meta.json",
-                    feature_version=fver)
+                    feature_version=fver, eval_splits=eval_splits,
+                    smoke=smoke, gate=gate)
         row = {"run_tag": tag, "reg": r.name, "feature_version": fver,
                "seed": sd, "p1_gate": gate, "epochs_ran": out["epochs_ran"],
                "seconds": out["seconds"], "promoted": 0}
-        row.update(collect_metrics(rep, pairs, gate,
-                                   splits=("val", "test", "ps_test")))
+        row.update(collect_metrics(rep, pairs, gate, splits=eval_splits))
         rows.append(row)
         lg.info("seed %d: val words %.3f  test words %s  (test is reported, "
                 "not used)", sd, row.get("val_words_top1") or 0.0,
@@ -559,7 +712,13 @@ def seed_sweep(seeds: list[int], *, epochs=None, batch=None, limit=None,
     # it left on disk. Both columns are VAL - test is still used for
     # nothing.
     key = "val_top1"
-    win = int(pd.to_numeric(df[key], errors="coerce").fillna(-1).idxmax())
+    if smoke:
+        # Scratch runs never select or promote a model and never enter the real table.
+        append_seed_rows(rows, reports_dir=report_root)
+        return df
+    if key not in df or pd.to_numeric(df[key], errors="coerce").isna().any():
+        raise ValueError("sweep has no valid VAL score for every seed; nothing promoted")
+    win = int(pd.to_numeric(df[key], errors="coerce").idxmax())
     if promote_best and len(df):
         rows[win]["promoted"] = 1
     best_seed = int(rows[win]["seed"])
@@ -677,6 +836,9 @@ def fair_decide(tags: dict[int, str], smoke: bool, log,
     print("\n" + "=" * 68)
     print(seedreport.fair_table(tags[config.FEATURE_VERSION], tags[2]))
     print("=" * 68)
+    if not d["comparable"]:
+        _drop_stash(stash3)
+        raise ValueError("fair comparison requires matching label/evaluation identities; nothing promoted")
     log.info("fair decision on VAL: v3 %.3f vs v2 %.3f, diff %+.3f, pooled "
              "seed spread +-%.3f -> keep v%d", d["mean3"], d["mean2"],
              d["diff"], d["spread"], d["winner"])
@@ -719,15 +881,22 @@ def fair_decide(tags: dict[int, str], smoke: bool, log,
 def fair(seeds: list[int], *, epochs=None, batch=None, limit=None,
          blocks=None, reg_name=None, aug_over=None,
          pairs: list[tuple[str, str]] | None = None, gate: float | None = None,
-         tags: dict[int, str], smoke: bool = False, log=None) -> None:
+         tags: dict[int, str], smoke: bool = False, log=None,
+         eval_splits=("val", "test", "ps_test")) -> None:
     """Both feature versions, same seeds, same config, one decision."""
+    eval_splits = evaluation_splits(eval_splits, smoke=smoke)
     log = log or config.logger_for("fair")
     if len(seeds) < 2:
         raise SystemExit("--fair compares seed spreads, so it needs "
                          "--seeds >= 2 (3 is what the plan asks for)")
     kw = dict(epochs=epochs, batch=batch, limit=limit, blocks=blocks,
               reg_name=reg_name, aug_over=aug_over, pairs=pairs, gate=gate,
-              promote_best=False, log=log)
+              promote_best=False, log=log, eval_splits=eval_splits, smoke=smoke)
+    if smoke:
+        for ver in (config.FEATURE_VERSION, 2):
+            seed_sweep(seeds, tag=tags[ver], feature_version=ver, **kw)
+        log.warning("fair SMOKE: scratch reports only; no selection or promotion")
+        return
     tab3 = seed_sweep(seeds, tag=tags[config.FEATURE_VERSION],
                       feature_version=config.FEATURE_VERSION, **kw)
     # the v2 sweep reuses the same per-seed checkpoint folders, so the v3
@@ -766,6 +935,18 @@ def write_split_report(bt: Batcher, net, labels: list[str], name: str,
     stats["top1_words_only"] = _num(wres["top1"])
     stats["top1_words_only_n"] = wres["n"]
     stats["top5_words_only"] = _num(wres["top5"])
+    decisions = gate_stats(res, labels, summary.get("commit_policy"))
+    committed = decisions.pop("committed")
+    hedge_refused = decisions.pop("hedge_refused")
+    refusal_reason = decisions.pop("refusal_reason")
+    stats["gate"] = decisions
+    groups = summary.get("word_groups", {})
+    if name == "val" and "core20" in groups:
+        # Choose once on VAL; test and ps_test reuse this exact membership.
+        weak = per[per["label"].isin(groups["core20"]) & per["n_samples"].gt(0)]
+        groups["weak6"] = weak.sort_values(["top1", "label"]).head(6)["label"].tolist()
+        summary["weak6_source"] = "six weakest core20 words on this run's official val split"
+    stats["groups"] = group_stats(res, per, labels, groups, committed)
     summary.setdefault("eval", {})[name] = stats
     tag = "" if name == "test" else f"_{name}"
     per.to_csv(reports_dir / f"per_word{tag}.csv", index=False)
@@ -784,6 +965,8 @@ def write_split_report(bt: Batcher, net, labels: list[str], name: str,
                            np.sort(res["probs"], axis=1)[:, -2], 4),
         "top3": ["|".join(labels[i] for i in r) for r in res["top5_idx"][:, :3]],
         "correct": res["pred"] == res["y"],
+        "committed": committed, "hedge_refused": hedge_refused,
+        "refusal_reason": refusal_reason,
     }).to_csv(reports_dir / f"predictions{tag}.csv", index=False)
 
     macro = stats["macro_top1_words"]
@@ -822,7 +1005,8 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
           release: Path | None = None, ckpt: Path | None = None,
           reports_dir: Path | None = None, meta_json: Path | None = None,
           smoke: bool = False, reg: Reg | None = None,
-          feature_version: int | None = None) -> dict:
+          feature_version: int | None = None, gate: float | None = None) -> dict:
+    eval_splits = evaluation_splits(eval_splits, smoke=smoke)
     log = log or config.logger_for("train", config.LOGS_DIR / "train.log")
     config.ensure_dirs()
     config.require_dataset()
@@ -865,13 +1049,19 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
             log.error("signer-disjointness check: %s", p)
         raise SystemExit(2)
     train_bt = make_batcher("train", labels, limit, blocks, fver)
-    if train_bt is None:
-        log.error("no cached train landmarks - run python -m src.extract "
-                  "--splits train first")
-        raise SystemExit(2)
     val_bt = make_batcher("val", labels, limit, blocks, fver)
-    testers = {s: make_batcher(s, labels, limit, blocks, fver)
-               for s in eval_splits}
+    validate_training_samples(
+        train_bt.sp.samples if train_bt is not None else None,
+        val_bt.sp.samples if val_bt is not None else None,
+        spec, official_val=vocab.split_table("val") if not smoke else None,
+        smoke=smoke)
+    if train_bt is None or not len(train_bt):
+        raise ValueError("no cached train samples; extract the train split first")
+    # VAL is evaluated first so its weak-six membership is frozen for test.
+    ordered_splits = sorted(eval_splits, key=lambda s: s != "val")
+    testers = {s: (val_bt if s == "val" else
+                   make_batcher(s, labels, limit, blocks, fver))
+               for s in ordered_splits}
     testers = {k: v for k, v in testers.items() if v is not None and len(v)}
     log.info("samples: train %d (video-level cap %s) | val %s | %s",
              len(train_bt), limit, len(val_bt) if val_bt else "none",
@@ -948,8 +1138,10 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
                                   seed * 1_000_003 + ep)
         if val_bt is not None and len(val_bt):
             val_acc = score(val_bt, net)["top1"]
+        elif smoke:
+            val_acc = tr_acc  # scratch plumbing only, never a validation claim
         else:
-            val_acc = tr_acc
+            raise RuntimeError("validation disappeared; refusing a training-score fallback")
         improved = val_acc > best + 1e-4
         best = max(best, val_acc)
         bad = 0 if improved else bad + 1
@@ -986,7 +1178,24 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
                                   "feature_dim": train_bt.dim,
                                   "feature_version": fver})
     best_net, _ = model.load(release)
+    policy = commit_policy(gate)
+    eval_identity = {
+        "protocol": "official-ac-val-v1", "smoke": smoke,
+        "landmark_version": config.LANDMARK_VERSION,
+        "labels": sorted(labels),
+        "glosses": {w.word: sorted(w.glosses) for w in spec.active},
+        "policy": policy, "requested_splits": sorted(eval_splits),
+        "samples": {name: seedreport.identity(bt.sp.samples.sort_values(
+            ["video", "start", "end", "label"]).to_dict("records"))
+                    for name, bt in testers.items()},
+    }
     summary = {
+        "candidate": seedreport.candidate_name(),
+        "label_set_id": seedreport.identity(sorted(labels)),
+        "evaluation_id": seedreport.identity(eval_identity),
+        "evaluation_identity": eval_identity,
+        "commit_policy": policy, "word_groups": word_groups(spec),
+        "eval_splits": list(eval_splits),
         "trained_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "smoke": bool(smoke), "seed": seed,
         "epochs_requested": epochs, "epochs_ran": len(history),
@@ -1018,6 +1227,7 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
     del P, Y
     for name, bt in testers.items():
         kind = ("official signer-disjoint" if name in ("val", "test")
+                else "PopSign held-out, separate corpus" if name == "ps_test"
                 else "smoke hold-out, not a real number")
         if name == "train" and not smoke:
             kind = "train split (memorisation check, not a held-out number)"
@@ -1040,8 +1250,12 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
         json.dumps(_clean(summary), indent=1, default=str), encoding="utf-8")
 
     ev = summary.get("eval", {})
-    test_stats = ev.get("test") or ev.get("val") or {}
+    test_stats = ev.get("test") or {}
     meta = {
+        "candidate": summary["candidate"],
+        "label_set_id": summary["label_set_id"],
+        "evaluation_id": summary["evaluation_id"],
+        "commit_policy": policy,
         "model": "isolated ASL word recognizer (landmarks, not pixels)",
         "created": summary["trained_at"],
         "labels": labels, "num_classes": len(labels),
@@ -1135,6 +1349,7 @@ def parity(n: int = 5, log=None) -> int:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Train the word recognizer.")
+    ap.add_argument("--candidate", help="isolate all outputs under candidates/NAME")
     ap.add_argument("--epochs", type=int, default=None)
     ap.add_argument("--batch", type=int, default=None)
     ap.add_argument("--limit", type=int, default=None,
@@ -1187,6 +1402,19 @@ def main(argv=None) -> int:
                     help="print the baseline-vs-new table and exit")
     ap.add_argument("--log", default=None)
     args = ap.parse_args(argv)
+    # Reject unsupported combinations before even opening a log file.
+    if args.fair and args.promote == "none":
+        ap.error("--fair does not support --promote none; use separate --seeds sweeps")
+    if args.seeds < 1 or (args.fair and args.seeds < 2):
+        ap.error("--seeds must be >= 1 (>= 2 for --fair)")
+    try:
+        eval_splits = evaluation_splits(args.eval_splits, smoke=args.smoke)
+        candidate_root = config.use_candidate(args.candidate) if args.candidate else None
+    except ValueError as exc:
+        ap.error(str(exc))
+    if candidate_root is not None and args.log:
+        if not Path(args.log).resolve().is_relative_to(candidate_root.resolve()):
+            ap.error("candidate --log must stay inside its candidate directory")
 
     if args.compare:
         print(compare_table())
@@ -1232,7 +1460,7 @@ def main(argv=None) -> int:
              epochs=1 if args.smoke else args.epochs, batch=args.batch,
              limit=6 if args.smoke else args.limit, blocks=blocks,
              reg_name=args.reg, aug_over=over, pairs=pairs, gate=args.gate,
-             tags=tags, smoke=args.smoke, log=log)
+             tags=tags, smoke=args.smoke, log=log, eval_splits=eval_splits)
         return 0
 
     if args.smoke:
@@ -1248,10 +1476,11 @@ def main(argv=None) -> int:
                        limit=6, blocks=blocks or None, reg_name=args.reg,
                        aug_over=over, pairs=pairs, gate=args.gate,
                        tag=args.tag or "smoke", log=log,
-                       promote_best=False)
+                       promote_best=False, smoke=True, eval_splits=eval_splits)
             return 0
         out = train(epochs=1, limit=6, seed=args.seed, smoke=True, log=log,
-                    eval_splits=("train",), ckpt=scratch / "state.pt",
+                    eval_splits=eval_splits, gate=args.gate,
+                    ckpt=scratch / "state.pt",
                     release=scratch / "words_smoke.pt",
                     reports_dir=scratch, meta_json=scratch / "smoke_meta.json",
                     blocks=blocks or None, reg=make_reg(args.reg, over))
@@ -1262,18 +1491,18 @@ def main(argv=None) -> int:
                           "regularization": out["regularization"],
                           "eval": out.get("eval")}, indent=1, default=str))
         return 0
-    if args.seeds > 1:
+    if args.seeds > 1 or args.promote == "none":
         seed_sweep([base_seed + i for i in range(args.seeds)],
                    epochs=args.epochs, batch=args.batch, limit=args.limit,
                    blocks=blocks, reg_name=args.reg, aug_over=over,
                    pairs=pairs, gate=args.gate, tag=args.tag,
-                   promote_best=args.promote == "best", log=log)
+                   promote_best=args.promote == "best", log=log,
+                   eval_splits=eval_splits)
         return 0
     train(epochs=args.epochs, batch=args.batch, limit=args.limit,
           seed=args.seed, fresh=args.fresh, blocks=blocks, log=log,
-          reg=make_reg(args.reg, over),
-          eval_splits=tuple(s.strip() for s in args.eval_splits.split(",")
-                            if s.strip()))
+          reg=make_reg(args.reg, over), gate=args.gate,
+          eval_splits=eval_splits)
     return 0
 
 

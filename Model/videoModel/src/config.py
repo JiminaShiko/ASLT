@@ -18,13 +18,14 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parents[1]          # .../videoModel
 
-DATASET_DIR = ROOT / "ASL_Citizen"                  # READ ONLY, never move/delete
+DATASET_DIR = Path(os.environ.get("ASL_WORDS_DATASET_DIR") or
+                   ROOT / "ASL_Citizen")
 SPLITS_DIR = DATASET_DIR / "splits"
 VIDEOS_DIR = DATASET_DIR / "videos"
 LICENSE_FILE = DATASET_DIR / "use.txt"
 SPLIT_FILES = {"train": "train.csv", "val": "val.csv", "test": "test.csv"}
 
-CACHE_DIR = ROOT / "cache"                          # generated, gitignored
+CACHE_DIR = ROOT / "cache"                       # generated, gitignored
 LANDMARK_DIR = CACHE_DIR / "landmarks"              # one .npy per video
 MANIFEST_CSV = CACHE_DIR / "manifest.csv"           # one row per processed video
 ERRORS_CSV = CACHE_DIR / "extract_errors.csv"
@@ -40,7 +41,8 @@ PHRASES_JSON = ROOT / "phrases.json"
 # branch). Clips land under EXTERNAL_DIR/<dataset>/<split>/<gloss>/<file>.mp4
 # and job ids carry the same path with a "ps:" prefix, so they can never
 # collide with ASL Citizen file names.
-EXTERNAL_DIR = ROOT / "datasets" / "external"
+EXTERNAL_DIR = ROOT / "datasets" / "external"  # local ignored data folder
+EXTERNAL_READ_DIRS = (EXTERNAL_DIR,)
 
 FOR_RELEASE = MODELS_DIR / "words_core20.pt"       # shipped weights
 META_JSON = MODELS_DIR / "meta.json"
@@ -194,6 +196,28 @@ MIN_FREE_BYTES_FOR_CACHE = 2_000_000_000      # ~2 GB is enough for the caps her
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
+def use_candidate(name: str) -> Path:
+    """Route outputs to one named candidate; never change input data or weights
+    in the deployed models/ directory. Calling this function writes nothing.
+    """
+    import re
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", name):
+        raise ValueError("candidate name must contain only letters, digits, _ or -")
+    base = ROOT / "candidates" / name
+    if not base.resolve().is_relative_to(ROOT.resolve()):
+        raise ValueError("candidate directory must stay inside videoModel")
+    global MODELS_DIR, FOR_RELEASE, META_JSON, ONNX_PATH, CKPT_DIR
+    global REPORTS_DIR, LOGS_DIR
+    MODELS_DIR = base / "models"
+    FOR_RELEASE = MODELS_DIR / "words_core20.pt"
+    META_JSON = MODELS_DIR / "meta.json"
+    ONNX_PATH = MODELS_DIR / "words_core20.onnx"
+    CKPT_DIR = MODELS_DIR / "checkpoints"
+    REPORTS_DIR = base / "reports"
+    LOGS_DIR = base / "logs"
+    return base
+
+
 def ensure_dirs() -> None:
     for d in (CACHE_DIR, LANDMARK_DIR, MODELS_DIR, REPORTS_DIR, LOGS_DIR,
               CKPT_DIR):
@@ -211,9 +235,10 @@ def require_dataset() -> None:
             f"ASL Citizen is not where this module expects it:\n"
             f"  videos : {VIDEOS_DIR}\n"
             f"  splits : {SPLITS_DIR}\\train.csv|val.csv|test.csv\n\n"
-            "It is a manual ~70 GB download (Microsoft Research terms, see\n"
-            f"{LICENSE_FILE}). Put it back or point ROOT at the folder that\n"
-            "already holds it - this module never downloads or moves it."
+            "ASL Citizen is a separate ~70 GB download with Microsoft Research\n"
+            "terms. Existing data is reused without moving it. Set\n"
+            "ASL_WORDS_DATASET_DIR to the existing ASL_Citizen folder if needed.\n"
+            "New PopSign downloads are handled by download_popsign_targets.py."
         )
 
 
@@ -237,7 +262,14 @@ def video_path(video_file: str) -> Path:
     to EXTERNAL_DIR, e.g. ps:popsign_v2_1/train/good/122a-good-....mp4.
     """
     if video_file.startswith("ps:"):
-        return EXTERNAL_DIR / video_file[3:]
+        relative = Path(video_file[3:])
+        if relative.is_absolute() or ".." in relative.parts:
+            raise ValueError("external video id must be a relative dataset path")
+        for root in EXTERNAL_READ_DIRS:
+            path = root / relative
+            if path.is_file():
+                return path
+        return EXTERNAL_DIR / relative
     return VIDEOS_DIR / video_file
 
 
