@@ -12,7 +12,7 @@ function call.
 
 ABOUT
 -----
-Name    : videoModel word recognizer (94 active words + REST + OTHER)
+Name    : videoModel word recognizer (95 active words + REST + OTHER)
 Data    : ASL Citizen (Microsoft Research), ~83,400 isolated word videos,
           52 signers, already on disk at `ASL_Citizen/`
 Approach: landmarks, not pixels - one shared 200-number feature vector per
@@ -66,8 +66,8 @@ WHAT IT DOES
              pose 30 + hands 84 + hand shape 18 + face 12 + hand-to-body 10 +
              presence 4 + velocity 12 + segment read-out 30.
 
-3  train     [64, 200]  ->  96 classes
-             94 active communication words, plus REST (idle head/tail of the
+3  train     [64, 200]  ->  97 classes
+             95 active communication words, plus REST (idle head/tail of the
              same clips) and OTHER (a capped sample of signs outside the
              vocabulary).
 
@@ -315,13 +315,13 @@ smoke        a --smoke run is labelled "smoke" in its own meta and is not a
 ```
 
 Privacy and dataset terms are in `docs/DETAILS.md`; the live demo never writes
-webcam frames. The new PopSign video subset is downloaded by the script below
-into `Model/videoModel/datasets/external/` and is excluded from Git.
+webcam frames. The PopSign video subset is downloaded into this folder's
+ignored `datasets/external/` directory and is excluded from Git.
 
 
 THE VOCABULARY
 --------------
-94 active words across four batches, plus REST and OTHER (96 classifier
+95 active words across four batches, plus REST and OTHER (97 classifier
 labels total). `me` is one visual class that the phrase layer displays as “I”.
 
 ```
@@ -362,7 +362,7 @@ To add the focused PopSign clips, run these commands from PowerShell. The
 downloader prints the selected clips and estimated total before prompting;
 the default is 60 training clips and 20 each from validation and test for
 `bye`, `please`, `sleep`, and `chicken` (about 400 clips). Data is saved under
-`datasets/external/popsign_v2_1/` and is never added to Git.
+`Model/videoModel/datasets/external/popsign_v2_1/` and is never added to Git.
 
 ```powershell
 cd "D:\sign language project\ASTL project\ASLT\Model\videoModel"

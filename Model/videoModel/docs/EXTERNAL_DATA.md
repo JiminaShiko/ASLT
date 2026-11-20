@@ -9,8 +9,8 @@ it is labelled UNMEASURED.
 **Current implementation note (2026-11-19):** the project now uses the bounded
 communication vocabulary in `vocab.json` and the PopSign v2.1 downloader is
 implemented. Its default subset is 60 train plus 20 validation and 20 test clips
-for each of `bye`, `please`, `sleep`, and `chicken`; the files stay under
-`Model/videoModel/datasets/external/`. This subset is for training and a separate
+for each of `bye`, `please`, `sleep`, and `chicken`; the files stay under the
+ignored `Model/videoModel/datasets/external/` folder. This subset is for training and a separate
 PopSign held-out evaluation. `school` remains Citizen-only because no verified
 PopSign school folder was established. The earlier options and questions below
 are historical research notes, not pending decisions.

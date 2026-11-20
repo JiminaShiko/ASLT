@@ -19,6 +19,10 @@ DATA_DIR = ROOT / "data"
 CACHE_DIR = ROOT / "cache"
 MODELS_DIR = ROOT / "models"
 REPORTS_DIR = ROOT / "reports"
+KAGGLEHUB_CACHE_DIR = ROOT / "datasets" / "kagglehub"
+# Keep dataset acquisition inside this project folder so extraction/training
+# never silently depends on a machine-global Kaggle cache.
+os.environ["KAGGLEHUB_CACHE"] = str(KAGGLEHUB_CACHE_DIR)
 
 LANDMARKS_PARQUET = CACHE_DIR / "landmarks.parquet"
 # Sidecar that records WHICH extractor produced the cache. Round 1 (v1) used a

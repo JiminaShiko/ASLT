@@ -18,30 +18,14 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parents[1]          # .../videoModel
 
-# Git moved code into ASLT/Model/, but intentionally left the large local
-# data/cache at ASLT/videoModel/. Read them in place; a fresh clone uses ROOT.
-# An explicit dataset override is read-only and never changes download paths.
-LEGACY_ROOT = (ROOT.parent.parent / "videoModel"
-               if ROOT.parent.name == "Model" else ROOT)
-
-
-def existing_local(relative: str, marker: str = "") -> Path:
-    """Prefer this project, otherwise reuse a pre-move local resource."""
-    current = ROOT / relative
-    previous = LEGACY_ROOT / relative
-    if not (current / marker).exists() and (previous / marker).exists():
-        return previous
-    return current
-
-
 DATASET_DIR = Path(os.environ.get("ASL_WORDS_DATASET_DIR") or
-                   existing_local("ASL_Citizen", "splits/train.csv"))
+                   ROOT / "ASL_Citizen")
 SPLITS_DIR = DATASET_DIR / "splits"
 VIDEOS_DIR = DATASET_DIR / "videos"
 LICENSE_FILE = DATASET_DIR / "use.txt"
 SPLIT_FILES = {"train": "train.csv", "val": "val.csv", "test": "test.csv"}
 
-CACHE_DIR = existing_local("cache", "manifest.csv")  # generated, gitignored
+CACHE_DIR = ROOT / "cache"                       # generated, gitignored
 LANDMARK_DIR = CACHE_DIR / "landmarks"              # one .npy per video
 MANIFEST_CSV = CACHE_DIR / "manifest.csv"           # one row per processed video
 ERRORS_CSV = CACHE_DIR / "extract_errors.csv"
@@ -57,15 +41,14 @@ PHRASES_JSON = ROOT / "phrases.json"
 # branch). Clips land under EXTERNAL_DIR/<dataset>/<split>/<gloss>/<file>.mp4
 # and job ids carry the same path with a "ps:" prefix, so they can never
 # collide with ASL Citizen file names.
-EXTERNAL_DIR = ROOT / "datasets" / "external"  # all NEW downloads go here
-EXTERNAL_READ_DIRS = tuple(dict.fromkeys(
-    (EXTERNAL_DIR, LEGACY_ROOT / "datasets" / "external")))
+EXTERNAL_DIR = ROOT / "datasets" / "external"  # local ignored data folder
+EXTERNAL_READ_DIRS = (EXTERNAL_DIR,)
 
 FOR_RELEASE = MODELS_DIR / "words_core20.pt"       # shipped weights
 META_JSON = MODELS_DIR / "meta.json"
 CKPT_DIR = MODELS_DIR / "checkpoints"
 ONNX_PATH = MODELS_DIR / "words_core20.onnx"
-HOLISTIC_TASK = existing_local("models/holistic_landmarker.task")
+HOLISTIC_TASK = MODELS_DIR / "holistic_landmarker.task"
 
 # ---------------------------------------------------------------------------
 # MediaPipe Holistic asset (13.7 MB, fetched once by src/landmarks.py)

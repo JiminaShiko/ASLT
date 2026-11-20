@@ -34,6 +34,8 @@ from pathlib import Path, PurePosixPath
 
 import random
 
+from src import config
+
 
 DATASET = "popsign_v2_1"
 CATEGORY = "game"  # Contains videos reviewed as the intended sign variant.
@@ -515,7 +517,7 @@ def parse_args() -> argparse.Namespace:
                         help="Official splits to fetch; tar branch defaults to "
                              "train, the per-clip branch to train val test.")
     parser.add_argument("--output", type=Path, default=None,
-                        help="Output directory (defaults to datasets/external/<dataset-version>).")
+                        help="Output directory (defaults to datasets/external/<dataset-version> in this videoModel folder).")
     parser.add_argument("--keep-archives", action="store_true", help="Keep downloaded tar files after extraction.")
     parser.add_argument("--yes", action="store_true", help="Skip the confirmation prompt after showing matches.")
     parser.add_argument("--dry-run", action="store_true",
@@ -533,7 +535,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     if args.output is None:
-        args.output = Path(__file__).resolve().parent / "datasets" / "external" / args.dataset
+        args.output = config.EXTERNAL_DIR / args.dataset
     if len(set(args.splits or [])) != len(args.splits or []):
         print("Choose each split only once.", file=sys.stderr)
         return 2

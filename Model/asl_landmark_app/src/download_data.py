@@ -36,7 +36,7 @@ def kaggle_cache_root() -> Path:
 
         return Path(get_cache_folder()) / "datasets"
     except Exception:
-        return Path.home() / ".cache" / "kagglehub" / "datasets"
+        return config.KAGGLEHUB_CACHE_DIR / "datasets"
 
 
 def find_cached_version(ref: str) -> Path | None:
@@ -313,6 +313,24 @@ def main() -> int:
     missing = [r["id"] for r in results if r["n_images"] == 0]
     if missing:
         print(f"\n  WARNING: continuing without {missing}")
+
+    # Store project-relative paths whenever possible.  The manifest is tracked,
+    # while the data itself is local and ignored; absolute paths would make a
+    # pull on another machine point back to this user's drive and username.
+    for result in results:
+        for key in ("path", "roots"):
+            value = result.get(key)
+            if not value:
+                continue
+            paths = value if isinstance(value, list) else [value]
+            stored = []
+            for item in paths:
+                path = Path(item).resolve()
+                try:
+                    stored.append(path.relative_to(config.ROOT).as_posix())
+                except ValueError:
+                    stored.append(str(path))
+            result[key] = stored if isinstance(value, list) else stored[0]
 
     MANIFEST.write_text(json.dumps(results, indent=2), encoding="utf-8")
     print(f"\nwrote {MANIFEST.relative_to(config.ROOT)}")

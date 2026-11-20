@@ -103,7 +103,10 @@ def build_worklist(max_per_class: int, datasets: list[str] | None = None) -> tup
         spec = by_id[did]
         per_letter: dict[str, list[tuple[str, str]]] = collections.defaultdict(list)
         for root in entry["roots"]:
-            for img, letter, session in iter_letter_images(Path(root), spec):
+            root_path = Path(root)
+            if not root_path.is_absolute():
+                root_path = config.ROOT / root_path
+            for img, letter, session in iter_letter_images(root_path, spec):
                 if letter in config.IGNORED_LABELS:
                     continue
                 per_letter[letter].append((str(img), session))

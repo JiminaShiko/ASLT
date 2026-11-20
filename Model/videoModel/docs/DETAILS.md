@@ -643,7 +643,7 @@ add a word      vocab.json: give it its exact gloss label(s), then
                 python -m src.extract (resumable, only the new clips) and
                 python -m src.train. Check the table first: a word with no
                 gloss in the dataset is MISSING and will not become a class.
-The current `vocab.json` enables batches 1 through 4. It defines 94 active
+The current `vocab.json` enables batches 1 through 4. It defines 95 active
 words (including external-only chicken) plus REST and OTHER. Generic FOOD has
 no verified ASL Citizen gloss, so individual food signs are included instead;
 do not relabel EAT or MEAT as FOOD. Use the candidate workflow in `README.md`

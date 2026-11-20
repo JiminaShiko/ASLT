@@ -6,7 +6,7 @@
     "license": "GPL 2.0 (as listed on the Kaggle dataset page)",
     "why": "26 real photographs per letter taken by the dataset author plus 3000 synthetic MNIST-style renders per letter; it is the de-facto standard static ASL alphabet set and the one the brief asked for.",
     "status": "cached",
-    "path": "C:\\Users\\Hello\\.cache\\kagglehub\\datasets\\grassknoted\\asl-alphabet\\versions\\1",
+    "path": "datasets/kagglehub/datasets/grassknoted/asl-alphabet/versions/1",
     "n_images": 78000,
     "n_bytes": 998396238,
     "letters": {
@@ -39,8 +39,8 @@
     },
     "note": "already in kagglehub cache, no download performed",
     "roots": [
-      "C:\\Users\\Hello\\.cache\\kagglehub\\datasets\\grassknoted\\asl-alphabet\\versions\\1\\asl_alphabet_train\\asl_alphabet_train",
-      "C:\\Users\\Hello\\.cache\\kagglehub\\datasets\\grassknoted\\asl-alphabet\\versions\\1\\asl_alphabet_test"
+      "datasets/kagglehub/datasets/grassknoted/asl-alphabet/versions/1/asl_alphabet_train/asl_alphabet_train",
+      "datasets/kagglehub/datasets/grassknoted/asl-alphabet/versions/1/asl_alphabet_test"
     ]
   },
   {
@@ -50,7 +50,7 @@
     "license": "Unknown (no license stated on the Kaggle page) - research use; original source is Massey University, published under an academic non-commercial understanding.",
     "why": "Genuinely independent multi-signer fingerspelling set: cropped RGB (and depth) frames from a Kinect, 5 different non-native signers, different hands, backgrounds and lighting from grassknoted. This is what makes an honest cross-dataset accuracy number possible.",
     "status": "cached",
-    "path": "C:\\Users\\Hello\\.cache\\kagglehub\\datasets\\mrgeislinger\\asl-rgb-depth-fingerspelling-spelling-it-out\\versions\\2",
+    "path": "datasets/kagglehub/datasets/mrgeislinger/asl-rgb-depth-fingerspelling-spelling-it-out/versions/2",
     "n_images": 65774,
     "n_bytes": 1907614836,
     "letters": {
@@ -81,7 +81,7 @@
     },
     "note": "already in kagglehub cache, no download performed",
     "roots": [
-      "C:\\Users\\Hello\\.cache\\kagglehub\\datasets\\mrgeislinger\\asl-rgb-depth-fingerspelling-spelling-it-out\\versions\\2\\dataset5"
+      "datasets/kagglehub/datasets/mrgeislinger/asl-rgb-depth-fingerspelling-spelling-it-out/versions/2/dataset5"
     ]
   },
   {
@@ -91,7 +91,7 @@
     "license": "CC0 - Public Domain",
     "why": "870 extra 200x200 real-world photos, 30 per letter, CC0 licensed. Caveat recorded in the report: the photos are taken by the same author as grassknoted, so it is a weaker independence check than Massey. We keep it as a third evaluation set.",
     "status": "cached",
-    "path": "C:\\Users\\Hello\\.cache\\kagglehub\\datasets\\danrasband\\asl-alphabet-test\\versions\\1",
+    "path": "datasets/kagglehub/datasets/danrasband/asl-alphabet-test/versions/1",
     "n_images": 780,
     "n_bytes": 11267971,
     "letters": {
@@ -124,7 +124,7 @@
     },
     "note": "already in kagglehub cache, no download performed",
     "roots": [
-      "C:\\Users\\Hello\\.cache\\kagglehub\\datasets\\danrasband\\asl-alphabet-test\\versions\\1"
+      "datasets/kagglehub/datasets/danrasband/asl-alphabet-test/versions/1"
     ]
   }
 ]
