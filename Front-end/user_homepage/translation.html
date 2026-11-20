@@ -869,7 +869,14 @@
 
 <script>
 (function initSignrestTranslation() {
-  const API_BASE = "";
+  // ASL model API. Served by Flask, the page and the model share one origin;
+  // previewed from a static server (Live Server on :5500/:8000/:3000, or
+  // file://) the model API is still the local backend on :5000.
+  const STATIC_PREVIEW_PORTS = { "5500": true, "8000": true, "3000": true };
+  const API_BASE = (location.protocol === "file:" || STATIC_PREVIEW_PORTS[location.port])
+    ? "http://127.0.0.1:5000"
+    : "";
+  const API_CREDENTIALS = API_BASE ? "include" : "same-origin";
   const LIVE_INTERVAL = 55;
   const LIVE_MAX_SIDE = 640;
 
@@ -942,21 +949,80 @@
       response = await fetch(API_BASE + path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: API_CREDENTIALS,
         body: JSON.stringify(payload || {})
       });
     } catch (err) {
-      throw new Error('Could not reach the ASL API. Start the website with "python app.py" from the repository root.');
+      throw new Error('Could not reach the ASL API. Start the backend with "python app.py" in the Backend folder.');
     }
     let result;
+    const raw = await response.text();
     try {
-      result = await response.json();
+      result = JSON.parse(raw);
     } catch (err) {
-      throw new Error("The ASL model API returned an invalid response.");
+      throw new Error(
+        "The ASL model API returned an invalid response (HTTP " + response.status +
+        " from " + (response.url || path) + "). Open the site through the Flask backend: " +
+        "http://127.0.0.1:5000/home."
+      );
     }
     if (!response.ok) {
       throw new Error(result.error || "The ASL model could not make a prediction.");
     }
     return result;
+  }
+
+  async function loadModelInfo() {
+    try {
+      const response = await fetch(API_BASE + "/api/health", {
+        headers: { Accept: "application/json" },
+        credentials: API_CREDENTIALS
+      });
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      const info = await response.json();
+
+      const profile = document.getElementById("profile-live");
+      if (profile && Array.isArray(info.profiles) && info.profiles.length) {
+        profile.innerHTML = "";
+        info.profiles.forEach((name) => {
+          const option = document.createElement("option");
+          option.value = name;
+          option.textContent = name;
+          profile.appendChild(option);
+        });
+        profile.value = info.default_profile || "all";
+      }
+
+      const settingControls = {
+        conf: "conf-live",
+        margin: "margin-live",
+        vote: "vote-live",
+        hold: "hold-live",
+        motion: "motion-live",
+        landmarks: "landmarks-live",
+        motion_debug: "motion-debug-live",
+        mirror: "mirror-live",
+        recover: "recover-live",
+        recover_every: "recover-every-live",
+        recover_conf: "recover-conf-live",
+        recover_flip: "recover-flip-live",
+        jz: "jz-live",
+        calibrate_reps: "calibrate-reps-live"
+      };
+      const defaults = info.default_settings || {};
+      Object.keys(settingControls).forEach((key) => {
+        const value = defaults[key];
+        const control = document.getElementById(settingControls[key]);
+        if (!control || value === null || value === undefined || typeof value === "object") return;
+        if (control.type === "checkbox") control.checked = Boolean(value);
+        else control.value = value;
+      });
+      syncMirrorState(mirrorCheckbox.checked);
+      return info;
+    } catch (err) {
+      setCamStatus("Could not load model settings from /api/health: " + err.message, true);
+      return null;
+    }
   }
 
   function liveSettings() {
@@ -1255,7 +1321,8 @@
       const res = await fetch(API_BASE + "/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, lang: "en" })
+        credentials: API_CREDENTIALS,
+        body: JSON.stringify({ text: text, lang: "en" })
       });
       if (!res.ok) throw new Error("TTS unavailable.");
       const blob = await res.blob();
@@ -1425,6 +1492,8 @@
       uploadStatus.className = "status-line error";
     }
   });
+
+  loadModelInfo();
 })();
 </script>
 </body>

@@ -14,7 +14,6 @@ License : Follow the Kaggle dataset page.
 FILES IN THIS FOLDER
 ====================
 eda_asl_alphabet.py       EDA script (Tasks 1-6 of the assignment)
-requirements.txt          Python packages needed
 Dataset_Source.txt        Dataset download link and license
 README.txt                This file
 
@@ -25,8 +24,10 @@ results_asl_alphabet.json All numerical results
 
 HOW TO RUN
 ==========
-1. Install packages:
-     pip install -r requirements.txt
+1. Install packages (the merged requirements.txt is at the repository root):
+     cd ../../..
+     python -m pip install -r requirements.txt
+     cd "Model/EDA/asl alphabets"
 
 2. Run the EDA:
      python eda_asl_alphabet.py

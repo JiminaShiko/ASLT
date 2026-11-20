@@ -15,15 +15,15 @@ calibrate_camera.py            captures YOUR hand for every class and fine-tunes
 preprocess.py                  shared hand detection / crop / background removal (used by training AND the app)
 app.py                         the Streamlit app
 evaluate_official_photos.py    tests the official ASL Alphabet test photos (28 files)
-requirements.txt
 
 HTML TRANSLATOR API (LANDMARK MODEL)
 ====================================
 The new website page at ../../Front-end/user_homepage/translation.html uses the
 API blueprint in this folder's api.py. The root ASLT app registers that
 blueprint, so run the website and translator together from the Backend folder:
-	cd ../../Backend
+	cd ../..                    # repository root
 	python -m pip install -r requirements.txt
+	cd Backend
 	python app.py
 
 The translator uses the separate landmark recogniser in
@@ -41,13 +41,15 @@ application and still uses sign_photo_model.keras.
 
 COMMANDS
 =========
-All commands below must be run in THIS folder (the folder that contains app.py and requirements.txt).
+All commands below must be run in THIS folder (the folder that contains app.py), except the dependency install in step 1, which runs from the repository root.
 In PowerShell or Command Prompt, open it with:
 	cd "D:\sign language project\ASTL project\ASLT\sign language photo model"
 (If the project is saved somewhere else, use the folder where this README is.)
 
-1. Install packages:
-	pip install -r requirements.txt
+1. Install packages (the merged requirements.txt is at the repository root):
+	cd ../..
+	python -m pip install -r requirements.txt
+	cd "Model/sign language photo model"
 2. Train the model (downloads both datasets automatically the first time):
 	python train_model.py
 2b. Teach the model YOUR hand (optional but recommended - see CALIBRATION below):

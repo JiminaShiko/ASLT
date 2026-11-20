@@ -330,7 +330,8 @@ verdict the table changed.
 
 ## Requirements
 
-Python 3.11+ with the pinned packages:
+Python 3.11+ with the pinned packages. Install the merged file from the
+repository root (the folder that contains it):
 
 ```bash
 python -m pip install -r requirements.txt
@@ -801,7 +802,7 @@ Two deliberate absences:
   (`grep`-checkable, see *Verifying the no-save claim*).
 
 Dependencies added for this: `streamlit==1.64.0 streamlit-webrtc==0.79.0
-av==17.1.0` (already in `requirements.txt`).
+av==17.1.0` (already in the repo-root `requirements.txt`).
 
 ### ONNX export (step 6)
 
@@ -879,9 +880,9 @@ the sidecar's feature width disagrees with `normalize.feature_dim()`.
 
 ### What is in git, and what is generated
 
-`.gitignore` keeps the folder committable: **51 files, 1.6 MB** instead of 698
+`.gitignore` keeps the folder committable: **50 files, 1.6 MB** instead of 698
 files and 116 MB. Committed — every `src/*.py`, `app.py`, `run_all.py`,
-`requirements.txt`, `data/datasets.json`, both trained models with their
+`data/datasets.json`, both trained models with their
 `meta.json` (`models/asl_all.pt/.onnx`, `asl_standard.pt/.onnx`, ~80 KB each, so
 the app runs straight after a clone), and the written reports including the two
 confusion-matrix PNGs. Ignored — `cache/` (the extracted landmark store: 629 files,
@@ -891,15 +892,18 @@ downloaded by `src/download_data.py`), plus `__pycache__/`, `*.log` and any
 `kaggle.json`. So a fresh clone needs:
 
 ```
+# from the repository root (the merged requirements.txt lives there)
 pip install -r requirements.txt
+
+# then from Model/asl_landmark_app
 python src/download_data.py        # datasets + models/hand_landmarker.task
 python src/extract_landmarks.py    # ~20 min, rebuilds cache/landmarks.parquet
 streamlit run app.py
 ```
 
-Only the first two lines are needed to reach `streamlit run app.py`: the trained
-weights are committed, so neither landmark extraction nor retraining stands between
-a clone and a running app. What the app does need is `hand_landmarker.task`,
+Apart from the install, only `download_data.py` stands between a clone and
+`streamlit run app.py`: the trained weights are committed, so neither landmark
+extraction nor retraining is required. What the app does need is `hand_landmarker.task`,
 MediaPipe's own file, which `download_data.py` fetches (or the copy in
 `../sign language photo model/`, which `config.LEGACY_HAND_MODEL_CANDIDATES` also
 accepts).
@@ -915,7 +919,7 @@ that needs `git lfs`, not a force-add.
 | symptom | cause / fix |
 |---|---|
 | `kagglehub` download error or the credential box appears | the dataset is not in the cache and there is no token → follow the 3 lines printed by `download_data.py`, or work offline with whatever is cached (a dataset that fails is skipped and logged, the run continues) |
-| `No module named mediapipe.tasks` | mediapipe < 0.10 → `pip install -r requirements.txt` |
+| `No module named mediapipe.tasks` | mediapipe < 0.10 → install the repo-root `requirements.txt` |
 | `cv2.error` about a grayscale image | you fed a single-channel frame; the pipeline requires colour BGR from OpenCV, do not convert to gray |
 | hand model missing | `models/hand_landmarker.task` is copied by `download_data.py`; re-run it |
 | webcam opens a black window | another app holds the camera; close it, or `--camera 1` |

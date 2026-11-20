@@ -1,0 +1,84 @@
+# ASLT - consolidated Python requirements (whole repository)
+#
+# Install once from the repository root:
+#   python -m pip install -r requirements.txt
+#
+# This is the single dependency file for every subproject in the repo:
+#   Backend, Model/asl_landmark_app, Model/sign language photo model,
+#   Model/videoModel, and the EDA scripts under Model/EDA/.
+# There are no per-folder requirements files; install this one from the
+# repository root.
+#
+# Tested target: Windows 11, Python 3.13/3.14, CPU only.
+# The pins below require Python 3.13+ (mediapipe 1.2.2 / numpy 2.5.3 / opencv
+# 5.0.0.93 publish no wheels for older interpreters). Do not downgrade numpy<2.
+#
+# ---------------------------------------------------------------------------
+# Web application (Backend/app.py: login, signup, profile, user + admin pages,
+# and the ASL landmark translation API)
+# ---------------------------------------------------------------------------
+Flask==3.1.3
+Werkzeug==3.1.9
+flask-cors==6.0.5
+mysql-connector-python==26.10.0
+python-dotenv==1.2.4
+Pillow==12.3.0
+# gunicorn is only used by production/Linux hosts (e.g. Render); Windows runs
+# the app with `python app.py`.
+gunicorn==27.0.1
+
+# ---------------------------------------------------------------------------
+# Landmark runtime imported by Backend at startup
+# (Model/asl_landmark_app via Model/sign language photo model/api.py)
+# ---------------------------------------------------------------------------
+mediapipe==1.2.2
+opencv-python==5.0.0.93
+numpy==2.5.3
+torch==2.14.1
+onnxruntime==1.31.1
+
+# ---------------------------------------------------------------------------
+# Training / evaluation / export
+# (Model/asl_landmark_app, Model/videoModel)
+# ---------------------------------------------------------------------------
+pandas==3.0.6
+pyarrow==25.0.1
+tqdm==4.70.1
+scikit-learn==1.9.1
+matplotlib==3.11.2
+seaborn==0.13.2
+onnx==1.23.2
+kagglehub==1.0.2
+certifi>=2026.7.22
+
+# ---------------------------------------------------------------------------
+# Standalone Streamlit demos
+# (Model/asl_landmark_app/app.py, Model/sign language photo model/app.py)
+# ---------------------------------------------------------------------------
+streamlit==1.64.0
+streamlit-webrtc==0.79.0
+av==17.1.0
+
+# ---------------------------------------------------------------------------
+# Photo-sign model (Model/sign language photo model)
+# Only needed for the Streamlit app / train_model.py / calibrate_camera.py;
+# the Flask web app itself does not import TensorFlow.
+# ---------------------------------------------------------------------------
+tensorflow==2.22.0rc0
+
+# ---------------------------------------------------------------------------
+# EDA scripts (Model/EDA/*)
+# pandas, numpy, matplotlib, seaborn, Pillow, kagglehub are already pinned above.
+# Model/EDA/asl citizens/requirements.txt also lists opencv-python-headless;
+# on this repo opencv-python (above) provides the same cv2 module, so installing
+# both is redundant and can conflict. On a headless server, replace the
+# opencv-python line with: opencv-python-headless==5.0.0.93
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# NOT installed on purpose
+# ---------------------------------------------------------------------------
+# fastapi / uvicorn: Backend/admin/overview_router.py is a FastAPI module, but it
+# is not imported by app.py and imports a missing `.dependencies` module
+# (get_db, require_admin). The admin dashboard currently calls /api/admin/*,
+# which this Flask app does not implement.

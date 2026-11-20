@@ -46,7 +46,6 @@ FILES IN THIS FOLDER
 ```
   app.py                  browser UI (Streamlit) - live webcam, photo, results
   run_all.py              download -> extract -> train -> report -> export
-  requirements.txt        pinned packages
   README.md               this file
   REPORT.md               the round-by-round story: what was tried, what failed
   docs/DETAILS.md         the long reference: every table, flag and fix
@@ -90,10 +89,13 @@ HOW TO RUN
 
    On another machine, `cd` into wherever you put asl_landmark_app.
 
-1. Install the packages:
+1. Install the packages from the repository root (the folder that holds the
+   merged `requirements.txt`), then come back here:
 
 ```
+     cd "D:\sign language project\ASTL project\ASLT"
      python -m pip install -r requirements.txt
+     cd "Model\asl_landmark_app"
 ```
 
 2. The whole pipeline from scratch - download, extract landmarks, train,
@@ -314,7 +316,7 @@ DATASETS USED
 WHAT IS IN GIT
 ==============
 The `.gitignore` in this folder keeps the reviewable content small. Committed:
-the code, requirements.txt, data/datasets.json, the two shipped profiles (.pt +
+the code, data/datasets.json, the two shipped profiles (.pt +
 .onnx + meta.json) and the reports. Measured with `git ls-files -o
 --exclude-standard` after that .gitignore: **52 files, 1.5 MB**.
 
