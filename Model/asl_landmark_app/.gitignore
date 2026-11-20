@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------
 # Everything here is reproducible from two commands:
 #
-#   pip install -r requirements.txt
+#   pip install -r ../../requirements.txt   # merged file at the repository root
 #   python run_all.py          # download -> extract -> train -> report -> ONNX
 #
 # so this file ignores the artefacts those produce and keeps what a reader

@@ -16,7 +16,6 @@ Paper   : Desai et al., "ASL Citizen: A Community-Sourced Dataset for
 FILES IN THIS FOLDER
 ====================
 eda_asl_citizen_full.py   EDA script (Tasks 1-6 of the assignment)
-requirements.txt          Python packages needed
 Dataset_Source.txt        Dataset download link, paper, license
 README.txt                This file
 
@@ -41,8 +40,10 @@ if there is not enough space.
 
 HOW TO RUN
 ==========
-1. Install packages:
-     pip install -r requirements.txt
+1. Install packages (the merged requirements.txt is at the repository root):
+     cd ../../..
+     python -m pip install -r requirements.txt
+     cd "Model/EDA/asl citizens"
 
 2. Run the EDA:
      python eda_asl_citizen_full.py

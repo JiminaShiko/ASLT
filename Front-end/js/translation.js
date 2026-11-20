@@ -1,6 +1,10 @@
 document.addEventListener('DOMContentLoaded', function () {
   var A = window.ASL;
-  var API_BASE = 'http://127.0.0.1:5000';
+  var STATIC_PREVIEW_PORTS = { '5500': true, '8000': true, '3000': true };
+  var API_BASE = (location.protocol === 'file:' || STATIC_PREVIEW_PORTS[location.port])
+    ? 'http://127.0.0.1:5000'
+    : '';
+  var API_CREDENTIALS = API_BASE ? 'include' : 'same-origin';
   var LIVE_INTERVAL = 55;
   var LIVE_MAX_SIDE = 640;
 
@@ -11,16 +15,22 @@ document.addEventListener('DOMContentLoaded', function () {
       response = await fetch(API_BASE + path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: API_CREDENTIALS,
         body: JSON.stringify(payload || {})
       });
     } catch (err) {
-      throw new Error('Could not reach the ASL model API. Start it with "python api.py" in the photo model folder.');
+      throw new Error('Could not reach the ASL model API. Start the backend with "python app.py" in the Backend folder.');
     }
     var result;
+    var raw = await response.text();
     try {
-      result = await response.json();
+      result = JSON.parse(raw);
     } catch (err) {
-      throw new Error('The ASL model API returned an invalid response.');
+      throw new Error(
+        'The ASL model API returned an invalid response (HTTP ' + response.status +
+        ' from ' + (response.url || path) + '). Open the site through the Flask backend: ' +
+        'http://127.0.0.1:5000/home.'
+      );
     }
     if (!response.ok) {
       throw new Error(result.error || 'The ASL model could not make a prediction.');
@@ -30,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   async function loadModelInfo() {
     try {
-      var response = await fetch(API_BASE + '/api/health');
+      var response = await fetch(API_BASE + '/api/health', { credentials: API_CREDENTIALS });
       if (!response.ok) { throw new Error('HTTP ' + response.status); }
       var info = await response.json();
       var profile = document.getElementById('profile-live');
@@ -590,10 +600,11 @@ document.addEventListener('DOMContentLoaded', function () {
         response = await fetch(API_BASE + '/api/tts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: API_CREDENTIALS,
           body: JSON.stringify({ text: text, lang: 'en' })
         });
       } catch (err) {
-        throw new Error('Could not reach the speech API. Start it with "python api.py" in the photo model folder.');
+        throw new Error('Could not reach the speech API. Start the backend with "python app.py" in the Backend folder.');
       }
       if (!response.ok) {
         var message = 'Google TTS could not read the text.';

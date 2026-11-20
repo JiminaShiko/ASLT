@@ -254,7 +254,7 @@ def google_callback():
         # Routing rules
         if role == "admin":
             return redirect("/admin-dashboard")
-        if is_new_account:
+        if is_new_account or not has_complete_profile:
             return redirect("/profile-setup")
         return redirect("/home")
 

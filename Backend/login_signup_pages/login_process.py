@@ -316,7 +316,12 @@ def verify_login_otp():
         session["profile_photo"] = record.get("profile_photo")
         session["profile_completed"] = has_complete_profile
 
-        redirect_url = "/admin-dashboard" if role == "admin" else "/home"
+        if role == "admin":
+            redirect_url = "/admin-dashboard"
+        elif not has_complete_profile:
+            redirect_url = "/profile-setup"
+        else:
+            redirect_url = "/home"
 
         return jsonify(
             {

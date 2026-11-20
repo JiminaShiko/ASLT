@@ -33,8 +33,9 @@ Run the downloader first; it asks before downloading. Then extract the current
 vocabulary and train into an isolated candidate directory:
 
 ```powershell
-cd "D:\sign language project\ASTL project\ASLT\Model\videoModel"
+cd "D:\sign language project\ASTL project\ASLT"
 python -m pip install -r requirements.txt
+cd "D:\sign language project\ASTL project\ASLT\Model\videoModel"
 python download_popsign_targets.py
 python -m src.extract --splits train,val,test --workers 4
 python -m src.train --candidate communication_v2 --seeds 3 --eval-splits val,test,ps_test
@@ -401,7 +402,6 @@ FILES IN THIS FOLDER
 run_all.py             the one command (extract, train, onnx, report)
 status.py              what is done, what is missing, what to run next
 check_results.py       compact pasteable summary + writes REPORT_WORDS.md
-requirements.txt       pinned versions, with the reason for the pins
 README.md              this guide
 docs/DETAILS.md        the long reference: contracts, thresholds, reports,
                        troubleshooting, privacy, licence text

@@ -616,7 +616,7 @@ line for each block) - they resolve their paths from `src/config.ROOT`, but
 
 13. ENVIRONMENT PINS
 --------------------
-`requirements.txt` pins the set that was resolved, installed and smoke-tested
+The repo-root `requirements.txt` pins the set that was resolved, installed and smoke-tested
 together here. Two things worth knowing:
 ```
 - mediapipe>=1.0 removed the legacy mp.solutions API. This code uses the Tasks
@@ -746,7 +746,7 @@ a step fails inside run_all.py
 16. WHAT IS COMMITTED, WHAT IS NOT
 ---------------------------------
 ```
-in git         the code, vocab.json, phrases.json, requirements.txt,
+in git         the code, vocab.json, phrases.json,
                README.md, docs/DETAILS.md, .gitignore, and once trained
                models/words_core20.pt + models/meta.json +
                models/words_core20.onnx (the release artefacts, ~3 MB, so
