@@ -3,3 +3,10 @@ gunicorn
 mysql-connector-python
 python-dotenv
 Werkzeug
+flask-cors
+mediapipe
+numpy
+onnxruntime
+opencv-python
+pillow
+torch

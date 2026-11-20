@@ -1,6 +1,8 @@
+import importlib.util
 import os
 from pathlib import Path
-from flask import Flask, jsonify, redirect, send_from_directory, session
+import sys
+from flask import Flask, jsonify, redirect, request, send_from_directory, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config.environment import load_environment
@@ -19,6 +21,19 @@ load_environment()
 
 app = Flask(__name__)
 
+# Register the landmark translator routes on the main website app. This keeps
+# the model API and the authenticated UI on the same origin and port.
+translation_api_path = PROJECT_ROOT / "Model" / "sign language photo model" / "api.py"
+translation_api_spec = importlib.util.spec_from_file_location(
+    "aslt_translation_api", translation_api_path
+)
+if translation_api_spec is None or translation_api_spec.loader is None:
+    raise RuntimeError(f"Could not load translation API from {translation_api_path}")
+translation_api = importlib.util.module_from_spec(translation_api_spec)
+sys.modules[translation_api_spec.name] = translation_api
+translation_api_spec.loader.exec_module(translation_api)
+app.register_blueprint(translation_api.api_bp)
+
 # Reads SECRET_KEY strictly from .env (localhost) or Render Environment Variables
 app.secret_key = os.getenv("SECRET_KEY", "dev-fallback-secret-key")
 
@@ -31,6 +46,13 @@ app.register_blueprint(login_bp)
 app.register_blueprint(forgot_password_bp)
 app.register_blueprint(google_bp)
 app.register_blueprint(profile_bp)
+
+
+@app.before_request
+def require_login_for_translation_api():
+    if request.blueprint == "asl_translation_api" and not session.get("user_email"):
+        return jsonify({"error": "Authentication required."}), 401
+
 
 # Ensure `users` columns (`username` nullable, `failed_login_attempts`, `locked_until`) exist
 ensure_auth_tables()
@@ -86,15 +108,34 @@ def profile_setup_placeholder():
 
 
 @app.route("/home")
-def user_home_placeholder():
+def user_home_view():
     if not session.get("user_email"):
         return redirect("/login")
-    completed = session.get("profile_completed", False)
-    return (
-        f"<h2>Welcome to Signrest Home, {session.get('user_email')}!</h2>"
-        f"<p>Profile Completed: {completed}</p>"
-        f"<a href='/api/logout'>Logout</a>"
-    )
+    return send_from_directory(FRONTEND_DIR / "user_homepage", "main_dashboard.html")
+
+
+@app.route("/user_homepage/<path:filename>")
+def serve_user_homepage_files(filename):
+    if not session.get("user_email"):
+        return redirect("/login")
+    return send_from_directory(FRONTEND_DIR / "user_homepage", filename)
+
+
+@app.route("/api/user/me", methods=["GET"])
+def get_current_user():
+    if not session.get("user_id"):
+        return jsonify({"authenticated": False}), 401
+    return jsonify(
+        {
+            "authenticated": True,
+            "user_id": session.get("user_id"),
+            "email": session.get("user_email"),
+            "username": session.get("username"),
+            "profile_photo": session.get("profile_photo"),
+            "role": session.get("user_role", "user"),
+            "profile_completed": session.get("profile_completed", False),
+        }
+    ), 200
 
 
 @app.route("/admin-dashboard")
@@ -146,5 +187,5 @@ def serve_global_assets(filename):
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))
-    debug_mode = os.getenv("FLASK_DEBUG", "true").lower() == "true"
+    debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
     app.run(host="0.0.0.0", port=port, debug=debug_mode)

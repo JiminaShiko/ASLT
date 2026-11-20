@@ -20,8 +20,11 @@ import time
 import urllib.request
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import config  # noqa: E402
+if __package__:
+    from . import config  # noqa: E402
+else:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import config  # noqa: E402
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp"}
 MANIFEST = config.DATA_DIR / "datasets.json"

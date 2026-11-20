@@ -29,18 +29,16 @@ os.environ.setdefault("ABSL_PROPAGATE_CXX_STD", "1")
 
 import cv2
 import numpy as np
-from flask import Flask, jsonify, request, send_file
+from flask import Blueprint, Flask, jsonify, request, send_file
 from flask_cors import CORS
 from PIL import Image
 
 LANDMARK_APP = Path(__file__).resolve().parents[1] / "asl_landmark_app"
-LANDMARK_SRC = LANDMARK_APP / "src"
-sys.path.insert(0, str(LANDMARK_SRC))
+sys.path.insert(0, str(LANDMARK_APP.parent))
 
-import config as landmark_config  # type: ignore[reportMissingImports]  # noqa: E402
-import hand_backend  # type: ignore[reportMissingImports]  # noqa: E402
-import live as landmark_live  # type: ignore[reportMissingImports]  # noqa: E402
-import normalize  # type: ignore[reportMissingImports]  # noqa: E402
+from asl_landmark_app.src import config as landmark_config  # noqa: E402
+from asl_landmark_app.src import hand_backend, live as landmark_live  # noqa: E402
+from asl_landmark_app.src import normalize  # noqa: E402
 
 PORT = 5000
 MAX_SIDE = 640
@@ -67,6 +65,8 @@ DEFAULT_SETTINGS = {
     "jz": "",
     "calibrate_reps": 3,
 }
+
+api_bp = Blueprint("asl_translation_api", __name__)
 
 app = Flask(__name__)
 CORS(app, origins=[
@@ -516,7 +516,7 @@ def synthesize_speech(text, lang, slow):
     return audio
 
 
-@app.post("/api/tts")
+@api_bp.post("/api/tts")
 def text_to_speech():
     data = request.get_json(silent=True) or {}
     text = str(data.get("text") or "").strip()
@@ -546,7 +546,7 @@ def text_to_speech():
     )
 
 
-@app.get("/api/health")
+@api_bp.get("/api/health")
 def health():
     return jsonify({
         "status": "ok",
@@ -559,7 +559,7 @@ def health():
     })
 
 
-@app.post("/api/predict-photo")
+@api_bp.post("/api/predict-photo")
 def predict_photo_route():
     try:
         data = request.get_json(silent=True) or {}
@@ -572,7 +572,7 @@ def predict_photo_route():
         return jsonify({"error": str(error)}), 500
 
 
-@app.post("/api/live/start")
+@api_bp.post("/api/live/start")
 def live_start():
     try:
         data = request.get_json(silent=True) or {}
@@ -592,7 +592,7 @@ def live_start():
         return jsonify({"error": str(error)}), 400
 
 
-@app.post("/api/live/frame")
+@api_bp.post("/api/live/frame")
 def live_frame():
     data = request.get_json(silent=True) or {}
     session_id = data.get("session_id")
@@ -610,7 +610,7 @@ def live_frame():
         return jsonify({"error": str(error)}), 500
 
 
-@app.post("/api/live/action")
+@api_bp.post("/api/live/action")
 def live_action():
     data = request.get_json(silent=True) or {}
     with SESSIONS_LOCK:
@@ -623,7 +623,7 @@ def live_action():
         return jsonify({"error": str(error)}), 400
 
 
-@app.post("/api/live/clear")
+@api_bp.post("/api/live/clear")
 def live_clear():
     data = request.get_json(silent=True) or {}
     with SESSIONS_LOCK:
@@ -633,7 +633,7 @@ def live_clear():
     return jsonify(session.action("clear"))
 
 
-@app.post("/api/live/stop")
+@api_bp.post("/api/live/stop")
 def live_stop():
     data = request.get_json(silent=True) or {}
     with SESSIONS_LOCK:
@@ -643,6 +643,9 @@ def live_stop():
     text = session.text
     session.close()
     return jsonify({"text": text})
+
+
+app.register_blueprint(api_bp)
 
 
 if __name__ == "__main__":
