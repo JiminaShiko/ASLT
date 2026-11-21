@@ -11,17 +11,14 @@
     :root {
       --text-primary: #1c311e;
       --text-muted: #3c543e;
-      --brand-color: #213d22;
-      --veil-bg: rgba(226, 238, 222, 0.34);
-      --pill-bg: rgba(235, 241, 229, 0.72);
-      --pill-border: rgba(44, 74, 44, 0.24);
-      --pill-hover: rgba(255, 255, 255, 0.88);
-      --pill-active-bg: #2c4a2c;
-      --pill-active-text: #f5f7f2;
-      --top-slot-bg: rgba(244, 247, 240, 0.72);
-      --top-slot-border: rgba(44, 74, 44, 0.25);
-      --stage-bg: rgba(245, 247, 241, 0.42);
-      --stage-border: rgba(255, 255, 255, 0.45);
+      --brand-color: #1c311e;
+      --veil-bg: rgba(226, 238, 222, 0.28);
+      --drawer-bg: rgba(216, 225, 206, 0.86);
+      --drawer-border: rgba(44, 74, 44, 0.22);
+      --arrow-accent: #82a343;
+      --circle-sage: #e4ead9;
+      --circle-olive: #7b9647;
+      --circle-forest: #3d5d3f;
     }
 
     body.dark-mode {
@@ -29,15 +26,12 @@
       --text-muted: #b8c9b8;
       --brand-color: #e4f3e2;
       --veil-bg: rgba(11, 20, 16, 0.56);
-      --pill-bg: rgba(24, 38, 29, 0.74);
-      --pill-border: rgba(175, 212, 175, 0.22);
-      --pill-hover: rgba(36, 56, 43, 0.92);
-      --pill-active-bg: #4c7550;
-      --pill-active-text: #ffffff;
-      --top-slot-bg: rgba(25, 40, 31, 0.75);
-      --top-slot-border: rgba(185, 220, 185, 0.26);
-      --stage-bg: rgba(16, 28, 22, 0.46);
-      --stage-border: rgba(165, 205, 170, 0.16);
+      --drawer-bg: rgba(22, 36, 27, 0.9);
+      --drawer-border: rgba(175, 212, 175, 0.22);
+      --arrow-accent: #9ec458;
+      --circle-sage: #2b4232;
+      --circle-olive: #688238;
+      --circle-forest: #2e4b30;
     }
 
     * {
@@ -53,7 +47,7 @@
       overflow-x: hidden;
     }
 
-    /* Layer 1: Fullscreen Blurred Landscape Background (`main_dashboard`) */
+    /* Layer 1: Fullscreen Blurred Landscape Background */
     .bg-photo-layer {
       position: fixed;
       inset: -20px;
@@ -83,270 +77,427 @@
       flex-direction: column;
     }
 
-    /* Top Header Bar */
+    /* Top Header Bar: Brand on Top-Left | Real User Avatar on Top-Right */
     .dashboard-topbar {
       height: 68px;
-      padding: 0 26px;
+      padding: 10px 26px 0 22px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       z-index: 30;
     }
 
-    .topbar-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
     .brand-link {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 9px;
+      gap: 10px;
       text-decoration: none;
       color: var(--brand-color);
     }
 
     .brand-logo-img {
-      width: 36px;
-      height: 36px;
-      object-fit: contain;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1.5px solid rgba(44, 74, 44, 0.35);
     }
 
     .brand-name {
       font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 1.78rem;
-      font-weight: 700;
+      font-size: 1.85rem;
+      font-weight: 600;
       letter-spacing: 0.01em;
     }
 
-    .sidebar-toggle-btn {
-      margin-left: 6px;
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      border: 1px solid var(--top-slot-border);
-      background: var(--top-slot-bg);
-      backdrop-filter: blur(8px);
-      color: var(--text-primary);
-      font-size: 1.1rem;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: transform 0.2s ease, background-color 0.2s ease;
-    }
-
-    .sidebar-toggle-btn:hover {
-      transform: scale(1.05);
-    }
-
-    /* Top-Right Action Slots: Notification Bell + Light/Dark Switch + Profile Photo */
-    .topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .top-circle-slot {
+    /* Top-Right Profile Photo Trigger */
+    .profile-trigger-btn {
       position: relative;
-      width: 42px;
-      height: 42px;
+      width: 48px;
+      height: 48px;
       border-radius: 9999px;
-      border: 1.5px solid var(--top-slot-border);
-      background: var(--top-slot-bg);
-      backdrop-filter: blur(10px);
+      border: 2px solid rgba(44, 74, 44, 0.45);
+      background: var(--circle-sage);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      text-decoration: none;
-      color: var(--text-primary);
-      box-shadow: 0 4px 14px rgba(16, 30, 18, 0.12);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      overflow: hidden;
+      box-shadow: 0 6px 18px rgba(15, 28, 16, 0.18);
+      transition: transform 0.22s ease, box-shadow 0.22s ease;
     }
 
-    .top-circle-slot:hover {
+    .profile-trigger-btn:hover {
       transform: scale(1.07);
-      box-shadow: 0 6px 18px rgba(16, 30, 18, 0.2);
+      box-shadow: 0 8px 22px rgba(15, 28, 16, 0.26);
     }
 
-    .top-circle-slot img.icon-img {
-      width: 23px;
-      height: 23px;
-      object-fit: contain;
-    }
-
-    .top-circle-slot img.avatar-img {
+    .profile-trigger-btn img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      border-radius: 9999px;
     }
 
-    .noti-dot {
+    /* =========================================================
+       4 FLOATING CIRCLES AT THE BOTTOM-RIGHT CORNER
+       Tightly grouped with 11px gap and centered inside the 245px drawer
+       ========================================================= */
+    .right-floating-dock {
+      position: fixed;
+      bottom: 8px;
+      right: 34px;
+      z-index: 55;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 11px;
+    }
+
+    .dock-circle-btn {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      border-radius: 9999px;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(14, 28, 16, 0.22);
+      transition: transform 0.22s cubic-bezier(0.22, 1.28, 0.36, 1), box-shadow 0.2s ease, outline 0.15s ease;
+    }
+
+    .dock-circle-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 20px rgba(14, 28, 16, 0.28);
+    }
+
+    .dock-circle-btn.active {
+      outline: 2.5px solid #ffffff;
+      outline-offset: 2px;
+      transform: scale(1.06);
+    }
+
+    .dock-theme-circle {
+      background-color: #e4ead9;
+      color: #1c311e;
+      border: 1.5px solid rgba(44, 74, 44, 0.28);
+    }
+
+    .dock-noti-circle {
+      background-color: #e4ead9;
+      color: #f59e0b;
+      border: 1.5px solid rgba(44, 74, 44, 0.28);
+    }
+
+    .dock-donation-circle {
+      background-color: #7b9647;
+      color: #ffffff;
+      overflow: hidden;
+    }
+
+    .dock-learning-circle {
+      background-color: #3d5d3f;
+      color: #ffffff;
+    }
+
+    body.dark-mode .dock-theme-circle,
+    body.dark-mode .dock-noti-circle {
+      background-color: #2b4232;
+      border-color: rgba(175, 212, 175, 0.28);
+    }
+
+    body.dark-mode .dock-theme-circle {
+      color: #eef4ec;
+    }
+
+    body.dark-mode .dock-donation-circle {
+      background-color: #688238;
+    }
+
+    body.dark-mode .dock-learning-circle {
+      background-color: #2e4b30;
+    }
+
+    .dock-circle-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .dock-circle-btn img {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+    }
+
+    .dock-donation-circle img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      border-radius: 50%;
+    }
+
+    .noti-badge-dot {
       position: absolute;
-      top: 7px;
-      right: 8px;
-      width: 8px;
-      height: 8px;
+      top: 8px;
+      right: 10px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: #9f2323;
       border: 1.5px solid #ffffff;
     }
 
-    /* Workspace: Floating Sidebar Pills + Elevated Page Container */
-    .dashboard-workspace {
-      flex: 1;
-      display: flex;
-      align-items: stretch;
-      gap: 22px;
-      padding: 6px 26px 24px 26px;
-      min-height: calc(100vh - 68px);
-    }
-    #sidebarMount {
-      display: flex;
-      flex-shrink: 0;
-    }
-
-    /* Layer 2: Individual Floating Sidebar Pills (No outer sidebar box) */
-    .sidebar-slot {
-      width: 185px;
-      flex-shrink: 100%;
-      background: transparent;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 14px 0 4px 0;
-      transition: width 0.25s ease, opacity 0.2s ease;
-    }
-
-    .sidebar-slot.collapsed {
-      width: 0;
-      overflow: hidden;
+    /* =========================================================
+       RIGHT-SIDE PROFILE DRAWER (`sidebar.html`)
+       ========================================================= */
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(12, 22, 14, 0.12);
       opacity: 0;
       pointer-events: none;
-      margin-right: -22px;
+      transition: opacity 0.28s ease;
     }
 
-    .sidebar-nav {
+    .drawer-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .profile-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 245px;
+      z-index: 48;
+      background: var(--drawer-bg);
+      border-left: 1px solid var(--drawer-border);
+      backdrop-filter: blur(14px);
+      box-shadow: -12px 0 32px rgba(12, 24, 14, 0.16);
+      padding: 14px 18px 24px 18px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      transform: translateX(105%);
+      transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    .sidebar-pill {
+    .profile-drawer.open {
+      transform: translateX(0);
+    }
+
+    /* Ultra-thin twig/branch at top-right + hoverable hanging pothos plant */
+    .drawer-plant-stage {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 122px;
+      height: 155px;
+      z-index: 3;
+      cursor: pointer;
+    }
+
+    .drawer-branch-stick {
+      position: absolute;
+      top: 10px;
+      right: 0;
+      width: 96px;
+      height: 2px;
+      background: linear-gradient(90deg, #4b5d3b 0%, #5c4632 55%, #3d2e20 100%);
+      border-radius: 2px 0 0 2px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+      pointer-events: none;
+    }
+
+    .drawer-branch-stick::before {
+      content: "";
+      position: absolute;
+      left: 14px;
+      top: -3px;
+      width: 14px;
+      height: 1.5px;
+      background: #4b5d3b;
+      transform: rotate(-24deg);
+      transform-origin: right center;
+      border-radius: 2px;
+    }
+
+    .drawer-hanging-plant {
+      position: absolute;
+      top: 4px;
+      right: -4px;
+      width: 112px;
+      height: auto;
+      user-select: none;
+      transform-origin: 50% 6px;
+      filter: drop-shadow(0 6px 12px rgba(15, 28, 16, 0.18));
+      transition: transform 0.6s ease;
+    }
+
+    @keyframes gentleBreezeSway {
+      0%   { transform: rotate(0deg); }
+      25%  { transform: rotate(3.4deg); }
+      50%  { transform: rotate(-2.2deg); }
+      75%  { transform: rotate(2.6deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    .drawer-plant-stage:hover .drawer-hanging-plant {
+      animation: gentleBreezeSway 4.6s ease-in-out infinite;
+    }
+
+    .drawer-user-header {
       display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 11px 18px;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-bottom: 26px;
+      padding-right: 76px;
+    }
+
+    .drawer-avatar-ring {
+      width: 52px;
+      height: 52px;
       border-radius: 9999px;
-      text-decoration: none;
+      border: 2px solid rgba(44, 74, 44, 0.45);
+      background: var(--circle-sage);
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 1.1rem;
       color: var(--text-primary);
-      background: var(--pill-bg);
-      border: 1px solid var(--pill-border);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 6px 16px rgba(15, 28, 16, 0.1);
+      margin-bottom: 10px;
+    }
+
+    .drawer-avatar-ring img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .drawer-username {
       font-family: 'Lora', Georgia, serif;
-      font-size: 0.95rem;
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      word-break: break-word;
+    }
+
+    .drawer-arrow-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      margin-top: 6px;
+      padding-right: 12px;
+    }
+
+    .drawer-arrow-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 0.88rem;
       font-weight: 500;
       cursor: pointer;
-      width: 100%;
       text-align: left;
-      transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+      padding: 4px 2px;
+      transition: transform 0.2s ease, color 0.2s ease;
     }
 
-    .sidebar-pill:hover {
-      transform: translateX(4px);
-      background: var(--pill-hover);
-      box-shadow: 0 8px 20px rgba(15, 28, 16, 0.16);
-    }
-
-    .sidebar-pill.active {
-      background: var(--pill-active-bg);
-      color: var(--pill-active-text);
-      border-color: transparent;
-      font-weight: 600;
-      box-shadow: 0 8px 22px rgba(24, 46, 26, 0.26);
-    }
-
-    .nav-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: currentColor;
-      opacity: 0.65;
+    .drawer-arrow-link .chevron-arrow {
+      color: var(--arrow-accent);
       flex-shrink: 0;
+      transition: transform 0.22s ease;
     }
 
-    .sidebar-pill.active .nav-dot {
-      opacity: 1;
-      background: #b7e39c;
+    .drawer-arrow-link:hover {
+      transform: translateX(-4px);
     }
 
-    .logout-pill {
-      justify-content: center;
-      font-size: 0.88rem;
-      opacity: 0.88;
+    .drawer-arrow-link:hover .chevron-arrow {
+      transform: translateX(-3px) scale(1.12);
     }
 
-    .logout-pill:hover {
-      color: #8c2323;
-      opacity: 1;
-    }
-    .sidebar-footer {
+    /* Full-width rectangular forest-green Logout button right above the 4 circles */
+    .drawer-footer {
       margin-top: auto;
-      padding-top: 24px;
+      width: 100%;
+      padding-bottom: 44px;
     }
 
-    /* Layer 3: Active Page Stage floating above `main_dashboard` */
+    .drawer-logout-btn {
+      display: block;
+      width: 100%;
+      background: #28462c;
+      border: 1px solid #1e3522;
+      color: #ffffff;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(15, 30, 18, 0.18);
+      transition: background-color 0.2s ease, transform 0.15s ease;
+    }
+
+    body.dark-mode .drawer-logout-btn {
+      background: #3d6b43;
+      border-color: #558a5c;
+      color: #ffffff;
+    }
+
+    .drawer-logout-btn:hover {
+      background: #1e3522;
+      transform: translateY(-1px);
+    }
+
+    /* =========================================================
+       CENTERED MAIN STAGE + ARROW-HEAD EXPAND TRANSITION
+       ========================================================= */
     .pages-stage {
       flex: 1;
-      border-radius: 24px;
-      background: var(--stage-bg);
-      border: 1px solid var(--stage-border);
-      backdrop-filter: blur(8px);
-      box-shadow: 0 14px 36px rgba(14, 28, 16, 0.14);
-      padding: 20px 26px;
-      overflow-y: auto;
+      width: 100%;
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 2px 28px 66px 28px;
       position: relative;
       z-index: 10;
     }
 
-    @media (max-width: 860px) {
-      .dashboard-workspace {
-        flex-direction: column;
-        padding: 6px 14px 18px 14px;
-        gap: 14px;
+    @keyframes expandFromArrowHead {
+      0% {
+        clip-path: circle(0px at var(--origin-x, 88%) var(--origin-y, 26%));
+        opacity: 0.25;
       }
-      .sidebar-slot {
-        width: 100%;
-        flex-direction: row;
-        align-items: center;
-        padding: 4px 0;
-        overflow-x: auto;
+      100% {
+        clip-path: circle(150% at var(--origin-x, 88%) var(--origin-y, 26%));
+        opacity: 1;
       }
-      .sidebar-slot.collapsed {
-        height: 0;
-        width: 100%;
-        margin-right: 0;
+    }
+
+    .pages-stage.arrow-expanding {
+      animation: expandFromArrowHead 0.56s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @media (max-width: 768px) {
+      .pages-stage {
+        padding: 4px 16px 68px 16px;
       }
-      .sidebar-nav {
-        flex-direction: row;
-        gap: 10px;
-      }
-      .sidebar-pill {
-        width: auto;
-        white-space: nowrap;
-        padding: 9px 16px;
-      }
-      #sidebarMount {
-        width: 100%;
-      }
-      .sidebar-footer {
-        margin-top: 0;
-        padding-top: 0;
-        margin-left: 10px;
+      .right-floating-dock {
+        right: 34px;
+        bottom: 8px;
+        gap: 11px;
       }
     }
   </style>
@@ -359,75 +510,86 @@
 
   <div class="main-dashboard" id="mainDashboard">
 
-    <!-- Topbar: Left (Brand + Hamburger) | Right (Notification Bell, Sun/Moon Theme, Profile Photo) -->
+    <!-- Top Header: Brand (Left) & Real Database Profile Photo (Right) -->
     <header class="dashboard-topbar">
-      <div class="topbar-left">
-        <a href="/home" class="brand-link">
-          <img id="brandLogoImg" class="brand-logo-img" alt="Signrest Logo" />
-          <span class="brand-name">Signrest</span>
-        </a>
-        <button
-          type="button"
-          id="sidebarToggleBtn"
-          class="sidebar-toggle-btn"
-          aria-label="Toggle Sidebar"
-          title="Toggle Sidebar"
-        >
-          &#9776;
-        </button>
-      </div>
+      <a href="/home?page=translation" class="brand-link" data-page-link="translation">
+        <img id="brandLogoImg" class="brand-logo-img" alt="Signrest Logo" />
+        <span class="brand-name">Signrest</span>
+      </a>
 
-      <div class="topbar-right">
-        <!-- 1. Notification Bell -->
-        <a
-          href="/home?page=notification"
-          id="notiBellBtn"
-          class="top-circle-slot"
-          data-nav-target="notification"
-          aria-label="Notifications"
-          title="Notifications"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-          <span class="noti-dot" aria-hidden="true"></span>
-        </a>
-
-        <!-- 2. Light / Dark Mode Switch (Sun / Moon Image) -->
-        <button
-          type="button"
-          id="themeSlotBtn"
-          class="top-circle-slot"
-          aria-label="Toggle Light or Dark Mode"
-          title="Switch Light / Dark Mode"
-        >
-          <img id="themeIconImg" class="icon-img" alt="Theme Toggle" />
-        </button>
-
-        <!-- 3. User Profile Photo -->
-        <a
-          href="/home?page=profile"
-          id="profileSlotBtn"
-          class="top-circle-slot"
-          data-nav-target="profile"
-          aria-label="Profile"
-          title="Profile"
-        >
-          <span id="profileInitialText" class="font-semibold text-sm">U</span>
-          <img id="profileAvatarImg" class="avatar-img" style="display:none;" alt="Profile Photo" />
-        </a>
-      </div>
+      <button
+        type="button"
+        id="profileSlotBtn"
+        class="profile-trigger-btn"
+        aria-label="Open Profile Menu"
+        title="Profile & Settings"
+      >
+        <span id="profileInitialText" style="font-weight:700; font-size:1.05rem;">U</span>
+        <img id="profileAvatarImg" style="display:none;" alt="User Profile Photo" />
+      </button>
     </header>
 
-    <!-- Main Body: Individual Floating Sidebar Pills + Elevated Page Container -->
-    <div class="dashboard-workspace">
-      <div id="sidebarMount"></div>
+    <!-- 4 Floating Circles Aligned to Bottom-Right Drawer Width -->
+    <div class="right-floating-dock" aria-label="Quick Actions">
+      <!-- 1. Light / Dark Mode -->
+      <button
+        type="button"
+        id="themeSlotBtn"
+        class="dock-circle-btn dock-theme-circle"
+        aria-label="Toggle Light or Dark Mode"
+        title="Light / Dark Mode"
+      >
+        <img id="themeIconImg" alt="Theme Toggle" />
+      </button>
 
-      <main class="pages-stage" id="pagesContainer">
-        <p style="text-align:center; padding:40px 0;">Loading Signrest workspace...</p>
-      </main>
+      <!-- 2. Notification Bell -->
+      <button
+        type="button"
+        class="dock-circle-btn dock-noti-circle"
+        data-page-link="notification"
+        aria-label="Notifications"
+        title="Notifications"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+        </svg>
+        <span class="noti-badge-dot" aria-hidden="true"></span>
+      </button>
+
+      <!-- 3. Donation (`donation.png` / `donation.jpg`) -->
+      <button
+        type="button"
+        class="dock-circle-btn dock-donation-circle"
+        data-page-link="donation"
+        aria-label="Donation"
+        title="Support & Donation"
+      >
+        <img id="donationIconImg" alt="Donation" />
+      </button>
+
+      <!-- 4. Learning (Book Icon) -->
+      <button
+        type="button"
+        class="dock-circle-btn dock-learning-circle"
+        data-page-link="learning"
+        aria-label="Learning"
+        title="ASL Learning"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>
+      </button>
     </div>
+
+    <!-- Right-Side Slide-In Profile Drawer Mount (`sidebar.html`) -->
+    <div id="drawerBackdrop" class="drawer-backdrop"></div>
+    <div id="sidebarMount"></div>
+
+    <!-- Active Page Viewport -->
+    <main class="pages-stage" id="pagesContainer">
+      <p style="text-align:center; padding:40px 0;">Loading Signrest...</p>
+    </main>
 
   </div>
 
@@ -437,30 +599,39 @@
       bgLight:  "../assets/images/login_bg_11.jpg",
       bgDark:   "../assets/images/login_bg_night_1.jpg",
       iconSun:  "../assets/images/sun_bgremove.png",
-      iconMoon: "../assets/images/moon_bgremove.png"
+      iconMoon: "../assets/images/moon_bgremove.png",
+      donation: "../assets/images/donation.png"
     };
 
     const DASHBOARD_FALLBACKS = {
       logo:     "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='#3e5d3e'/><path d='M20 40 C20 26, 34 18, 46 20 C44 33, 35 43, 20 40 Z' fill='#b9e396'/></svg>`),
       iconSun:  "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#f59e0b' stroke='#f59e0b' stroke-width='2'><circle cx='12' cy='12' r='5'/></svg>`),
-      iconMoon: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#e2e8f0'><path d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/></svg>`)
+      iconMoon: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#e2e8f0'><path d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/></svg>`),
+      donation: "../assets/images/donation.jpg"
     };
 
     const PAGE_ROUTES = {
       translation:  "/user_homepage/translation.html",
       learning:     "/user_homepage/learning.html",
       notification: "/user_homepage/notification.html",
-      profile:      "/user_homepage/profile.html"
+      donation:     "/user_homepage/donation.html",
+      profile:      "/user_homepage/profile.html",
+      cursor:       "/user_homepage/cursor_setting.html",
+      contact:      "/user_homepage/contact.html",
+      feedback:     "/user_homepage/feedback.html"
     };
 
     let currentTheme = localStorage.getItem("signrest_theme") === "dark" ? "dark" : "light";
+    let currentUserData = { username: "User", profile_photo: null };
 
     const bgPhotoLayer = document.getElementById("bgPhotoLayer");
     const brandLogoImg = document.getElementById("brandLogoImg");
     const themeIconImg = document.getElementById("themeIconImg");
+    const donationIconImg = document.getElementById("donationIconImg");
     const sidebarMount = document.getElementById("sidebarMount");
+    const drawerBackdrop = document.getElementById("drawerBackdrop");
     const pagesContainer = document.getElementById("pagesContainer");
-    const sidebarToggleBtn = document.getElementById("sidebarToggleBtn");
+    const profileSlotBtn = document.getElementById("profileSlotBtn");
 
     function applyDashboardTheme() {
       const isDark = currentTheme === "dark";
@@ -481,6 +652,12 @@
       };
       themeIconImg.src = DASHBOARD_ASSETS[iconKey];
 
+      donationIconImg.onerror = () => {
+        donationIconImg.onerror = null;
+        donationIconImg.src = DASHBOARD_FALLBACKS.donation;
+      };
+      donationIconImg.src = DASHBOARD_ASSETS.donation;
+
       bgPhotoLayer.style.backgroundImage = `url('${isDark ? DASHBOARD_ASSETS.bgDark : DASHBOARD_ASSETS.bgLight}')`;
     }
 
@@ -489,24 +666,73 @@
       applyDashboardTheme();
     });
 
-    async function loadUserTopbarProfile() {
+    function syncUserIdentityUI() {
+      const name = currentUserData.username || "User";
+      const photo = currentUserData.profile_photo;
+      const initial = name.trim().charAt(0).toUpperCase();
+
+      const topInitial = document.getElementById("profileInitialText");
+      const topAvatar = document.getElementById("profileAvatarImg");
+      if (topInitial) topInitial.textContent = initial;
+      if (topAvatar && photo) {
+        topAvatar.src = photo;
+        topAvatar.style.display = "block";
+        if (topInitial) topInitial.style.display = "none";
+      }
+
+      const drawerName = document.getElementById("drawerUsernameText");
+      const drawerInitial = document.getElementById("drawerInitialText");
+      const drawerAvatar = document.getElementById("drawerAvatarImg");
+      if (drawerName) drawerName.textContent = name;
+      if (drawerInitial) drawerInitial.textContent = initial;
+      if (drawerAvatar && photo) {
+        drawerAvatar.src = photo;
+        drawerAvatar.style.display = "block";
+        if (drawerInitial) drawerInitial.style.display = "none";
+      }
+    }
+
+    async function loadUserFromDatabase() {
       try {
         const res = await fetch("/api/user/me");
         if (!res.ok) return;
-        const user = await res.json();
-        const initialEl = document.getElementById("profileInitialText");
-        const avatarEl = document.getElementById("profileAvatarImg");
-
-        const displayName = user.username || user.email || "U";
-        initialEl.textContent = displayName.trim().charAt(0).toUpperCase();
-
-        if (user.profile_photo) {
-          avatarEl.src = user.profile_photo;
-          avatarEl.style.display = "block";
-          initialEl.style.display = "none";
+        const data = await res.json();
+        if (data && data.authenticated) {
+          currentUserData = {
+            username: data.username || "User",
+            profile_photo: data.profile_photo || null
+          };
+          syncUserIdentityUI();
         }
       } catch (err) {}
     }
+
+    function openProfileDrawer() {
+      const drawer = document.getElementById("profileDrawer");
+      if (!drawer) return;
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+      drawerBackdrop.classList.add("open");
+    }
+
+    function closeProfileDrawer() {
+      const drawer = document.getElementById("profileDrawer");
+      if (!drawer) return;
+      drawer.classList.remove("open");
+      drawer.setAttribute("aria-hidden", "true");
+      drawerBackdrop.classList.remove("open");
+    }
+
+    profileSlotBtn.addEventListener("click", () => {
+      const drawer = document.getElementById("profileDrawer");
+      if (drawer && drawer.classList.contains("open")) {
+        closeProfileDrawer();
+      } else {
+        openProfileDrawer();
+      }
+    });
+
+    drawerBackdrop.addEventListener("click", closeProfileDrawer);
 
     function getCurrentPageKey() {
       const params = new URLSearchParams(window.location.search);
@@ -514,31 +740,45 @@
       return PAGE_ROUTES[key] ? key : "translation";
     }
 
-    function setActiveSidebarLink(pageKey) {
-      document.querySelectorAll("#sidebarMount .sidebar-pill[data-page]").forEach((link) => {
-        link.classList.toggle("active", link.dataset.page === pageKey);
+    function setActiveDockCircle(pageKey) {
+      document.querySelectorAll(".dock-circle-btn[data-page-link]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.pageLink === pageKey);
       });
     }
 
-    function navigateToPage(targetPage) {
+    function navigateToPage(targetPage, expandOriginEvent) {
       if (!PAGE_ROUTES[targetPage]) return;
+
+      if (expandOriginEvent && expandOriginEvent.currentTarget) {
+        const arrowEl = expandOriginEvent.currentTarget.querySelector(".chevron-arrow") || expandOriginEvent.currentTarget;
+        const rect = arrowEl.getBoundingClientRect();
+        const originX = Math.round(rect.left + rect.width / 2);
+        const originY = Math.round(rect.top + rect.height / 2);
+        pagesContainer.style.setProperty("--origin-x", `${originX}px`);
+        pagesContainer.style.setProperty("--origin-y", `${originY}px`);
+      } else {
+        pagesContainer.style.removeProperty("--origin-x");
+        pagesContainer.style.removeProperty("--origin-y");
+      }
+
+      closeProfileDrawer();
       window.history.pushState({ page: targetPage }, "", `/home?page=${targetPage}`);
-      loadPage(targetPage);
+      loadPage(targetPage, Boolean(expandOriginEvent));
     }
 
-    async function loadSidebar() {
+    async function loadProfileDrawer() {
       const res = await fetch("/user_homepage/sidebar.html");
       sidebarMount.innerHTML = await res.text();
+      syncUserIdentityUI();
 
-      const sidebarEl = document.getElementById("floatingSidebar");
-      sidebarToggleBtn.addEventListener("click", () => {
-        sidebarEl.classList.toggle("collapsed");
-      });
+      const closeAvatarBtn = document.getElementById("drawerAvatarCloseBtn");
+      if (closeAvatarBtn) {
+        closeAvatarBtn.addEventListener("click", closeProfileDrawer);
+      }
 
-      document.querySelectorAll("#sidebarMount .sidebar-pill[data-page]").forEach((link) => {
-        link.addEventListener("click", (e) => {
-          e.preventDefault();
-          navigateToPage(link.dataset.page);
+      document.querySelectorAll("#sidebarMount .drawer-arrow-link[data-page]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          navigateToPage(btn.dataset.page, e);
         });
       });
 
@@ -551,55 +791,62 @@
       }
     }
 
-    // Topbar Notification & Profile buttons also navigate cleanly inside the shell
-    document.querySelectorAll("[data-nav-target]").forEach((el) => {
+    document.querySelectorAll("[data-page-link]").forEach((el) => {
       el.addEventListener("click", (e) => {
         e.preventDefault();
-        navigateToPage(el.dataset.navTarget);
+        navigateToPage(el.dataset.pageLink, e);
       });
     });
 
-    async function loadPage(pageKey) {
-      setActiveSidebarLink(pageKey);
+    async function loadPage(pageKey, triggerArrowExpand) {
+      setActiveDockCircle(pageKey);
       const fileUrl = PAGE_ROUTES[pageKey];
 
       try {
         const res = await fetch(fileUrl);
         if (!res.ok) {
-          pagesContainer.innerHTML = `<h2 style="margin-bottom:8px;">${pageKey.toUpperCase()}</h2><p>Page file (${fileUrl}) will be built next.</p>`;
-          return;
-        }
-        const html = await res.text();
-        const parsed = new DOMParser().parseFromString(html, "text/html");
+          pagesContainer.innerHTML = `
+            <div style="background:rgba(242,245,236,0.9); border-radius:20px; padding:28px; max-width:680px; margin:24px auto;">
+              <h2 style="margin-bottom:8px; text-transform:capitalize;">${pageKey.replace("_", " ")}</h2>
+              <p>This page (<code>Front-end${fileUrl}</code>) will be built next.</p>
+            </div>`;
+        } else {
+          const html = await res.text();
+          const parsed = new DOMParser().parseFromString(html, "text/html");
 
-        // Inject page styles & main content
-        pagesContainer.innerHTML = "";
-        parsed.querySelectorAll("style").forEach((styleTag) => {
-          pagesContainer.appendChild(styleTag.cloneNode(true));
-        });
-
-        const pageRoot = parsed.getElementById("translatePageRoot") || parsed.body;
-        Array.from(pageRoot.children).forEach((child) => {
-          if (child.tagName !== "SCRIPT") {
-            pagesContainer.appendChild(child.cloneNode(true));
-          }
-        });
-
-        // Execute page scripts in order
-        const scripts = Array.from(parsed.querySelectorAll("script"));
-        for (const oldScript of scripts) {
-          await new Promise((resolve) => {
-            const newScript = document.createElement("script");
-            if (oldScript.src) {
-              newScript.src = oldScript.src;
-              newScript.onload = resolve;
-              newScript.onerror = resolve;
-            } else {
-              newScript.textContent = oldScript.textContent;
-              resolve();
-            }
-            document.body.appendChild(newScript);
+          pagesContainer.innerHTML = "";
+          parsed.querySelectorAll("style").forEach((styleTag) => {
+            pagesContainer.appendChild(styleTag.cloneNode(true));
           });
+
+          const pageRoot = parsed.getElementById("translatePageRoot") || parsed.body;
+          Array.from(pageRoot.children).forEach((child) => {
+            if (child.tagName !== "SCRIPT") {
+              pagesContainer.appendChild(child.cloneNode(true));
+            }
+          });
+
+          const scripts = Array.from(parsed.querySelectorAll("script"));
+          for (const oldScript of scripts) {
+            await new Promise((resolve) => {
+              const newScript = document.createElement("script");
+              if (oldScript.src) {
+                newScript.src = oldScript.src;
+                newScript.onload = resolve;
+                newScript.onerror = resolve;
+              } else {
+                newScript.textContent = oldScript.textContent;
+                resolve();
+              }
+              document.body.appendChild(newScript);
+            });
+          }
+        }
+
+        if (triggerArrowExpand) {
+          pagesContainer.classList.remove("arrow-expanding");
+          void pagesContainer.offsetWidth;
+          pagesContainer.classList.add("arrow-expanding");
         }
       } catch (err) {
         pagesContainer.innerHTML = `<p>Error loading ${pageKey} page.</p>`;
@@ -607,14 +854,14 @@
     }
 
     window.addEventListener("popstate", () => {
-      loadPage(getCurrentPageKey());
+      loadPage(getCurrentPageKey(), false);
     });
 
     (async function initDashboard() {
       applyDashboardTheme();
-      await loadUserTopbarProfile();
-      await loadSidebar();
-      await loadPage(getCurrentPageKey());
+      await loadUserFromDatabase();
+      await loadProfileDrawer();
+      await loadPage(getCurrentPageKey(), false);
     })();
   </script>
 </body>

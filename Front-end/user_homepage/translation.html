@@ -30,7 +30,6 @@
       --forest-mid: #4e8054;
       --cam-bg: rgba(18, 28, 22, 0.92);
       --cam-border: #6f9e73;
-      /* Paper ink stays dark forest green on the cream typewriter sheet */
       --paper-ink: #1e3522;
       --paper-box-border: rgba(30, 53, 34, 0.55);
       --paper-box-bg: rgba(255, 255, 255, 0.42);
@@ -41,7 +40,7 @@
 
     .translate-root {
       width: 100%;
-      max-width: 980px;
+      max-width: 960px;
       margin: 0 auto;
       font-family: 'Lora', Georgia, serif;
       color: var(--typed-text-color);
@@ -69,7 +68,6 @@
       box-shadow: 0 6px 18px rgba(15, 28, 16, 0.12);
     }
 
-    /* Liquid water-flow active pill indicator */
     .mode-water-pill {
       position: absolute;
       top: 5px;
@@ -117,7 +115,6 @@
       color: #ffffff;
     }
 
-    /* Smooth water-flow panel transition */
     .flow-panel {
       animation: waterFadeIn 0.42s cubic-bezier(0.22, 1, 0.36, 1);
     }
@@ -150,7 +147,6 @@
       justify-content: center;
     }
 
-    /* Webcam Card: Compacted vertically so Typed Text box sits higher in viewport */
     .cam-card {
       position: relative;
       width: 100%;
@@ -193,7 +189,6 @@
       font-size: 0.88rem;
     }
 
-    /* Top-right Circular Mirror Toggle Arrow */
     .cam-mirror-circle {
       position: absolute;
       top: 12px;
@@ -223,7 +218,6 @@
       transform: scaleX(-1);
     }
 
-    /* Bottom-center Circular Camera Start/Stop Button */
     .cam-shutter-btn {
       position: absolute;
       bottom: 14px;
@@ -256,10 +250,7 @@
       100% { box-shadow: 0 0 0 0 rgba(159, 35, 35, 0); }
     }
 
-    /* =========================================================
-       VINTAGE TYPEWRITER & CREAM PAPER (`assets/images/paper_tag_5.png`)
-       Bottom horizontal base sits flush on the Typed Text border
-       ========================================================= */
+    /* Vintage Typewriter & Cream Paper (`assets/images/paper_tag_5.png`) */
     .typewriter-tag-wrap {
       position: relative;
       z-index: 4;
@@ -326,7 +317,6 @@
       background: #2c5e34;
     }
 
-    /* Lower Split inside Cream Paper: Left (`predictions %`) + Right (4 stacked metric boxes) */
     .tag-lower-grid {
       display: grid;
       grid-template-columns: 1.08fr 0.92fr;
@@ -403,9 +393,7 @@
       color: var(--paper-ink);
     }
 
-    /* =========================================================
-       BOTTOM TYPED TEXT BAR (Sits right beneath Typewriter base)
-       ========================================================= */
+    /* Bottom Typed Text Bar */
     .typed-text-bar {
       position: relative;
       z-index: 6;
@@ -719,13 +707,11 @@
 
       <!-- Right: Vintage Typewriter & Cream Paper (`assets/images/paper_tag_5.png`) -->
       <div class="typewriter-tag-wrap" id="paperTagWrap">
-        <!-- Top Result Box on Cream Sheet -->
         <div class="tag-result-box" id="sign-result" aria-live="polite">
           <div class="label">Result......</div>
           <div class="text">—</div>
         </div>
 
-        <!-- Lower Split: Predictions % + 4 Live Metric Boxes -->
         <div class="tag-lower-grid">
           <div class="tag-predictions-box">
             <div class="tag-box-heading">predictions %</div>
@@ -869,9 +855,6 @@
 
 <script>
 (function initSignrestTranslation() {
-  // ASL model API. Served by Flask, the page and the model share one origin;
-  // previewed from a static server (Live Server on :5500/:8000/:3000, or
-  // file://) the model API is still the local backend on :5000.
   const STATIC_PREVIEW_PORTS = { "5500": true, "8000": true, "3000": true };
   const API_BASE = (location.protocol === "file:" || STATIC_PREVIEW_PORTS[location.port])
     ? "http://127.0.0.1:5000"
@@ -1360,7 +1343,7 @@
         imgBox.className = "imgbox";
         const img = document.createElement("img");
         img.alt = "ASL sign for " + ch;
-        img.src = "../assets/signs/" + ch + ".png";
+        img.src = "../assets/images/signs/" + ch + ".png";
         img.onerror = () => {
           imgBox.innerHTML = `<strong style="font-size:1.45rem;">${ch}</strong>`;
         };

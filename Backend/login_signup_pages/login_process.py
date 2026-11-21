@@ -10,11 +10,25 @@ login_bp = Blueprint("login_bp", __name__)
 
 MAX_LOGIN_ATTEMPTS = 3
 LOCKOUT_HOURS = 24
-LOGIN_OTP_EXPIRY_MINUTES = 10
+LOGIN_OTP_EXPIRY_SECONDS = 60
 
 
 def _generate_otp(length: int = 6) -> str:
     return "".join(str(random.SystemRandom().randint(0, 9)) for _ in range(length))
+
+
+def _record_login_history(cursor, user_id: int, login_status: str, login_time: datetime) -> None:
+    ip_addr = request.headers.get("X-Forwarded-For", request.remote_addr or "")[:45]
+    user_agent = (request.headers.get("User-Agent") or "")[:255]
+    cursor.execute(
+        """
+        INSERT INTO login_history (
+            user_id, login_time, login_status, device_info, ip_address
+        )
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (user_id, login_time, login_status, user_agent, ip_addr),
+    )
 
 
 def ensure_login_columns() -> None:
@@ -68,9 +82,6 @@ def process_login():
     if not email or "@" not in email or "." not in email.split("@")[-1]:
         return jsonify({"success": False, "message": "Invalid Email!"}), 400
 
-    if not password:
-        return jsonify({"success": False, "message": "Invalid Password"}), 400
-
     conn = None
     try:
         conn = get_db_connection()
@@ -87,15 +98,27 @@ def process_login():
             (email,),
         )
         user = cursor.fetchone()
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+
+        if not password:
+            if user:
+                _record_login_history(cursor, user["user_id"], "login_fail", now_utc)
+                conn.commit()
+            return jsonify({"success": False, "message": "Invalid Password"}), 400
 
         # 1. Non-existent or 'pending' account -> treat as Invalid Email!
         if not user or (user["status"] or "").lower() == "pending":
+            if user:
+                _record_login_history(cursor, user["user_id"], "login_fail", now_utc)
+                conn.commit()
             return jsonify({"success": False, "message": "Invalid Email!"}), 401
 
         status = (user["status"] or "").lower()
 
         # 2. Banned account check
         if status == "banned":
+            _record_login_history(cursor, user["user_id"], "login_fail", now_utc)
+            conn.commit()
             return jsonify(
                 {
                     "success": False,
@@ -103,13 +126,14 @@ def process_login():
                 }
             ), 403
 
-        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
         locked_until = user.get("locked_until")
         attempts = int(user.get("failed_login_attempts") or 0)
 
         # 3. Check active 24-hour lockout
         if locked_until:
             if now_utc < locked_until:
+                _record_login_history(cursor, user["user_id"], "login_fail", now_utc)
+                conn.commit()
                 remaining = locked_until - now_utc
                 hours_left = max(1, int((remaining.total_seconds() + 3599) // 3600))
                 return jsonify(
@@ -129,6 +153,7 @@ def process_login():
         # 4. Verify password
         if not check_password_hash(user["password_hash"], password):
             attempts += 1
+            _record_login_history(cursor, user["user_id"], "login_fail", now_utc)
 
             if attempts >= MAX_LOGIN_ATTEMPTS:
                 lock_expiry = now_utc + timedelta(hours=LOCKOUT_HOURS)
@@ -162,7 +187,7 @@ def process_login():
         # 5. Password matched -> reset failed attempts & generate 6-digit Login OTP
         user_id = user["user_id"]
         otp_code = _generate_otp(6)
-        expires_at = now_utc + timedelta(minutes=LOGIN_OTP_EXPIRY_MINUTES)
+        expires_at = now_utc + timedelta(seconds=LOGIN_OTP_EXPIRY_SECONDS)
 
         cursor.execute(
             """
@@ -193,6 +218,15 @@ def process_login():
             recipient_name=user.get("username"),
         )
         if not mail_ok:
+            history_cursor = conn.cursor()
+            _record_login_history(
+                history_cursor,
+                user_id,
+                "otp_fail",
+                datetime.now(timezone.utc).replace(tzinfo=None),
+            )
+            conn.commit()
+            history_cursor.close()
             return jsonify(
                 {"success": False, "message": f"Could not send Login OTP email: {mail_msg}"}
             ), 500
@@ -234,13 +268,22 @@ def verify_login_otp():
     email = (data.get("email") or session.get("pending_login_email") or "").strip().lower()
     otp_input = (data.get("otp") or "").strip()
 
-    if not email or not otp_input:
+    if not email:
         return jsonify({"success": False, "message": "Email and 6-digit OTP are required."}), 400
 
     conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+
+        if not otp_input:
+            cursor.execute("SELECT user_id FROM users WHERE email = %s LIMIT 1", (email,))
+            user = cursor.fetchone()
+            if user:
+                _record_login_history(cursor, user["user_id"], "otp_fail", now_utc)
+                conn.commit()
+            return jsonify({"success": False, "message": "Email and 6-digit OTP are required."}), 400
 
         cursor.execute(
             """
@@ -257,11 +300,18 @@ def verify_login_otp():
         record = cursor.fetchone()
 
         if not record:
+            cursor.execute("SELECT user_id FROM users WHERE email = %s LIMIT 1", (email,))
+            user = cursor.fetchone()
+            if user:
+                _record_login_history(cursor, user["user_id"], "otp_fail", now_utc)
+                conn.commit()
             return jsonify(
                 {"success": False, "message": "No login verification found. Please log in again."}
             ), 404
 
         if (record.get("status") or "").lower() == "banned":
+            _record_login_history(cursor, record["user_id"], "otp_fail", now_utc)
+            conn.commit()
             return jsonify(
                 {
                     "success": False,
@@ -269,8 +319,8 @@ def verify_login_otp():
                 }
             ), 403
 
-        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
-        if now_utc > record["expires_at"]:
+        if now_utc >= record["expires_at"]:
+            _record_login_history(cursor, record["user_id"], "otp_fail", now_utc)
             cursor.execute("DELETE FROM otp WHERE otp_id = %s", (record["otp_id"],))
             conn.commit()
             return jsonify(
@@ -278,6 +328,8 @@ def verify_login_otp():
             ), 410
 
         if otp_input != record["otp_code"]:
+            _record_login_history(cursor, record["user_id"], "otp_fail", now_utc)
+            conn.commit()
             return jsonify({"success": False, "message": "Invalid OTP code. Please try again."}), 401
 
         user_id = record["user_id"]
@@ -288,19 +340,7 @@ def verify_login_otp():
             (user_id,),
         )
 
-        # Record login history (best-effort)
-        try:
-            ip_addr = request.headers.get("X-Forwarded-For", request.remote_addr or "")[:45]
-            user_agent = (request.headers.get("User-Agent") or "")[:255]
-            cursor.execute(
-                """
-                INSERT INTO login_history (user_id, ip_address, device_info, login_time)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (user_id, ip_addr, user_agent, now_utc),
-            )
-        except Exception:
-            pass
+        _record_login_history(cursor, user_id, "success", now_utc)
 
         conn.commit()
         cursor.close()
@@ -366,7 +406,7 @@ def resend_login_otp():
 
         now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
         new_otp = _generate_otp(6)
-        new_expiry = now_utc + timedelta(minutes=LOGIN_OTP_EXPIRY_MINUTES)
+        new_expiry = now_utc + timedelta(seconds=LOGIN_OTP_EXPIRY_SECONDS)
 
         cursor.execute(
             "DELETE FROM otp WHERE user_id = %s AND purpose = 'login'",

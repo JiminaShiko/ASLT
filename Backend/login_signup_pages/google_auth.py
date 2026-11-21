@@ -19,6 +19,21 @@ GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 
 
+def _record_login_history(cursor, user_id: int, login_status: str, login_time: datetime) -> None:
+    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    ip_addr = (forwarded_for.split(",")[0].strip() or request.remote_addr or "")[:45]
+    user_agent = (request.headers.get("User-Agent") or "Google OAuth")[:255]
+    cursor.execute(
+        """
+        INSERT INTO login_history (
+            user_id, login_time, login_status, device_info, ip_address
+        )
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (user_id, login_time, login_status, user_agent, ip_addr),
+    )
+
+
 def _get_google_credentials() -> tuple[str, str]:
     client_id = os.getenv("GOOGLE_CLIENT_ID", "").strip()
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
@@ -163,6 +178,8 @@ def google_callback():
 
             # 1. Block banned accounts
             if status == "banned":
+                _record_login_history(cursor, user_id, "login_fail", now_utc)
+                conn.commit()
                 cursor.close()
                 return _redirect_with_oauth_error(
                     "Sorry, you're banned from our community. For more concern, contact to admin via mail.",
@@ -217,19 +234,7 @@ def google_callback():
             profile_photo = None
             is_new_account = True
 
-        # Record login history (best-effort)
-        try:
-            ip_addr = request.headers.get("X-Forwarded-For", request.remote_addr or "")[:45]
-            user_agent = (request.headers.get("User-Agent") or "Google OAuth")[:255]
-            cursor.execute(
-                """
-                INSERT INTO login_history (user_id, ip_address, device_info, login_time)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (user_id, ip_addr, user_agent, now_utc),
-            )
-        except Exception:
-            pass
+        _record_login_history(cursor, user_id, "success", now_utc)
 
         conn.commit()
         cursor.close()
