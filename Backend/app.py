@@ -10,6 +10,7 @@ BACKEND_DIR = Path(__file__).resolve().parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
+from config.database.db_connection import get_db_connection
 from config.environment import load_environment
 from login_signup_pages.forgot_password_process import forgot_password_bp
 from login_signup_pages.google_auth import google_bp
@@ -157,17 +158,55 @@ def serve_user_homepage_files(filename):
 
 @app.route("/api/user/me", methods=["GET"])
 def get_current_user():
-    if not session.get("user_id"):
+    user_id = session.get("user_id")
+    user_email = session.get("user_email")
+    if not user_id and not user_email:
         return jsonify({"authenticated": False}), 401
+
+    username = session.get("username")
+    profile_photo = session.get("profile_photo")
+    role = session.get("user_role", "user")
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        if user_id:
+            cur.execute(
+                "SELECT id, email, username, profile_photo, role FROM users WHERE id = %s",
+                (user_id,),
+            )
+        else:
+            cur.execute(
+                "SELECT id, email, username, profile_photo, role FROM users WHERE email = %s",
+                (user_email,),
+            )
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if row:
+            user_id = row[0]
+            user_email = row[1]
+            username = row[2] or username
+            profile_photo = row[3] or profile_photo
+            role = row[4] or role
+            session["user_id"] = user_id
+            session["username"] = username
+            session["profile_photo"] = profile_photo
+    except Exception:
+        pass
+
+    display_name = username or (user_email.partition("@")[0] if user_email else "User")
+
     return jsonify(
         {
             "authenticated": True,
-            "user_id": session.get("user_id"),
-            "email": session.get("user_email"),
-            "username": session.get("username"),
-            "profile_photo": session.get("profile_photo"),
-            "role": session.get("user_role", "user"),
-            "profile_completed": session.get("profile_completed", False),
+            "user_id": user_id,
+            "email": user_email,
+            "username": display_name,
+            "profile_photo": profile_photo,
+            "role": role,
+            "profile_completed": bool(username),
         }
     ), 200
 
