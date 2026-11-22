@@ -21,18 +21,20 @@ Measured, not estimated. "Cross-dataset" = leave-one-dataset-out, so every test
 image was scored by a model that never saw that dataset.
 
 ```
-  training data        : 122,359 landmark vectors from 3 public datasets
+  training data        : 4 public datasets (danrasband, grassknoted, massey,
+                         rushil); 124,663 held-out images in the evaluation
   features             : 71 numbers per hand (xy + tip distances + curl + thumb)
   model                : MLP 128-64, 24 classes, CPU only
-  cross-dataset pooled : 67.0 %  [66.7-67.2]      <- the honest headline
-      per holdout      : danrasband 94.4 % (712 imgs, small), grassknoted 79.5 %,
-                         massey 53.8 %
+  model built          : 2026-11-21 (rushil added; reports/report_all.md)
+  cross-dataset pooled : 68.7 %  [68.4-69.0]      <- the honest headline
+      per holdout      : danrasband 93.4 % (712 imgs, small), grassknoted 79.9 %,
+                         massey 56.3 %, rushil 86.5 % (2,304 imgs, 23 letters)
   unseen hands,        : 85.7 % over 35,893 images (massey A+B -> C+D+E).
   one imaging style    : this is the closest dataset-side proxy for a webcam.
                          It is still not a webcam measurement.
-  weakest letters      : N 0.4 %, M 3.2 %, T 16.8 %, C 36.8 %, D 40.1 %, P 40.0 %
-                         In-sample the same model scores 90-96 % on them, so
-                         this is transfer, not capacity.
+  weakest letters      : N 0.3 %, T 14.1 %, M 15.9 %, C 38.8 %, Q 45.5 %, G 50.5 %
+                         Every one is a cross-dataset transfer failure, not
+                         capacity: see REPORT.md and reports/letter_diagnosis.md.
   live frame coverage  : 98.3 % of frames get a hand, ~85 frames/s through the
                          webcam code path with no camera attached
   real webcam speed    : ~20 fps ceiling - MediaPipe VIDEO costs 45-52 ms a
@@ -66,12 +68,12 @@ WHAT YOU NEED
 ```
   Python 3.11 or newer (tested on 3.13.15), CPU only, no GPU.
   A webcam, for the app.
-  About 3 GB free for the public datasets (2.92 GB measured, see DATASETS USED).
+  About 6 GB free for the public datasets (5.57 GB measured, see DATASETS USED).
   A Kaggle account only if a dataset is missing from your local Kaggle cache.
 ```
 Datasets download into this folder's ignored `datasets/kagglehub/` directory.
 This keeps training independent of a machine-global cache and keeps raw data
-out of Git. The three currently available datasets are reused from that folder
+out of Git. The four currently available datasets are reused from that folder
 on later runs. Extracted landmarks and generated caches also stay under this
 folder in `cache/`.
 
@@ -302,7 +304,11 @@ DATASETS USED
                               Kaggle page - the only multi-signer set here, and
                               the hardest
   danrasband                   780 images   0.01 GB  CC0 - public domain
-                              2.92 GB in total, measured from data/datasets.json
+  officialrushil/asl-alphabet 7,696 images   2.65 GB  licence not stated on the
+                              Kaggle page - research use; independent photos,
+                              26 letters (J and Z are not classifier classes),
+                              added 2026-11-21
+                              5.57 GB in total, measured from data/datasets.json
 
   MSL dynamic (Zenodo 14689869) - 622 short J/K/N/Q/X/Z clips, used only to
   measure whether a movement classifier could reach J/Z. It does not transfer to
@@ -338,11 +344,12 @@ Ignored, because `python run_all.py` regenerates them:
 LIMITATIONS (read before trusting a number)
 ===========================================
 ```
-  - 67.0 % is the honest cross-dataset figure; 85.7 % is unseen hands in a
+  - 68.7 % is the honest cross-dataset figure; 85.7 % is unseen hands in a
     matching style, and a webcam is somewhere between the two. Neither is a
     live measurement, and no live measurement is claimed anywhere.
-  - N and M are near 0 % cross-dataset because the datasets disagree about what
-    they look like; more features will not fix it, more data will.
+  - N is 0.3 % and M 15.9 % cross-dataset because the datasets disagree about
+    what those letters look like (massey signs M/N/P in its own style); more
+    features will not fix it, more agreeing data will.
   - J and Z depend on your movement being big enough for the thresholds. They
     are calibrated from synthetic strokes until you run the calibration yourself.
   - ~20 fps is the ceiling on this machine's CPU, whatever the settings.
@@ -358,4 +365,51 @@ MORE DETAIL
                    table, the stage-by-stage pipeline, all script flags, the
                    normalisation maths, the complete troubleshooting table, and
                    the reproducibility notes (seeds, parity, commands).
+```
+
+
+MORE DATA (added 2026-11-20)
+============================
+```
+There are two separate data problems and they need two separate downloads.
+
+1. LETTER ACCURACY. The three original sources are one signer's renders
+   (grassknoted), that same author's 30 test photos (danrasband) and five
+   Kinect signers (massey). A fourth photographic set of ~300 independently
+   shot photos per letter is registered as `rushil` in src/config.py and is
+   fetched by the normal downloader:
+
+       python src/download_data.py            # inventories every source
+       python src/extract_landmarks.py --force   # rebuilds the cache with the new rows
+
+   The Kaggle credential can live in this folder, so no environment variable is
+   needed: either the current access token ("KGAT_...", one line, saved as
+   .secrets/kaggle_token.txt) or a legacy kaggle.json next to this README.
+   src/download_data.py exports KAGGLE_API_TOKEN / KAGGLE_CONFIG_DIR for
+   kagglehub accordingly. Both files are git-ignored, and anything already set
+   in the environment still takes precedence.
+   Note the --force: the cache records which datasets it contains, so without
+   it a newly downloaded source would be skipped. Re-run --force after adding
+   any dataset, otherwise its photos never reach training.
+
+2. J AND Z. These are strokes, not shapes, so no photo set can add them. Two
+   motion corpora are registered in src/config.py:MOTION_DATASETS:
+
+       python src/download_jz_data.py --list
+       python src/download_jz_data.py                 # MSL dynamic, ~2.2 GB
+       python src/extract_jz_landmarks.py             # clips -> cache/jz_landmarks
+       python src/verify_jz_trigger.py --clips-dir cache/jz_landmarks
+
+   `msl_dynamic` is the Mexican alphabet's six dynamic letters (J K Ñ Q X Z)
+   from 20 signers. It is real fingerspelling movement and it is NOT ASL, so
+   it may fit and validate the trajectory stage only - the ASL claim still
+   needs `python src/live.py --calibrate-jz` on your own hand.
+
+   `chicagofswild` (14 GB, 160 ASL signers) is real ASL but carries only
+   per-sequence transcriptions, with no per-letter timing. Nothing here can
+   consume it until a CTC / forced-alignment step exists, which is why it only
+   downloads when named:  python src/download_jz_data.py --only chicagofswild
+
+Everything lands under datasets/jz/ and cache/jz_landmarks/, both git-ignored.
+No camera is opened and no frame is written by either script.
 ```

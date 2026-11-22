@@ -308,6 +308,88 @@ DATASETS = [
     },
 ]
 
+# A fourth source of *photographs*, added 2026-11-20. The three original
+# sources are saturated for static letters: grassknoted is 3,000 renders plus
+# 26 photographs per letter from one person, danrasband is that same author's
+# 30 test photos per letter, and massey is five signers on a Kinect. None of
+# them is a modern webcam, which is why letters like N (0.4 % cross-dataset)
+# have almost no evidence behind them. This set is 26 letter folders of about
+# 300 independently shot photographs, i.e. a fourth camera, crop and signer,
+# and it is the cheapest honest way to widen the training mix.
+#
+# Dropped on purpose: ayuraj/asl-dataset (36 classes x 70 images, CC0) is too
+# small to move a 122k-row model, and "sign language mnist" is 28x28 greyscale,
+# where MediaPipe cannot even find the hand.
+DATASETS.append({
+    "id": "rushil",
+    "kind": "kaggle",
+    "ref": "officialrushil/asl-alphabet-dataset",
+    "role": "cross_dataset",
+    "license": "Unknown (no licence stated on the Kaggle page) - research use",
+    "why": ("about 7,800 independently shot letter photographs (~300 per "
+            "letter, 26 folders) that share neither camera, crop nor signer "
+            "with the other three sources."),
+    # The download ships the letter folders inside an "asl data" directory; the
+    # empty entry is the fallback for a repack without it. locate_roots drops
+    # the parent when both resolve, so the images are never counted twice.
+    "roots": ["asl data", ""],
+    "letter_from": "top_folder",
+    "session_from": "letter_folder",
+})
+
+
+# ---------------------------------------------------------------------------
+# Motion data - the only thing that can ever add J and Z
+# ---------------------------------------------------------------------------
+# J and Z are not shapes. A single frame of either is a legal static letter (a
+# J reads as I, a Z as X at 96.3 % / 94.2 %), which is why the 24-class model
+# excludes them. Adding them is therefore a question about STROKES, and no
+# photo dataset can answer it:
+#
+#   msl_dynamic   Zenodo 10.5281/zenodo.14689869, CC-BY-4.0. 1,200 clips of the
+#                 six dynamic letters of the *Mexican* manual alphabet
+#                 (J K Ñ Q X Z) from 20 signers, split 18 train / 2 test BY
+#                 SIGNER. It is the only public, directly downloadable corpus of
+#                 real fingerspelling strokes, and it is not ASL: it may fit and
+#                 validate the trajectory stage, never the 24-class classifier,
+#                 and the ASL claim still needs your own hand -
+#                 `python src/live.py --calibrate-jz`.
+#   chicagofswild TTIC, 14 GB, 7,304 ASL fingerspelling sequences from 160
+#                 signers recorded in the wild. Sequence-level transcriptions
+#                 only (no per-letter timing), so nothing in this project
+#                 consumes it yet; it is what a CTC / forced-alignment step
+#                 would need, and it downloads only when asked for by name.
+JZ_DIR = ROOT / "datasets" / "jz"
+JZ_CLIP_DIR = JZ_DIR / "clips"
+JZ_LANDMARK_DIR = CACHE_DIR / "jz_landmarks"
+
+MOTION_DATASETS = [
+    {
+        "id": "msl_dynamic",
+        "kind": "zenodo",
+        "record": "14689869",
+        "files": ["MSL-dynamic-signs-frontal-view.7z"],
+        "license": "CC-BY-4.0",
+        "size_gb": 2.2,
+        # ASCII on purpose: this string is printed by --list, and a Windows
+        # console in cp1252 turns the Spanish N-tilde into "?".
+        "letters": "J K (N-tilde) Q X Z",
+        "why": ("real fingerspelling strokes for J/Z; Mexican SL, so its "
+                "labels train the trajectory stage only"),
+    },
+    {
+        "id": "chicagofswild",
+        "kind": "url",
+        "url": "https://home.ttic.edu/~klivescu/ChicagoFSWild.tgz",
+        "license": "research use (see the TTIC ChicagoFSWild page)",
+        "size_gb": 14.0,
+        "letters": "A-Z (sequence-level labels only)",
+        "why": ("real ASL fingerspelling from 160 signers; needs alignment "
+                "before it can train anything"),
+    },
+]
+
+
 META_DEFAULT = {
     "labels": LABELS,
     "normalization": {

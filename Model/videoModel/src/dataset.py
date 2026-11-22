@@ -237,12 +237,23 @@ def class_weights(labels: list[str], counts: dict[str, int]) -> np.ndarray:
 
 
 def sampler_weights(labels: list[str], samples: pd.DataFrame) -> np.ndarray:
-    """Per-sample weights for WeightedRandomSampling (equal class mass)."""
+    """Per-sample weights for WeightedRandomSampling (equal class mass).
+
+    Equal class mass is the starting point; config.WEAK_WORD_BOOST multiplies
+    the weight of the classes that measured worst on the held-out splits, so a
+    weak word is seen more often than its clip count alone would give it. The
+    result is renormalised to mean 1, which is what the epoch sampler expects.
+    An unknown or empty boost table changes nothing.
+    """
     counts = samples["label"].value_counts().to_dict()
     per = np.array([1.0 / max(counts.get(l, 1), 1)
                     for l in samples["label"]], dtype=np.float64)
     if not per.size:
         return per
+    boost = getattr(config, "WEAK_WORD_BOOST", None) or {}
+    if boost:
+        per *= samples["label"].map(
+            lambda label: float(boost.get(label, 1.0))).to_numpy(dtype=np.float64)
     return (per / per.mean()).astype(np.float64)
 
 

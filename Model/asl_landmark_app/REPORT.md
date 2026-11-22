@@ -1,9 +1,12 @@
 # ASL alphabet recogniser — current numbers
 
-Rounds 3–5, 2026-11-15. Short version of the measurements; the full generated report
-for each model is `reports/report_all.md` and `reports/report_standard.md`
-(the `round2` profile's report and weights were pruned in the 2026-11-15 folder
-cleanup; `python src/train.py --profile round2` regenerates both). Every
+Rounds 3–6, 2026-11-15 and 2026-11-21. Short version of the measurements; the
+full generated report for each model is `reports/report_all.md` and
+`reports/report_standard.md` (the `round2` profile's report and weights were
+pruned in the 2026-11-15 folder cleanup; `python src/train.py --profile round2`
+regenerates both). The shipped weights are the 2026-11-21 run, which added the
+`rushil` dataset; `reports/report_standard.md` is still the three-dataset run,
+because `standard` was not retrained. Every
 accuracy here is **leave-one-dataset-out**: the
 image was scored by a model that never saw its dataset. Nothing in this file is a
 live accuracy claim — the only measurement of a particular hand is the self-test,
@@ -11,21 +14,29 @@ live accuracy claim — the only measurement of a particular hand is the self-te
 
 ## Headline (profile `all`, the shipped default)
 
-**Cross-dataset accuracy, POOLED (headline): 67.0% [66.7–67.2% 95% CI] (81,954/122,359 held-out images)**
+**Cross-dataset accuracy, POOLED (headline): 68.7% [68.4–69.0% 95% CI] (85,641/124,663 held-out images)**
+
+This is the 2026-11-21 model with `rushil` added (full generated tables:
+`reports/report_all.md`).
 
 | held-out dataset | images | accuracy | note |
 |---|---|---|---|
-| danrasband | 712 | 94.4% | small-n, does not carry the headline |
-| grassknoted | 61,562 | 79.5% | |
-| massey | 60,085 | 53.8% | the weakest dataset, and the minority style |
+| danrasband | 712 | 93.4% | small-n, does not carry the headline |
+| grassknoted | 61,562 | 79.9% | |
+| massey | 60,085 | 56.3% | the weakest dataset, and the minority style |
+| rushil | 2,304 | 86.5% | 23 letters only; carries the headline |
 
-- Macro (mean of the three, unweighted): **75.9%**. Pooled is the headline.
+- Macro (mean of the four, unweighted): **79.0%**. Pooled is the headline.
 - Held-out capture group (massey A+B → C+D+E — unseen hands, matched style):
   **85.7%** over 35,893 images, the closest dataset-side proxy for a webcam.
-- On the 101,932 images round 1's single-pass detector could find at all:
-  **69.2%**, against round 1's 67.6%.
+- On the 103,208 images round 1's single-pass detector could find at all:
+  **70.9%**, against round 1's 67.6%.
 
-## Stage C — the two profiles, one table
+The Stage sections below are the 2026-11-15 run (three datasets, 67.0% pooled).
+Their numbers are kept as the record of each decision it made; where a line
+reads like the shipped model's accuracy, the headline above is the current one.
+
+## Stage C — the two profiles, one table (2026-11-15 run)
 
 `all` trains on every signer equally. `standard` gives the flagged minority-style
 cells (massey M/N/P) weight 0, so the model never sees that way of signing them.
@@ -376,7 +387,8 @@ paragraph are soft breaks, so an unfenced block renders as one run-on line on
 GitHub. The four dangling `see README` references (`src/config.py`,
 `src/normalize.py`, `src/live.py`, `app.py`) now point at `docs/DETAILS.md`, and
 each number the README claims was re-measured against disk rather than inherited:
-2.92 GB of datasets from `data/datasets.json`, `cache/` 76 MB,
+2.92 GB of datasets from `data/datasets.json` (5.57 GB once `rushil` was added
+on 2026-11-21), `cache/` 76 MB,
 `reports/oof_all.csv` 23 MB, `models/hand_landmarker.task` 7,819,105 bytes, and
 **52 files / 1.52 MB** offered by `git ls-files -o --exclude-standard` under the
 new `.gitignore`. The privacy grep printed in the README was run and returns no

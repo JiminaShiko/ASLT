@@ -240,9 +240,34 @@ def settings(no_retry: bool) -> dict:
     }
 
 
-def _write_sidecar(st: dict, n_rows: int, elapsed: float) -> None:
+def manifest_ids(datasets: list[str] | None = None) -> list[str]:
+    """Dataset ids that are downloaded and would contribute rows.
+
+    The skip-check below compares detector settings, which say nothing about
+    WHICH datasets went into the cache. Without this list, adding a dataset
+    (downloading it, re-running the extractor) would print "cache already
+    present - skipping" and leave the new images out of the cache forever.
+    Recorded in the sidecar as "datasets" so the next run can tell.
+    """
+    if not MANIFEST.exists():
+        return []
+    known = {d["id"] for d in config.DATASETS}
+    out = []
+    for entry in json.loads(MANIFEST.read_text(encoding="utf-8")):
+        did = entry["id"]
+        if entry.get("n_images", 0) == 0 or did not in known:
+            continue
+        if datasets and did not in datasets:
+            continue
+        out.append(did)
+    return sorted(out)
+
+
+def _write_sidecar(st: dict, n_rows: int, elapsed: float,
+                   used: list[str] | None = None) -> None:
     config.EXTRACT_META_JSON.write_text(json.dumps({
         **st, "n_rows": n_rows, "elapsed_s": round(elapsed, 1),
+        "datasets": sorted(used or []),
         "created": time.strftime("%Y-%m-%d %H:%M:%S"),
     }, indent=2), encoding="utf-8")
 
@@ -321,21 +346,39 @@ def run(max_per_class: int, workers: int, force: bool, datasets,
         no_retry: bool = False) -> int:
     config.ensure_dirs()
     st = settings(no_retry)
+    want_ids = manifest_ids(datasets)
     if config.LANDMARKS_PARQUET.exists() and not force:
         size = config.LANDMARKS_PARQUET.stat().st_size / 1e6
         cur = {}
         if config.EXTRACT_META_JSON.exists():
             cur = json.loads(config.EXTRACT_META_JSON.read_text(encoding="utf-8"))
-        if all(cur.get(k) == v for k, v in st.items()):
+        same_settings = all(cur.get(k) == v for k, v in st.items())
+        cached_ids = cur.get("datasets")
+        new_ids = ([d for d in want_ids if d not in cached_ids]
+                   if cached_ids is not None else [])
+        if same_settings and not new_ids:
             print(f"== Step 2: landmarks cache already present "
                   f"({config.LANDMARKS_PARQUET.name}, {size:.1f} MB, "
                   f"cache_version={cur.get('cache_version')}) - skipping MediaPipe. "
                   f"Use --force to rebuild.")
+            if cached_ids is None:
+                held = ", ".join(want_ids) or "unknown"
+                print("  note: this cache was written before the extractor "
+                      "recorded which datasets it contains, so it holds "
+                      f"{held} as of the time it was built. If you have "
+                      "downloaded a dataset since then, re-run with --force so "
+                      "its images are included.")
             return 0
-        print("== Step 2: the existing cache was made with different settings "
-              f"(stored v{cur.get('cache_version', '?')} vs code "
-              f"v{config.CACHE_VERSION}) - rebuilding it from scratch; no old "
-              "rows are reused.")
+        if same_settings and new_ids:
+            missing = ", ".join(new_ids)
+            print(f"== Step 2: the cache was built without {missing} - "
+                  "rebuilding it from scratch so the new data is included; "
+                  "no old rows are reused.")
+        else:
+            print("== Step 2: the existing cache was made with different settings "
+                  f"(stored v{cur.get('cache_version', '?')} vs code "
+                  f"v{config.CACHE_VERSION}) - rebuilding it from scratch; no old "
+                  "rows are reused.")
     if config.LANDMARKS_PARQUET.exists():
         # keep the pre-rebuild drop numbers so the before/after table in the
         # report can still be written. (Round 1's own v1 file was pruned in the
@@ -388,7 +431,7 @@ def run(max_per_class: int, workers: int, force: bool, datasets,
     df = pd.DataFrame(rows, columns=["image", "dataset", "letter", "session",
                                      "mp_handedness", "cross_sign", "landmarks", "how"])
     _atomic_write(df, config.LANDMARKS_PARQUET)
-    _write_sidecar(st, len(df), elapsed)
+    _write_sidecar(st, len(df), elapsed, sorted({d for _, d, _, _ in work}))
 
     total_sel = len(path_to_key)
     direct = int((df["how"] == "direct_0.5").sum()) if len(df) else 0

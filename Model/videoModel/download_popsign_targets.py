@@ -21,6 +21,7 @@ import argparse
 import csv
 import html.parser
 import http.client
+import json
 import re
 import shutil
 import ssl
@@ -129,6 +130,12 @@ def request_bytes(url: str, timeout: int = 60, retries: int = 3) -> bytes:
                   f"{len(error.partial) + error.expected} bytes; using the "
                   f"partial listing.", file=sys.stderr)
             return error.partial
+        except urllib.error.HTTPError as error:
+            # A 404 means the folder/word simply does not exist on the server
+            # (main_per_clip probes candidate folder names), so retrying it
+            # only spams the same note; HTTPError subclasses URLError, so this
+            # must stay above the retry branch.
+            raise
         except (TimeoutError, OSError, urllib.error.URLError) as error:
             if attempt == retries:
                 raise
@@ -336,11 +343,65 @@ def download_clip(url: str, destination: Path, expected: int | None,
             time.sleep(attempt * 2)
 
 
+def vocab_targets() -> dict[str, tuple[str, ...]]:
+    """Every active vocab word, with the folder names it may appear under.
+
+    Built from vocab.json instead of the hand-written TARGET_ALIASES, so that
+    adding a word to the vocabulary is enough to make it downloadable. The
+    candidates are the word itself plus its ASL Citizen glosses and the PopSign
+    folder names already recorded in `external_glosses`.
+    """
+    try:
+        from src import vocab as vocab_module
+    except ImportError:  # run as `python -m` from the repo root
+        from videoModel.src import vocab as vocab_module  # type: ignore[no-redef]
+    spec = vocab_module.load_vocab()
+    out: dict[str, tuple[str, ...]] = {}
+    for word in spec.active:
+        candidates = [word.word, *word.glosses, *word.external_glosses]
+        out[word.word] = tuple(dict.fromkeys(c for c in candidates if c))
+    return out
+
+
+def write_glosses(pairs: list[tuple[str, str]], vocab_path) -> list[str]:
+    """Record downloaded server folder names in vocab.json's external_glosses.
+
+    `src/vocab.py` maps a PopSign folder to a word through
+    `external_glosses` (EXTERNAL_GLOSS_WORDS is built from it at import), so a
+    clip whose server gloss is not listed there is downloaded but invisible to
+    the pipeline - the classic "the files are there and the dataset is empty"
+    bug. Only differences are written, and only when --write-glosses is asked
+    for.
+    """
+    path = Path(vocab_path)
+    spec = json.loads(path.read_text(encoding="utf-8"))
+    by_word = {w["word"]: w for w in spec["words"]}
+    changed: list[str] = []
+    for word, folder in sorted(set(pairs)):
+        entry = by_word.get(word)
+        if entry is None:
+            continue                              # not a vocab word: nothing to map
+        existing = list(entry.get("external_glosses", []))
+        if folder in existing:
+            continue
+        existing.append(folder)
+        entry["external_glosses"] = existing
+        changed.append(f"{word} <- {folder}")
+    if changed:
+        path.write_text(json.dumps(spec, indent=2, ensure_ascii=False) + "\n",
+                        encoding="utf-8")
+    return changed
+
+
 def main_per_clip(args: argparse.Namespace) -> int:
-    words = args.words or DEFAULT_WORDS
-    unknown = [w for w in words if w not in TARGET_ALIASES]
+    # --vocab-all widens the target list from the hand-written aliases to every
+    # enabled vocab.json word; the alias table stays the default because it is
+    # the set the shipped weights were trained on.
+    targets = vocab_targets() if args.vocab_all else TARGET_ALIASES
+    words = args.words or (list(targets) if args.vocab_all else DEFAULT_WORDS)
+    unknown = [w for w in words if w not in targets]
     if unknown:
-        print(f"Unknown target word(s): {unknown}. Known: {sorted(TARGET_ALIASES)}.",
+        print(f"Unknown target word(s): {unknown}. Known: {sorted(targets)}.",
               file=sys.stderr)
         return 2
     plan: list[dict] = []
@@ -354,7 +415,7 @@ def main_per_clip(args: argparse.Namespace) -> int:
         want = args.clips_per_word if split == "train" else args.heldout_clips
         for gloss in words:
             folder = None
-            for alias in TARGET_ALIASES[gloss]:
+            for alias in targets[gloss]:
                 folder = folders.get(normalize_label(alias))
                 if folder:
                     break
@@ -368,7 +429,7 @@ def main_per_clip(args: argparse.Namespace) -> int:
             else:
                 # the split index can arrive truncated (the server cuts big
                 # listings mid-body), so probe the alias folder directly
-                for alias in TARGET_ALIASES[gloss]:
+                for alias in targets[gloss]:
                     try:
                         probe = fetch_folder_clips(args.dataset, split, alias)
                     except RuntimeError:
@@ -426,7 +487,8 @@ def main_per_clip(args: argparse.Namespace) -> int:
             if i % 20 == 0 or i == len(plan):
                 print(f"Downloading {i}/{len(plan)}...")
             download_clip(item["url"], dest, item.get("bytes"))
-            rows.append({"gloss": item["gloss"], "split": item["split"],
+            rows.append({"gloss": item["gloss"], "word": item["word"],
+                         "split": item["split"],
                          "file": item["file"], "url": item["url"],
                          "bytes": dest.stat().st_size,
                          "signer": item["file"][:4]})
@@ -439,6 +501,23 @@ def main_per_clip(args: argparse.Namespace) -> int:
               ["gloss", "split", "file", "url", "error"])
     print(f"Done: {len(rows)} clips downloaded; {len(failures)} failed.")
     print(f"Manifest: {args.output / 'download_manifest.csv'}")
+    pairs = [(r["word"], r["gloss"]) for r in rows if r.get("word")]
+    if args.write_glosses:
+        changed = write_glosses(pairs, config.VOCAB_JSON)
+        if changed:
+            print(f"vocab.json updated for {len(changed)} server gloss(es): "
+                  + ", ".join(changed[:12])
+                  + (" ..." if len(changed) > 12 else ""))
+        else:
+            print("vocab.json already lists every downloaded server gloss.")
+    elif pairs:
+        unlisted = sorted({(w, g) for w, g in pairs if g != w})
+        if unlisted:
+            print("Server folders that differ from the word and may need "
+                  "listing in vocab.json external_glosses:")
+            for word, folder in unlisted[:12]:
+                print(f"  {word} <- {folder}")
+            print("  re-run with --write-glosses to record them automatically")
     print("The pipeline picks the same subset back up automatically: run")
     print("  python -m src.extract --splits train,val,test --workers 4")
     return 1 if failures else 0
@@ -522,6 +601,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--yes", action="store_true", help="Skip the confirmation prompt after showing matches.")
     parser.add_argument("--dry-run", action="store_true",
                         help="List the selected subset; no video downloads, HEAD sizing or file writes.")
+    parser.add_argument("--vocab-all", action="store_true",
+                        help="target every enabled vocab.json word instead of "
+                             "the hand-written alias list (much larger download)")
+    parser.add_argument("--write-glosses", action="store_true",
+                        help="record downloaded server folder names in "
+                             "vocab.json external_glosses so the pipeline can "
+                             "see them")
     parser.add_argument("--words", nargs="+", default=None,
                         help=f"Words to fetch in the per-clip branch (default: "
                         f"{' '.join(DEFAULT_WORDS)}; focused communication signs).")

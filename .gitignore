@@ -4,6 +4,8 @@
 *.env
 !.env.example
 ca.pem
+# Kaggle API tokens, in case one is ever dropped in the project folder.
+kaggle.json
 
 # Dependencies and generated files, wherever a subproject lives.
 __pycache__/

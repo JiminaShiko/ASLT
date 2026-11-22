@@ -80,5 +80,9 @@ desktop.ini
 .env
 .env.*
 kaggle.json
+.secrets/
+kaggle_token.txt
+access_token
+access_token.txt
 credentials.json
 .streamlit/secrets.toml

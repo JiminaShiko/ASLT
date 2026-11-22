@@ -126,5 +126,48 @@
     "roots": [
       "datasets/kagglehub/datasets/danrasband/asl-alphabet-test/versions/1"
     ]
+  },
+  {
+    "id": "rushil",
+    "ref": "officialrushil/asl-alphabet-dataset",
+    "role": "cross_dataset",
+    "license": "Unknown (no licence stated on the Kaggle page) - research use",
+    "why": "about 7,800 independently shot letter photographs (~300 per letter, 26 folders) that share neither camera, crop nor signer with the other three sources.",
+    "status": "downloaded",
+    "path": "datasets/kagglehub/datasets/officialrushil/asl-alphabet-dataset/versions/1",
+    "n_images": 7696,
+    "n_bytes": 2650555218,
+    "letters": {
+      "A": 270,
+      "B": 292,
+      "C": 282,
+      "D": 314,
+      "E": 302,
+      "F": 264,
+      "G": 280,
+      "H": 264,
+      "I": 256,
+      "J": 318,
+      "K": 304,
+      "L": 322,
+      "M": 264,
+      "N": 304,
+      "O": 320,
+      "P": 306,
+      "Q": 268,
+      "R": 304,
+      "S": 306,
+      "T": 260,
+      "U": 312,
+      "V": 310,
+      "W": 312,
+      "X": 318,
+      "Y": 322,
+      "Z": 322
+    },
+    "note": "took 2394s",
+    "roots": [
+      "datasets/kagglehub/datasets/officialrushil/asl-alphabet-dataset/versions/1/asl data"
+    ]
   }
 ]
