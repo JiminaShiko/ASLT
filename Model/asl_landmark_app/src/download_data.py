@@ -66,24 +66,90 @@ def find_cached_version(ref: str) -> Path | None:
 
 
 def has_kaggle_credentials() -> bool:
+    # New-style access token ("KGAT_..."): kagglehub reads it from this variable,
+    # which may also hold the PATH of a file containing the token.
+    if os.environ.get("KAGGLE_API_TOKEN"):
+        return True
     if os.environ.get("KAGGLE_USERNAME") and os.environ.get("KAGGLE_KEY"):
         return True
+    home = Path.home() / ".kaggle"
     for p in (
-        Path(os.environ.get("KAGGLE_CONFIG_DIR", Path.home() / ".kaggle")) / "kaggle.json",
-        Path.home() / ".kaggle" / "kaggle.json",
+        Path(os.environ.get("KAGGLE_CONFIG_DIR", home)) / "kaggle.json",
+        home / "kaggle.json",
+        home / "access_token",
+        home / "access_token.txt",
     ):
         if p.is_file():
             return True
     return False
 
 
+# Credentials kept inside this folder, so the project is self-contained and
+# nobody has to remember to export an environment variable in every new shell.
+# Kaggle now issues two kinds of credential and both are supported:
+#   * an access token ("KGAT_...") -> a one-line file, exported as KAGGLE_API_TOKEN
+#   * a legacy kaggle.json           -> KAGGLE_CONFIG_DIR pointed at its folder
+LOCAL_ACCESS_TOKEN_FILES = (
+    Path(".secrets") / "kaggle_token.txt",
+    Path(".secrets") / "access_token",
+    Path("kaggle_token.txt"),
+    Path("access_token"),
+)
+LOCAL_JSON_FILES = (Path("kaggle.json"), Path(".secrets") / "kaggle.json")
+
+
+def activate_local_credentials() -> tuple[str, Path | None]:
+    """Let kagglehub use a credential that sits inside this folder.
+
+    kagglehub only looks in ~/.kaggle (or wherever KAGGLE_API_TOKEN /
+    KAGGLE_CONFIG_DIR point), so a token dropped next to the code would
+    otherwise be ignored and every run would keep reporting "no Kaggle
+    credentials".  Anything already set in the environment wins over the local
+    copy.  Returns (what we used, where it is) for the caller to print; never the
+    secret itself.
+    """
+    if os.environ.get("KAGGLE_API_TOKEN"):
+        return "KAGGLE_API_TOKEN (environment)", None
+
+    for rel in LOCAL_ACCESS_TOKEN_FILES:
+        p = config.ROOT / rel
+        if p.is_file() and p.read_text(encoding="utf-8", errors="ignore").strip():
+            # kagglehub accepts a path here and reads the token out of the file.
+            os.environ["KAGGLE_API_TOKEN"] = str(p)
+            return "access token (project folder)", p
+
+    env = os.environ.get("KAGGLE_CONFIG_DIR")
+    if env:
+        return "KAGGLE_CONFIG_DIR (environment)", Path(env) / "kaggle.json"
+
+    for rel in LOCAL_JSON_FILES:
+        p = config.ROOT / rel
+        if p.is_file():
+            os.environ["KAGGLE_CONFIG_DIR"] = str(p.parent)
+            return "kaggle.json (project folder)", p
+
+    return "none", None
+
+
 CREDENTIAL_HELP = """
 Kaggle credentials are not configured, so datasets that are not already in the
 local kagglehub cache cannot be downloaded.
 
-  1. Open https://www.kaggle.com/settings -> "Create New Token" (downloads kaggle.json)
-  2. Put the file at  C:\\Users\\<you>\\.kaggle\\kaggle.json
-     (or set the KAGGLE_USERNAME and KAGGLE_KEY environment variables instead)
+Kaggle issues two kinds of credential: pick whichever the settings page gives
+you.  Either one can live in this folder; it is git-ignored and found
+automatically.
+
+  A. Access token (the current format, looks like KGAT_c5e...):
+     https://www.kaggle.com/settings/api -> "Generate New Token"
+     Save the single line as  <this folder>\\.secrets\\kaggle_token.txt
+     (or set the KAGGLE_API_TOKEN environment variable to the token itself)
+
+  B. Legacy key file (kaggle.json):
+     "Create Legacy API Key" on the same page, then save it as
+     <this folder>\\kaggle.json  (or  C:\\Users\\<you>\\.kaggle\\kaggle.json)
+
+If the download then fails with 403, accept the dataset's terms once in the
+browser: open its page and press Download.
 
 Already-cached datasets work without credentials, so this step still completes.
 """.strip()
@@ -173,7 +239,33 @@ def locate_roots(ref_path: Path, spec: dict) -> list[Path]:
         if inner.is_dir() and any(normalize_label(p.name) for p in inner.iterdir() if p.is_dir()):
             cand = inner
         found.append(cand)
-    return found
+    # A spec may list both the nested folder and the root as fallbacks (the newer
+    # Kaggle sets do). Keeping both would count every image twice and hand
+    # extract_landmarks.py two overlapping roots, so only the deepest survives.
+    return [p for p in found if not any(p != q and p in q.parents for q in found)]
+
+
+def inventory(result: dict, spec: dict) -> dict:
+    """Count what is on disk for this spec; the shared tail of acquire()."""
+    roots = locate_roots(Path(result["path"]), spec)
+    if not roots:
+        result.update(status="skipped_bad_layout",
+                      note=f"no letter folders found under {spec['roots']}")
+        print(f"  [skip]   {spec.get('ref') or spec['id']} - unexpected folder layout")
+        return result
+
+    letters: dict[str, int] = {}
+    n_bytes = 0
+    for root in roots:
+        for img, letter, _session in iter_letter_images(root, spec):
+            letters[letter] = letters.get(letter, 0) + 1
+            try:
+                n_bytes += img.stat().st_size
+            except OSError:
+                pass
+    result.update(n_images=sum(letters.values()), n_bytes=n_bytes, letters=letters,
+                  roots=[str(r) for r in roots])
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -185,6 +277,23 @@ def acquire(spec: dict, force: bool) -> dict:
               "license": spec["license"], "why": spec["why"],
               "status": "unknown", "path": None, "n_images": 0,
               "n_bytes": 0, "letters": {}, "note": ""}
+
+    # A dataset that this project downloads itself (not through kagglehub) is
+    # registered as kind="local": the downloader puts it under datasets/ and
+    # this branch only inventories it. Nothing is fetched here, so a fresh
+    # clone without the download still reports a clean "missing_local".
+    if spec.get("kind") == "local":
+        local = (config.ROOT / spec["path"]).resolve()
+        if not local.is_dir():
+            result.update(status="missing_local",
+                          note=f"expected at {spec['path']}; run the downloader "
+                               "named in README.md")
+            print(f"  [skip]   {spec['id']} - {spec['path']} does not exist")
+            return result
+        result.update(status="local", path=str(local),
+                      note="already on disk, nothing downloaded")
+        print(f"  [local]  {spec['id']} -> {spec['path']}")
+        return inventory(result, spec)
 
     cached = None if force else find_cached_version(ref)
     if cached is not None:
@@ -211,25 +320,7 @@ def acquire(spec: dict, force: bool) -> dict:
             print(f"  [skip]   {ref} -> {type(exc).__name__}: {str(exc)[:160]}")
             return result
 
-    roots = locate_roots(Path(result["path"]), spec)
-    if not roots:
-        result.update(status="skipped_bad_layout",
-                      note=f"no letter folders found under {spec['roots']}")
-        print(f"  [skip]   {ref} - unexpected folder layout")
-        return result
-
-    letters: dict[str, int] = {}
-    n_bytes = 0
-    for root in roots:
-        for img, letter, _session in iter_letter_images(root, spec):
-            letters[letter] = letters.get(letter, 0) + 1
-            try:
-                n_bytes += img.stat().st_size
-            except OSError:
-                pass
-    result.update(n_images=sum(letters.values()), n_bytes=n_bytes, letters=letters,
-                  roots=[str(r) for r in roots])
-    return result
+    return inventory(result, spec)
 
 
 def human(nbytes: float) -> str:
@@ -281,8 +372,13 @@ def main() -> int:
     args = ap.parse_args()
 
     config.ensure_dirs()
+    cred_kind, cred_path = activate_local_credentials()
     print("== Step 1: datasets ==")
     print(f"cache root: {kaggle_cache_root()}")
+    if cred_path is not None:
+        print(f"Kaggle credentials: {cred_kind} -> {cred_path}")
+    elif cred_kind != "none":
+        print(f"Kaggle credentials: {cred_kind}")
     print(f"Kaggle credentials present: {has_kaggle_credentials()}")
     if not has_kaggle_credentials():
         print(CREDENTIAL_HELP)

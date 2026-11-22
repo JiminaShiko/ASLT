@@ -12,19 +12,22 @@ function call.
 
 ABOUT
 -----
-Name    : videoModel word recognizer (95 active words + REST + OTHER)
+Name    : videoModel word recognizer (56 trained words + REST + OTHER;
+          95 words are defined in vocab.json, batches 1-3 are enabled)
 Data    : ASL Citizen (Microsoft Research), ~83,400 isolated word videos,
           52 signers, already on disk at `ASL_Citizen/`
 Approach: landmarks, not pixels - one shared 200-number feature vector per
           clip, used identically for training and for the live demo
-Model   : conv1d x2 -> bidirectional GRU x2 -> Linear, 378,230 parameters,
+Model   : conv1d x2 -> bidirectional GRU x2 -> Linear, 385,178 parameters,
           CPU only. Standardisation (train-split mean/std) and the max-over-time
           pooling live inside the module, so the checkpoint, the ONNX graph and
           the webcam path cannot drift apart.
-Result  : the shipped 20-word checkpoint is a historical baseline. The
-          expanded vocabulary and live segmentation fixes have not been
-          trained or webcam-validated yet. Train into a candidate folder and
-          review its held-out results before using it in the live demo.
+Result  : the shipped checkpoint is the communication_v2 expansion (56 words
+          + REST + OTHER = 58 classes, ASL Citizen plus 2,520 PopSign clips).
+          Held-out, signer-disjoint: ASL Citizen 81.4% top-1 on words / 68.3%
+          over all classes, PopSign signers 83.7%. Full tables: REPORT_WORDS.md.
+          Offline clips only - the live webcam path is verified for feature
+          parity, not measured for accuracy.
 
 
 CURRENT CANDIDATE WORKFLOW
@@ -170,19 +173,19 @@ python -m tests.test_logic              the whole offline battery (129 checks)
 
 WHAT TO EXPECT FROM THE DEMO
 ----------------------------
-These are historical baseline readings only; they do not describe the expanded
-model until it has been trained and checked. Measured on the 869 signer-disjoint
-test clips at the
-shipped gate of `p1 >= 0.85` (`CONFIDENCE_MIN` in `src/config.py`):
+These are the shipped model's readings on held-out offline clips, not live
+webcam accuracy. Measured at the shipped gate of `p1 >= 0.85`
+(`CONFIDENCE_MIN` in `src/config.py`) on 731 ASL Citizen test word clips
+(11 unseen signers) and 840 PopSign test clips (10 unseen signers):
 
 ```
-types about 3 of every 4        the other quarter is refused, not guessed -
-real words                      the screen says "uncertain" and nothing is
-                                typed
-about 96% of what it types      this is the number to quote, not the 58.3%
+types about 3 of every 5        the other two-fifths are refused, not
+real words                      guessed - the screen says "uncertain" and
+                                nothing is typed
+about 94% of what it types      this is the number to quote, not the 68.3%
 is right                        raw top-1: the model is often unsure, and
                                 the demo is allowed to stay quiet
-may skip a word you signed      that is the 25% above. A skipped word costs
+may skip a word you signed      that is the ~42% above. A skipped word costs
 clearly                         a re-sign; a wrong word costs trust
 turns a sign that is not in     measured on the OTHER clips of the same
 the vocabulary into a wrong     split. There is no "I don't know" class to
@@ -199,11 +202,64 @@ margin (`--margin`) is not the second lever people expect - at `p1 >= 0.85`
 the top-1/top-2 gap is forced to at least 0.70 by arithmetic, so the margin
 only does anything once you have lowered `--conf` below about 0.58.
 
-One pair is hedged instead of gated: when `good` and `thanks` are the top
-two, the demo types neither and shows `good/thanks?`. The model swaps that
-pair even when very confident (the swapped margins overlap the correct ones,
-so no threshold separates them); the hint is in `HEDGE_PAIRS` in
-`src/config.py` and can be emptied with a one-line edit.
+Seven pairs are hedged instead of gated (`HEDGE_PAIRS` in `src/config.py`):
+when the top two are one of `good/thanks`, `when/hurt`, `now/today`,
+`doctor/help`, `please/my`, `sorry/me`, `wait/want`, the demo types neither and
+shows the hint. The model swaps those pairs even when very confident - the
+swapped margins overlap the correct ones, so no threshold separates them.
+Measured on the cached held-out readings, the six extra pairs take test word
+precision from 93.9% to 96.1% (ps_test 96.8% to 97.9%) while typing 5.3 points
+fewer word clips. Empty the dict with a one-line edit to get the old behaviour.
+The numbers in `REPORT_WORDS.md` were measured with the training-time policy,
+which knew only `good/thanks`.
+
+
+TUNING THE WEAK WORDS
+---------------------
+Measured on the 58-class run, the weak words are weak for two different
+reasons, and each needs a different fix.
+
+*Low hand detection, not the classifier.* `thanks` 25%, `hungry` 33%,
+`doctor` 46%, `when` 45-85%, `now` 50-67% on held-out signers, and those same
+words sit at a 0.40-0.44 mean hand-detection rate against 0.52 for `please`
+(`python -m src.extract --rates` prints this per word). No threshold or loss
+change repairs a clip whose hands MediaPipe never saw.
+
+*Too little data for six signers.* `me`, `my`, `you`, `your`, `need`, `come`,
+`understand`, `family`, `name`, `school`, `sorry`, `bread`, `medicine` have
+13-16 ASL Citizen training videos each and no PopSign folder at all. The
+official signer-disjoint split is what caps them; adding val/test videos would
+break the evaluation, not improve it.
+
+What is already switched on for the next training run:
+
+- `config.WEAK_WORD_BOOST` gives the eight worst classes 1.5-2x sampler weight
+  on top of equal class mass (empty it to compare).
+- Pair hedges above, which cost nothing at runtime.
+
+What to run (a 1-seed 100-epoch retrain is roughly 20 minutes on this CPU;
+the PopSign top-up below is a network download, so start it first and leave
+it):
+
+```powershell
+cd "D:\sign language project\ASTL project\ASLT\Model\videoModel"
+python download_popsign_targets.py --words thanks happy please hungry thirsty doctor when now wait --clips-per-word 150
+python -m src.extract --splits train,val,test --workers 4
+python -m src.train --candidate weakv2 --seeds 3 --epochs 100 --eval-splits val,test,ps_test
+python check_results.py --candidate weakv2 --write
+```
+
+Judge it by the 3-seed VAL mean, not one run: the seed spread is +-3-5 points,
+so a single-seed gain of 2 points is noise. `--promote best` copies the
+VAL-winning seed into `models/` when you accept the result.
+
+Levers that were measured and rejected: lowering the gate to 0.70 raises typed
+share from 53% to 65% but sends 48% of REST/OTHER clips into a word (6.6% at
+0.85), so it makes the demo confidently wrong about silence; per-word
+confidence floors gain 0.4 points of precision for 2.5 points of coverage on a
+87-clip val split, which is too small to fit honestly; and dropping train clips
+with hand-detection under 0.15 removes only 1.9% of the cache, because the
+badly-framed clips cluster in the 0.15-0.40 band instead.
 
 If the hand is barely in frame the demo says so instead of guessing badly:
 when a hand is detected in under 35% of the last ~1.5 s of the live buffer, a
@@ -321,8 +377,18 @@ ignored `datasets/external/` directory and is excluded from Git.
 
 THE VOCABULARY
 --------------
-95 active words across four batches, plus REST and OTHER (97 classifier
-labels total). `me` is one visual class that the phrase layer displays as “I”.
+95 words across four batches are *defined* in `vocab.json`, plus REST and OTHER
+(97 labels). Batches 1-3 are enabled, so the shipped model in `models/` covers
+56 words + REST + OTHER = 58 labels; batch 4 and the unavailable `food` stay
+defined but disabled, and their signs fall into OTHER. `src/train.py` refuses
+to overwrite those weights with a different label set unless
+`--allow-vocab-change` is passed. Enable more batches in a candidate first,
+then compare before promoting:
+
+    python -m src.train --candidate vocab95 --epochs 60
+    python check_results.py --candidate vocab95
+
+`me` is one visual class that the phrase layer displays as “I”.
 
 ```
 eat  family  friend  good  hello  help  name  sad  school  drink

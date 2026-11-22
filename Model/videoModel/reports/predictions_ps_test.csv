@@ -1,121 +1,841 @@
-video,gloss,label,participant,kind,start,end,pred,p1,margin,top3,correct
-ps:popsign_v2_1/val/happy/2b19-happy-2023_01_18_20_02_32.148-0.mp4,happy,happy,ps:2b19,sign,27,48,happy,0.5243,0.4182,happy|thanks|good,True
-ps:popsign_v2_1/val/happy/661f-happy-2023_01_29_19_05_42.429-0.mp4,happy,happy,ps:661f,sign,9,35,happy,0.8524,0.8364,happy|good|help,True
-ps:popsign_v2_1/val/happy/ebdb-happy-2023_01_30_13_02_31.444-0.mp4,happy,happy,ps:ebdb,sign,19,40,happy,0.8598,0.848,happy|please|name,True
-ps:popsign_v2_1/val/happy/a459-happy-2023_01_10_13_33_41.611-0.mp4,happy,happy,ps:a459,sign,11,71,happy,0.8601,0.849,happy|friend|name,True
-ps:popsign_v2_1/val/happy/d5fd-happy-2023_01_10_17_13_52.254-0.mp4,happy,happy,ps:d5fd,sign,21,48,happy,0.3223,0.081,happy|thanks|good,True
-ps:popsign_v2_1/val/happy/c6e5-happy-2023_01_25_17_26_34.909-0.mp4,happy,happy,ps:c6e5,sign,3,135,good,0.8296,0.8058,good|thanks|happy,False
-ps:popsign_v2_1/val/happy/2b19-happy-2023_01_21_11_51_37.157-0.mp4,happy,happy,ps:2b19,sign,26,51,happy,0.8481,0.8366,happy|please|friend,True
-ps:popsign_v2_1/val/happy/661f-happy-2023_01_30_16_41_01.505-0.mp4,happy,happy,ps:661f,sign,23,37,happy,0.8114,0.7844,happy|good|help,True
-ps:popsign_v2_1/val/happy/2b19-happy-2023_01_23_14_19_58.063-0.mp4,happy,happy,ps:2b19,sign,8,66,happy,0.8342,0.8158,happy|good|yes,True
-ps:popsign_v2_1/val/happy/661f-happy-2023_01_30_17_07_49.199-0.mp4,happy,happy,ps:661f,sign,26,45,happy,0.8466,0.8289,happy|please|help,True
-ps:popsign_v2_1/val/happy/ebdb-happy-2023_01_30_13_21_41.209-0.mp4,happy,happy,ps:ebdb,sign,22,43,happy,0.8544,0.8423,happy|please|good,True
-ps:popsign_v2_1/val/happy/a459-happy-2023_01_10_18_17_47.466-0.mp4,happy,happy,ps:a459,sign,23,98,happy,0.8613,0.8498,happy|please|friend,True
-ps:popsign_v2_1/val/happy/d5fd-happy-2023_01_10_18_27_30.593-0.mp4,happy,happy,ps:d5fd,sign,18,39,happy,0.8009,0.778,happy|thanks|name,True
-ps:popsign_v2_1/val/happy/c6e5-happy-2023_01_25_18_15_02.498-0.mp4,happy,happy,ps:c6e5,sign,22,47,thanks,0.7301,0.6328,thanks|good|home,False
-ps:popsign_v2_1/val/happy/2b19-happy-2023_01_23_17_20_33.198-0.mp4,happy,happy,ps:2b19,sign,24,60,happy,0.8262,0.8105,happy|thanks|name,True
-ps:popsign_v2_1/val/happy/661f-happy-2023_01_30_17_31_51.447-0.mp4,happy,happy,ps:661f,sign,28,49,happy,0.8699,0.8585,happy|please|help,True
-ps:popsign_v2_1/val/happy/ebdb-happy-2023_01_30_13_15_36.517-0.mp4,happy,happy,ps:ebdb,sign,21,28,happy,0.8617,0.8494,happy|good|please,True
-ps:popsign_v2_1/val/happy/a459-happy-2023_01_10_15_53_05.546-0.mp4,happy,happy,ps:a459,sign,15,93,happy,0.8721,0.8612,happy|please|yes,True
-ps:popsign_v2_1/val/happy/d5fd-happy-2023_01_10_18_14_16.645-0.mp4,happy,happy,ps:d5fd,sign,0,187,good,0.4704,0.3622,good|happy|thanks,False
-ps:popsign_v2_1/val/happy/c6e5-happy-2023_01_25_18_01_59.963-0.mp4,happy,happy,ps:c6e5,sign,1,47,good,0.7967,0.7614,good|happy|thanks,False
-ps:popsign_v2_1/val/good/c6e5-good-2023_08_17_11_54_05.501-0.mp4,good,good,ps:c6e5,sign,28,56,good,0.6896,0.5375,good|thanks|love,True
-ps:popsign_v2_1/val/good/f56c-good-2024_03_27_19_45_03.153-1.mp4,good,good,ps:f56c,sign,43,63,good,0.7828,0.7016,good|thanks|love,True
-ps:popsign_v2_1/val/good/6aaa-good-2024_04_13_09_51_44.467-1.mp4,good,good,ps:6aaa,sign,34,42,good,0.6879,0.5652,good|thanks|love,True
-ps:popsign_v2_1/val/good/ebdb-good-2023_09_12_13_41_51.086-0.mp4,good,good,ps:ebdb,sign,23,43,good,0.5147,0.2215,good|thanks|hello,True
-ps:popsign_v2_1/val/good/c6e5-good-2023_08_17_14_52_31.197-0.mp4,good,good,ps:c6e5,sign,21,42,good,0.5959,0.3624,good|thanks|love,True
-ps:popsign_v2_1/val/good/f56c-good-2024_03_28_18_47_38.069-1.mp4,good,good,ps:f56c,sign,21,32,good,0.828,0.7812,good|thanks|love,True
-ps:popsign_v2_1/val/good/6aaa-good-2024_04_17_00_36_56.038-1.mp4,good,good,ps:6aaa,sign,17,27,good,0.8588,0.8277,good|thanks|love,True
-ps:popsign_v2_1/val/good/ebdb-good-2023_09_12_15_56_12.251-0.mp4,good,good,ps:ebdb,sign,22,43,good,0.8119,0.7458,good|thanks|love,True
-ps:popsign_v2_1/val/good/c6e5-good-2023_08_17_15_34_35.687-0.mp4,good,good,ps:c6e5,sign,19,43,good,0.7322,0.599,good|thanks|love,True
-ps:popsign_v2_1/val/good/f56c-good-2024_03_28_18_55_20.923-1.mp4,good,good,ps:f56c,sign,21,44,good,0.8366,0.7958,good|thanks|love,True
-ps:popsign_v2_1/val/good/6aaa-good-2024_04_17_00_42_57.540-1.mp4,good,good,ps:6aaa,sign,0,65,good,0.8922,0.8769,good|thanks|love,True
-ps:popsign_v2_1/val/good/ebdb-good-2023_09_12_17_16_04.433-0.mp4,good,good,ps:ebdb,sign,20,35,good,0.8897,0.8708,good|thanks|love,True
-ps:popsign_v2_1/val/good/c6e5-good-2023_08_17_20_16_41.021-0.mp4,good,good,ps:c6e5,sign,18,39,good,0.6147,0.3981,good|thanks|love,True
-ps:popsign_v2_1/val/good/f56c-good-2024_03_29_19_28_15.923-1.mp4,good,good,ps:f56c,sign,20,32,good,0.7953,0.7223,good|thanks|love,True
-ps:popsign_v2_1/val/good/6aaa-good-2024_04_24_18_15_05.632-1.mp4,good,good,ps:6aaa,sign,0,108,good,0.8814,0.8673,good|thanks|love,True
-ps:popsign_v2_1/val/good/ebdb-good-2023_09_12_19_54_55.674-0.mp4,good,good,ps:ebdb,sign,20,43,good,0.8234,0.77,good|thanks|love,True
-ps:popsign_v2_1/val/good/c6e5-good-2023_08_18_10_38_46.768-0.mp4,good,good,ps:c6e5,sign,21,43,good,0.7689,0.6693,good|thanks|love,True
-ps:popsign_v2_1/val/good/f56c-good-2024_03_30_20_04_14.740-1.mp4,good,good,ps:f56c,sign,20,56,good,0.8614,0.8354,good|thanks|love,True
-ps:popsign_v2_1/val/good/6aaa-good-2024_04_26_17_17_40.881-1.mp4,good,good,ps:6aaa,sign,1,58,good,0.8842,0.8682,good|thanks|love,True
-ps:popsign_v2_1/val/good/f56c-good-2024_03_30_20_12_09.822-1.mp4,good,good,ps:f56c,sign,17,46,good,0.8223,0.7726,good|thanks|love,True
-ps:popsign_v2_1/test/happy/66d7-happy-2023_01_25_18_30_18.187-0.mp4,happy,happy,ps:66d7,sign,17,47,good,0.2316,0.0211,good|happy|thanks,False
-ps:popsign_v2_1/test/happy/af36-happy-2022_12_21_10_51_57.632-0.mp4,happy,happy,ps:af36,sign,27,64,good,0.5833,0.3802,good|thanks|love,False
-ps:popsign_v2_1/test/happy/a1ba-happy-2023_01_10_23_45_54.405-0.mp4,happy,happy,ps:a1ba,sign,85,147,happy,0.7824,0.7456,happy|good|friend,True
-ps:popsign_v2_1/test/happy/af6d-happy-2023_01_25_14_06_05.176-0.mp4,happy,happy,ps:af6d,sign,17,44,happy,0.8327,0.8106,happy|good|help,True
-ps:popsign_v2_1/test/happy/a1ba-happy-2023_01_10_23_33_24.406-0.mp4,happy,happy,ps:a1ba,sign,79,173,happy,0.7878,0.7538,happy|good|friend,True
-ps:popsign_v2_1/test/happy/af6d-happy-2023_01_23_19_11_05.610-0.mp4,happy,happy,ps:af6d,sign,28,52,happy,0.8518,0.8385,happy|please|help,True
-ps:popsign_v2_1/test/happy/111c-happy-2023_01_26_17_12_26.671-0.mp4,happy,happy,ps:111c,sign,4,80,good,0.7069,0.6362,good|happy|thanks,False
-ps:popsign_v2_1/test/happy/616e-happy-2023_01_26_16_57_04.895-0.mp4,happy,happy,ps:616e,sign,19,60,happy,0.7805,0.7581,happy|good|thanks,True
-ps:popsign_v2_1/test/happy/111c-happy-2023_01_26_17_58_54.367-0.mp4,happy,happy,ps:111c,sign,49,76,happy,0.7477,0.7216,happy|good|help,True
-ps:popsign_v2_1/test/happy/616e-happy-2023_01_26_17_01_41.917-0.mp4,happy,happy,ps:616e,sign,21,61,happy,0.6666,0.5627,happy|good|help,True
-ps:popsign_v2_1/test/happy/66d7-happy-2023_01_25_19_25_59.581-0.mp4,happy,happy,ps:66d7,sign,16,39,happy,0.8201,0.8038,happy|good|help,True
-ps:popsign_v2_1/test/happy/af36-happy-2023_01_03_09_35_35.497-0.mp4,happy,happy,ps:af36,sign,22,124,happy,0.7302,0.6805,happy|thanks|friend,True
-ps:popsign_v2_1/test/happy/a1ba-happy-2023_01_10_23_52_16.813-0.mp4,happy,happy,ps:a1ba,sign,40,77,happy,0.5959,0.5256,happy|good|thanks,True
-ps:popsign_v2_1/test/happy/af6d-happy-2023_01_25_16_47_41.756-0.mp4,happy,happy,ps:af6d,sign,15,44,happy,0.8356,0.816,happy|good|yes,True
-ps:popsign_v2_1/test/happy/111c-happy-2023_01_26_20_10_21.830-0.mp4,happy,happy,ps:111c,sign,32,58,happy,0.8206,0.7939,happy|good|help,True
-ps:popsign_v2_1/test/happy/616e-happy-2023_01_26_18_22_30.247-0.mp4,happy,happy,ps:616e,sign,19,55,good,0.6075,0.4901,good|thanks|happy,False
-ps:popsign_v2_1/test/good/a1ba-good-2023_08_27_23_24_37.991-0.mp4,good,good,ps:a1ba,sign,0,55,good,0.8826,0.8667,good|thanks|love,True
-ps:popsign_v2_1/test/good/66d7-good-2023_09_03_10_25_46.554-0.mp4,good,good,ps:66d7,sign,10,56,good,0.8305,0.7781,good|thanks|love,True
-ps:popsign_v2_1/test/good/66e7-good-2024_02_14_15_36_22.227-1.mp4,good,good,ps:66e7,sign,13,64,good,0.8737,0.8538,good|thanks|love,True
-ps:popsign_v2_1/test/good/933d-good-2024_03_11_15_54_51.987-1.mp4,good,good,ps:933d,sign,35,66,good,0.8466,0.8085,good|thanks|love,True
-ps:popsign_v2_1/test/good/66e7-good-2024_02_15_17_47_34.872-1.mp4,good,good,ps:66e7,sign,0,53,good,0.7449,0.7189,good|thanks|yes,True
-ps:popsign_v2_1/test/good/933d-good-2024_03_13_17_12_39.737-1.mp4,good,good,ps:933d,sign,31,50,good,0.7281,0.6193,good|thanks|love,True
-ps:popsign_v2_1/test/good/16f0-good-2023_10_02_20_25_13.457-1.mp4,good,good,ps:16f0,sign,20,49,thanks,0.4781,0.1568,thanks|good|family,False
-ps:popsign_v2_1/test/good/3d3f-good-2024_03_12_10_41_06.738-1.mp4,good,good,ps:3d3f,sign,0,57,good,0.8481,0.811,good|thanks|love,True
-ps:popsign_v2_1/test/happy/66d7-happy-2023_01_25_20_42_38.295-0.mp4,happy,happy,ps:66d7,sign,24,53,happy,0.8436,0.8308,happy|name|thanks,True
-ps:popsign_v2_1/test/happy/af36-happy-2023_01_03_10_00_21.189-0.mp4,happy,happy,ps:af36,sign,38,156,happy,0.5728,0.4504,happy|thanks|name,True
-ps:popsign_v2_1/test/happy/a1ba-happy-2023_01_12_13_18_00.716-0.mp4,happy,happy,ps:a1ba,sign,89,142,happy,0.8237,0.7986,happy|good|help,True
-ps:popsign_v2_1/test/happy/af6d-happy-2023_01_25_17_06_09.032-0.mp4,happy,happy,ps:af6d,sign,14,41,happy,0.8488,0.8329,happy|good|help,True
-ps:popsign_v2_1/test/good/16f0-good-2023_09_28_19_06_13.197-1.mp4,good,good,ps:16f0,sign,47,82,good,0.7535,0.6424,good|thanks|love,True
-ps:popsign_v2_1/test/good/3d3f-good-2024_02_20_13_07_19.933-1.mp4,good,good,ps:3d3f,sign,57,69,good,0.6967,0.5694,good|thanks|love,True
-ps:popsign_v2_1/test/good/a1ba-good-2023_08_28_22_20_33.459-0.mp4,good,good,ps:a1ba,sign,71,99,good,0.7586,0.6626,good|thanks|love,True
-ps:popsign_v2_1/test/good/66d7-good-2023_09_03_19_32_48.569-0.mp4,good,good,ps:66d7,sign,6,51,good,0.8361,0.8045,good|thanks|love,True
-ps:popsign_v2_1/test/good/a1ba-good-2023_08_30_23_56_49.469-0.mp4,good,good,ps:a1ba,sign,0,44,good,0.8838,0.8689,good|thanks|love,True
-ps:popsign_v2_1/test/good/66d7-good-2023_09_03_21_49_20.342-0.mp4,good,good,ps:66d7,sign,14,56,good,0.4327,0.0569,good|thanks|home,True
-ps:popsign_v2_1/test/good/66e7-good-2024_02_17_18_57_31.730-1.mp4,good,good,ps:66e7,sign,0,38,good,0.8673,0.8523,good|thanks|love,True
-ps:popsign_v2_1/test/good/933d-good-2024_03_13_18_05_51.426-1.mp4,good,good,ps:933d,sign,35,70,good,0.5068,0.2108,good|thanks|love,True
-ps:popsign_v2_1/test/good/16f0-good-2023_10_09_10_08_45.710-1.mp4,good,good,ps:16f0,sign,19,65,good,0.8044,0.7514,good|thanks|love,True
-ps:popsign_v2_1/test/good/3d3f-good-2024_03_12_14_37_34.912-1.mp4,good,good,ps:3d3f,sign,0,58,good,0.8756,0.859,good|thanks|love,True
-ps:popsign_v2_1/test/good/a1ba-good-2023_08_31_00_01_47.156-0.mp4,good,good,ps:a1ba,sign,0,74,good,0.8598,0.8412,good|thanks|yes,True
-ps:popsign_v2_1/test/good/66d7-good-2023_09_04_15_31_15.313-0.mp4,good,good,ps:66d7,sign,10,51,good,0.8724,0.846,good|thanks|love,True
-ps:popsign_v2_1/val/thankyou/661f-thankyou-2023_01_29_18_43_29.165-0.mp4,thankyou,thanks,ps:661f,sign,3,18,thanks,0.596,0.3792,thanks|good|bad,True
-ps:popsign_v2_1/val/thankyou/a459-thankyou-2023_01_10_15_53_51.263-0.mp4,thankyou,thanks,ps:a459,sign,6,12,thanks,0.7833,0.7027,thanks|good|bad,True
-ps:popsign_v2_1/val/thankyou/ebdb-thankyou-2023_01_30_13_17_50.224-0.mp4,thankyou,thanks,ps:ebdb,sign,19,31,thanks,0.7341,0.6143,thanks|good|bad,True
-ps:popsign_v2_1/val/thankyou/2b19-thankyou-2023_01_21_11_51_37.157-0.mp4,thankyou,thanks,ps:2b19,sign,18,36,thanks,0.6939,0.5418,thanks|good|bad,True
-ps:popsign_v2_1/val/thankyou/ebdb-thankyou-2023_01_30_13_03_36.054-0.mp4,thankyou,thanks,ps:ebdb,sign,21,33,thanks,0.7,0.553,thanks|good|bad,True
-ps:popsign_v2_1/val/thankyou/2b19-thankyou-2023_01_19_19_50_46.346-0.mp4,thankyou,thanks,ps:2b19,sign,0,78,good,0.7762,0.7018,good|thanks|love,False
-ps:popsign_v2_1/val/thankyou/c6e5-thankyou-2023_01_25_16_56_48.827-0.mp4,thankyou,thanks,ps:c6e5,sign,21,70,thanks,0.6093,0.3903,thanks|good|hello,True
-ps:popsign_v2_1/val/thankyou/d5fd-thankyou-2023_01_10_17_07_06.234-0.mp4,thankyou,thanks,ps:d5fd,sign,0,110,thanks,0.4169,0.0434,thanks|good|bad,True
-ps:popsign_v2_1/val/thankyou/c6e5-thankyou-2023_01_25_17_22_12.261-0.mp4,thankyou,thanks,ps:c6e5,sign,48,94,thanks,0.7368,0.6118,thanks|good|home,True
-ps:popsign_v2_1/val/thankyou/d5fd-thankyou-2023_01_10_17_29_13.171-0.mp4,thankyou,thanks,ps:d5fd,sign,18,29,thanks,0.727,0.6025,thanks|good|bad,True
-ps:popsign_v2_1/val/thankyou/661f-thankyou-2023_01_30_16_41_58.468-0.mp4,thankyou,thanks,ps:661f,sign,18,34,thanks,0.7113,0.5714,thanks|good|bad,True
-ps:popsign_v2_1/val/thankyou/a459-thankyou-2023_01_10_18_21_06.068-0.mp4,thankyou,thanks,ps:a459,sign,0,10,thanks,0.796,0.7235,thanks|good|home,True
-ps:popsign_v2_1/val/thankyou/ebdb-thankyou-2023_01_30_13_21_12.125-0.mp4,thankyou,thanks,ps:ebdb,sign,20,30,thanks,0.7501,0.651,thanks|good|bad,True
-ps:popsign_v2_1/val/thankyou/2b19-thankyou-2023_01_21_22_25_50.617-0.mp4,thankyou,thanks,ps:2b19,sign,18,35,thanks,0.6803,0.5156,thanks|good|bad,True
-ps:popsign_v2_1/val/thankyou/c6e5-thankyou-2023_01_25_17_49_43.604-0.mp4,thankyou,thanks,ps:c6e5,sign,39,89,thanks,0.6336,0.4173,thanks|good|home,True
-ps:popsign_v2_1/val/thankyou/d5fd-thankyou-2023_01_10_18_09_18.898-0.mp4,thankyou,thanks,ps:d5fd,sign,7,80,good,0.5933,0.364,good|thanks|bad,False
-ps:popsign_v2_1/val/thankyou/661f-thankyou-2023_01_30_16_51_21.164-0.mp4,thankyou,thanks,ps:661f,sign,22,34,thanks,0.5731,0.3196,thanks|good|bad,True
-ps:popsign_v2_1/val/thankyou/a459-thankyou-2023_01_10_19_40_48.970-0.mp4,thankyou,thanks,ps:a459,sign,13,22,thanks,0.7146,0.5752,thanks|good|hello,True
-ps:popsign_v2_1/val/thankyou/ebdb-thankyou-2023_01_30_13_31_08.002-0.mp4,thankyou,thanks,ps:ebdb,sign,20,32,good,0.4814,0.1466,good|thanks|family,False
-ps:popsign_v2_1/val/thankyou/2b19-thankyou-2023_01_23_20_09_07.841-0.mp4,thankyou,thanks,ps:2b19,sign,23,84,good,0.5962,0.3718,good|thanks|school,False
-ps:popsign_v2_1/test/thankyou/66d7-thankyou-2023_01_25_18_18_52.782-0.mp4,thankyou,thanks,ps:66d7,sign,18,50,good,0.5809,0.3957,good|thanks|help,False
-ps:popsign_v2_1/test/thankyou/111c-thankyou-2023_01_26_16_13_58.010-0.mp4,thankyou,thanks,ps:111c,sign,31,43,good,0.8155,0.7517,good|thanks|love,False
-ps:popsign_v2_1/test/thankyou/af6d-thankyou-2023_01_23_19_20_11.550-0.mp4,thankyou,thanks,ps:af6d,sign,16,34,good,0.4418,0.0683,good|thanks|hello,False
-ps:popsign_v2_1/test/thankyou/af36-thankyou-2022_12_16_12_46_04.844-0-done.mp4,thankyou,thanks,ps:af36,sign,20,88,thanks,0.819,0.7619,thanks|good|bad,True
-ps:popsign_v2_1/test/thankyou/616e-thankyou-2023_01_26_16_42_50.334-0.mp4,thankyou,thanks,ps:616e,sign,23,34,thanks,0.7878,0.7168,thanks|good|bad,True
-ps:popsign_v2_1/test/thankyou/a1ba-thankyou-2023_01_09_19_44_24.544-0.mp4,thankyou,thanks,ps:a1ba,sign,33,80,thanks,0.7398,0.6299,thanks|good|hello,True
-ps:popsign_v2_1/test/thankyou/66d7-thankyou-2023_01_25_19_24_25.781-0.mp4,thankyou,thanks,ps:66d7,sign,16,39,thanks,0.4715,0.127,thanks|good|bad,True
-ps:popsign_v2_1/test/thankyou/111c-thankyou-2023_01_26_17_45_13.236-0.mp4,thankyou,thanks,ps:111c,sign,27,40,good,0.8606,0.8233,good|thanks|love,False
-ps:popsign_v2_1/test/thankyou/af6d-thankyou-2023_01_25_14_22_55.323-0.mp4,thankyou,thanks,ps:af6d,sign,19,30,thanks,0.4127,0.1532,thanks|good|bad,True
-ps:popsign_v2_1/test/thankyou/af36-thankyou-2022_12_21_11_05_41.399-0.mp4,thankyou,thanks,ps:af36,sign,25,163,thanks,0.5871,0.3768,thanks|good|bad,True
-ps:popsign_v2_1/test/thankyou/616e-thankyou-2023_01_26_17_11_05.157-0.mp4,thankyou,thanks,ps:616e,sign,24,35,thanks,0.7652,0.6752,thanks|good|bad,True
-ps:popsign_v2_1/test/thankyou/a1ba-thankyou-2023_01_10_23_47_04.926-0.mp4,thankyou,thanks,ps:a1ba,sign,16,42,thanks,0.5778,0.3271,thanks|good|bad,True
-ps:popsign_v2_1/test/thankyou/66d7-thankyou-2023_01_25_20_27_40.234-0.mp4,thankyou,thanks,ps:66d7,sign,18,31,thanks,0.6827,0.513,thanks|good|home,True
-ps:popsign_v2_1/test/thankyou/111c-thankyou-2023_01_26_20_10_21.830-0.mp4,thankyou,thanks,ps:111c,sign,41,70,good,0.4683,0.1254,good|thanks|love,False
-ps:popsign_v2_1/test/thankyou/af6d-thankyou-2023_01_25_17_03_36.739-0.mp4,thankyou,thanks,ps:af6d,sign,14,41,good,0.8301,0.7743,good|thanks|love,False
-ps:popsign_v2_1/test/thankyou/af36-thankyou-2023_01_03_10_01_28.566-0.mp4,thankyou,thanks,ps:af36,sign,26,129,thanks,0.6103,0.4793,thanks|good|bad,True
-ps:popsign_v2_1/test/thankyou/616e-thankyou-2023_01_26_18_24_49.917-0.mp4,thankyou,thanks,ps:616e,sign,27,51,thanks,0.7739,0.6868,thanks|good|bad,True
-ps:popsign_v2_1/test/thankyou/a1ba-thankyou-2023_01_10_23_47_04.926-1.mp4,thankyou,thanks,ps:a1ba,sign,18,37,thanks,0.5613,0.2949,thanks|good|bad,True
-ps:popsign_v2_1/test/thankyou/af36-thankyou-2023_01_06_10_25_43.652-0.mp4,thankyou,thanks,ps:af36,sign,30,98,thanks,0.5509,0.3437,thanks|good|family,True
-ps:popsign_v2_1/test/thankyou/a1ba-thankyou-2023_01_10_23_53_30.024-0.mp4,thankyou,thanks,ps:a1ba,sign,55,141,thanks,0.6765,0.5137,thanks|good|bad,True
+video,gloss,label,participant,kind,start,end,pred,p1,margin,top3,correct,committed,hedge_refused,refusal_reason
+ps:popsign_v2_1/test/happy/66d7-happy-2023_01_25_18_30_18.187-0.mp4,happy,happy,ps:66d7,sign,17,47,happy,0.7299,0.6797,happy|thanks|good,True,False,False,confidence 0.73 < 0.85
+ps:popsign_v2_1/test/happy/af36-happy-2022_12_21_10_51_57.632-0.mp4,happy,happy,ps:af36,sign,27,64,good,0.5832,0.3926,good|happy|thanks,False,False,False,confidence 0.58 < 0.85
+ps:popsign_v2_1/test/happy/a1ba-happy-2023_01_10_23_45_54.405-0.mp4,happy,happy,ps:a1ba,sign,85,147,happy,0.529,0.2302,happy|good|thanks,True,False,False,confidence 0.53 < 0.85
+ps:popsign_v2_1/test/happy/af6d-happy-2023_01_25_14_06_05.176-0.mp4,happy,happy,ps:af6d,sign,17,44,good,0.4067,0.1762,good|happy|how,False,False,False,confidence 0.41 < 0.85
+ps:popsign_v2_1/test/happy/a1ba-happy-2023_01_10_23_33_24.406-0.mp4,happy,happy,ps:a1ba,sign,79,173,happy,0.8876,0.8539,happy|good|thanks,True,True,False,
+ps:popsign_v2_1/test/happy/af6d-happy-2023_01_23_19_11_05.610-0.mp4,happy,happy,ps:af6d,sign,28,52,how,0.4964,0.4054,how|please|happy,False,False,False,confidence 0.50 < 0.85
+ps:popsign_v2_1/test/happy/111c-happy-2023_01_26_17_12_26.671-0.mp4,happy,happy,ps:111c,sign,4,80,good,0.8267,0.785,good|happy|help,False,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/happy/616e-happy-2023_01_26_16_57_04.895-0.mp4,happy,happy,ps:616e,sign,19,60,happy,0.8774,0.8245,happy|good|thanks,True,True,False,
+ps:popsign_v2_1/test/happy/111c-happy-2023_01_26_17_58_54.367-0.mp4,happy,happy,ps:111c,sign,49,76,happy,0.2785,0.0228,happy|what|good,True,False,False,confidence 0.28 < 0.85
+ps:popsign_v2_1/test/happy/616e-happy-2023_01_26_17_01_41.917-0.mp4,happy,happy,ps:616e,sign,21,61,good,0.4857,0.1183,good|happy|what,False,False,False,confidence 0.49 < 0.85
+ps:popsign_v2_1/test/happy/66d7-happy-2023_01_25_19_25_59.581-0.mp4,happy,happy,ps:66d7,sign,16,39,happy,0.9171,0.9072,happy|good|please,True,True,False,
+ps:popsign_v2_1/test/happy/af36-happy-2023_01_03_09_35_35.497-0.mp4,happy,happy,ps:af36,sign,22,124,happy,0.2734,0.1679,happy|what|wait,True,False,False,confidence 0.27 < 0.85
+ps:popsign_v2_1/test/happy/a1ba-happy-2023_01_10_23_52_16.813-0.mp4,happy,happy,ps:a1ba,sign,40,77,happy,0.9021,0.8732,happy|good|thanks,True,True,False,
+ps:popsign_v2_1/test/happy/af6d-happy-2023_01_25_16_47_41.756-0.mp4,happy,happy,ps:af6d,sign,15,44,how,0.3393,0.1962,how|good|help,False,False,False,confidence 0.34 < 0.85
+ps:popsign_v2_1/test/happy/111c-happy-2023_01_26_20_10_21.830-0.mp4,happy,happy,ps:111c,sign,32,58,happy,0.6681,0.5297,happy|good|what,True,False,False,confidence 0.67 < 0.85
+ps:popsign_v2_1/test/happy/616e-happy-2023_01_26_18_22_30.247-0.mp4,happy,happy,ps:616e,sign,19,55,happy,0.8645,0.807,happy|good|please,True,True,False,
+ps:popsign_v2_1/test/good/a1ba-good-2023_08_27_23_24_37.991-0.mp4,good,good,ps:a1ba,sign,0,55,good,0.9156,0.8816,good|what|today,True,True,False,
+ps:popsign_v2_1/test/good/66d7-good-2023_09_03_10_25_46.554-0.mp4,good,good,ps:66d7,sign,10,56,what,0.6526,0.5112,what|good|more,False,False,False,confidence 0.65 < 0.85
+ps:popsign_v2_1/test/good/66e7-good-2024_02_14_15_36_22.227-1.mp4,good,good,ps:66e7,sign,13,64,good,0.9389,0.9263,good|what|thanks,True,True,False,
+ps:popsign_v2_1/test/good/933d-good-2024_03_11_15_54_51.987-1.mp4,good,good,ps:933d,sign,35,66,good,0.9178,0.8922,good|thanks|what,True,False,True,good/thanks?
+ps:popsign_v2_1/test/good/66e7-good-2024_02_15_17_47_34.872-1.mp4,good,good,ps:66e7,sign,0,53,good,0.7497,0.666,good|stop|what,True,False,False,confidence 0.75 < 0.85
+ps:popsign_v2_1/test/good/933d-good-2024_03_13_17_12_39.737-1.mp4,good,good,ps:933d,sign,31,50,good,0.9347,0.9205,good|thanks|what,True,False,True,good/thanks?
+ps:popsign_v2_1/test/good/16f0-good-2023_10_02_20_25_13.457-1.mp4,good,good,ps:16f0,sign,20,49,good,0.9344,0.9168,good|thanks|what,True,False,True,good/thanks?
+ps:popsign_v2_1/test/good/3d3f-good-2024_03_12_10_41_06.738-1.mp4,good,good,ps:3d3f,sign,0,57,good,0.9054,0.8764,good|what|stop,True,True,False,
+ps:popsign_v2_1/test/happy/66d7-happy-2023_01_25_20_42_38.295-0.mp4,happy,happy,ps:66d7,sign,24,53,happy,0.9537,0.9461,happy|please|my,True,True,False,
+ps:popsign_v2_1/test/happy/af36-happy-2023_01_03_10_00_21.189-0.mp4,happy,happy,ps:af36,sign,38,156,happy,0.4222,0.1467,happy|good|thanks,True,False,False,confidence 0.42 < 0.85
+ps:popsign_v2_1/test/happy/a1ba-happy-2023_01_12_13_18_00.716-0.mp4,happy,happy,ps:a1ba,sign,89,142,happy,0.9321,0.9166,happy|good|please,True,True,False,
+ps:popsign_v2_1/test/happy/af6d-happy-2023_01_25_17_06_09.032-0.mp4,happy,happy,ps:af6d,sign,14,41,how,0.3453,0.2419,how|doctor|happy,False,False,False,confidence 0.35 < 0.85
+ps:popsign_v2_1/test/good/16f0-good-2023_09_28_19_06_13.197-1.mp4,good,good,ps:16f0,sign,47,82,good,0.916,0.8886,good|thanks|what,True,False,True,good/thanks?
+ps:popsign_v2_1/test/good/3d3f-good-2024_02_20_13_07_19.933-1.mp4,good,good,ps:3d3f,sign,57,69,good,0.9442,0.936,good|what|thanks,True,True,False,
+ps:popsign_v2_1/test/good/a1ba-good-2023_08_28_22_20_33.459-0.mp4,good,good,ps:a1ba,sign,71,99,good,0.8351,0.7716,good|what|thanks,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/good/66d7-good-2023_09_03_19_32_48.569-0.mp4,good,good,ps:66d7,sign,6,51,good,0.8647,0.8269,good|what|eat,True,True,False,
+ps:popsign_v2_1/test/good/a1ba-good-2023_08_30_23_56_49.469-0.mp4,good,good,ps:a1ba,sign,0,44,good,0.9415,0.9294,good|what|thanks,True,True,False,
+ps:popsign_v2_1/test/good/66d7-good-2023_09_03_21_49_20.342-0.mp4,good,good,ps:66d7,sign,14,56,what,0.9192,0.9096,what|wait|good,False,True,False,
+ps:popsign_v2_1/test/good/66e7-good-2024_02_17_18_57_31.730-1.mp4,good,good,ps:66e7,sign,0,38,good,0.7984,0.7093,good|what|stop,True,False,False,confidence 0.80 < 0.85
+ps:popsign_v2_1/test/good/933d-good-2024_03_13_18_05_51.426-1.mp4,good,good,ps:933d,sign,35,70,good,0.9335,0.917,good|what|thanks,True,True,False,
+ps:popsign_v2_1/test/good/16f0-good-2023_10_09_10_08_45.710-1.mp4,good,good,ps:16f0,sign,19,65,bad,0.2808,0.0945,bad|stop|good,False,False,False,confidence 0.28 < 0.85
+ps:popsign_v2_1/test/good/3d3f-good-2024_03_12_14_37_34.912-1.mp4,good,good,ps:3d3f,sign,0,58,good,0.759,0.6771,good|help|what,True,False,False,confidence 0.76 < 0.85
+ps:popsign_v2_1/test/good/a1ba-good-2023_08_31_00_01_47.156-0.mp4,good,good,ps:a1ba,sign,0,74,good,0.8431,0.8078,good|what|help,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/good/66d7-good-2023_09_04_15_31_15.313-0.mp4,good,good,ps:66d7,sign,10,51,good,0.9312,0.9075,good|what|eat,True,True,False,
+ps:popsign_v2_1/test/thankyou/66d7-thankyou-2023_01_25_18_18_52.782-0.mp4,thankyou,thanks,ps:66d7,sign,18,50,thanks,0.3627,0.1076,thanks|good|sad,True,False,False,confidence 0.36 < 0.85
+ps:popsign_v2_1/test/thankyou/111c-thankyou-2023_01_26_16_13_58.010-0.mp4,thankyou,thanks,ps:111c,sign,31,43,good,0.9536,0.9422,good|thanks|what,False,False,True,good/thanks?
+ps:popsign_v2_1/test/thankyou/af6d-thankyou-2023_01_23_19_20_11.550-0.mp4,thankyou,thanks,ps:af6d,sign,16,34,good,0.961,0.9474,good|thanks|what,False,False,True,good/thanks?
+ps:popsign_v2_1/test/thankyou/af36-thankyou-2022_12_16_12_46_04.844-0-done.mp4,thankyou,thanks,ps:af36,sign,20,88,thanks,0.6679,0.5615,thanks|wait|sad,True,False,False,confidence 0.67 < 0.85
+ps:popsign_v2_1/test/thankyou/616e-thankyou-2023_01_26_16_42_50.334-0.mp4,thankyou,thanks,ps:616e,sign,23,34,thanks,0.5916,0.3826,thanks|bad|good,True,False,False,confidence 0.59 < 0.85
+ps:popsign_v2_1/test/thankyou/a1ba-thankyou-2023_01_09_19_44_24.544-0.mp4,thankyou,thanks,ps:a1ba,sign,33,80,thanks,0.8531,0.7533,thanks|good|understand,True,False,True,good/thanks?
+ps:popsign_v2_1/test/thankyou/66d7-thankyou-2023_01_25_19_24_25.781-0.mp4,thankyou,thanks,ps:66d7,sign,16,39,thanks,0.4916,0.2253,thanks|good|bad,True,False,False,confidence 0.49 < 0.85
+ps:popsign_v2_1/test/thankyou/111c-thankyou-2023_01_26_17_45_13.236-0.mp4,thankyou,thanks,ps:111c,sign,27,40,good,0.9631,0.9564,good|thanks|what,False,False,True,good/thanks?
+ps:popsign_v2_1/test/thankyou/af6d-thankyou-2023_01_25_14_22_55.323-0.mp4,thankyou,thanks,ps:af6d,sign,19,30,good,0.5946,0.3488,good|thanks|happy,False,False,False,confidence 0.59 < 0.85
+ps:popsign_v2_1/test/thankyou/af36-thankyou-2022_12_21_11_05_41.399-0.mp4,thankyou,thanks,ps:af36,sign,25,163,good,0.4838,0.0662,good|thanks|wait,False,False,False,confidence 0.48 < 0.85
+ps:popsign_v2_1/test/thankyou/616e-thankyou-2023_01_26_17_11_05.157-0.mp4,thankyou,thanks,ps:616e,sign,24,35,thanks,0.833,0.7107,thanks|good|bad,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/thankyou/a1ba-thankyou-2023_01_10_23_47_04.926-0.mp4,thankyou,thanks,ps:a1ba,sign,16,42,thanks,0.5667,0.2058,thanks|good|understand,True,False,False,confidence 0.57 < 0.85
+ps:popsign_v2_1/test/thankyou/66d7-thankyou-2023_01_25_20_27_40.234-0.mp4,thankyou,thanks,ps:66d7,sign,18,31,thanks,0.747,0.5707,thanks|good|bad,True,False,False,confidence 0.75 < 0.85
+ps:popsign_v2_1/test/thankyou/111c-thankyou-2023_01_26_20_10_21.830-0.mp4,thankyou,thanks,ps:111c,sign,41,70,good,0.8389,0.7472,good|thanks|what,False,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/thankyou/af6d-thankyou-2023_01_25_17_03_36.739-0.mp4,thankyou,thanks,ps:af6d,sign,14,41,good,0.9644,0.9557,good|thanks|what,False,False,True,good/thanks?
+ps:popsign_v2_1/test/thankyou/af36-thankyou-2023_01_03_10_01_28.566-0.mp4,thankyou,thanks,ps:af36,sign,26,129,thanks,0.208,0.0428,thanks|bad|stop,True,False,False,confidence 0.21 < 0.85
+ps:popsign_v2_1/test/thankyou/616e-thankyou-2023_01_26_18_24_49.917-0.mp4,thankyou,thanks,ps:616e,sign,27,51,thanks,0.8385,0.7272,thanks|good|bad,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/thankyou/a1ba-thankyou-2023_01_10_23_47_04.926-1.mp4,thankyou,thanks,ps:a1ba,sign,18,37,thanks,0.5581,0.1894,thanks|good|bad,True,False,False,confidence 0.56 < 0.85
+ps:popsign_v2_1/test/bye/af6d-bye-2023_01_23_19_02_46.254-0.mp4,bye,bye,ps:af6d,sign,18,46,bye,0.9342,0.9282,bye|drink|stop,True,True,False,
+ps:popsign_v2_1/test/bye/af36-bye-2022_12_21_10_53_21.634-0.mp4,bye,bye,ps:af36,sign,18,99,bye,0.9271,0.9212,bye|work|where,True,True,False,
+ps:popsign_v2_1/test/bye/616e-bye-2023_01_26_16_46_54.871-0.mp4,bye,bye,ps:616e,sign,19,48,bye,0.9103,0.9038,bye|family|hello,True,True,False,
+ps:popsign_v2_1/test/bye/111c-bye-2023_01_26_17_55_24.721-0.mp4,bye,bye,ps:111c,sign,32,54,bye,0.8805,0.8679,bye|where|bathroom,True,True,False,
+ps:popsign_v2_1/test/bye/a1ba-bye-2023_01_10_23_43_40.879-0.mp4,bye,bye,ps:a1ba,sign,21,42,bye,0.9158,0.9032,bye|work|family,True,True,False,
+ps:popsign_v2_1/test/bye/66d7-bye-2023_01_25_18_28_07.302-0.mp4,bye,bye,ps:66d7,sign,18,57,bye,0.9593,0.9562,bye|family|understand,True,True,False,
+ps:popsign_v2_1/test/bye/af6d-bye-2023_01_25_14_25_03.218-0.mp4,bye,bye,ps:af6d,sign,9,55,stop,0.4122,0.214,stop|bye|work,False,False,False,confidence 0.41 < 0.85
+ps:popsign_v2_1/test/bye/af36-bye-2023_01_05_10_46_00.501-0.mp4,bye,bye,ps:af36,sign,47,134,bye,0.7921,0.766,bye|stop|where,True,False,False,confidence 0.79 < 0.85
+ps:popsign_v2_1/test/bye/616e-bye-2023_01_26_17_02_16.566-0.mp4,bye,bye,ps:616e,sign,23,64,stop,0.4054,0.2378,stop|bye|why,False,False,False,confidence 0.41 < 0.85
+ps:popsign_v2_1/test/bye/111c-bye-2023_01_26_20_10_21.830-0.mp4,bye,bye,ps:111c,sign,23,42,bye,0.9404,0.9363,bye|family|finish,True,True,False,
+ps:popsign_v2_1/test/bye/a1ba-bye-2023_01_10_23_51_28.388-0.mp4,bye,bye,ps:a1ba,sign,15,37,bye,0.9296,0.9229,bye|work|family,True,True,False,
+ps:popsign_v2_1/test/bye/66d7-bye-2023_01_25_20_22_47.239-0.mp4,bye,bye,ps:66d7,sign,8,47,bye,0.9635,0.9603,bye|hello|bad,True,True,False,
+ps:popsign_v2_1/test/bye/af6d-bye-2023_01_25_16_45_41.243-0.mp4,bye,bye,ps:af6d,sign,12,41,bye,0.5775,0.4226,bye|work|stop,True,False,False,confidence 0.58 < 0.85
+ps:popsign_v2_1/test/bye/af36-bye-2023_01_06_11_21_24.731-0.mp4,bye,bye,ps:af36,sign,20,77,bye,0.9474,0.9432,bye|family|finish,True,True,False,
+ps:popsign_v2_1/test/bye/616e-bye-2023_01_26_17_12_04.815-0.mp4,bye,bye,ps:616e,sign,24,57,bye,0.8008,0.7766,bye|hello|finish,True,False,False,confidence 0.80 < 0.85
+ps:popsign_v2_1/test/bye/111c-bye-2023_01_29_11_21_28.920-0.mp4,bye,bye,ps:111c,sign,21,44,bye,0.8831,0.8742,bye|work|where,True,True,False,
+ps:popsign_v2_1/test/bye/a1ba-bye-2023_01_12_13_15_57.395-0.mp4,bye,bye,ps:a1ba,sign,72,154,bye,0.9513,0.9468,bye|work|family,True,True,False,
+ps:popsign_v2_1/test/bye/66d7-bye-2023_01_25_20_31_38.244-0.mp4,bye,bye,ps:66d7,sign,24,49,bye,0.9539,0.9487,bye|finish|bad,True,True,False,
+ps:popsign_v2_1/test/bye/af6d-bye-2023_01_25_18_15_02.042-0.mp4,bye,bye,ps:af6d,sign,13,39,bye,0.3726,0.3019,bye|stop|drink,True,False,False,confidence 0.37 < 0.85
+ps:popsign_v2_1/test/bye/af36-bye-2023_01_06_12_11_00.046-0.mp4,bye,bye,ps:af36,sign,24,72,bye,0.9308,0.9225,bye|finish|stop,True,True,False,
+ps:popsign_v2_1/test/please/a1ba-please-2023_01_09_19_39_35.185-0.mp4,please,please,ps:a1ba,sign,36,63,please,0.8973,0.8851,please|happy|my,True,True,False,
+ps:popsign_v2_1/test/please/66d7-please-2023_01_25_18_28_07.302-0.mp4,please,please,ps:66d7,sign,29,70,please,0.8449,0.8161,please|happy|like,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/please/af6d-please-2023_01_23_19_18_07.162-0.mp4,please,please,ps:af6d,sign,12,44,please,0.7865,0.7273,please|doctor|happy,True,False,False,confidence 0.79 < 0.85
+ps:popsign_v2_1/test/please/616e-please-2023_01_26_16_41_35.688-0.mp4,please,please,ps:616e,sign,24,68,please,0.9057,0.8781,please|happy|my,True,True,False,
+ps:popsign_v2_1/test/please/af6d-please-2023_01_25_14_26_50.663-0.mp4,please,please,ps:af6d,sign,7,31,please,0.8167,0.7779,please|doctor|happy,True,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/please/616e-please-2023_01_26_17_02_16.566-0.mp4,please,please,ps:616e,sign,21,60,please,0.9378,0.9199,please|happy|my,True,True,False,
+ps:popsign_v2_1/test/please/af36-please-2022_12_16_12_46_04.844-0.mp4,please,please,ps:af36,sign,27,110,please,0.9129,0.8972,please|happy|my,True,True,False,
+ps:popsign_v2_1/test/please/111c-please-2023_01_26_17_57_18.086-0.mp4,please,please,ps:111c,sign,31,35,please,0.9031,0.8887,please|happy|my,True,True,False,
+ps:popsign_v2_1/test/please/af36-please-2022_12_16_12_18_05.831-0.mp4,please,please,ps:af36,sign,0,147,please,0.732,0.6772,please|happy|like,True,False,False,confidence 0.73 < 0.85
+ps:popsign_v2_1/test/please/111c-please-2023_01_26_17_12_26.671-0.mp4,please,please,ps:111c,sign,6,39,please,0.8187,0.7701,please|doctor|happy,True,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/please/a1ba-please-2023_01_10_23_38_34.965-0.mp4,please,please,ps:a1ba,sign,27,31,please,0.6666,0.5472,please|hungry|like,True,False,False,confidence 0.67 < 0.85
+ps:popsign_v2_1/test/please/66d7-please-2023_01_25_18_31_32.151-0.mp4,please,please,ps:66d7,sign,34,71,happy,0.339,0.1714,happy|hungry|like,False,False,False,confidence 0.34 < 0.85
+ps:popsign_v2_1/test/please/a1ba-please-2023_01_10_23_59_22.349-0.mp4,please,please,ps:a1ba,sign,62,155,please,0.8963,0.8814,please|happy|my,True,True,False,
+ps:popsign_v2_1/test/please/66d7-please-2023_01_25_20_30_38.799-0.mp4,please,please,ps:66d7,sign,0,80,please,0.8236,0.7796,please|hungry|like,True,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/please/af6d-please-2023_01_25_16_59_44.886-0.mp4,please,please,ps:af6d,sign,12,65,please,0.6481,0.538,please|doctor|happy,True,False,False,confidence 0.65 < 0.85
+ps:popsign_v2_1/test/please/616e-please-2023_01_26_18_19_19.884-0.mp4,please,please,ps:616e,sign,20,47,please,0.9163,0.9033,please|happy|my,True,True,False,
+ps:popsign_v2_1/test/sleep/af36-sleep-2022_12_16_12_41_59.673-0.mp4,sleep,sleep,ps:af36,sign,25,60,sleep,0.7517,0.7257,sleep|stop|sad,True,False,False,confidence 0.75 < 0.85
+ps:popsign_v2_1/test/sleep/111c-sleep-2023_01_26_17_01_51.040-0.mp4,sleep,sleep,ps:111c,sign,26,56,eat,0.5005,0.3671,eat|sleep|stop,False,False,False,confidence 0.50 < 0.85
+ps:popsign_v2_1/test/sleep/af6d-sleep-2023_01_23_19_17_18.690-0.mp4,sleep,sleep,ps:af6d,sign,17,35,sleep,0.9396,0.9298,sleep|go|my,True,True,False,
+ps:popsign_v2_1/test/sleep/a1ba-sleep-2023_01_09_19_54_22.419-0.mp4,sleep,sleep,ps:a1ba,sign,17,31,sleep,0.9346,0.9165,sleep|sad|eat,True,True,False,
+ps:popsign_v2_1/test/please/af36-please-2023_01_03_09_42_12.710-0.mp4,please,please,ps:af36,sign,31,132,please,0.8297,0.7776,please|hungry|happy,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/please/111c-please-2023_01_26_20_06_43.981-0.mp4,please,please,ps:111c,sign,30,36,please,0.8806,0.8594,please|my|happy,True,True,False,
+ps:popsign_v2_1/test/please/a1ba-please-2023_01_12_13_28_57.712-0.mp4,please,please,ps:a1ba,sign,29,48,please,0.9085,0.8957,please|happy|my,True,True,False,
+ps:popsign_v2_1/test/please/66d7-please-2023_01_25_20_47_07.912-0.mp4,please,please,ps:66d7,sign,0,60,please,0.5124,0.241,please|hungry|like,True,False,False,confidence 0.51 < 0.85
+ps:popsign_v2_1/test/sleep/af6d-sleep-2023_01_25_14_14_58.642-0.mp4,sleep,sleep,ps:af6d,sign,19,39,sleep,0.9482,0.9342,sleep|go|sad,True,True,False,
+ps:popsign_v2_1/test/sleep/a1ba-sleep-2023_01_10_23_47_04.926-0.mp4,sleep,sleep,ps:a1ba,sign,18,32,sleep,0.9663,0.9601,sleep|sad|eat,True,True,False,
+ps:popsign_v2_1/test/sleep/616e-sleep-2023_01_26_16_59_37.242-0.mp4,sleep,sleep,ps:616e,sign,21,45,sleep,0.9597,0.9569,sleep|sad|eat,True,True,False,
+ps:popsign_v2_1/test/sleep/66d7-sleep-2023_01_25_19_22_12.120-0.mp4,sleep,sleep,ps:66d7,sign,15,34,sleep,0.802,0.7764,sleep|stop|eat,True,False,False,confidence 0.80 < 0.85
+ps:popsign_v2_1/test/sleep/616e-sleep-2023_01_26_16_54_03.800-0.mp4,sleep,sleep,ps:616e,sign,28,54,sleep,0.9638,0.9607,sleep|sad|eat,True,True,False,
+ps:popsign_v2_1/test/sleep/66d7-sleep-2023_01_25_18_30_18.187-0.mp4,sleep,sleep,ps:66d7,sign,15,44,sleep,0.9626,0.9591,sleep|sad|eat,True,True,False,
+ps:popsign_v2_1/test/sleep/af36-sleep-2023_01_03_09_31_40.910-0.mp4,sleep,sleep,ps:af36,sign,34,174,sick,0.328,0.112,sick|sleep|stop,False,False,False,confidence 0.33 < 0.85
+ps:popsign_v2_1/test/sleep/111c-sleep-2023_01_26_17_24_01.574-0.mp4,sleep,sleep,ps:111c,sign,23,46,sleep,0.9557,0.949,sleep|sad|eat,True,True,False,
+ps:popsign_v2_1/test/sleep/616e-sleep-2023_01_26_18_18_24.054-0.mp4,sleep,sleep,ps:616e,sign,19,43,sleep,0.9533,0.9498,sleep|eat|sad,True,True,False,
+ps:popsign_v2_1/test/sleep/66d7-sleep-2023_01_25_20_29_37.498-0.mp4,sleep,sleep,ps:66d7,sign,17,41,sleep,0.9587,0.9539,sleep|sad|eat,True,True,False,
+ps:popsign_v2_1/test/sleep/af36-sleep-2023_01_05_10_44_09.263-0.mp4,sleep,sleep,ps:af36,sign,25,81,sleep,0.3189,0.1459,sleep|go|sick,True,False,False,confidence 0.32 < 0.85
+ps:popsign_v2_1/test/sleep/111c-sleep-2023_01_26_20_40_56.641-0.mp4,sleep,sleep,ps:111c,sign,23,50,sleep,0.9582,0.953,sleep|sad|go,True,True,False,
+ps:popsign_v2_1/test/chicken/66d7-chicken-2023_09_02_10_23_35.365-0.mp4,chicken,chicken,ps:66d7,sign,13,104,chicken,0.5267,0.2711,chicken|bathroom|work,True,False,False,confidence 0.53 < 0.85
+ps:popsign_v2_1/test/chicken/933d-chicken-2024_03_13_14_50_38.175-1.mp4,chicken,chicken,ps:933d,sign,28,72,chicken,0.9159,0.8977,chicken|bathroom|come,True,True,False,
+ps:popsign_v2_1/test/chicken/3d3f-chicken-2024_02_20_13_00_06.097-1.mp4,chicken,chicken,ps:3d3f,sign,3,73,chicken,0.9297,0.9193,chicken|friend|bathroom,True,True,False,
+ps:popsign_v2_1/test/chicken/a1ba-chicken-2023_08_27_23_46_33.549-0.mp4,chicken,chicken,ps:a1ba,sign,0,67,chicken,0.9745,0.9725,chicken|come|bathroom,True,True,False,
+ps:popsign_v2_1/test/sleep/af36-sleep-2023_01_03_11_31_19.237-0.mp4,sleep,sleep,ps:af36,sign,37,140,sleep,0.8942,0.8827,sleep|sad|eat,True,True,False,
+ps:popsign_v2_1/test/sleep/111c-sleep-2023_01_26_20_05_09.119-0.mp4,sleep,sleep,ps:111c,sign,23,47,sleep,0.965,0.9615,sleep|sad|name,True,True,False,
+ps:popsign_v2_1/test/sleep/af6d-sleep-2023_01_25_16_46_41.646-0.mp4,sleep,sleep,ps:af6d,sign,15,41,sleep,0.944,0.938,sleep|go|sad,True,True,False,
+ps:popsign_v2_1/test/sleep/a1ba-sleep-2023_01_11_00_00_06.757-0.mp4,sleep,sleep,ps:a1ba,sign,70,104,sleep,0.9627,0.955,sleep|sad|eat,True,True,False,
+ps:popsign_v2_1/test/chicken/3d3f-chicken-2024_02_26_15_45_08.930-1.mp4,chicken,chicken,ps:3d3f,sign,14,46,chicken,0.9761,0.9743,chicken|come|bread,True,True,False,
+ps:popsign_v2_1/test/chicken/a1ba-chicken-2023_08_28_22_23_17.869-0.mp4,chicken,chicken,ps:a1ba,sign,0,132,chicken,0.9629,0.9601,chicken|work|come,True,True,False,
+ps:popsign_v2_1/test/chicken/16f0-chicken-2023_10_02_20_40_07.659-1.mp4,chicken,chicken,ps:16f0,sign,22,65,chicken,0.8582,0.8349,chicken|who|when,True,True,False,
+ps:popsign_v2_1/test/chicken/66e7-chicken-2024_02_15_17_49_39.666-1.mp4,chicken,chicken,ps:66e7,sign,16,43,chicken,0.9593,0.9544,chicken|who|bread,True,True,False,
+ps:popsign_v2_1/test/chicken/66d7-chicken-2023_09_04_11_39_49.251-0.mp4,chicken,chicken,ps:66d7,sign,9,69,chicken,0.3461,0.1758,chicken|bathroom|when,True,False,False,confidence 0.35 < 0.85
+ps:popsign_v2_1/test/chicken/933d-chicken-2024_03_14_13_35_11.942-1.mp4,chicken,chicken,ps:933d,sign,35,77,chicken,0.934,0.9256,chicken|bathroom|come,True,True,False,
+ps:popsign_v2_1/test/chicken/3d3f-chicken-2024_03_11_16_05_20.581-1.mp4,chicken,chicken,ps:3d3f,sign,29,52,chicken,0.9293,0.9234,chicken|bathroom|come,True,True,False,
+ps:popsign_v2_1/test/chicken/a1ba-chicken-2023_08_30_23_27_49.269-0.mp4,chicken,chicken,ps:a1ba,sign,0,65,chicken,0.968,0.9655,chicken|come|bread,True,True,False,
+ps:popsign_v2_1/test/chicken/16f0-chicken-2023_10_01_20_01_58.377-1.mp4,chicken,chicken,ps:16f0,sign,35,126,chicken,0.9678,0.9658,chicken|who|come,True,True,False,
+ps:popsign_v2_1/test/chicken/66e7-chicken-2024_02_14_18_38_26.891-1.mp4,chicken,chicken,ps:66e7,sign,10,43,chicken,0.8791,0.8389,chicken|bathroom|come,True,True,False,
+ps:popsign_v2_1/test/chicken/66d7-chicken-2023_09_03_19_36_09.891-0.mp4,chicken,chicken,ps:66d7,sign,13,56,chicken,0.9375,0.9223,chicken|bathroom|come,True,True,False,
+ps:popsign_v2_1/test/chicken/933d-chicken-2024_03_13_16_31_37.915-1.mp4,chicken,chicken,ps:933d,sign,45,99,bathroom,0.3224,0.1853,bathroom|work|chicken,False,False,False,confidence 0.32 < 0.85
+ps:popsign_v2_1/test/chicken/16f0-chicken-2023_10_08_09_35_38.396-1.mp4,chicken,chicken,ps:16f0,sign,19,66,chicken,0.9806,0.9792,chicken|who|come,True,True,False,
+ps:popsign_v2_1/test/chicken/66e7-chicken-2024_02_17_18_29_21.996-1.mp4,chicken,chicken,ps:66e7,sign,1,62,chicken,0.7177,0.6653,chicken|bathroom|come,True,False,False,confidence 0.72 < 0.85
+ps:popsign_v2_1/test/chicken/66d7-chicken-2023_09_04_13_07_14.409-0.mp4,chicken,chicken,ps:66d7,sign,15,51,bathroom,0.4278,0.029,bathroom|chicken|work,False,False,False,confidence 0.43 < 0.85
+ps:popsign_v2_1/test/chicken/933d-chicken-2024_03_15_13_29_37.061-1.mp4,chicken,chicken,ps:933d,sign,64,104,chicken,0.9586,0.9536,chicken|bathroom|come,True,True,False,
+ps:popsign_v2_1/test/eat/66e7-eat-2024_02_14_18_34_16.500-1.mp4,eat,eat,ps:66e7,sign,15,43,eat,0.8902,0.8669,eat|more|good,True,True,False,
+ps:popsign_v2_1/test/eat/3d3f-eat-2024_02_26_15_43_38.943-1.mp4,eat,eat,ps:3d3f,sign,34,49,eat,0.9227,0.9178,eat|come|sorry,True,True,False,
+ps:popsign_v2_1/test/eat/66d7-eat-2023_09_03_19_34_08.272-0.mp4,eat,eat,ps:66d7,sign,15,46,eat,0.6787,0.5595,eat|more|what,True,False,False,confidence 0.68 < 0.85
+ps:popsign_v2_1/test/eat/16f0-eat-2023_10_02_20_38_03.305-1.mp4,eat,eat,ps:16f0,sign,23,59,eat,0.8939,0.8863,eat|good|come,True,True,False,
+ps:popsign_v2_1/test/eat/66e7-eat-2024_02_17_18_56_58.564-1.mp4,eat,eat,ps:66e7,sign,0,59,eat,0.5769,0.4672,eat|good|more,True,False,False,confidence 0.58 < 0.85
+ps:popsign_v2_1/test/eat/3d3f-eat-2024_03_12_10_40_40.864-1.mp4,eat,eat,ps:3d3f,sign,0,61,eat,0.4957,0.3421,eat|love|good,True,False,False,confidence 0.50 < 0.85
+ps:popsign_v2_1/test/eat/a1ba-eat-2023_08_28_10_39_12.770-0.mp4,eat,eat,ps:a1ba,sign,0,117,eat,0.9389,0.9334,eat|love|good,True,True,False,
+ps:popsign_v2_1/test/eat/933d-eat-2024_03_13_15_04_12.596-1.mp4,eat,eat,ps:933d,sign,40,70,eat,0.8674,0.857,eat|sleep|love,True,True,False,
+ps:popsign_v2_1/test/eat/66d7-eat-2023_09_02_10_30_10.591-0.mp4,eat,eat,ps:66d7,sign,3,79,eat,0.9147,0.9061,eat|more|today,True,True,False,
+ps:popsign_v2_1/test/eat/16f0-eat-2023_09_28_19_03_48.662-1.mp4,eat,eat,ps:16f0,sign,21,69,eat,0.9236,0.9147,eat|sleep|come,True,True,False,
+ps:popsign_v2_1/test/eat/a1ba-eat-2023_08_30_23_30_12.825-0.mp4,eat,eat,ps:a1ba,sign,0,50,eat,0.9499,0.9431,eat|more|good,True,True,False,
+ps:popsign_v2_1/test/eat/933d-eat-2024_03_14_13_58_27.874-1.mp4,eat,eat,ps:933d,sign,53,86,eat,0.8986,0.8904,eat|come|sleep,True,True,False,
+ps:popsign_v2_1/test/eat/66d7-eat-2023_09_04_10_27_34.922-0.mp4,eat,eat,ps:66d7,sign,8,47,eat,0.9381,0.934,eat|home|more,True,True,False,
+ps:popsign_v2_1/test/eat/16f0-eat-2023_10_09_10_11_37.105-1.mp4,eat,eat,ps:16f0,sign,17,57,eat,0.9161,0.9106,eat|come|good,True,True,False,
+ps:popsign_v2_1/test/eat/66e7-eat-2024_02_15_17_41_49.117-1.mp4,eat,eat,ps:66e7,sign,15,41,eat,0.8513,0.8161,eat|good|more,True,True,False,
+ps:popsign_v2_1/test/eat/3d3f-eat-2024_03_11_16_05_44.449-1.mp4,eat,eat,ps:3d3f,sign,0,74,eat,0.8165,0.76,eat|love|good,True,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/eat/a1ba-eat-2023_08_28_22_18_20.507-0.mp4,eat,eat,ps:a1ba,sign,0,106,eat,0.9189,0.911,eat|more|love,True,True,False,
+ps:popsign_v2_1/test/eat/933d-eat-2024_03_13_15_32_13.347-1.mp4,eat,eat,ps:933d,sign,44,79,eat,0.9034,0.8962,eat|come|sleep,True,True,False,
+ps:popsign_v2_1/test/friend/66d7-friend-2023_09_03_12_19_48.700-0.mp4,friend,friend,ps:66d7,sign,18,66,hurt,0.8802,0.8454,hurt|when|friend,False,True,False,
+ps:popsign_v2_1/test/friend/16f0-friend-2023_10_02_20_37_12.149-1.mp4,friend,friend,ps:16f0,sign,21,56,friend,0.6068,0.4925,friend|hurt|today,True,False,False,confidence 0.61 < 0.85
+ps:popsign_v2_1/test/friend/66e7-friend-2024_02_17_18_59_13.098-1.mp4,friend,friend,ps:66e7,sign,3,57,hurt,0.4998,0.3071,hurt|friend|bathroom,False,False,False,confidence 0.50 < 0.85
+ps:popsign_v2_1/test/friend/3d3f-friend-2024_02_27_09_03_32.624-1.mp4,friend,friend,ps:3d3f,sign,0,64,friend,0.9589,0.9525,friend|hurt|when,True,True,False,
+ps:popsign_v2_1/test/eat/66e7-eat-2024_02_18_13_40_19.209-1.mp4,eat,eat,ps:66e7,sign,0,211,eat,0.926,0.9145,eat|more|love,True,True,False,
+ps:popsign_v2_1/test/eat/3d3f-eat-2024_03_12_14_35_26.285-1.mp4,eat,eat,ps:3d3f,sign,0,63,eat,0.4021,0.1363,eat|love|good,True,False,False,confidence 0.40 < 0.85
+ps:popsign_v2_1/test/friend/66e7-friend-2024_02_14_18_35_55.784-1.mp4,friend,friend,ps:66e7,sign,14,45,hurt,0.4344,0.0694,hurt|friend|today,False,False,False,confidence 0.43 < 0.85
+ps:popsign_v2_1/test/friend/3d3f-friend-2024_02_20_12_58_41.138-1.mp4,friend,friend,ps:3d3f,sign,16,45,friend,0.9733,0.971,friend|more|hurt,True,True,False,
+ps:popsign_v2_1/test/friend/933d-friend-2024_03_11_15_10_07.811-1.mp4,friend,friend,ps:933d,sign,49,77,friend,0.8492,0.7695,friend|hurt|today,True,False,False,confidence 0.85 < 0.85
+ps:popsign_v2_1/test/friend/a1ba-friend-2023_08_27_23_46_33.549-0.mp4,friend,friend,ps:a1ba,sign,0,71,hurt,0.3803,0.0231,hurt|when|friend,False,False,False,confidence 0.38 < 0.85
+ps:popsign_v2_1/test/friend/66d7-friend-2023_09_02_10_47_33.784-0.mp4,friend,friend,ps:66d7,sign,10,50,friend,0.8529,0.7723,friend|hurt|when,True,True,False,
+ps:popsign_v2_1/test/friend/16f0-friend-2023_10_01_19_34_34.018-1.mp4,friend,friend,ps:16f0,sign,20,70,friend,0.9229,0.9071,friend|hurt|apple,True,True,False,
+ps:popsign_v2_1/test/friend/66e7-friend-2024_02_15_17_45_05.116-1.mp4,friend,friend,ps:66e7,sign,0,84,friend,0.7376,0.6514,friend|hurt|love,True,False,False,confidence 0.74 < 0.85
+ps:popsign_v2_1/test/friend/3d3f-friend-2024_02_27_08_58_11.239-1.mp4,friend,friend,ps:3d3f,sign,0,71,friend,0.9616,0.9517,friend|when|chicken,True,True,False,
+ps:popsign_v2_1/test/friend/933d-friend-2024_03_14_15_48_29.095-1.mp4,friend,friend,ps:933d,sign,51,90,friend,0.8964,0.8829,friend|eat|apple,True,True,False,
+ps:popsign_v2_1/test/friend/a1ba-friend-2023_08_28_22_21_25.287-0.mp4,friend,friend,ps:a1ba,sign,0,62,friend,0.8934,0.8677,friend|when|chicken,True,True,False,
+ps:popsign_v2_1/test/friend/66e7-friend-2024_02_18_13_39_10.178-1.mp4,friend,friend,ps:66e7,sign,0,53,friend,0.4037,0.2761,friend|love|hurt,True,False,False,confidence 0.40 < 0.85
+ps:popsign_v2_1/test/friend/3d3f-friend-2024_03_12_10_42_36.106-1.mp4,friend,friend,ps:3d3f,sign,0,62,friend,0.6693,0.6209,friend|chicken|more,True,False,False,confidence 0.67 < 0.85
+ps:popsign_v2_1/test/hello/111c-hello-2023_01_26_16_19_25.658-0.mp4,hello,hello,ps:111c,sign,31,53,hello,0.9165,0.9084,hello|finish|bad,True,True,False,
+ps:popsign_v2_1/test/hello/af6d-hello-2023_01_23_19_06_29.535-1.mp4,hello,hello,ps:af6d,sign,21,46,why,0.2577,0.0002,why|hello|stop,False,False,False,confidence 0.26 < 0.85
+ps:popsign_v2_1/test/hello/111c-hello-2023_01_26_17_22_18.285-0.mp4,hello,hello,ps:111c,sign,17,39,hello,0.9594,0.9565,hello|bad|medicine,True,True,False,
+ps:popsign_v2_1/test/hello/af6d-hello-2023_01_25_14_26_50.663-0.mp4,hello,hello,ps:af6d,sign,20,54,hello,0.2895,0.0531,hello|stop|why,True,False,False,confidence 0.29 < 0.85
+ps:popsign_v2_1/test/hello/a1ba-hello-2023_01_10_19_44_03.762-1.mp4,hello,hello,ps:a1ba,sign,35,91,hello,0.7803,0.6888,hello|why|understand,True,False,False,confidence 0.78 < 0.85
+ps:popsign_v2_1/test/hello/af36-hello-2022_12_21_11_03_44.888-0.mp4,hello,hello,ps:af36,sign,20,85,hello,0.5285,0.3719,hello|why|finish,True,False,False,confidence 0.53 < 0.85
+ps:popsign_v2_1/test/hello/a1ba-hello-2023_01_10_19_44_03.762-0.mp4,hello,hello,ps:a1ba,sign,68,169,why,0.8228,0.7784,why|hello|sick,False,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/hello/af36-hello-2022_12_16_12_38_16.914-0.mp4,hello,hello,ps:af36,sign,20,57,hello,0.8847,0.8611,hello|why|bye,True,True,False,
+ps:popsign_v2_1/test/hello/66d7-hello-2023_01_25_18_16_01.950-0.mp4,hello,hello,ps:66d7,sign,19,51,hello,0.9327,0.9283,hello|medicine|why,True,True,False,
+ps:popsign_v2_1/test/hello/616e-hello-2023_01_26_16_47_25.088-0.mp4,hello,hello,ps:616e,sign,21,53,hello,0.951,0.9477,hello|medicine|need,True,True,False,
+ps:popsign_v2_1/test/friend/933d-friend-2024_03_18_17_16_43.128-1.mp4,friend,friend,ps:933d,sign,45,75,doctor,0.3925,0.0923,doctor|friend|love,False,False,False,confidence 0.39 < 0.85
+ps:popsign_v2_1/test/friend/a1ba-friend-2023_08_30_23_29_24.080-0.mp4,friend,friend,ps:a1ba,sign,0,176,friend,0.879,0.8538,friend|hurt|more,True,True,False,
+ps:popsign_v2_1/test/friend/66d7-friend-2023_09_03_17_55_14.434-0.mp4,friend,friend,ps:66d7,sign,10,60,friend,0.8923,0.8681,friend|hurt|apple,True,True,False,
+ps:popsign_v2_1/test/friend/16f0-friend-2023_10_09_10_12_37.847-1.mp4,friend,friend,ps:16f0,sign,16,52,friend,0.9192,0.9061,friend|hurt|doctor,True,True,False,
+ps:popsign_v2_1/test/hello/66d7-hello-2023_01_25_20_22_47.239-0.mp4,hello,hello,ps:66d7,sign,14,35,hello,0.9444,0.9399,hello|medicine|need,True,True,False,
+ps:popsign_v2_1/test/hello/616e-hello-2023_01_26_17_05_12.134-0.mp4,hello,hello,ps:616e,sign,22,54,hello,0.9542,0.9509,hello|medicine|finish,True,True,False,
+ps:popsign_v2_1/test/hello/111c-hello-2023_01_26_18_05_52.692-0.mp4,hello,hello,ps:111c,sign,22,50,hello,0.9549,0.9515,hello|why|medicine,True,True,False,
+ps:popsign_v2_1/test/hello/af6d-hello-2023_01_25_17_03_11.706-0.mp4,hello,hello,ps:af6d,sign,14,43,hello,0.4686,0.2042,hello|stop|why,True,False,False,confidence 0.47 < 0.85
+ps:popsign_v2_1/test/hello/111c-hello-2023_01_26_20_19_19.713-0.mp4,hello,hello,ps:111c,sign,23,46,hello,0.9447,0.9394,hello|why|stop,True,True,False,
+ps:popsign_v2_1/test/hello/af6d-hello-2023_01_25_17_04_36.620-0.mp4,hello,hello,ps:af6d,sign,0,58,stop,0.8506,0.8226,stop|drink|hello,False,True,False,
+ps:popsign_v2_1/test/help/66d7-help-2023_09_02_10_26_44.543-0.mp4,help,help,ps:66d7,sign,13,66,help,0.966,0.9629,help|how|today,True,True,False,
+ps:popsign_v2_1/test/help/16f0-help-2023_10_01_22_08_42.457-1.mp4,help,help,ps:16f0,sign,25,58,help,0.966,0.9616,help|how|today,True,True,False,
+ps:popsign_v2_1/test/hello/a1ba-hello-2023_01_10_23_49_27.770-0.mp4,hello,hello,ps:a1ba,sign,18,38,hello,0.6119,0.5206,hello|why|sick,True,False,False,confidence 0.61 < 0.85
+ps:popsign_v2_1/test/hello/af36-hello-2023_01_05_09_57_05.065-0.mp4,hello,hello,ps:af36,sign,23,93,hello,0.6378,0.5717,hello|bye|why,True,False,False,confidence 0.64 < 0.85
+ps:popsign_v2_1/test/hello/66d7-hello-2023_01_25_20_28_11.569-0.mp4,hello,hello,ps:66d7,sign,13,34,hello,0.9372,0.9321,hello|medicine|finish,True,True,False,
+ps:popsign_v2_1/test/hello/616e-hello-2023_01_26_18_24_22.099-0.mp4,hello,hello,ps:616e,sign,21,45,hello,0.9612,0.9584,hello|medicine|me,True,True,False,
+ps:popsign_v2_1/test/help/a1ba-help-2023_08_28_20_58_33.084-0.mp4,help,help,ps:a1ba,sign,0,100,help,0.8978,0.8763,help|love|today,True,True,False,
+ps:popsign_v2_1/test/help/66e7-help-2024_02_14_18_43_37.508-1.mp4,help,help,ps:66e7,sign,11,28,how,0.4991,0.1368,how|help|medicine,False,False,False,confidence 0.50 < 0.85
+ps:popsign_v2_1/test/help/3d3f-help-2024_02_20_13_02_24.091-1.mp4,help,help,ps:3d3f,sign,1,72,help,0.9398,0.9278,help|love|today,True,True,False,
+ps:popsign_v2_1/test/help/933d-help-2024_03_13_14_59_20.446-1.mp4,help,help,ps:933d,sign,29,68,help,0.8544,0.7995,help|how|today,True,True,False,
+ps:popsign_v2_1/test/help/66d7-help-2023_09_03_13_30_34.295-0.mp4,help,help,ps:66d7,sign,11,47,help,0.8417,0.7646,help|how|love,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/help/16f0-help-2023_10_02_20_33_31.129-1.mp4,help,help,ps:16f0,sign,20,60,help,0.8497,0.771,help|how|my,True,False,False,confidence 0.85 < 0.85
+ps:popsign_v2_1/test/help/a1ba-help-2023_08_28_22_18_20.507-0.mp4,help,help,ps:a1ba,sign,0,114,help,0.9693,0.966,help|today|love,True,True,False,
+ps:popsign_v2_1/test/help/66e7-help-2024_02_17_18_36_50.657-1.mp4,help,help,ps:66e7,sign,0,58,help,0.7567,0.6178,help|how|love,True,False,False,confidence 0.76 < 0.85
+ps:popsign_v2_1/test/help/a1ba-help-2023_08_30_23_32_36.444-0.mp4,help,help,ps:a1ba,sign,16,41,help,0.9445,0.9373,help|how|today,True,True,False,
+ps:popsign_v2_1/test/help/66e7-help-2024_02_20_16_02_30.241-1.mp4,help,help,ps:66e7,sign,0,60,help,0.4955,0.183,help|how|love,True,False,False,confidence 0.50 < 0.85
+ps:popsign_v2_1/test/help/3d3f-help-2024_02_27_08_59_23.806-1.mp4,help,help,ps:3d3f,sign,0,66,help,0.9746,0.9708,help|love|how,True,True,False,
+ps:popsign_v2_1/test/help/933d-help-2024_03_15_19_25_31.098-1.mp4,help,help,ps:933d,sign,52,87,help,0.9548,0.9496,help|how|today,True,True,False,
+ps:popsign_v2_1/test/help/3d3f-help-2024_02_26_15_42_46.181-1.mp4,help,help,ps:3d3f,sign,0,68,help,0.9217,0.9057,help|today|love,True,True,False,
+ps:popsign_v2_1/test/help/933d-help-2024_03_13_15_11_07.148-1.mp4,help,help,ps:933d,sign,48,86,help,0.9455,0.9357,help|how|today,True,True,False,
+ps:popsign_v2_1/test/help/66d7-help-2023_09_03_16_13_00.619-0.mp4,help,help,ps:66d7,sign,8,50,help,0.9355,0.9258,help|how|medicine,True,True,False,
+ps:popsign_v2_1/test/help/16f0-help-2023_10_09_10_14_06.199-1.mp4,help,help,ps:16f0,sign,34,99,help,0.9482,0.9381,help|how|love,True,True,False,
+ps:popsign_v2_1/test/help/66d7-help-2023_09_04_12_56_02.250-0.mp4,help,help,ps:66d7,sign,10,53,help,0.9534,0.9473,help|how|today,True,True,False,
+ps:popsign_v2_1/test/help/16f0-help-2023_10_10_19_55_57.520-1.mp4,help,help,ps:16f0,sign,18,49,help,0.9604,0.9571,help|how|good,True,True,False,
+ps:popsign_v2_1/test/sad/66d7-sad-2023_01_25_18_26_46.274-0.mp4,sad,sad,ps:66d7,sign,18,46,sad,0.9482,0.9413,sad|wait|name,True,True,False,
+ps:popsign_v2_1/test/sad/af6d-sad-2023_01_23_19_12_03.453-0.mp4,sad,sad,ps:af6d,sign,14,39,sad,0.1878,0.0584,sad|stop|what,True,False,False,confidence 0.19 < 0.85
+ps:popsign_v2_1/test/sad/a1ba-sad-2023_01_10_23_38_11.782-0.mp4,sad,sad,ps:a1ba,sign,0,41,sad,0.8375,0.8137,sad|sleep|family,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/sad/616e-sad-2023_01_26_16_59_37.242-0.mp4,sad,sad,ps:616e,sign,21,51,sad,0.9689,0.9664,sad|sleep|you,True,True,False,
+ps:popsign_v2_1/test/sad/66d7-sad-2023_01_25_20_41_06.682-0.mp4,sad,sad,ps:66d7,sign,16,36,sleep,0.3909,0.1683,sleep|go|bad,False,False,False,confidence 0.39 < 0.85
+ps:popsign_v2_1/test/sad/af6d-sad-2023_01_25_16_46_10.780-0.mp4,sad,sad,ps:af6d,sign,8,32,sad,0.1815,0.0138,sad|stop|sleep,True,False,False,confidence 0.18 < 0.85
+ps:popsign_v2_1/test/sad/66d7-sad-2023_01_25_19_28_36.546-0.mp4,sad,sad,ps:66d7,sign,17,31,bad,0.3288,0.2692,bad|go|wait,False,False,False,confidence 0.33 < 0.85
+ps:popsign_v2_1/test/sad/af6d-sad-2023_01_25_14_06_05.176-0.mp4,sad,sad,ps:af6d,sign,13,43,what,0.1604,0.0193,what|wait|stop,False,False,False,confidence 0.16 < 0.85
+ps:popsign_v2_1/test/sad/af36-sad-2022_12_16_12_36_36.263-0.mp4,sad,sad,ps:af36,sign,41,173,sad,0.834,0.7984,sad|sleep|you,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/sad/111c-sad-2023_01_26_18_11_01.451-0.mp4,sad,sad,ps:111c,sign,25,60,sad,0.6627,0.6252,sad|stop|school,True,False,False,confidence 0.66 < 0.85
+ps:popsign_v2_1/test/sad/af36-sad-2022_12_21_11_00_49.408-0.mp4,sad,sad,ps:af36,sign,24,141,sad,0.8585,0.8379,sad|sleep|you,True,True,False,
+ps:popsign_v2_1/test/sad/111c-sad-2023_01_26_20_44_17.907-0.mp4,sad,sad,ps:111c,sign,24,55,sad,0.9005,0.8922,sad|you|school,True,True,False,
+ps:popsign_v2_1/test/sad/a1ba-sad-2023_01_11_00_01_00.593-0.mp4,sad,sad,ps:a1ba,sign,15,37,sad,0.8268,0.7541,sad|sleep|go,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/sad/616e-sad-2023_01_26_18_27_41.036-0.mp4,sad,sad,ps:616e,sign,20,49,sad,0.9766,0.9737,sad|wait|name,True,True,False,
+ps:popsign_v2_1/test/sad/66d7-sad-2023_01_26_09_25_07.011-0.mp4,sad,sad,ps:66d7,sign,17,39,sad,0.5167,0.3471,sad|stop|family,True,False,False,confidence 0.52 < 0.85
+ps:popsign_v2_1/test/sad/af6d-sad-2023_01_25_17_04_36.620-0.mp4,sad,sad,ps:af6d,sign,18,61,sad,0.6638,0.5277,sad|sleep|name,True,False,False,confidence 0.66 < 0.85
+ps:popsign_v2_1/test/drink/af6d-drink-2023_01_25_13_55_47.190-0.mp4,drink,drink,ps:af6d,sign,11,39,stop,0.9001,0.8906,stop|more|name,False,True,False,
+ps:popsign_v2_1/test/drink/111c-drink-2023_01_26_17_09_33.605-0.mp4,drink,drink,ps:111c,sign,28,55,drink,0.9253,0.9082,drink|stop|bye,True,True,False,
+ps:popsign_v2_1/test/sad/af36-sad-2022_12_16_12_06_25.371-0.mp4,sad,sad,ps:af36,sign,0,224,sad,0.4481,0.1877,sad|sleep|sick,True,False,False,confidence 0.45 < 0.85
+ps:popsign_v2_1/test/sad/111c-sad-2023_01_26_17_22_50.161-0.mp4,sad,sad,ps:111c,sign,31,62,sad,0.9087,0.8877,sad|sleep|name,True,True,False,
+ps:popsign_v2_1/test/sad/a1ba-sad-2023_01_09_19_42_55.065-0.mp4,sad,sad,ps:a1ba,sign,81,165,sad,0.8375,0.8102,sad|stop|sleep,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/sad/616e-sad-2023_01_26_16_41_01.491-0.mp4,sad,sad,ps:616e,sign,54,87,sad,0.9582,0.949,sad|sleep|name,True,True,False,
+ps:popsign_v2_1/test/drink/af6d-drink-2023_01_25_14_15_30.218-0.mp4,drink,drink,ps:af6d,sign,19,42,drink,0.7661,0.71,drink|stop|come,True,False,False,confidence 0.77 < 0.85
+ps:popsign_v2_1/test/drink/111c-drink-2023_01_26_17_27_35.753-0.mp4,drink,drink,ps:111c,sign,35,62,drink,0.9282,0.9123,drink|stop|bye,True,True,False,
+ps:popsign_v2_1/test/drink/a1ba-drink-2023_01_10_23_42_02.554-0.mp4,drink,drink,ps:a1ba,sign,19,44,drink,0.8339,0.7835,drink|bye|where,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/drink/616e-drink-2023_01_26_17_01_41.917-0.mp4,drink,drink,ps:616e,sign,22,48,drink,0.8969,0.8868,drink|bye|stop,True,True,False,
+ps:popsign_v2_1/test/drink/66d7-drink-2023_01_25_20_23_54.429-0.mp4,drink,drink,ps:66d7,sign,20,47,drink,0.3677,0.1196,drink|hello|bye,True,False,False,confidence 0.37 < 0.85
+ps:popsign_v2_1/test/drink/af36-drink-2022_12_16_12_44_01.846-0.mp4,drink,drink,ps:af36,sign,0,95,stop,0.1168,0.0065,stop|drink|water,False,False,False,confidence 0.12 < 0.85
+ps:popsign_v2_1/test/drink/af6d-drink-2023_01_25_17_03_11.706-0.mp4,drink,drink,ps:af6d,sign,17,45,drink,0.9202,0.913,drink|stop|come,True,True,False,
+ps:popsign_v2_1/test/drink/111c-drink-2023_01_26_18_16_43.804-0.mp4,drink,drink,ps:111c,sign,26,46,drink,0.9658,0.963,drink|stop|come,True,True,False,
+ps:popsign_v2_1/test/drink/a1ba-drink-2023_01_10_23_33_24.406-0.mp4,drink,drink,ps:a1ba,sign,78,162,drink,0.9461,0.94,drink|bye|you,True,True,False,
+ps:popsign_v2_1/test/drink/616e-drink-2023_01_26_16_47_58.863-0.mp4,drink,drink,ps:616e,sign,26,54,drink,0.893,0.8834,drink|bye|bad,True,True,False,
+ps:popsign_v2_1/test/drink/66d7-drink-2023_01_25_18_14_30.867-0.mp4,drink,drink,ps:66d7,sign,18,51,hello,0.8212,0.7901,hello|drink|bye,False,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/drink/af36-drink-2022_12_16_12_07_03.131-0.mp4,drink,drink,ps:af36,sign,0,139,drink,0.9533,0.9497,drink|stop|me,True,True,False,
+ps:popsign_v2_1/test/drink/af6d-drink-2023_01_25_18_13_52.405-0.mp4,drink,drink,ps:af6d,sign,17,40,drink,0.9231,0.9106,drink|stop|my,True,True,False,
+ps:popsign_v2_1/test/drink/111c-drink-2023_01_26_20_39_41.046-0.mp4,drink,drink,ps:111c,sign,30,44,drink,0.9475,0.9436,drink|bye|my,True,True,False,
+ps:popsign_v2_1/test/thankyou/66d7-thankyou-2023_01_25_20_47_38.542-0.mp4,thankyou,thanks,ps:66d7,sign,26,37,thanks,0.6678,0.4831,thanks|good|bad,True,False,False,confidence 0.67 < 0.85
+ps:popsign_v2_1/test/thankyou/111c-thankyou-2023_01_26_20_34_51.377-0.mp4,thankyou,thanks,ps:111c,sign,27,49,good,0.9039,0.8659,good|what|thanks,False,True,False,
+ps:popsign_v2_1/test/drink/a1ba-drink-2023_01_10_23_55_54.720-0.mp4,drink,drink,ps:a1ba,sign,22,44,drink,0.8752,0.8477,drink|stop|bye,True,True,False,
+ps:popsign_v2_1/test/drink/616e-drink-2023_01_26_17_12_32.210-0.mp4,drink,drink,ps:616e,sign,20,47,drink,0.9411,0.9357,drink|bye|understand,True,True,False,
+ps:popsign_v2_1/test/drink/66d7-drink-2023_01_25_20_24_32.189-0.mp4,drink,drink,ps:66d7,sign,16,39,hello,0.761,0.7274,hello|bye|bad,False,False,False,confidence 0.76 < 0.85
+ps:popsign_v2_1/test/drink/af36-drink-2023_01_03_09_32_48.171-0.mp4,drink,drink,ps:af36,sign,28,150,drink,0.946,0.9387,drink|stop|home,True,True,False,
+ps:popsign_v2_1/test/love/16f0-love-2023_10_01_19_45_44.850-1.mp4,love,love,ps:16f0,sign,20,51,love,0.9142,0.8891,love|help|good,True,True,False,
+ps:popsign_v2_1/test/love/933d-love-2024_03_11_13_44_56.752-1.mp4,love,love,ps:933d,sign,36,87,love,0.9405,0.9363,love|help|hungry,True,True,False,
+ps:popsign_v2_1/test/love/66e7-love-2024_02_15_17_46_04.738-1.mp4,love,love,ps:66e7,sign,0,51,love,0.3764,0.1409,love|doctor|more,True,False,False,confidence 0.38 < 0.85
+ps:popsign_v2_1/test/love/66d7-love-2023_09_02_10_44_33.092-0.mp4,love,love,ps:66d7,sign,7,71,love,0.953,0.9497,love|hungry|eat,True,True,False,
+ps:popsign_v2_1/test/love/66d7-love-2023_09_03_10_32_39.126-0.mp4,love,love,ps:66d7,sign,9,86,love,0.8861,0.8762,love|help|hungry,True,True,False,
+ps:popsign_v2_1/test/love/3d3f-love-2024_02_26_15_51_57.940-1.mp4,love,love,ps:3d3f,sign,0,59,love,0.9747,0.9727,love|help|good,True,True,False,
+ps:popsign_v2_1/test/love/16f0-love-2023_10_09_10_10_16.911-1.mp4,love,love,ps:16f0,sign,17,41,love,0.7588,0.6649,love|help|my,True,False,False,confidence 0.76 < 0.85
+ps:popsign_v2_1/test/love/933d-love-2024_03_13_18_03_46.102-1.mp4,love,love,ps:933d,sign,39,49,love,0.8936,0.8828,love|help|hungry,True,True,False,
+ps:popsign_v2_1/test/love/66e7-love-2024_02_18_13_33_13.360-1.mp4,love,love,ps:66e7,sign,0,52,love,0.9439,0.9388,love|doctor|eat,True,True,False,
+ps:popsign_v2_1/test/love/66d7-love-2023_09_03_17_53_50.722-0.mp4,love,love,ps:66d7,sign,10,51,love,0.2281,0.0642,love|hurt|like,True,False,False,confidence 0.23 < 0.85
+ps:popsign_v2_1/test/love/3d3f-love-2024_03_11_16_04_20.857-1.mp4,love,love,ps:3d3f,sign,0,64,love,0.9418,0.9282,love|work|how,True,True,False,
+ps:popsign_v2_1/test/love/16f0-love-2023_10_09_13_33_56.763-1.mp4,love,love,ps:16f0,sign,4,54,love,0.9664,0.9623,love|help|my,True,True,False,
+ps:popsign_v2_1/test/love/3d3f-love-2024_02_23_12_19_20.560-1.mp4,love,love,ps:3d3f,sign,0,77,love,0.9541,0.9478,love|work|good,True,True,False,
+ps:popsign_v2_1/test/love/16f0-love-2023_10_02_20_38_03.305-1.mp4,love,love,ps:16f0,sign,19,53,love,0.8912,0.8525,love|help|hungry,True,True,False,
+ps:popsign_v2_1/test/love/933d-love-2024_03_13_15_27_19.486-1.mp4,love,love,ps:933d,sign,77,83,love,0.9238,0.918,love|my|hungry,True,True,False,
+ps:popsign_v2_1/test/love/66e7-love-2024_02_17_18_35_38.963-1.mp4,love,love,ps:66e7,sign,0,51,love,0.8469,0.8252,love|doctor|good,True,False,False,confidence 0.85 < 0.85
+ps:popsign_v2_1/test/love/933d-love-2024_03_18_19_30_15.196-1.mp4,love,love,ps:933d,sign,0,194,love,0.9172,0.91,love|hungry|hurt,True,True,False,
+ps:popsign_v2_1/test/love/66e7-love-2024_02_19_15_52_32.201-1.mp4,love,love,ps:66e7,sign,0,48,love,0.8504,0.8308,love|eat|help,True,True,False,
+ps:popsign_v2_1/test/love/66d7-love-2023_09_04_10_33_54.963-0.mp4,love,love,ps:66d7,sign,14,67,love,0.6109,0.5205,love|help|hungry,True,False,False,confidence 0.61 < 0.85
+ps:popsign_v2_1/test/love/3d3f-love-2024_03_12_15_00_51.223-1.mp4,love,love,ps:3d3f,sign,0,11,stop,0.8805,0.8467,stop|more|bye,False,True,False,
+ps:popsign_v2_1/test/yes/66d7-yes-2023_01_25_18_21_03.850-0.mp4,yes,yes,ps:66d7,sign,19,60,yes,0.9439,0.9399,yes|bye|apple,True,True,False,
+ps:popsign_v2_1/test/yes/af36-yes-2022_12_16_12_32_36.670-0.mp4,yes,yes,ps:af36,sign,37,164,yes,0.6526,0.5595,yes|work|bathroom,True,False,False,confidence 0.65 < 0.85
+ps:popsign_v2_1/test/yes/111c-yes-2023_01_26_17_20_52.266-0.mp4,yes,yes,ps:111c,sign,16,43,work,0.8208,0.7625,work|yes|bathroom,False,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/yes/af6d-yes-2023_01_25_14_02_17.226-0.mp4,yes,yes,ps:af6d,sign,7,46,bathroom,0.3575,0.2452,bathroom|work|love,False,False,False,confidence 0.36 < 0.85
+ps:popsign_v2_1/test/yes/a1ba-yes-2023_01_09_19_40_36.215-0.mp4,yes,yes,ps:a1ba,sign,27,80,yes,0.9392,0.9306,yes|work|bye,True,True,False,
+ps:popsign_v2_1/test/yes/616e-yes-2023_01_26_16_48_34.185-0.mp4,yes,yes,ps:616e,sign,20,47,yes,0.7628,0.6907,yes|bye|work,True,False,False,confidence 0.76 < 0.85
+ps:popsign_v2_1/test/yes/66d7-yes-2023_01_25_20_22_12.482-0.mp4,yes,yes,ps:66d7,sign,19,54,yes,0.9176,0.9103,yes|bye|work,True,True,False,
+ps:popsign_v2_1/test/yes/af36-yes-2022_12_21_10_55_04.041-0.mp4,yes,yes,ps:af36,sign,13,89,yes,0.319,0.0258,yes|bathroom|bye,True,False,False,confidence 0.32 < 0.85
+ps:popsign_v2_1/test/yes/111c-yes-2023_01_26_17_46_30.119-0.mp4,yes,yes,ps:111c,sign,33,67,work,0.558,0.3088,work|yes|bye,False,False,False,confidence 0.56 < 0.85
+ps:popsign_v2_1/test/yes/af6d-yes-2023_01_25_14_04_39.851-0.mp4,yes,yes,ps:af6d,sign,8,36,yes,0.4333,0.0809,yes|work|bathroom,True,False,False,confidence 0.43 < 0.85
+ps:popsign_v2_1/test/yes/a1ba-yes-2023_01_10_23_43_18.999-0.mp4,yes,yes,ps:a1ba,sign,18,38,work,0.8117,0.7602,work|yes|bathroom,False,False,False,confidence 0.81 < 0.85
+ps:popsign_v2_1/test/yes/616e-yes-2023_01_26_17_06_43.147-0.mp4,yes,yes,ps:616e,sign,32,63,yes,0.6787,0.5814,yes|bye|bad,True,False,False,confidence 0.68 < 0.85
+ps:popsign_v2_1/test/no/616e-no-2023_01_26_16_52_16.436-0.mp4,no,no,ps:616e,sign,23,56,no,0.8822,0.8633,no|where|family,True,True,False,
+ps:popsign_v2_1/test/no/111c-no-2023_01_26_17_20_52.266-0.mp4,no,no,ps:111c,sign,24,49,no,0.852,0.805,no|where|when,True,True,False,
+ps:popsign_v2_1/test/no/af6d-no-2023_01_25_14_18_04.593-0.mp4,no,no,ps:af6d,sign,20,59,chicken,0.6064,0.5287,chicken|no|when,False,False,False,confidence 0.61 < 0.85
+ps:popsign_v2_1/test/no/66d7-no-2023_01_25_19_23_25.216-0.mp4,no,no,ps:66d7,sign,14,39,no,0.9196,0.9119,no|where|name,True,True,False,
+ps:popsign_v2_1/test/yes/a1ba-yes-2023_01_10_23_56_17.128-0.mp4,yes,yes,ps:a1ba,sign,0,46,yes,0.2458,0.1496,yes|thirsty|apple,True,False,False,confidence 0.25 < 0.85
+ps:popsign_v2_1/test/yes/616e-yes-2023_01_26_18_17_43.199-0.mp4,yes,yes,ps:616e,sign,19,39,yes,0.8193,0.8053,yes|bye|need,True,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/yes/66d7-yes-2023_01_26_09_25_07.011-0.mp4,yes,yes,ps:66d7,sign,15,40,yes,0.9523,0.9492,yes|bye|need,True,True,False,
+ps:popsign_v2_1/test/yes/af36-yes-2023_01_06_12_57_15.378-0.mp4,yes,yes,ps:af36,sign,31,119,bathroom,0.4396,0.2792,bathroom|yes|work,False,False,False,confidence 0.44 < 0.85
+ps:popsign_v2_1/test/yes/66d7-yes-2023_01_25_20_32_05.780-0.mp4,yes,yes,ps:66d7,sign,19,38,yes,0.7131,0.6725,yes|when|like,True,False,False,confidence 0.71 < 0.85
+ps:popsign_v2_1/test/yes/af36-yes-2023_01_06_10_04_32.408-0.mp4,yes,yes,ps:af36,sign,78,126,yes,0.8009,0.7571,yes|bathroom|work,True,False,False,confidence 0.80 < 0.85
+ps:popsign_v2_1/test/yes/111c-yes-2023_01_26_20_04_30.153-0.mp4,yes,yes,ps:111c,sign,21,45,yes,0.9204,0.9087,yes|bye|work,True,True,False,
+ps:popsign_v2_1/test/yes/af6d-yes-2023_01_25_17_01_57.511-0.mp4,yes,yes,ps:af6d,sign,13,38,yes,0.8208,0.7854,yes|work|bye,True,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/no/af6d-no-2023_01_23_19_15_26.784-0.mp4,no,no,ps:af6d,sign,14,35,no,0.4919,0.4023,no|chicken|when,True,False,False,confidence 0.49 < 0.85
+ps:popsign_v2_1/test/no/66d7-no-2023_01_25_18_30_57.509-0.mp4,no,no,ps:66d7,sign,35,59,no,0.9356,0.9289,no|where|bye,True,True,False,
+ps:popsign_v2_1/test/no/a1ba-no-2023_01_10_20_56_34.946-0.mp4,no,no,ps:a1ba,sign,55,149,no,0.9261,0.9174,no|bye|name,True,True,False,
+ps:popsign_v2_1/test/no/af36-no-2022_12_16_12_19_18.842-0.mp4,no,no,ps:af36,sign,48,106,no,0.9514,0.9471,no|bye|when,True,True,False,
+ps:popsign_v2_1/test/no/a1ba-no-2023_01_10_23_38_11.782-0.mp4,no,no,ps:a1ba,sign,17,34,no,0.9114,0.8954,no|bye|name,True,True,False,
+ps:popsign_v2_1/test/no/af36-no-2022_12_16_12_44_42.629-0.mp4,no,no,ps:af36,sign,23,107,where,0.5217,0.392,where|no|bye,False,False,False,confidence 0.52 < 0.85
+ps:popsign_v2_1/test/no/616e-no-2023_01_26_17_05_41.956-0.mp4,no,no,ps:616e,sign,21,44,no,0.9363,0.9316,no|my|name,True,True,False,
+ps:popsign_v2_1/test/no/111c-no-2023_01_26_17_22_50.161-0.mp4,no,no,ps:111c,sign,22,42,no,0.9485,0.9431,no|where|when,True,True,False,
+ps:popsign_v2_1/test/no/616e-no-2023_01_26_18_20_43.467-0.mp4,no,no,ps:616e,sign,18,43,no,0.7794,0.7147,no|where|name,True,False,False,confidence 0.78 < 0.85
+ps:popsign_v2_1/test/no/111c-no-2023_01_26_20_05_09.119-0.mp4,no,no,ps:111c,sign,25,53,no,0.957,0.953,no|when|name,True,True,False,
+ps:popsign_v2_1/test/no/af6d-no-2023_01_25_18_13_17.055-0.mp4,no,no,ps:af6d,sign,17,24,where,0.8315,0.8031,where|when|no,False,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/no/66d7-no-2023_01_25_20_47_07.912-0.mp4,no,no,ps:66d7,sign,13,31,no,0.8906,0.8785,no|where|finish,True,True,False,
+ps:popsign_v2_1/test/no/af6d-no-2023_01_25_16_46_10.780-0.mp4,no,no,ps:af6d,sign,19,35,no,0.6108,0.5568,no|when|where,True,False,False,confidence 0.61 < 0.85
+ps:popsign_v2_1/test/no/66d7-no-2023_01_25_20_26_02.085-0.mp4,no,no,ps:66d7,sign,16,34,no,0.9195,0.9126,no|name|bye,True,True,False,
+ps:popsign_v2_1/test/no/a1ba-no-2023_01_10_23_51_07.110-0.mp4,no,no,ps:a1ba,sign,66,160,no,0.9293,0.9238,no|name|bye,True,True,False,
+ps:popsign_v2_1/test/no/af36-no-2023_01_03_09_37_44.414-0.mp4,no,no,ps:af36,sign,23,119,where,0.6939,0.5156,where|no|when,False,False,False,confidence 0.69 < 0.85
+ps:popsign_v2_1/test/bad/af6d-bad-2023_01_25_16_47_41.756-0.mp4,bad,bad,ps:af6d,sign,18,27,eat,0.6534,0.5737,eat|bad|good,False,False,False,confidence 0.65 < 0.85
+ps:popsign_v2_1/test/bad/af36-bad-2022_12_16_12_07_43.524-0.mp4,bad,bad,ps:af36,sign,9,141,bad,0.8731,0.8475,bad|finish|thanks,True,True,False,
+ps:popsign_v2_1/test/bad/616e-bad-2023_01_26_16_50_28.090-0.mp4,bad,bad,ps:616e,sign,26,42,bad,0.974,0.9718,bad|finish|need,True,True,False,
+ps:popsign_v2_1/test/bad/66d7-bad-2023_01_25_18_22_01.050-0.mp4,bad,bad,ps:66d7,sign,16,31,bad,0.5741,0.3877,bad|thanks|good,True,False,False,confidence 0.57 < 0.85
+ps:popsign_v2_1/test/bad/111c-bad-2023_01_26_17_09_33.605-0.mp4,bad,bad,ps:111c,sign,22,43,bad,0.8776,0.8517,bad|finish|need,True,True,False,
+ps:popsign_v2_1/test/bad/af6d-bad-2023_01_25_18_10_34.266-0.mp4,bad,bad,ps:af6d,sign,4,25,drink,0.1907,0.0637,drink|bad|stop,False,False,False,confidence 0.19 < 0.85
+ps:popsign_v2_1/test/bad/af36-bad-2023_01_06_13_06_16.604-0.mp4,bad,bad,ps:af36,sign,20,44,bad,0.9589,0.951,bad|finish|need,True,True,False,
+ps:popsign_v2_1/test/bad/616e-bad-2023_01_26_17_08_59.066-0.mp4,bad,bad,ps:616e,sign,20,36,bad,0.9681,0.9651,bad|finish|me,True,True,False,
+ps:popsign_v2_1/test/bad/616e-bad-2023_01_26_18_22_01.285-0.mp4,bad,bad,ps:616e,sign,22,43,bad,0.9587,0.9495,bad|thanks|your,True,True,False,
+ps:popsign_v2_1/test/bad/66d7-bad-2023_01_25_20_26_02.085-0.mp4,bad,bad,ps:66d7,sign,11,30,thanks,0.6014,0.2632,thanks|good|bad,False,False,False,confidence 0.60 < 0.85
+ps:popsign_v2_1/test/bad/111c-bad-2023_01_26_18_05_52.692-0.mp4,bad,bad,ps:111c,sign,26,44,bad,0.9062,0.8922,bad|finish|drink,True,True,False,
+ps:popsign_v2_1/test/bad/af6d-bad-2023_01_25_19_55_42.774-0.mp4,bad,bad,ps:af6d,sign,16,26,eat,0.6115,0.5279,eat|bad|love,False,False,False,confidence 0.61 < 0.85
+ps:popsign_v2_1/test/bad/af36-bad-2023_01_06_15_21_40.311-0.mp4,bad,bad,ps:af36,sign,20,47,bad,0.9565,0.9484,bad|finish|name,True,True,False,
+ps:popsign_v2_1/test/bad/616e-bad-2023_01_26_18_45_11.965-0.mp4,bad,bad,ps:616e,sign,20,45,bad,0.9253,0.9105,bad|finish|thanks,True,True,False,
+ps:popsign_v2_1/test/bad/66d7-bad-2023_01_26_09_22_28.365-0.mp4,bad,bad,ps:66d7,sign,16,27,bad,0.8883,0.8348,bad|thanks|good,True,True,False,
+ps:popsign_v2_1/test/bad/111c-bad-2023_01_26_20_40_56.641-0.mp4,bad,bad,ps:111c,sign,23,46,bad,0.8952,0.8724,bad|finish|need,True,True,False,
+ps:popsign_v2_1/test/bad/66d7-bad-2023_01_25_19_20_43.709-0.mp4,bad,bad,ps:66d7,sign,71,117,bad,0.348,0.2006,bad|thanks|good,True,False,False,confidence 0.35 < 0.85
+ps:popsign_v2_1/test/bad/111c-bad-2023_01_26_17_48_43.518-0.mp4,bad,bad,ps:111c,sign,37,62,bad,0.4518,0.2388,bad|finish|drink,True,False,False,confidence 0.45 < 0.85
+ps:popsign_v2_1/test/bad/af6d-bad-2023_01_25_19_16_22.289-0.mp4,bad,bad,ps:af6d,sign,16,27,eat,0.7132,0.6499,eat|bad|sleep,False,False,False,confidence 0.71 < 0.85
+ps:popsign_v2_1/test/bad/af36-bad-2023_01_06_14_01_35.582-0.mp4,bad,bad,ps:af36,sign,48,116,bad,0.9849,0.9833,bad|thanks|need,True,True,False,
+ps:popsign_v2_1/test/home/616e-home-2023_01_26_16_51_43.543-0.mp4,home,home,ps:616e,sign,23,54,home,0.9483,0.9443,home|more|sorry,True,True,False,
+ps:popsign_v2_1/test/home/af6d-home-2023_01_23_19_00_20.783-0.mp4,home,home,ps:af6d,sign,9,48,home,0.564,0.48,home|more|bathroom,True,False,False,confidence 0.56 < 0.85
+ps:popsign_v2_1/test/home/111c-home-2023_01_26_17_22_50.161-0.mp4,home,home,ps:111c,sign,27,57,home,0.8892,0.8798,home|more|why,True,True,False,
+ps:popsign_v2_1/test/home/66d7-home-2023_01_25_20_23_54.429-0.mp4,home,home,ps:66d7,sign,19,48,home,0.9405,0.9316,home|more|my,True,True,False,
+ps:popsign_v2_1/test/home/111c-home-2023_01_26_17_02_59.649-0.mp4,home,home,ps:111c,sign,32,55,home,0.857,0.825,home|more|bathroom,True,True,False,
+ps:popsign_v2_1/test/home/66d7-home-2023_01_25_18_18_52.782-0.mp4,home,home,ps:66d7,sign,18,61,home,0.9311,0.9252,home|more|my,True,True,False,
+ps:popsign_v2_1/test/home/af36-home-2022_12_16_12_18_41.238-0.mp4,home,home,ps:af36,sign,23,77,home,0.9608,0.958,home|understand|sorry,True,True,False,
+ps:popsign_v2_1/test/home/a1ba-home-2023_01_10_20_54_05.815-0.mp4,home,home,ps:a1ba,sign,63,157,home,0.9506,0.9472,home|understand|sorry,True,True,False,
+ps:popsign_v2_1/test/home/af36-home-2022_12_16_12_34_59.464-0.mp4,home,home,ps:af36,sign,52,148,home,0.9359,0.931,home|understand|why,True,True,False,
+ps:popsign_v2_1/test/home/a1ba-home-2023_01_10_23_49_03.266-0.mp4,home,home,ps:a1ba,sign,19,41,home,0.9457,0.9417,home|more|understand,True,True,False,
+ps:popsign_v2_1/test/home/616e-home-2023_01_26_17_10_06.408-0.mp4,home,home,ps:616e,sign,22,50,home,0.9326,0.9265,home|more|sorry,True,True,False,
+ps:popsign_v2_1/test/home/af6d-home-2023_01_25_14_27_35.607-0.mp4,home,home,ps:af6d,sign,20,41,more,0.5254,0.4173,more|eat|stop,False,False,False,confidence 0.53 < 0.85
+ps:popsign_v2_1/test/home/111c-home-2023_01_26_20_17_19.077-0.mp4,home,home,ps:111c,sign,38,63,home,0.805,0.7597,home|more|bathroom,True,False,False,confidence 0.80 < 0.85
+ps:popsign_v2_1/test/home/66d7-home-2023_01_25_20_25_03.619-0.mp4,home,home,ps:66d7,sign,5,62,more,0.4084,0.029,more|home|stop,False,False,False,confidence 0.41 < 0.85
+ps:popsign_v2_1/test/home/af36-home-2022_12_21_10_56_52.316-0.mp4,home,home,ps:af36,sign,18,111,home,0.9322,0.9278,home|sorry|drink,True,True,False,
+ps:popsign_v2_1/test/home/a1ba-home-2023_01_10_23_55_54.720-0.mp4,home,home,ps:a1ba,sign,0,42,home,0.9351,0.9304,home|more|understand,True,True,False,
+ps:popsign_v2_1/test/home/616e-home-2023_01_26_17_12_04.815-0.mp4,home,home,ps:616e,sign,20,43,home,0.9248,0.9155,home|more|why,True,True,False,
+ps:popsign_v2_1/test/home/af6d-home-2023_01_25_17_00_14.257-1.mp4,home,home,ps:af6d,sign,18,61,home,0.6385,0.6104,home|eat|more,True,False,False,confidence 0.64 < 0.85
+ps:popsign_v2_1/test/home/111c-home-2023_01_26_20_41_34.998-0.mp4,home,home,ps:111c,sign,23,49,home,0.8402,0.814,home|why|more,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/home/66d7-home-2023_01_26_09_25_07.011-0.mp4,home,home,ps:66d7,sign,16,45,home,0.8685,0.8463,home|more|why,True,True,False,
+ps:popsign_v2_1/test/what/a1ba-what-2023_08_30_23_23_32.625-0.mp4,what,what,ps:a1ba,sign,0,51,what,0.9584,0.9533,what|wait|today,True,True,False,
+ps:popsign_v2_1/test/what/66d7-what-2023_09_03_17_51_09.715-0.mp4,what,what,ps:66d7,sign,13,50,what,0.4573,0.309,what|today|how,True,False,False,confidence 0.46 < 0.85
+ps:popsign_v2_1/test/what/16f0-what-2023_10_09_15_55_29.271-1.mp4,what,what,ps:16f0,sign,16,24,today,0.9246,0.9086,today|what|now,False,True,False,
+ps:popsign_v2_1/test/what/933d-what-2024_03_13_18_04_17.906-1.mp4,what,what,ps:933d,sign,37,67,what,0.9014,0.891,what|wait|stop,True,True,False,
+ps:popsign_v2_1/test/what/16f0-what-2023_10_02_20_40_53.451-1.mp4,what,what,ps:16f0,sign,19,66,what,0.8155,0.7452,what|today|good,True,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/what/933d-what-2024_03_13_15_06_44.424-1.mp4,what,what,ps:933d,sign,44,84,what,0.6958,0.6396,what|good|today,True,False,False,confidence 0.70 < 0.85
+ps:popsign_v2_1/test/what/3d3f-what-2024_02_26_15_45_25.405-1.mp4,what,what,ps:3d3f,sign,0,66,what,0.6654,0.5441,what|today|good,True,False,False,confidence 0.67 < 0.85
+ps:popsign_v2_1/test/what/66e7-what-2024_02_14_18_47_07.910-1.mp4,what,what,ps:66e7,sign,0,60,what,0.8768,0.8304,what|today|good,True,True,False,
+ps:popsign_v2_1/test/what/a1ba-what-2023_08_28_10_39_12.770-0.mp4,what,what,ps:a1ba,sign,0,124,what,0.8673,0.8354,what|stop|good,True,True,False,
+ps:popsign_v2_1/test/what/66d7-what-2023_09_02_10_44_33.092-0.mp4,what,what,ps:66d7,sign,10,70,what,0.9153,0.904,what|stop|wait,True,True,False,
+ps:popsign_v2_1/test/what/16f0-what-2023_10_01_19_37_21.524-1.mp4,what,what,ps:16f0,sign,41,107,what,0.268,0.0759,what|today|how,True,False,False,confidence 0.27 < 0.85
+ps:popsign_v2_1/test/what/933d-what-2024_03_13_14_56_58.776-1.mp4,what,what,ps:933d,sign,0,114,what,0.7508,0.685,what|good|today,True,False,False,confidence 0.75 < 0.85
+ps:popsign_v2_1/test/what/3d3f-what-2024_02_23_12_18_00.361-1.mp4,what,what,ps:3d3f,sign,190,224,what,0.8377,0.7962,what|good|today,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/what/66e7-what-2024_02_14_18_33_16.205-1.mp4,what,what,ps:66e7,sign,17,45,what,0.939,0.9329,what|wait|stop,True,True,False,
+ps:popsign_v2_1/test/what/a1ba-what-2023_08_30_23_21_12.756-0.mp4,what,what,ps:a1ba,sign,2,64,what,0.9516,0.9448,what|more|wait,True,True,False,
+ps:popsign_v2_1/test/what/66d7-what-2023_09_03_16_11_33.614-0.mp4,what,what,ps:66d7,sign,11,77,what,0.9452,0.9402,what|me|wait,True,True,False,
+ps:popsign_v2_1/test/what/3d3f-what-2024_02_27_09_02_20.958-1.mp4,what,what,ps:3d3f,sign,16,45,what,0.9391,0.9309,what|wait|today,True,True,False,
+ps:popsign_v2_1/test/what/66e7-what-2024_02_17_18_24_04.148-1.mp4,what,what,ps:66e7,sign,47,75,what,0.881,0.8601,what|today|more,True,True,False,
+ps:popsign_v2_1/test/what/a1ba-what-2023_08_30_23_59_17.076-0.mp4,what,what,ps:a1ba,sign,0,73,what,0.4544,0.3873,what|friend|more,True,False,False,confidence 0.45 < 0.85
+ps:popsign_v2_1/test/what/66d7-what-2023_09_03_21_48_40.614-0.mp4,what,what,ps:66d7,sign,17,44,what,0.9163,0.9076,what|wait|why,True,True,False,
+ps:popsign_v2_1/test/where/66d7-where-2023_01_25_18_14_30.867-0.mp4,where,where,ps:66d7,sign,22,87,where,0.9555,0.9514,where|hurt|like,True,True,False,
+ps:popsign_v2_1/test/where/a1ba-where-2023_01_10_23_33_24.406-0.mp4,where,where,ps:a1ba,sign,33,101,where,0.9719,0.9701,where|you|medicine,True,True,False,
+ps:popsign_v2_1/test/where/111c-where-2023_01_26_17_01_51.040-0.mp4,where,where,ps:111c,sign,22,70,where,0.8387,0.7897,where|when|go,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/where/af6d-where-2023_01_23_19_16_35.996-0.mp4,where,where,ps:af6d,sign,20,38,where,0.9465,0.9389,where|hurt|medicine,True,True,False,
+ps:popsign_v2_1/test/where/111c-where-2023_01_26_17_24_01.574-0.mp4,where,where,ps:111c,sign,26,51,where,0.9514,0.9422,where|when|you,True,True,False,
+ps:popsign_v2_1/test/where/af6d-where-2023_01_25_14_04_39.851-0.mp4,where,where,ps:af6d,sign,23,50,when,0.5414,0.3629,when|where|hurt,False,False,False,confidence 0.54 < 0.85
+ps:popsign_v2_1/test/where/616e-where-2023_01_26_17_11_35.319-0.mp4,where,where,ps:616e,sign,22,58,where,0.8965,0.8884,where|when|bathroom,True,True,False,
+ps:popsign_v2_1/test/where/af36-where-2023_01_30_09_09_40.962-0.mp4,where,where,ps:af36,sign,18,88,where,0.8599,0.8022,where|bathroom|you,True,True,False,
+ps:popsign_v2_1/test/where/616e-where-2023_01_26_16_52_57.106-0.mp4,where,where,ps:616e,sign,24,66,where,0.826,0.7655,where|bathroom|why,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/where/af36-where-2023_01_30_08_52_38.483-0.mp4,where,where,ps:af36,sign,14,97,where,0.923,0.9042,where|bathroom|you,True,True,False,
+ps:popsign_v2_1/test/where/66d7-where-2023_01_25_19_23_25.216-0.mp4,where,where,ps:66d7,sign,17,37,where,0.7947,0.7537,where|when|hurt,True,False,False,confidence 0.79 < 0.85
+ps:popsign_v2_1/test/where/a1ba-where-2023_01_10_23_44_03.375-0.mp4,where,where,ps:a1ba,sign,16,42,where,0.9738,0.9717,where|you|your,True,True,False,
+ps:popsign_v2_1/test/who/111c-who-2023_01_26_16_18_10.005-0.mp4,who,who,ps:111c,sign,30,58,who,0.9484,0.9417,who|chicken|understand,True,True,False,
+ps:popsign_v2_1/test/who/a1ba-who-2023_01_09_19_43_33.319-0.mp4,who,who,ps:a1ba,sign,20,45,who,0.4311,0.0769,who|chicken|no,True,False,False,confidence 0.43 < 0.85
+ps:popsign_v2_1/test/who/616e-who-2023_01_26_18_34_36.834-0.mp4,who,who,ps:616e,sign,34,64,who,0.783,0.6732,who|chicken|no,True,False,False,confidence 0.78 < 0.85
+ps:popsign_v2_1/test/who/af6d-who-2023_01_25_14_21_31.798-0.mp4,who,who,ps:af6d,sign,18,60,who,0.6784,0.5991,who|chicken|drink,True,False,False,confidence 0.68 < 0.85
+ps:popsign_v2_1/test/where/66d7-where-2023_01_25_20_29_10.455-0.mp4,where,where,ps:66d7,sign,14,33,where,0.9382,0.9253,where|no|when,True,True,False,
+ps:popsign_v2_1/test/where/a1ba-where-2023_01_10_23_51_07.110-0.mp4,where,where,ps:a1ba,sign,84,174,where,0.967,0.9639,where|you|bathroom,True,True,False,
+ps:popsign_v2_1/test/where/111c-where-2023_01_26_20_17_59.346-0.mp4,where,where,ps:111c,sign,25,52,where,0.9561,0.9494,where|when|go,True,True,False,
+ps:popsign_v2_1/test/where/af6d-where-2023_01_25_16_59_17.663-0.mp4,where,where,ps:af6d,sign,21,45,where,0.4828,0.2288,where|hurt|when,True,False,False,confidence 0.48 < 0.85
+ps:popsign_v2_1/test/who/616e-who-2023_01_26_18_25_18.858-0.mp4,who,who,ps:616e,sign,20,53,who,0.8397,0.7778,who|chicken|no,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/who/af6d-who-2023_01_23_19_17_18.690-0.mp4,who,who,ps:af6d,sign,18,44,who,0.9435,0.9373,who|chicken|understand,True,True,False,
+ps:popsign_v2_1/test/who/af36-who-2022_12_16_12_34_59.464-0.mp4,who,who,ps:af36,sign,43,182,who,0.9522,0.9465,who|you|understand,True,True,False,
+ps:popsign_v2_1/test/who/66d7-who-2023_01_25_18_22_01.050-0.mp4,who,who,ps:66d7,sign,15,56,who,0.5369,0.3649,who|no|chicken,True,False,False,confidence 0.54 < 0.85
+ps:popsign_v2_1/test/who/af36-who-2023_01_06_14_48_42.656-0.mp4,who,who,ps:af36,sign,22,82,who,0.962,0.9547,who|chicken|no,True,True,False,
+ps:popsign_v2_1/test/who/66d7-who-2023_01_25_19_26_28.092-0.mp4,who,who,ps:66d7,sign,15,45,where,0.3145,0.1486,where|who|no,False,False,False,confidence 0.31 < 0.85
+ps:popsign_v2_1/test/who/111c-who-2023_01_26_17_48_43.518-0.mp4,who,who,ps:111c,sign,31,55,who,0.9655,0.9629,who|OTHER|you,True,True,False,
+ps:popsign_v2_1/test/who/a1ba-who-2023_01_10_23_38_57.294-0.mp4,who,who,ps:a1ba,sign,21,46,chicken,0.7071,0.6442,chicken|bathroom|who,False,False,False,confidence 0.71 < 0.85
+ps:popsign_v2_1/test/who/616e-who-2023_01_26_19_03_59.352-0.mp4,who,who,ps:616e,sign,17,47,who,0.9431,0.9348,who|chicken|bathroom,True,True,False,
+ps:popsign_v2_1/test/who/af6d-who-2023_01_25_16_58_14.566-0.mp4,who,who,ps:af6d,sign,10,47,who,0.7761,0.7107,who|chicken|understand,True,False,False,confidence 0.78 < 0.85
+ps:popsign_v2_1/test/who/af36-who-2023_01_06_15_21_03.737-0.mp4,who,who,ps:af36,sign,24,63,who,0.9662,0.9601,who|you|chicken,True,True,False,
+ps:popsign_v2_1/test/who/66d7-who-2023_01_25_20_26_35.639-0.mp4,who,who,ps:66d7,sign,16,45,no,0.3704,0.0676,no|who|chicken,False,False,False,confidence 0.37 < 0.85
+ps:popsign_v2_1/test/where/616e-where-2023_01_26_18_21_32.591-0.mp4,where,where,ps:616e,sign,20,55,where,0.7529,0.638,where|bathroom|why,True,False,False,confidence 0.75 < 0.85
+ps:popsign_v2_1/test/where/af36-where-2023_01_30_10_34_16.270-0.mp4,where,where,ps:af36,sign,33,171,where,0.9675,0.9621,where|bathroom|medicine,True,True,False,
+ps:popsign_v2_1/test/where/66d7-where-2023_01_26_09_26_39.981-0.mp4,where,where,ps:66d7,sign,64,148,where,0.9745,0.9719,where|medicine|you,True,True,False,
+ps:popsign_v2_1/test/where/a1ba-where-2023_01_12_13_25_43.232-0.mp4,where,where,ps:a1ba,sign,21,44,where,0.9721,0.9698,where|medicine|you,True,True,False,
+ps:popsign_v2_1/test/who/111c-who-2023_01_26_20_11_04.081-0.mp4,who,who,ps:111c,sign,25,50,who,0.9206,0.9141,who|understand|bathroom,True,True,False,
+ps:popsign_v2_1/test/who/a1ba-who-2023_01_10_23_59_43.106-0.mp4,who,who,ps:a1ba,sign,18,42,chicken,0.594,0.3573,chicken|who|no,False,False,False,confidence 0.59 < 0.85
+ps:popsign_v2_1/test/who/616e-who-2023_01_26_19_34_02.384-0.mp4,who,who,ps:616e,sign,16,46,who,0.9071,0.8965,who|bathroom|doctor,True,True,False,
+ps:popsign_v2_1/test/who/af6d-who-2023_01_25_18_12_50.950-0.mp4,who,who,ps:af6d,sign,16,38,who,0.881,0.8682,who|chicken|no,True,True,False,
+ps:popsign_v2_1/test/like/a1ba-like-2023_01_10_23_43_40.879-0.mp4,like,like,ps:a1ba,sign,16,40,like,0.9232,0.9081,like|hungry|hurt,True,True,False,
+ps:popsign_v2_1/test/like/111c-like-2023_01_26_17_50_15.212-0.mp4,like,like,ps:111c,sign,33,41,like,0.6725,0.4794,like|hungry|hurt,True,False,False,confidence 0.67 < 0.85
+ps:popsign_v2_1/test/like/af6d-like-2023_01_25_14_20_44.755-0.mp4,like,like,ps:af6d,sign,9,53,like,0.7486,0.5884,like|hungry|hurt,True,False,False,confidence 0.75 < 0.85
+ps:popsign_v2_1/test/like/616e-like-2023_01_26_17_08_29.649-0.mp4,like,like,ps:616e,sign,26,42,like,0.8431,0.8251,like|hungry|thirsty,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/like/af6d-like-2023_01_23_19_00_20.783-0.mp4,like,like,ps:af6d,sign,25,30,hungry,0.8486,0.8265,hungry|like|please,False,False,False,confidence 0.85 < 0.85
+ps:popsign_v2_1/test/like/616e-like-2023_01_26_16_40_08.135-0.mp4,like,like,ps:616e,sign,131,140,like,0.9507,0.9455,like|hurt|name,True,True,False,
+ps:popsign_v2_1/test/like/66d7-like-2023_01_25_19_18_23.258-0.mp4,like,like,ps:66d7,sign,6,38,like,0.8283,0.7927,like|hungry|water,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/like/af36-like-2022_12_16_12_41_59.673-0.mp4,like,like,ps:af36,sign,24,41,like,0.8071,0.772,like|go|water,True,False,False,confidence 0.81 < 0.85
+ps:popsign_v2_1/test/like/af6d-like-2023_01_25_17_00_14.257-0.mp4,like,like,ps:af6d,sign,0,54,hungry,0.4666,0.2353,hungry|like|sorry,False,False,False,confidence 0.47 < 0.85
+ps:popsign_v2_1/test/like/616e-like-2023_01_26_18_18_24.054-0.mp4,like,like,ps:616e,sign,20,43,like,0.8916,0.8788,like|hungry|water,True,True,False,
+ps:popsign_v2_1/test/like/66d7-like-2023_01_26_09_20_15.387-0.mp4,like,like,ps:66d7,sign,14,34,happy,0.3873,0.0194,happy|like|go,False,False,False,confidence 0.39 < 0.85
+ps:popsign_v2_1/test/like/af36-like-2023_01_05_10_01_16.404-0.mp4,like,like,ps:af36,sign,23,74,like,0.8348,0.7915,like|water|go,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/like/66d7-like-2023_01_25_18_16_56.197-0.mp4,like,like,ps:66d7,sign,22,59,like,0.3348,0.2054,like|go|home,True,False,False,confidence 0.33 < 0.85
+ps:popsign_v2_1/test/like/af36-like-2022_12_16_12_10_03.521-0.mp4,like,like,ps:af36,sign,25,156,water,0.3192,0.1825,water|like|hungry,False,False,False,confidence 0.32 < 0.85
+ps:popsign_v2_1/test/like/a1ba-like-2023_01_10_23_33_24.406-0.mp4,like,like,ps:a1ba,sign,59,149,like,0.9533,0.9488,like|water|go,True,True,False,
+ps:popsign_v2_1/test/like/111c-like-2023_01_26_17_01_51.040-0.mp4,like,like,ps:111c,sign,25,63,like,0.9469,0.9432,like|hurt|your,True,True,False,
+ps:popsign_v2_1/test/like/66d7-like-2023_01_25_20_41_06.682-0.mp4,like,like,ps:66d7,sign,20,36,like,0.9472,0.9423,like|hurt|hungry,True,True,False,
+ps:popsign_v2_1/test/like/af36-like-2023_01_03_11_28_19.112-0.mp4,like,like,ps:af36,sign,20,122,like,0.9381,0.9329,like|happy|name,True,True,False,
+ps:popsign_v2_1/test/like/a1ba-like-2023_01_10_23_54_20.037-1.mp4,like,like,ps:a1ba,sign,0,124,like,0.9694,0.9652,like|hungry|hurt,True,True,False,
+ps:popsign_v2_1/test/like/111c-like-2023_01_26_20_05_09.119-0.mp4,like,like,ps:111c,sign,0,109,like,0.9526,0.9437,like|hungry|hurt,True,True,False,
+ps:popsign_v2_1/test/go/af6d-go-2023_01_25_14_02_17.226-0.mp4,go,go,ps:af6d,sign,19,50,go,0.8338,0.8062,go|why|sleep,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/go/a1ba-go-2023_01_10_23_39_19.565-0.mp4,go,go,ps:a1ba,sign,21,40,sad,0.6098,0.511,sad|sleep|go,False,False,False,confidence 0.61 < 0.85
+ps:popsign_v2_1/test/go/616e-go-2023_01_26_16_52_57.106-0.mp4,go,go,ps:616e,sign,26,58,go,0.7928,0.6914,go|why|home,True,False,False,confidence 0.79 < 0.85
+ps:popsign_v2_1/test/go/af36-go-2023_01_03_11_29_18.312-0.mp4,go,go,ps:af36,sign,26,76,go,0.5146,0.4184,go|finish|why,True,False,False,confidence 0.51 < 0.85
+ps:popsign_v2_1/test/go/af6d-go-2023_01_25_14_26_50.663-0.mp4,go,go,ps:af6d,sign,18,35,what,0.6624,0.6089,what|good|more,False,False,False,confidence 0.66 < 0.85
+ps:popsign_v2_1/test/go/616e-go-2023_01_26_17_01_41.917-0.mp4,go,go,ps:616e,sign,23,50,go,0.869,0.8093,go|why|home,True,True,False,
+ps:popsign_v2_1/test/go/af36-go-2023_01_06_11_08_24.421-0.mp4,go,go,ps:af36,sign,30,105,why,0.6017,0.5145,why|go|what,False,False,False,confidence 0.60 < 0.85
+ps:popsign_v2_1/test/go/af6d-go-2023_01_25_16_58_14.566-0.mp4,go,go,ps:af6d,sign,18,44,eat,0.4,0.3318,eat|what|more,False,False,False,confidence 0.40 < 0.85
+ps:popsign_v2_1/test/go/616e-go-2023_01_26_18_18_24.054-0.mp4,go,go,ps:616e,sign,20,48,go,0.8399,0.7806,go|why|like,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/go/af36-go-2023_01_06_11_15_04.777-0.mp4,go,go,ps:af36,sign,23,116,wait,0.411,0.2172,wait|why|what,False,False,False,confidence 0.41 < 0.85
+ps:popsign_v2_1/test/go/af6d-go-2023_01_25_18_15_46.759-1.mp4,go,go,ps:af6d,sign,13,47,go,0.9337,0.927,go|sorry|home,True,True,False,
+ps:popsign_v2_1/test/go/616e-go-2023_01_26_18_39_06.247-0.mp4,go,go,ps:616e,sign,23,49,go,0.7025,0.5863,go|why|finish,True,False,False,confidence 0.70 < 0.85
+ps:popsign_v2_1/test/go/af36-go-2023_01_06_13_00_54.647-0.mp4,go,go,ps:af36,sign,23,85,why,0.4226,0.0229,why|go|sick,False,False,False,confidence 0.42 < 0.85
+ps:popsign_v2_1/test/go/af6d-go-2023_01_25_19_16_22.289-0.mp4,go,go,ps:af6d,sign,16,43,go,0.3498,0.2236,go|eat|home,True,False,False,confidence 0.35 < 0.85
+ps:popsign_v2_1/test/go/616e-go-2023_01_26_19_03_59.352-0.mp4,go,go,ps:616e,sign,21,47,go,0.967,0.9634,go|home|why,True,True,False,
+ps:popsign_v2_1/test/go/af36-go-2023_01_06_14_44_24.433-0.mp4,go,go,ps:af36,sign,25,77,go,0.9004,0.8776,go|why|finish,True,True,False,
+ps:popsign_v2_1/test/go/af6d-go-2023_01_25_19_50_16.588-2.mp4,go,go,ps:af6d,sign,14,26,eat,0.3605,0.2369,eat|go|bad,False,False,False,confidence 0.36 < 0.85
+ps:popsign_v2_1/test/go/616e-go-2023_01_26_19_33_00.227-0.mp4,go,go,ps:616e,sign,19,45,go,0.4364,0.016,go|why|home,True,False,False,confidence 0.44 < 0.85
+ps:popsign_v2_1/test/go/af36-go-2023_01_06_15_31_36.981-0.mp4,go,go,ps:af36,sign,29,63,go,0.8586,0.8166,go|why|finish,True,True,False,
+ps:popsign_v2_1/test/go/af6d-go-2023_01_26_08_44_56.060-0.mp4,go,go,ps:af6d,sign,27,34,eat,0.6364,0.5989,eat|bad|go,False,False,False,confidence 0.64 < 0.85
+ps:popsign_v2_1/test/stop/933d-stop-2024_03_11_15_56_22.583-1.mp4,stop,stop,ps:933d,sign,36,65,stop,0.963,0.9584,stop|drink|more,True,True,False,
+ps:popsign_v2_1/test/stop/a1ba-stop-2023_08_27_23_48_55.279-0.mp4,stop,stop,ps:a1ba,sign,0,57,stop,0.942,0.9351,stop|more|what,True,True,False,
+ps:popsign_v2_1/test/stop/3d3f-stop-2024_02_20_13_10_39.847-1.mp4,stop,stop,ps:3d3f,sign,0,63,stop,0.9457,0.9379,stop|more|drink,True,True,False,
+ps:popsign_v2_1/test/stop/66d7-stop-2023_09_02_10_44_33.092-0.mp4,stop,stop,ps:66d7,sign,5,64,stop,0.8614,0.8215,stop|why|what,True,True,False,
+ps:popsign_v2_1/test/stop/3d3f-stop-2024_02_27_08_58_20.578-1.mp4,stop,stop,ps:3d3f,sign,0,70,stop,0.923,0.9095,stop|drink|more,True,True,False,
+ps:popsign_v2_1/test/stop/66d7-stop-2023_09_03_10_34_04.004-0.mp4,stop,stop,ps:66d7,sign,12,56,stop,0.9096,0.9028,stop|what|my,True,True,False,
+ps:popsign_v2_1/test/stop/16f0-stop-2023_10_02_20_25_13.457-1.mp4,stop,stop,ps:16f0,sign,23,48,stop,0.9625,0.96,stop|bye|help,True,True,False,
+ps:popsign_v2_1/test/stop/66e7-stop-2024_02_17_18_19_48.501-1.mp4,stop,stop,ps:66e7,sign,0,80,stop,0.9579,0.9515,stop|more|bread,True,True,False,
+ps:popsign_v2_1/test/stop/933d-stop-2024_03_14_14_16_30.176-1.mp4,stop,stop,ps:933d,sign,56,90,stop,0.9699,0.9671,stop|why|my,True,True,False,
+ps:popsign_v2_1/test/stop/a1ba-stop-2023_08_30_23_28_36.775-0.mp4,stop,stop,ps:a1ba,sign,0,56,stop,0.9514,0.9366,stop|more|eat,True,True,False,
+ps:popsign_v2_1/test/stop/3d3f-stop-2024_02_27_09_04_33.567-1.mp4,stop,stop,ps:3d3f,sign,22,39,stop,0.9689,0.9649,stop|drink|more,True,True,False,
+ps:popsign_v2_1/test/stop/66d7-stop-2023_09_03_17_53_50.722-0.mp4,stop,stop,ps:66d7,sign,13,54,stop,0.9494,0.9409,stop|more|what,True,True,False,
+ps:popsign_v2_1/test/stop/16f0-stop-2023_10_01_22_08_42.457-1.mp4,stop,stop,ps:16f0,sign,25,51,stop,0.9563,0.9527,stop|good|my,True,True,False,
+ps:popsign_v2_1/test/stop/66e7-stop-2024_02_14_18_32_42.890-1.mp4,stop,stop,ps:66e7,sign,9,35,stop,0.974,0.9716,stop|what|my,True,True,False,
+ps:popsign_v2_1/test/stop/933d-stop-2024_03_13_17_12_32.746-1.mp4,stop,stop,ps:933d,sign,30,64,stop,0.9698,0.9676,stop|my|sleep,True,True,False,
+ps:popsign_v2_1/test/stop/a1ba-stop-2023_08_28_22_22_33.595-0.mp4,stop,stop,ps:a1ba,sign,40,58,stop,0.9762,0.9733,stop|sleep|my,True,True,False,
+ps:popsign_v2_1/test/stop/16f0-stop-2023_10_08_09_46_57.514-1.mp4,stop,stop,ps:16f0,sign,11,46,stop,0.9656,0.9619,stop|help|my,True,True,False,
+ps:popsign_v2_1/test/stop/66e7-stop-2024_02_17_18_33_45.154-1.mp4,stop,stop,ps:66e7,sign,0,58,stop,0.928,0.9203,stop|more|your,True,True,False,
+ps:popsign_v2_1/test/stop/933d-stop-2024_03_14_15_37_34.644-1.mp4,stop,stop,ps:933d,sign,33,61,stop,0.9534,0.9474,stop|more|sleep,True,True,False,
+ps:popsign_v2_1/test/stop/a1ba-stop-2023_08_31_00_12_57.449-0.mp4,stop,stop,ps:a1ba,sign,0,75,stop,0.7084,0.5723,stop|love|more,True,False,False,confidence 0.71 < 0.85
+ps:popsign_v2_1/test/more/16f0-more-2023_10_02_20_33_31.129-1.mp4,more,more,ps:16f0,sign,21,57,more,0.9339,0.9272,more|eat|home,True,True,False,
+ps:popsign_v2_1/test/more/a1ba-more-2023_08_28_22_19_13.504-0.mp4,more,more,ps:a1ba,sign,27,30,bathroom,0.2867,0.0504,bathroom|doctor|more,False,False,False,confidence 0.29 < 0.85
+ps:popsign_v2_1/test/more/933d-more-2024_03_13_18_12_35.914-1.mp4,more,more,ps:933d,sign,50,90,more,0.9457,0.9412,more|eat|home,True,True,False,
+ps:popsign_v2_1/test/more/66d7-more-2023_09_03_12_19_12.152-0.mp4,more,more,ps:66d7,sign,14,51,more,0.8559,0.8316,more|bathroom|home,True,True,False,
+ps:popsign_v2_1/test/more/3d3f-more-2024_02_26_15_43_16.214-1.mp4,more,more,ps:3d3f,sign,0,72,more,0.8589,0.8279,more|doctor|stop,True,True,False,
+ps:popsign_v2_1/test/more/66e7-more-2024_02_14_18_22_18.774-1.mp4,more,more,ps:66e7,sign,0,144,more,0.9308,0.926,more|stop|doctor,True,True,False,
+ps:popsign_v2_1/test/more/16f0-more-2023_10_01_22_07_36.533-1.mp4,more,more,ps:16f0,sign,23,61,more,0.9268,0.9184,more|eat|home,True,True,False,
+ps:popsign_v2_1/test/more/a1ba-more-2023_08_27_23_04_22.927-0.mp4,more,more,ps:a1ba,sign,0,66,more,0.9196,0.9069,more|home|bathroom,True,True,False,
+ps:popsign_v2_1/test/more/933d-more-2024_03_13_16_25_53.440-1.mp4,more,more,ps:933d,sign,57,107,more,0.9362,0.9302,more|eat|bathroom,True,True,False,
+ps:popsign_v2_1/test/more/66d7-more-2023_09_03_10_27_56.259-0.mp4,more,more,ps:66d7,sign,10,57,more,0.8798,0.857,more|bathroom|home,True,True,False,
+ps:popsign_v2_1/test/more/3d3f-more-2024_02_27_09_04_13.187-1.mp4,more,more,ps:3d3f,sign,0,67,more,0.8052,0.6651,more|doctor|friend,True,False,False,confidence 0.81 < 0.85
+ps:popsign_v2_1/test/more/66e7-more-2024_02_17_18_22_28.648-1.mp4,more,more,ps:66e7,sign,16,50,more,0.9461,0.9415,more|bathroom|eat,True,True,False,
+ps:popsign_v2_1/test/more/66d7-more-2023_09_03_16_21_24.373-0.mp4,more,more,ps:66d7,sign,14,50,more,0.9123,0.8967,more|bathroom|home,True,True,False,
+ps:popsign_v2_1/test/more/3d3f-more-2024_03_12_14_30_50.162-1.mp4,more,more,ps:3d3f,sign,0,65,more,0.461,0.0566,more|doctor|bathroom,True,False,False,confidence 0.46 < 0.85
+ps:popsign_v2_1/test/more/66e7-more-2024_02_18_13_43_24.055-1.mp4,more,more,ps:66e7,sign,39,57,more,0.9373,0.9314,more|eat|bathroom,True,True,False,
+ps:popsign_v2_1/test/more/16f0-more-2023_10_09_15_58_02.914-1.mp4,more,more,ps:16f0,sign,13,47,more,0.9284,0.9203,more|eat|bathroom,True,True,False,
+ps:popsign_v2_1/test/more/3d3f-more-2024_03_12_10_36_11.322-1.mp4,more,more,ps:3d3f,sign,36,47,more,0.945,0.9383,more|home|bathroom,True,True,False,
+ps:popsign_v2_1/test/more/66e7-more-2024_02_17_18_56_43.796-1.mp4,more,more,ps:66e7,sign,0,58,more,0.9189,0.904,more|doctor|what,True,True,False,
+ps:popsign_v2_1/test/more/16f0-more-2023_10_09_10_13_17.061-1.mp4,more,more,ps:16f0,sign,19,52,more,0.9187,0.9021,more|eat|medicine,True,True,False,
+ps:popsign_v2_1/test/more/933d-more-2024_03_15_13_17_38.582-1.mp4,more,more,ps:933d,sign,36,70,more,0.9589,0.9555,more|home|eat,True,True,False,
+ps:popsign_v2_1/test/water/af36-water-2022_12_21_10_55_04.041-0.mp4,water,water,ps:af36,sign,0,164,water,0.8835,0.8675,water|where|your,True,True,False,
+ps:popsign_v2_1/test/water/111c-water-2023_01_26_17_18_35.848-0.mp4,water,water,ps:111c,sign,23,56,water,0.9345,0.9298,water|your|understand,True,True,False,
+ps:popsign_v2_1/test/water/af6d-water-2023_01_25_14_25_52.408-0.mp4,water,water,ps:af6d,sign,19,40,water,0.9093,0.9012,water|your|understand,True,True,False,
+ps:popsign_v2_1/test/water/a1ba-water-2023_01_10_20_56_34.946-0.mp4,water,water,ps:a1ba,sign,33,85,water,0.9299,0.9242,water|your|understand,True,True,False,
+ps:popsign_v2_1/test/water/66d7-water-2023_01_25_18_20_21.919-0.mp4,water,water,ps:66d7,sign,20,70,water,0.7053,0.661,water|stop|why,True,False,False,confidence 0.71 < 0.85
+ps:popsign_v2_1/test/water/af36-water-2023_01_03_09_27_09.710-0.mp4,water,water,ps:af36,sign,17,181,water,0.9186,0.9054,water|where|no,True,True,False,
+ps:popsign_v2_1/test/water/111c-water-2023_01_26_18_02_46.374-0.mp4,water,water,ps:111c,sign,51,87,water,0.933,0.929,water|your|understand,True,True,False,
+ps:popsign_v2_1/test/water/af6d-water-2023_01_25_16_58_53.091-0.mp4,water,water,ps:af6d,sign,15,40,water,0.899,0.892,water|your|school,True,True,False,
+ps:popsign_v2_1/test/water/af6d-water-2023_01_25_18_12_50.950-0.mp4,water,water,ps:af6d,sign,18,40,water,0.9222,0.9173,water|your|wait,True,True,False,
+ps:popsign_v2_1/test/water/a1ba-water-2023_01_10_23_50_30.743-0.mp4,water,water,ps:a1ba,sign,17,36,water,0.8909,0.8843,water|school|like,True,True,False,
+ps:popsign_v2_1/test/water/66d7-water-2023_01_25_20_39_22.326-0.mp4,water,water,ps:66d7,sign,15,46,drink,0.4829,0.3645,drink|water|bad,False,False,False,confidence 0.48 < 0.85
+ps:popsign_v2_1/test/water/af36-water-2023_01_05_10_02_24.487-0.mp4,water,water,ps:af36,sign,45,147,water,0.9453,0.9416,water|your|understand,True,True,False,
+ps:popsign_v2_1/test/water/a1ba-water-2023_01_10_23_38_11.782-0.mp4,water,water,ps:a1ba,sign,18,37,water,0.8812,0.8752,water|wait|your,True,True,False,
+ps:popsign_v2_1/test/water/66d7-water-2023_01_25_19_18_23.258-0.mp4,water,water,ps:66d7,sign,16,76,stop,0.3288,0.2303,stop|no|bad,False,False,False,confidence 0.33 < 0.85
+ps:popsign_v2_1/test/water/af36-water-2023_01_03_10_02_34.470-0.mp4,water,water,ps:af36,sign,60,210,water,0.8649,0.8496,water|like|your,True,True,False,
+ps:popsign_v2_1/test/water/111c-water-2023_01_26_20_06_43.981-0.mp4,water,water,ps:111c,sign,28,68,water,0.934,0.9298,water|understand|your,True,True,False,
+ps:popsign_v2_1/test/water/111c-water-2023_01_26_20_24_07.638-0.mp4,water,water,ps:111c,sign,27,50,water,0.9259,0.9208,water|your|understand,True,True,False,
+ps:popsign_v2_1/test/water/af6d-water-2023_01_25_19_12_42.674-0.mp4,water,water,ps:af6d,sign,17,40,water,0.9284,0.923,water|your|understand,True,True,False,
+ps:popsign_v2_1/test/water/a1ba-water-2023_01_12_13_25_23.850-0.mp4,water,water,ps:a1ba,sign,75,153,water,0.9158,0.91,water|your|me,True,True,False,
+ps:popsign_v2_1/test/water/66d7-water-2023_01_26_09_24_32.124-0.mp4,water,water,ps:66d7,sign,15,45,water,0.9044,0.8982,water|where|your,True,True,False,
+ps:popsign_v2_1/test/now/66d7-now-2023_01_25_18_22_46.794-0.mp4,now,now,ps:66d7,sign,16,40,now,0.9421,0.9272,now|today|help,True,True,False,
+ps:popsign_v2_1/test/now/616e-now-2023_01_26_16_45_24.600-0.mp4,now,now,ps:616e,sign,33,41,now,0.9036,0.8693,now|today|why,True,True,False,
+ps:popsign_v2_1/test/now/111c-now-2023_01_26_17_23_24.054-0.mp4,now,now,ps:111c,sign,29,44,now,0.9426,0.9273,now|today|understand,True,True,False,
+ps:popsign_v2_1/test/now/af36-now-2022_12_21_10_49_57.366-0.mp4,now,now,ps:af36,sign,0,85,what,0.7647,0.6148,what|today|good,False,False,False,confidence 0.76 < 0.85
+ps:popsign_v2_1/test/now/111c-now-2023_01_26_17_09_33.605-0.mp4,now,now,ps:111c,sign,26,50,now,0.9558,0.9465,now|today|understand,True,True,False,
+ps:popsign_v2_1/test/now/af36-now-2022_12_16_12_16_47.306-0.mp4,now,now,ps:af36,sign,15,72,today,0.4418,0.1976,today|what|help,False,False,False,confidence 0.44 < 0.85
+ps:popsign_v2_1/test/now/af6d-now-2023_01_23_19_20_11.550-0.mp4,now,now,ps:af6d,sign,15,26,today,0.9427,0.9296,today|now|help,False,True,False,
+ps:popsign_v2_1/test/now/a1ba-now-2023_01_09_19_49_10.976-0.mp4,now,now,ps:a1ba,sign,66,110,today,0.5986,0.3018,today|now|what,False,False,False,confidence 0.60 < 0.85
+ps:popsign_v2_1/test/now/af6d-now-2023_01_25_14_14_58.642-0.mp4,now,now,ps:af6d,sign,17,25,today,0.8494,0.8228,today|now|what,False,False,False,confidence 0.85 < 0.85
+ps:popsign_v2_1/test/now/a1ba-now-2023_01_10_23_42_56.885-0.mp4,now,now,ps:a1ba,sign,63,149,now,0.9309,0.9011,now|today|understand,True,True,False,
+ps:popsign_v2_1/test/now/66d7-now-2023_01_25_19_25_28.122-0.mp4,now,now,ps:66d7,sign,18,39,today,0.6908,0.4812,today|now|what,False,False,False,confidence 0.69 < 0.85
+ps:popsign_v2_1/test/now/616e-now-2023_01_26_17_02_16.566-0.mp4,now,now,ps:616e,sign,22,30,now,0.853,0.7698,now|today|why,True,True,False,
+ps:popsign_v2_1/test/now/111c-now-2023_01_26_18_03_38.043-0.mp4,now,now,ps:111c,sign,24,34,today,0.8079,0.6775,today|now|help,False,False,False,confidence 0.81 < 0.85
+ps:popsign_v2_1/test/now/af36-now-2022_12_21_10_58_55.707-0.mp4,now,now,ps:af36,sign,12,67,what,0.6299,0.4291,what|today|now,False,False,False,confidence 0.63 < 0.85
+ps:popsign_v2_1/test/now/af6d-now-2023_01_25_16_45_41.243-0.mp4,now,now,ps:af6d,sign,16,29,today,0.9568,0.9481,today|what|friend,False,True,False,
+ps:popsign_v2_1/test/now/a1ba-now-2023_01_12_13_08_54.388-0.mp4,now,now,ps:a1ba,sign,47,128,now,0.7676,0.6013,now|today|help,True,False,False,confidence 0.77 < 0.85
+ps:popsign_v2_1/test/today/3d3f-today-2024_02_20_13_06_40.764-1.mp4,today,today,ps:3d3f,sign,0,68,today,0.9632,0.9526,today|what|help,True,True,False,
+ps:popsign_v2_1/test/today/a1ba-today-2023_08_27_23_34_20.381-0.mp4,today,today,ps:a1ba,sign,0,76,today,0.955,0.949,today|help|what,True,True,False,
+ps:popsign_v2_1/test/today/66d7-today-2023_09_03_17_49_10.371-0.mp4,today,today,ps:66d7,sign,10,52,today,0.9567,0.9459,today|now|help,True,True,False,
+ps:popsign_v2_1/test/today/16f0-today-2023_10_01_22_10_38.823-1.mp4,today,today,ps:16f0,sign,19,26,today,0.9324,0.915,today|now|help,True,True,False,
+ps:popsign_v2_1/test/now/66d7-now-2023_01_25_20_38_20.799-0.mp4,now,now,ps:66d7,sign,16,35,now,0.9483,0.9407,now|today|why,True,True,False,
+ps:popsign_v2_1/test/now/616e-now-2023_01_26_18_27_11.985-0.mp4,now,now,ps:616e,sign,18,50,now,0.9552,0.9473,now|today|understand,True,True,False,
+ps:popsign_v2_1/test/now/111c-now-2023_01_26_20_34_51.377-0.mp4,now,now,ps:111c,sign,23,30,now,0.652,0.4221,now|today|understand,True,False,False,confidence 0.65 < 0.85
+ps:popsign_v2_1/test/now/af36-now-2023_01_03_09_46_27.622-0.mp4,now,now,ps:af36,sign,34,150,what,0.6629,0.56,what|today|now,False,False,False,confidence 0.66 < 0.85
+ps:popsign_v2_1/test/today/66d7-today-2023_09_03_10_23_22.570-0.mp4,today,today,ps:66d7,sign,8,67,today,0.9622,0.955,today|now|help,True,True,False,
+ps:popsign_v2_1/test/today/16f0-today-2023_10_01_20_01_58.377-2.mp4,today,today,ps:16f0,sign,40,100,today,0.9538,0.9365,today|now|hurt,True,True,False,
+ps:popsign_v2_1/test/today/66e7-today-2024_02_14_18_37_06.778-1.mp4,today,today,ps:66e7,sign,16,50,today,0.7732,0.728,today|what|help,True,False,False,confidence 0.77 < 0.85
+ps:popsign_v2_1/test/today/933d-today-2024_03_11_15_13_44.845-1.mp4,today,today,ps:933d,sign,38,75,today,0.9502,0.9406,today|now|help,True,True,False,
+ps:popsign_v2_1/test/today/3d3f-today-2024_02_27_09_00_32.100-1.mp4,today,today,ps:3d3f,sign,0,68,today,0.5746,0.4551,today|how|friend,True,False,False,confidence 0.57 < 0.85
+ps:popsign_v2_1/test/today/a1ba-today-2023_08_30_23_22_35.557-0.mp4,today,today,ps:a1ba,sign,19,43,today,0.9569,0.9513,today|now|help,True,True,False,
+ps:popsign_v2_1/test/today/66d7-today-2023_09_04_12_58_28.856-0.mp4,today,today,ps:66d7,sign,8,54,today,0.912,0.8895,today|what|now,True,True,False,
+ps:popsign_v2_1/test/today/16f0-today-2023_10_09_13_32_10.265-1.mp4,today,today,ps:16f0,sign,14,46,today,0.9556,0.9486,today|now|what,True,True,False,
+ps:popsign_v2_1/test/today/66d7-today-2023_09_04_10_29_06.502-0.mp4,today,today,ps:66d7,sign,19,55,today,0.9675,0.96,today|now|help,True,True,False,
+ps:popsign_v2_1/test/today/16f0-today-2023_10_02_20_57_12.586-1.mp4,today,today,ps:16f0,sign,14,47,today,0.9452,0.9296,today|now|what,True,True,False,
+ps:popsign_v2_1/test/today/66e7-today-2024_02_17_18_27_16.845-1.mp4,today,today,ps:66e7,sign,0,59,today,0.8423,0.7976,today|what|friend,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/today/933d-today-2024_03_18_17_43_54.415-1.mp4,today,today,ps:933d,sign,39,81,today,0.9545,0.9462,today|now|help,True,True,False,
+ps:popsign_v2_1/test/today/66e7-today-2024_02_15_17_42_51.869-1.mp4,today,today,ps:66e7,sign,43,62,today,0.8939,0.8666,today|what|now,True,True,False,
+ps:popsign_v2_1/test/today/933d-today-2024_03_13_17_22_15.949-1.mp4,today,today,ps:933d,sign,34,53,today,0.9593,0.9526,today|now|hurt,True,True,False,
+ps:popsign_v2_1/test/today/3d3f-today-2024_02_23_12_26_14.784-1.mp4,today,today,ps:3d3f,sign,21,47,today,0.9493,0.9424,today|help|now,True,True,False,
+ps:popsign_v2_1/test/today/a1ba-today-2023_08_30_23_17_34.553-0.mp4,today,today,ps:a1ba,sign,71,114,today,0.9542,0.9452,today|help|now,True,True,False,
+ps:popsign_v2_1/test/work/66e7-work-2024_02_14_15_30_47.067-1.mp4,work,work,ps:66e7,sign,41,71,work,0.9463,0.9418,work|bathroom|my,True,True,False,
+ps:popsign_v2_1/test/work/66d7-work-2023_09_02_10_46_53.667-0.mp4,work,work,ps:66d7,sign,11,42,work,0.9008,0.8858,work|love|doctor,True,True,False,
+ps:popsign_v2_1/test/work/a1ba-work-2023_08_27_23_49_21.421-0.mp4,work,work,ps:a1ba,sign,0,66,work,0.9309,0.9248,work|bathroom|sorry,True,True,False,
+ps:popsign_v2_1/test/work/3d3f-work-2024_02_20_13_06_17.974-1.mp4,work,work,ps:3d3f,sign,20,51,work,0.9522,0.9488,work|my|bathroom,True,True,False,
+ps:popsign_v2_1/test/work/933d-work-2024_03_11_15_54_45.211-1.mp4,work,work,ps:933d,sign,43,75,work,0.9485,0.9439,work|bathroom|my,True,True,False,
+ps:popsign_v2_1/test/work/16f0-work-2023_10_02_17_12_49.396-1.mp4,work,work,ps:16f0,sign,16,56,work,0.915,0.9007,work|bathroom|yes,True,True,False,
+ps:popsign_v2_1/test/work/66e7-work-2024_02_14_18_23_54.539-1.mp4,work,work,ps:66e7,sign,39,69,work,0.8981,0.8801,work|bathroom|love,True,True,False,
+ps:popsign_v2_1/test/work/66d7-work-2023_09_03_10_29_36.372-0.mp4,work,work,ps:66d7,sign,9,54,work,0.936,0.9258,work|bathroom|doctor,True,True,False,
+ps:popsign_v2_1/test/work/66e7-work-2024_02_15_17_38_12.444-1.mp4,work,work,ps:66e7,sign,0,60,work,0.7957,0.7366,work|bathroom|doctor,True,False,False,confidence 0.80 < 0.85
+ps:popsign_v2_1/test/work/66d7-work-2023_09_03_19_37_33.581-0.mp4,work,work,ps:66d7,sign,13,42,work,0.9146,0.9016,work|love|how,True,True,False,
+ps:popsign_v2_1/test/work/a1ba-work-2023_08_30_23_56_49.469-0.mp4,work,work,ps:a1ba,sign,3,41,work,0.9548,0.9517,work|doctor|bathroom,True,True,False,
+ps:popsign_v2_1/test/work/3d3f-work-2024_02_27_09_07_57.146-1.mp4,work,work,ps:3d3f,sign,0,71,work,0.9676,0.9644,work|doctor|bathroom,True,True,False,
+ps:popsign_v2_1/test/work/a1ba-work-2023_08_28_22_23_42.986-0.mp4,work,work,ps:a1ba,sign,0,63,work,0.9656,0.9616,work|bathroom|doctor,True,True,False,
+ps:popsign_v2_1/test/work/3d3f-work-2024_02_23_12_25_44.114-1.mp4,work,work,ps:3d3f,sign,25,50,work,0.9318,0.925,work|love|my,True,True,False,
+ps:popsign_v2_1/test/work/933d-work-2024_03_13_16_24_33.560-1.mp4,work,work,ps:933d,sign,46,95,work,0.9006,0.8901,work|how|doctor,True,True,False,
+ps:popsign_v2_1/test/work/16f0-work-2023_10_02_20_52_00.311-1.mp4,work,work,ps:16f0,sign,13,55,work,0.9471,0.9415,work|bathroom|yes,True,True,False,
+ps:popsign_v2_1/test/work/933d-work-2024_03_14_13_36_21.862-1.mp4,work,work,ps:933d,sign,36,71,work,0.9366,0.9315,work|bathroom|my,True,True,False,
+ps:popsign_v2_1/test/work/16f0-work-2023_10_09_13_32_51.110-1.mp4,work,work,ps:16f0,sign,12,48,work,0.9446,0.9396,work|bathroom|yes,True,True,False,
+ps:popsign_v2_1/test/work/66e7-work-2024_02_17_18_58_42.927-1.mp4,work,work,ps:66e7,sign,1,62,bathroom,0.625,0.4364,bathroom|work|love,False,False,False,confidence 0.62 < 0.85
+ps:popsign_v2_1/test/work/66d7-work-2023_09_03_19_42_30.991-0.mp4,work,work,ps:66d7,sign,15,47,work,0.9325,0.9265,work|bathroom|love,True,True,False,
+ps:popsign_v2_1/test/wait/616e-wait-2023_01_26_16_53_31.366-0.mp4,wait,wait,ps:616e,sign,23,54,wait,0.971,0.9676,wait|thanks|family,True,True,False,
+ps:popsign_v2_1/test/wait/111c-wait-2023_01_26_17_08_39.276-0.mp4,wait,wait,ps:111c,sign,34,68,wait,0.8817,0.8544,wait|what|finish,True,True,False,
+ps:popsign_v2_1/test/wait/af6d-wait-2023_01_25_14_25_52.408-1.mp4,wait,wait,ps:af6d,sign,0,55,what,0.1983,0.0392,what|stop|more,False,False,False,confidence 0.20 < 0.85
+ps:popsign_v2_1/test/wait/66d7-wait-2023_01_25_19_27_32.296-0.mp4,wait,wait,ps:66d7,sign,17,35,wait,0.603,0.4587,wait|thanks|good,True,False,False,confidence 0.60 < 0.85
+ps:popsign_v2_1/test/wait/af6d-wait-2023_01_23_19_05_02.117-0.mp4,wait,wait,ps:af6d,sign,19,43,wait,0.8059,0.7039,wait|what|name,True,False,False,confidence 0.81 < 0.85
+ps:popsign_v2_1/test/wait/66d7-wait-2023_01_25_18_26_09.640-0.mp4,wait,wait,ps:66d7,sign,20,59,wait,0.9687,0.9656,wait|thanks|sad,True,True,False,
+ps:popsign_v2_1/test/wait/af36-wait-2022_12_16_12_34_59.464-0.mp4,wait,wait,ps:af36,sign,51,181,wait,0.9637,0.96,wait|what|family,True,True,False,
+ps:popsign_v2_1/test/wait/a1ba-wait-2023_01_10_19_32_52.465-0.mp4,wait,wait,ps:a1ba,sign,32,149,wait,0.8853,0.8468,wait|sad|family,True,True,False,
+ps:popsign_v2_1/test/wait/af6d-wait-2023_01_25_17_00_39.997-0.mp4,wait,wait,ps:af6d,sign,7,41,what,0.8302,0.7946,what|good|me,False,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/wait/66d7-wait-2023_01_25_20_26_35.639-0.mp4,wait,wait,ps:66d7,sign,18,50,good,0.2787,0.0152,good|thanks|wait,False,False,False,confidence 0.28 < 0.85
+ps:popsign_v2_1/test/wait/af36-wait-2023_01_03_11_35_28.366-0.mp4,wait,wait,ps:af36,sign,39,186,wait,0.9636,0.9599,wait|sad|family,True,True,False,
+ps:popsign_v2_1/test/wait/a1ba-wait-2023_01_10_23_55_31.822-0.mp4,wait,wait,ps:a1ba,sign,14,46,wait,0.9516,0.9448,wait|what|sad,True,True,False,
+ps:popsign_v2_1/test/wait/616e-wait-2023_01_26_18_27_41.036-0.mp4,wait,wait,ps:616e,sign,18,52,wait,0.96,0.9554,wait|thanks|what,True,True,False,
+ps:popsign_v2_1/test/wait/111c-wait-2023_01_26_18_09_53.871-0.mp4,wait,wait,ps:111c,sign,28,57,wait,0.8893,0.8369,wait|what|family,True,True,False,
+ps:popsign_v2_1/test/wait/af6d-wait-2023_01_25_18_16_43.181-1.mp4,wait,wait,ps:af6d,sign,18,24,wait,0.9108,0.8928,wait|what|thanks,True,True,False,
+ps:popsign_v2_1/test/wait/66d7-wait-2023_01_26_09_19_41.895-0.mp4,wait,wait,ps:66d7,sign,13,36,wait,0.9659,0.9622,wait|thanks|family,True,True,False,
+ps:popsign_v2_1/test/wait/af36-wait-2023_01_03_09_41_09.442-0.mp4,wait,wait,ps:af36,sign,45,210,wait,0.837,0.8188,wait|what|come,True,False,False,confidence 0.84 < 0.85
+ps:popsign_v2_1/test/wait/a1ba-wait-2023_01_10_23_44_34.655-0.mp4,wait,wait,ps:a1ba,sign,18,43,wait,0.9699,0.9668,wait|sad|what,True,True,False,
+ps:popsign_v2_1/test/wait/616e-wait-2023_01_26_17_10_35.935-0.mp4,wait,wait,ps:616e,sign,21,59,wait,0.9699,0.967,wait|thanks|family,True,True,False,
+ps:popsign_v2_1/test/wait/111c-wait-2023_01_26_17_27_35.753-0.mp4,wait,wait,ps:111c,sign,35,57,wait,0.9479,0.9415,wait|what|thanks,True,True,False,
+ps:popsign_v2_1/test/finish/af6d-finish-2023_01_23_19_05_02.117-1.mp4,finish,finish,ps:af6d,sign,19,44,finish,0.7151,0.6839,finish|what|stop,True,False,False,confidence 0.72 < 0.85
+ps:popsign_v2_1/test/finish/66d7-finish-2023_01_25_18_15_20.809-0.mp4,finish,finish,ps:66d7,sign,20,60,finish,0.4128,0.303,finish|sick|hello,True,False,False,confidence 0.41 < 0.85
+ps:popsign_v2_1/test/finish/616e-finish-2023_01_26_17_00_39.688-0.mp4,finish,finish,ps:616e,sign,24,53,finish,0.9684,0.9654,finish|bad|your,True,True,False,
+ps:popsign_v2_1/test/finish/111c-finish-2023_01_26_18_02_46.374-0.mp4,finish,finish,ps:111c,sign,30,59,finish,0.8511,0.8254,finish|bye|bad,True,True,False,
+ps:popsign_v2_1/test/finish/616e-finish-2023_01_26_16_42_50.334-0.mp4,finish,finish,ps:616e,sign,21,54,finish,0.9467,0.9432,finish|wait|bread,True,True,False,
+ps:popsign_v2_1/test/finish/111c-finish-2023_01_26_17_11_33.047-0.mp4,finish,finish,ps:111c,sign,30,87,finish,0.9406,0.9308,finish|bad|bye,True,True,False,
+ps:popsign_v2_1/test/finish/af36-finish-2022_12_16_12_34_12.240-0.mp4,finish,finish,ps:af36,sign,0,164,why,0.5953,0.4373,why|what|wait,False,False,False,confidence 0.60 < 0.85
+ps:popsign_v2_1/test/finish/a1ba-finish-2023_01_10_23_54_45.949-0.mp4,finish,finish,ps:a1ba,sign,17,40,finish,0.9666,0.9633,finish|bad|need,True,True,False,
+ps:popsign_v2_1/test/finish/af36-finish-2022_12_21_10_50_37.993-0.mp4,finish,finish,ps:af36,sign,4,71,why,0.3596,0.1458,why|what|stop,False,False,False,confidence 0.36 < 0.85
+ps:popsign_v2_1/test/finish/a1ba-finish-2023_01_12_14_34_22.802-1.mp4,finish,finish,ps:a1ba,sign,75,141,finish,0.8622,0.8073,finish|bad|need,True,True,False,
+ps:popsign_v2_1/test/finish/af6d-finish-2023_01_25_14_18_04.593-0.mp4,finish,finish,ps:af6d,sign,18,37,finish,0.8884,0.8751,finish|bad|bread,True,True,False,
+ps:popsign_v2_1/test/finish/66d7-finish-2023_01_25_19_27_32.296-0.mp4,finish,finish,ps:66d7,sign,20,38,finish,0.5842,0.5312,finish|now|bread,True,False,False,confidence 0.58 < 0.85
+ps:popsign_v2_1/test/finish/af6d-finish-2023_01_25_17_02_20.101-0.mp4,finish,finish,ps:af6d,sign,19,42,finish,0.3851,0.163,finish|bye|bad,True,False,False,confidence 0.39 < 0.85
+ps:popsign_v2_1/test/finish/66d7-finish-2023_01_25_20_30_38.799-0.mp4,finish,finish,ps:66d7,sign,14,45,finish,0.6177,0.5546,finish|hello|bread,True,False,False,confidence 0.62 < 0.85
+ps:popsign_v2_1/test/finish/616e-finish-2023_01_26_18_29_05.465-0.mp4,finish,finish,ps:616e,sign,17,44,finish,0.9757,0.9732,finish|bad|need,True,True,False,
+ps:popsign_v2_1/test/finish/111c-finish-2023_01_26_20_57_15.088-0.mp4,finish,finish,ps:111c,sign,20,34,finish,0.9484,0.9345,finish|bad|happy,True,True,False,
+ps:popsign_v2_1/test/finish/616e-finish-2023_01_26_18_19_19.884-0.mp4,finish,finish,ps:616e,sign,21,49,finish,0.9739,0.9715,finish|bad|need,True,True,False,
+ps:popsign_v2_1/test/finish/111c-finish-2023_01_26_20_03_44.012-0.mp4,finish,finish,ps:111c,sign,24,37,what,0.2907,0.1321,what|good|now,False,False,False,confidence 0.29 < 0.85
+ps:popsign_v2_1/test/finish/af36-finish-2022_12_21_11_04_37.219-0.mp4,finish,finish,ps:af36,sign,25,148,finish,0.3225,0.2024,finish|wait|go,True,False,False,confidence 0.32 < 0.85
+ps:popsign_v2_1/test/finish/a1ba-finish-2023_01_12_14_52_16.370-0.mp4,finish,finish,ps:a1ba,sign,60,130,finish,0.9637,0.9586,finish|bad|need,True,True,False,
+ps:popsign_v2_1/test/bathroom/66d7-bathroom-2023_09_03_12_18_35.389-0.mp4,bathroom,bathroom,ps:66d7,sign,10,55,bathroom,0.9669,0.9618,bathroom|where|work,True,True,False,
+ps:popsign_v2_1/test/bathroom/16f0-bathroom-2023_10_01_19_42_26.064-1.mp4,bathroom,bathroom,ps:16f0,sign,31,135,bathroom,0.9715,0.9671,bathroom|work|where,True,True,False,
+ps:popsign_v2_1/test/bathroom/3d3f-bathroom-2024_02_26_15_52_47.769-1.mp4,bathroom,bathroom,ps:3d3f,sign,34,50,bathroom,0.9114,0.8816,bathroom|work|chicken,True,True,False,
+ps:popsign_v2_1/test/bathroom/66e7-bathroom-2024_02_14_18_36_37.290-1.mp4,bathroom,bathroom,ps:66e7,sign,13,54,bathroom,0.9737,0.971,bathroom|work|where,True,True,False,
+ps:popsign_v2_1/test/bathroom/933d-bathroom-2024_03_11_15_49_15.096-1.mp4,bathroom,bathroom,ps:933d,sign,47,94,bathroom,0.9713,0.9677,bathroom|work|where,True,True,False,
+ps:popsign_v2_1/test/bathroom/a1ba-bathroom-2023_08_27_23_47_50.879-0.mp4,bathroom,bathroom,ps:a1ba,sign,0,61,bathroom,0.9212,0.8974,bathroom|work|chicken,True,True,False,
+ps:popsign_v2_1/test/bathroom/66d7-bathroom-2023_09_03_19_38_11.039-0.mp4,bathroom,bathroom,ps:66d7,sign,11,65,bathroom,0.9154,0.8892,bathroom|work|hurt,True,True,False,
+ps:popsign_v2_1/test/bathroom/16f0-bathroom-2023_10_02_17_15_44.931-1.mp4,bathroom,bathroom,ps:16f0,sign,18,60,bathroom,0.9593,0.9469,bathroom|work|come,True,True,False,
+ps:popsign_v2_1/test/bathroom/66d7-bathroom-2023_09_04_10_35_13.068-0.mp4,bathroom,bathroom,ps:66d7,sign,11,55,bathroom,0.8555,0.8361,bathroom|work|my,True,True,False,
+ps:popsign_v2_1/test/bathroom/16f0-bathroom-2023_10_02_20_55_44.494-1.mp4,bathroom,bathroom,ps:16f0,sign,18,62,bathroom,0.8903,0.8269,bathroom|work|bye,True,True,False,
+ps:popsign_v2_1/test/bathroom/3d3f-bathroom-2024_03_12_14_53_47.872-1.mp4,bathroom,bathroom,ps:3d3f,sign,0,63,bathroom,0.6978,0.5874,bathroom|hurt|when,True,False,False,confidence 0.70 < 0.85
+ps:popsign_v2_1/test/bathroom/66e7-bathroom-2024_02_17_18_30_09.991-1.mp4,bathroom,bathroom,ps:66e7,sign,0,74,bathroom,0.3442,0.0055,bathroom|hurt|when,True,False,False,confidence 0.34 < 0.85
+ps:popsign_v2_1/test/bathroom/3d3f-bathroom-2024_02_27_09_04_40.103-1.mp4,bathroom,bathroom,ps:3d3f,sign,30,44,bathroom,0.5455,0.2949,bathroom|chicken|work,True,False,False,confidence 0.55 < 0.85
+ps:popsign_v2_1/test/bathroom/66e7-bathroom-2024_02_15_17_43_01.457-1.mp4,bathroom,bathroom,ps:66e7,sign,13,44,bathroom,0.9758,0.9727,bathroom|where|work,True,True,False,
+ps:popsign_v2_1/test/bathroom/933d-bathroom-2024_03_13_18_02_01.816-1.mp4,bathroom,bathroom,ps:933d,sign,61,124,bathroom,0.9635,0.9531,bathroom|work|where,True,True,False,
+ps:popsign_v2_1/test/bathroom/a1ba-bathroom-2023_08_28_22_18_46.091-0.mp4,bathroom,bathroom,ps:a1ba,sign,0,62,work,0.5203,0.2046,work|bathroom|chicken,False,False,False,confidence 0.52 < 0.85
+ps:popsign_v2_1/test/bathroom/933d-bathroom-2024_03_14_13_58_36.502-1.mp4,bathroom,bathroom,ps:933d,sign,46,88,bathroom,0.9203,0.8979,bathroom|work|how,True,True,False,
+ps:popsign_v2_1/test/bathroom/a1ba-bathroom-2023_08_30_23_29_24.080-0.mp4,bathroom,bathroom,ps:a1ba,sign,0,43,bathroom,0.7144,0.5189,bathroom|work|chicken,True,False,False,confidence 0.71 < 0.85
+ps:popsign_v2_1/test/bathroom/66d7-bathroom-2023_09_04_20_01_07.913-0.mp4,bathroom,bathroom,ps:66d7,sign,16,46,bathroom,0.9227,0.9049,bathroom|work|where,True,True,False,
+ps:popsign_v2_1/test/bathroom/16f0-bathroom-2023_10_09_15_53_10.460-1.mp4,bathroom,bathroom,ps:16f0,sign,14,54,bathroom,0.9488,0.9371,bathroom|work|where,True,True,False,
+ps:popsign_v2_1/test/hungry/66d7-hungry-2023_01_25_18_17_44.685-0.mp4,hungry,hungry,ps:66d7,sign,21,33,hungry,0.9577,0.955,hungry|sorry|come,True,True,False,
+ps:popsign_v2_1/test/hungry/a1ba-hungry-2023_01_09_19_54_22.419-0.mp4,hungry,hungry,ps:a1ba,sign,21,30,hungry,0.8346,0.8197,hungry|like|sorry,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/hungry/616e-hungry-2023_01_26_16_49_11.381-0.mp4,hungry,hungry,ps:616e,sign,23,34,hungry,0.9397,0.9349,hungry|come|thirsty,True,True,False,
+ps:popsign_v2_1/test/hungry/111c-hungry-2023_01_26_17_24_01.574-0.mp4,hungry,hungry,ps:111c,sign,26,37,hungry,0.9008,0.8945,hungry|love|come,True,True,False,
+ps:popsign_v2_1/test/hungry/616e-hungry-2023_01_26_17_05_12.134-0.mp4,hungry,hungry,ps:616e,sign,22,30,hungry,0.9562,0.9531,hungry|love|come,True,True,False,
+ps:popsign_v2_1/test/hungry/111c-hungry-2023_01_26_20_05_56.706-0.mp4,hungry,hungry,ps:111c,sign,25,38,hungry,0.7748,0.7345,hungry|love|come,True,False,False,confidence 0.77 < 0.85
+ps:popsign_v2_1/test/hungry/af6d-hungry-2023_01_25_14_27_35.607-0.mp4,hungry,hungry,ps:af6d,sign,16,27,hungry,0.9448,0.94,hungry|love|bad,True,True,False,
+ps:popsign_v2_1/test/hungry/af36-hungry-2022_12_21_10_52_40.882-0.mp4,hungry,hungry,ps:af36,sign,17,30,hungry,0.9324,0.927,hungry|please|come,True,True,False,
+ps:popsign_v2_1/test/hungry/af6d-hungry-2023_01_23_19_17_18.690-0.mp4,hungry,hungry,ps:af6d,sign,16,26,hungry,0.8943,0.8855,hungry|like|love,True,True,False,
+ps:popsign_v2_1/test/hungry/af36-hungry-2022_12_16_12_11_38.919-0.mp4,hungry,hungry,ps:af36,sign,32,132,hungry,0.9522,0.9479,hungry|please|like,True,True,False,
+ps:popsign_v2_1/test/hungry/66d7-hungry-2023_01_25_19_27_32.296-0.mp4,hungry,hungry,ps:66d7,sign,21,26,hungry,0.8908,0.8765,hungry|like|please,True,True,False,
+ps:popsign_v2_1/test/hungry/a1ba-hungry-2023_01_10_23_48_42.040-0.mp4,hungry,hungry,ps:a1ba,sign,71,93,hungry,0.9296,0.924,hungry|please|sorry,True,True,False,
+ps:popsign_v2_1/test/hungry/66d7-hungry-2023_01_25_20_31_09.103-0.mp4,hungry,hungry,ps:66d7,sign,0,72,hungry,0.9619,0.9567,hungry|like|please,True,True,False,
+ps:popsign_v2_1/test/hungry/a1ba-hungry-2023_01_12_13_08_54.388-0.mp4,hungry,hungry,ps:a1ba,sign,59,70,eat,0.3449,0.1562,eat|more|what,False,False,False,confidence 0.34 < 0.85
+ps:popsign_v2_1/test/hungry/616e-hungry-2023_01_26_18_24_49.917-0.mp4,hungry,hungry,ps:616e,sign,18,28,hungry,0.9626,0.9597,hungry|come|thirsty,True,True,False,
+ps:popsign_v2_1/test/hungry/111c-hungry-2023_01_26_20_24_07.638-0.mp4,hungry,hungry,ps:111c,sign,25,29,hungry,0.7952,0.7797,hungry|love|like,True,False,False,confidence 0.80 < 0.85
+ps:popsign_v2_1/test/thirsty/af6d-thirsty-2023_01_23_19_10_09.391-0.mp4,thirsty,thirsty,ps:af6d,sign,26,44,thirsty,0.9081,0.902,thirsty|you|like,True,True,False,
+ps:popsign_v2_1/test/thirsty/66d7-thirsty-2023_01_25_18_26_46.274-0.mp4,thirsty,thirsty,ps:66d7,sign,18,51,thirsty,0.7456,0.6837,thirsty|hurt|now,True,False,False,confidence 0.75 < 0.85
+ps:popsign_v2_1/test/thirsty/111c-thirsty-2023_01_26_18_04_23.190-0.mp4,thirsty,thirsty,ps:111c,sign,0,106,hungry,0.2988,0.2151,hungry|hurt|apple,False,False,False,confidence 0.30 < 0.85
+ps:popsign_v2_1/test/thirsty/616e-thirsty-2023_01_26_17_06_43.147-0.mp4,thirsty,thirsty,ps:616e,sign,22,62,thirsty,0.9144,0.9084,thirsty|me|apple,True,True,False,
+ps:popsign_v2_1/test/hungry/af6d-hungry-2023_01_25_16_46_41.646-0.mp4,hungry,hungry,ps:af6d,sign,15,28,love,0.2037,0.0849,love|hungry|doctor,False,False,False,confidence 0.20 < 0.85
+ps:popsign_v2_1/test/hungry/af36-hungry-2023_01_03_09_28_33.855-0.mp4,hungry,hungry,ps:af36,sign,25,94,hungry,0.8528,0.8361,hungry|happy|good,True,True,False,
+ps:popsign_v2_1/test/hungry/66d7-hungry-2023_01_26_09_19_41.895-0.mp4,hungry,hungry,ps:66d7,sign,51,64,hungry,0.9234,0.9154,hungry|like|please,True,True,False,
+ps:popsign_v2_1/test/hungry/a1ba-hungry-2023_01_12_13_18_26.475-0.mp4,hungry,hungry,ps:a1ba,sign,0,224,hungry,0.9536,0.9474,hungry|like|please,True,True,False,
+ps:popsign_v2_1/test/thirsty/af36-thirsty-2022_12_21_10_56_02.733-0.mp4,thirsty,thirsty,ps:af36,sign,19,106,hungry,0.3636,0.049,hungry|thirsty|who,False,False,False,confidence 0.36 < 0.85
+ps:popsign_v2_1/test/thirsty/a1ba-thirsty-2023_01_10_23_45_21.302-0.mp4,thirsty,thirsty,ps:a1ba,sign,17,26,thirsty,0.7162,0.6607,thirsty|hungry|like,True,False,False,confidence 0.72 < 0.85
+ps:popsign_v2_1/test/thirsty/af6d-thirsty-2023_01_25_14_04_39.851-0.mp4,thirsty,thirsty,ps:af6d,sign,5,70,thirsty,0.2918,0.0855,thirsty|hurt|hungry,True,False,False,confidence 0.29 < 0.85
+ps:popsign_v2_1/test/thirsty/66d7-thirsty-2023_01_25_19_24_25.781-0.mp4,thirsty,thirsty,ps:66d7,sign,24,58,thirsty,0.8181,0.7993,thirsty|now|today,True,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/thirsty/111c-thirsty-2023_01_26_17_53_19.868-0.mp4,thirsty,thirsty,ps:111c,sign,35,42,drink,0.1827,0.1164,drink|more|apple,False,False,False,confidence 0.18 < 0.85
+ps:popsign_v2_1/test/thirsty/616e-thirsty-2023_01_26_16_41_35.688-0.mp4,thirsty,thirsty,ps:616e,sign,27,66,thirsty,0.9081,0.8998,thirsty|me|like,True,True,False,
+ps:popsign_v2_1/test/thirsty/af36-thirsty-2022_12_16_12_36_36.263-0.mp4,thirsty,thirsty,ps:af36,sign,38,167,thirsty,0.9498,0.9466,thirsty|hungry|like,True,True,False,
+ps:popsign_v2_1/test/thirsty/a1ba-thirsty-2023_01_10_20_57_53.674-0.mp4,thirsty,thirsty,ps:a1ba,sign,75,117,like,0.3924,0.1864,like|hungry|thirsty,False,False,False,confidence 0.39 < 0.85
+ps:popsign_v2_1/test/thirsty/af6d-thirsty-2023_01_25_16_46_41.646-0.mp4,thirsty,thirsty,ps:af6d,sign,14,37,thirsty,0.9028,0.8949,thirsty|you|hurt,True,True,False,
+ps:popsign_v2_1/test/thirsty/66d7-thirsty-2023_01_25_20_25_03.619-0.mp4,thirsty,thirsty,ps:66d7,sign,7,44,thirsty,0.7777,0.7374,thirsty|today|now,True,False,False,confidence 0.78 < 0.85
+ps:popsign_v2_1/test/thirsty/111c-thirsty-2023_01_29_11_17_22.702-0.mp4,thirsty,thirsty,ps:111c,sign,0,107,hurt,0.1617,0.0583,hurt|help|REST,False,False,False,confidence 0.16 < 0.85
+ps:popsign_v2_1/test/thirsty/616e-thirsty-2023_01_26_18_29_38.412-0.mp4,thirsty,thirsty,ps:616e,sign,19,54,thirsty,0.7396,0.6744,thirsty|apple|hurt,True,False,False,confidence 0.74 < 0.85
+ps:popsign_v2_1/test/thirsty/111c-thirsty-2023_01_26_20_48_49.973-0.mp4,thirsty,thirsty,ps:111c,sign,0,78,help,0.2287,0.0988,help|REST|hurt,False,False,False,confidence 0.23 < 0.85
+ps:popsign_v2_1/test/thirsty/616e-thirsty-2023_01_26_18_18_51.424-0.mp4,thirsty,thirsty,ps:616e,sign,18,54,thirsty,0.9016,0.8927,thirsty|me|apple,True,True,False,
+ps:popsign_v2_1/test/thirsty/af36-thirsty-2023_01_05_10_44_09.263-0.mp4,thirsty,thirsty,ps:af36,sign,62,67,thirsty,0.8981,0.8904,thirsty|like|hungry,True,True,False,
+ps:popsign_v2_1/test/thirsty/a1ba-thirsty-2023_01_10_23_50_30.743-0.mp4,thirsty,thirsty,ps:a1ba,sign,14,25,thirsty,0.9332,0.929,thirsty|like|you,True,True,False,
+ps:popsign_v2_1/test/when/16f0-when-2023_09_28_19_06_13.197-1.mp4,when,when,ps:16f0,sign,27,147,when,0.4279,0.1893,when|hurt|friend,True,False,False,confidence 0.43 < 0.85
+ps:popsign_v2_1/test/when/3d3f-when-2024_02_20_13_00_00.333-1.mp4,when,when,ps:3d3f,sign,18,43,when,0.8799,0.8372,when|friend|hurt,True,True,False,
+ps:popsign_v2_1/test/when/66d7-when-2023_09_03_10_20_42.957-0.mp4,when,when,ps:66d7,sign,0,84,hurt,0.5418,0.4882,hurt|friend|name,False,False,False,confidence 0.54 < 0.85
+ps:popsign_v2_1/test/when/a1ba-when-2023_08_27_23_15_58.727-0.mp4,when,when,ps:a1ba,sign,52,77,hurt,0.3889,0.174,hurt|friend|when,False,False,False,confidence 0.39 < 0.85
+ps:popsign_v2_1/test/when/16f0-when-2023_10_09_10_12_37.847-1.mp4,when,when,ps:16f0,sign,19,47,when,0.9524,0.9442,when|friend|hurt,True,True,False,
+ps:popsign_v2_1/test/when/3d3f-when-2024_03_11_16_08_55.322-1.mp4,when,when,ps:3d3f,sign,0,73,when,0.8065,0.7236,when|friend|hurt,True,False,False,confidence 0.81 < 0.85
+ps:popsign_v2_1/test/when/66d7-when-2023_09_03_16_22_39.654-0.mp4,when,when,ps:66d7,sign,14,68,when,0.9095,0.8644,when|hurt|friend,True,True,False,
+ps:popsign_v2_1/test/when/a1ba-when-2023_08_30_23_25_05.259-0.mp4,when,when,ps:a1ba,sign,29,66,hurt,0.8141,0.7339,hurt|when|friend,False,False,False,confidence 0.81 < 0.85
+ps:popsign_v2_1/test/when/933d-when-2024_03_13_14_36_54.722-1.mp4,when,when,ps:933d,sign,39,76,hurt,0.407,0.0865,hurt|when|friend,False,False,False,confidence 0.41 < 0.85
+ps:popsign_v2_1/test/when/66e7-when-2024_02_14_18_43_42.351-1.mp4,when,when,ps:66e7,sign,18,42,hurt,0.7858,0.6899,hurt|friend|when,False,False,False,confidence 0.79 < 0.85
+ps:popsign_v2_1/test/when/16f0-when-2023_10_02_20_43_53.787-1.mp4,when,when,ps:16f0,sign,17,34,when,0.5967,0.4743,when|friend|hurt,True,False,False,confidence 0.60 < 0.85
+ps:popsign_v2_1/test/when/3d3f-when-2024_02_23_12_23_27.572-1.mp4,when,when,ps:3d3f,sign,26,49,when,0.9081,0.8767,when|friend|hurt,True,True,False,
+ps:popsign_v2_1/test/when/66d7-when-2023_09_03_12_59_04.844-0.mp4,when,when,ps:66d7,sign,14,48,hurt,0.5288,0.4294,hurt|friend|today,False,False,False,confidence 0.53 < 0.85
+ps:popsign_v2_1/test/when/a1ba-when-2023_08_28_22_18_46.091-0.mp4,when,when,ps:a1ba,sign,27,50,friend,0.5845,0.3764,friend|when|hurt,False,False,False,confidence 0.58 < 0.85
+ps:popsign_v2_1/test/when/933d-when-2024_03_14_15_50_25.248-1.mp4,when,when,ps:933d,sign,51,87,friend,0.6438,0.3808,friend|when|name,False,False,False,confidence 0.64 < 0.85
+ps:popsign_v2_1/test/when/66e7-when-2024_02_15_17_41_46.892-1.mp4,when,when,ps:66e7,sign,16,40,hurt,0.9138,0.8876,hurt|friend|when,False,True,False,
+ps:popsign_v2_1/test/when/933d-when-2024_03_18_17_44_42.051-1.mp4,when,when,ps:933d,sign,47,81,friend,0.6313,0.4137,friend|when|hurt,False,False,False,confidence 0.63 < 0.85
+ps:popsign_v2_1/test/when/66e7-when-2024_02_17_18_55_23.710-1.mp4,when,when,ps:66e7,sign,0,51,hurt,0.5652,0.3094,hurt|when|what,False,False,False,confidence 0.57 < 0.85
+ps:popsign_v2_1/test/when/16f0-when-2023_10_09_13_32_51.110-1.mp4,when,when,ps:16f0,sign,18,52,when,0.9525,0.941,when|hurt|friend,True,True,False,
+ps:popsign_v2_1/test/when/3d3f-when-2024_03_12_10_35_04.617-1.mp4,when,when,ps:3d3f,sign,18,40,when,0.4609,0.1249,when|hurt|friend,True,False,False,confidence 0.46 < 0.85
+ps:popsign_v2_1/test/why/66d7-why-2023_01_25_20_25_03.619-0.mp4,why,why,ps:66d7,sign,15,57,why,0.2982,0.0073,why|sick|hello,True,False,False,confidence 0.30 < 0.85
+ps:popsign_v2_1/test/why/a1ba-why-2023_01_10_23_54_20.037-0.mp4,why,why,ps:a1ba,sign,68,145,why,0.9431,0.931,why|what|where,True,True,False,
+ps:popsign_v2_1/test/why/af6d-why-2023_01_25_16_47_41.756-0.mp4,why,why,ps:af6d,sign,16,45,why,0.7346,0.6514,why|what|stop,True,False,False,confidence 0.73 < 0.85
+ps:popsign_v2_1/test/why/66d7-why-2023_01_26_09_25_07.011-0.mp4,why,why,ps:66d7,sign,13,30,sick,0.9283,0.9089,sick|why|bread,False,True,False,
+ps:popsign_v2_1/test/why/66d7-why-2023_01_25_18_22_01.050-0.mp4,why,why,ps:66d7,sign,14,44,why,0.6103,0.4727,why|sick|hello,True,False,False,confidence 0.61 < 0.85
+ps:popsign_v2_1/test/why/a1ba-why-2023_01_09_19_49_50.381-0.mp4,why,why,ps:a1ba,sign,63,157,why,0.961,0.9564,why|what|where,True,True,False,
+ps:popsign_v2_1/test/why/111c-why-2023_01_26_21_20_51.287-0.mp4,why,why,ps:111c,sign,21,44,why,0.9482,0.9408,why|what|wait,True,True,False,
+ps:popsign_v2_1/test/why/af6d-why-2023_01_23_19_06_29.535-0.mp4,why,why,ps:af6d,sign,26,48,why,0.9449,0.9372,why|sick|what,True,True,False,
+ps:popsign_v2_1/test/why/af36-why-2022_12_16_12_07_43.524-0.mp4,why,why,ps:af36,sign,0,212,why,0.7306,0.704,why|now|sick,True,False,False,confidence 0.73 < 0.85
+ps:popsign_v2_1/test/why/66d7-why-2023_01_25_18_31_32.151-0.mp4,why,why,ps:66d7,sign,15,55,why,0.8793,0.8457,why|sick|go,True,True,False,
+ps:popsign_v2_1/test/why/a1ba-why-2023_01_10_23_34_42.474-0.mp4,why,why,ps:a1ba,sign,32,92,why,0.9508,0.9454,why|stop|hello,True,True,False,
+ps:popsign_v2_1/test/why/af6d-why-2023_01_25_14_14_19.312-0.mp4,why,why,ps:af6d,sign,24,50,why,0.6309,0.4658,why|what|stop,True,False,False,confidence 0.63 < 0.85
+ps:popsign_v2_1/test/why/af6d-why-2023_01_25_19_14_08.321-0.mp4,why,why,ps:af6d,sign,0,55,stop,0.2304,0.0279,stop|eat|what,False,False,False,confidence 0.23 < 0.85
+ps:popsign_v2_1/test/why/66d7-why-2023_01_26_10_57_46.658-0.mp4,why,why,ps:66d7,sign,12,34,why,0.5426,0.2847,why|hello|sick,True,False,False,confidence 0.54 < 0.85
+ps:popsign_v2_1/test/why/a1ba-why-2023_01_12_14_37_42.569-0.mp4,why,why,ps:a1ba,sign,22,40,why,0.9656,0.9626,why|what|now,True,True,False,
+ps:popsign_v2_1/test/why/af6d-why-2023_01_25_19_51_06.269-0.mp4,why,why,ps:af6d,sign,13,57,why,0.4085,0.2633,why|what|stop,True,False,False,confidence 0.41 < 0.85
+ps:popsign_v2_1/test/why/a1ba-why-2023_01_12_13_19_32.971-0.mp4,why,why,ps:a1ba,sign,73,145,why,0.9695,0.9663,why|what|wait,True,True,False,
+ps:popsign_v2_1/test/why/af6d-why-2023_01_25_18_18_17.890-0.mp4,why,why,ps:af6d,sign,15,55,what,0.3401,0.0864,what|stop|eat,False,False,False,confidence 0.34 < 0.85
+ps:popsign_v2_1/test/why/66d7-why-2023_01_26_10_41_26.815-0.mp4,why,why,ps:66d7,sign,13,28,why,0.8167,0.7848,why|sick|come,True,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/why/a1ba-why-2023_01_12_14_34_44.204-0.mp4,why,why,ps:a1ba,sign,0,36,why,0.8755,0.835,why|what|stop,True,True,False,
+ps:popsign_v2_1/test/how/3d3f-how-2024_02_20_13_03_22.532-1.mp4,how,how,ps:3d3f,sign,20,47,how,0.2842,0.0609,how|good|stop,True,False,False,confidence 0.28 < 0.85
+ps:popsign_v2_1/test/how/16f0-how-2023_10_02_20_46_04.605-1.mp4,how,how,ps:16f0,sign,19,47,how,0.9245,0.9036,how|help|tomorrow,True,True,False,
+ps:popsign_v2_1/test/how/66d7-how-2023_09_03_17_53_11.426-0.mp4,how,how,ps:66d7,sign,11,52,how,0.8795,0.8446,how|help|sorry,True,True,False,
+ps:popsign_v2_1/test/how/933d-how-2024_03_13_15_21_15.421-1.mp4,how,how,ps:933d,sign,46,78,how,0.4682,0.0668,how|help|my,True,False,False,confidence 0.47 < 0.85
+ps:popsign_v2_1/test/how/66e7-how-2024_02_20_15_59_16.145-2.mp4,how,how,ps:66e7,sign,0,131,how,0.2591,0.0778,how|work|love,True,False,False,confidence 0.26 < 0.85
+ps:popsign_v2_1/test/how/a1ba-how-2023_08_30_23_12_01.040-0.mp4,how,how,ps:a1ba,sign,0,58,how,0.6994,0.536,how|help|love,True,False,False,confidence 0.70 < 0.85
+ps:popsign_v2_1/test/how/3d3f-how-2024_02_26_15_48_45.412-1.mp4,how,how,ps:3d3f,sign,0,66,doctor,0.7977,0.6922,doctor|how|more,False,False,False,confidence 0.80 < 0.85
+ps:popsign_v2_1/test/how/16f0-how-2023_10_09_10_09_34.889-1.mp4,how,how,ps:16f0,sign,14,46,help,0.6058,0.3193,help|how|my,False,False,False,confidence 0.61 < 0.85
+ps:popsign_v2_1/test/how/66d7-how-2023_09_04_11_39_49.251-0.mp4,how,how,ps:66d7,sign,6,58,help,0.4796,0.1421,help|how|today,False,False,False,confidence 0.48 < 0.85
+ps:popsign_v2_1/test/how/933d-how-2024_03_13_18_04_42.219-1.mp4,how,how,ps:933d,sign,40,75,how,0.9163,0.893,how|help|tomorrow,True,True,False,
+ps:popsign_v2_1/test/how/66e7-how-2024_02_21_16_58_43.881-1.mp4,how,how,ps:66e7,sign,0,74,how,0.9109,0.8878,how|help|love,True,True,False,
+ps:popsign_v2_1/test/how/a1ba-how-2023_08_30_23_31_18.802-0.mp4,how,how,ps:a1ba,sign,21,42,how,0.8622,0.8352,how|help|tomorrow,True,True,False,
+ps:popsign_v2_1/test/how/3d3f-how-2024_02_27_09_01_17.105-1.mp4,how,how,ps:3d3f,sign,0,70,how,0.8342,0.7986,how|good|love,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/how/16f0-how-2023_10_09_13_37_07.900-1.mp4,how,how,ps:16f0,sign,17,41,how,0.6993,0.5013,how|help|my,True,False,False,confidence 0.70 < 0.85
+ps:popsign_v2_1/test/how/66d7-how-2023_09_04_15_10_46.204-0.mp4,how,how,ps:66d7,sign,1,51,how,0.8546,0.8352,how|today|good,True,True,False,
+ps:popsign_v2_1/test/how/933d-how-2024_03_15_13_17_18.935-1.mp4,how,how,ps:933d,sign,39,77,how,0.9596,0.9546,how|help|tomorrow,True,True,False,
+ps:popsign_v2_1/test/how/3d3f-how-2024_03_12_10_43_30.737-1.mp4,how,how,ps:3d3f,sign,0,63,how,0.7734,0.7266,how|help|love,True,False,False,confidence 0.77 < 0.85
+ps:popsign_v2_1/test/how/16f0-how-2023_10_10_20_02_21.305-1.mp4,how,how,ps:16f0,sign,2,62,help,0.8659,0.7843,help|how|love,False,True,False,
+ps:popsign_v2_1/test/how/66d7-how-2023_09_04_16_10_32.012-0.mp4,how,how,ps:66d7,sign,11,44,how,0.774,0.7234,how|good|happy,True,False,False,confidence 0.77 < 0.85
+ps:popsign_v2_1/test/how/933d-how-2024_03_18_17_45_16.984-1.mp4,how,how,ps:933d,sign,41,68,how,0.9584,0.9508,how|help|medicine,True,True,False,
+ps:popsign_v2_1/test/apple/af36-apple-2022_12_16_12_43_22.988-0.mp4,apple,apple,ps:af36,sign,24,93,apple,0.9473,0.9436,apple|understand|why,True,True,False,
+ps:popsign_v2_1/test/apple/66d7-apple-2023_01_25_19_27_32.296-0.mp4,apple,apple,ps:66d7,sign,15,44,apple,0.9568,0.9541,apple|understand|name,True,True,False,
+ps:popsign_v2_1/test/apple/a1ba-apple-2023_01_10_23_46_35.880-0.mp4,apple,apple,ps:a1ba,sign,20,40,apple,0.9548,0.9521,apple|me|name,True,True,False,
+ps:popsign_v2_1/test/apple/af6d-apple-2023_01_25_14_16_56.181-0.mp4,apple,apple,ps:af6d,sign,24,52,apple,0.7555,0.709,apple|eat|name,True,False,False,confidence 0.76 < 0.85
+ps:popsign_v2_1/test/apple/a1ba-apple-2023_01_09_19_45_14.994-0.mp4,apple,apple,ps:a1ba,sign,39,160,apple,0.958,0.9551,apple|understand|name,True,True,False,
+ps:popsign_v2_1/test/apple/af6d-apple-2023_01_25_13_59_38.338-0.mp4,apple,apple,ps:af6d,sign,14,37,apple,0.6246,0.5668,apple|eat|friend,True,False,False,confidence 0.62 < 0.85
+ps:popsign_v2_1/test/apple/616e-apple-2023_01_26_17_05_12.134-0.mp4,apple,apple,ps:616e,sign,21,58,apple,0.9597,0.9566,apple|why|understand,True,True,False,
+ps:popsign_v2_1/test/apple/111c-apple-2023_01_26_17_25_12.058-0.mp4,apple,apple,ps:111c,sign,20,43,apple,0.9492,0.9462,apple|understand|name,True,True,False,
+ps:popsign_v2_1/test/apple/616e-apple-2023_01_26_16_57_04.895-0.mp4,apple,apple,ps:616e,sign,20,56,apple,0.9651,0.9625,apple|why|understand,True,True,False,
+ps:popsign_v2_1/test/apple/111c-apple-2023_01_26_17_11_33.047-0.mp4,apple,apple,ps:111c,sign,13,88,apple,0.9465,0.9422,apple|chicken|understand,True,True,False,
+ps:popsign_v2_1/test/apple/af36-apple-2022_12_16_12_10_03.521-0.mp4,apple,apple,ps:af36,sign,0,233,apple,0.9354,0.9312,apple|yes|why,True,True,False,
+ps:popsign_v2_1/test/apple/66d7-apple-2023_01_25_18_21_03.850-0.mp4,apple,apple,ps:66d7,sign,31,66,apple,0.9604,0.9576,apple|understand|why,True,True,False,
+ps:popsign_v2_1/test/apple/a1ba-apple-2023_01_10_23_50_30.743-0.mp4,apple,apple,ps:a1ba,sign,14,46,apple,0.9623,0.9596,apple|understand|me,True,True,False,
+ps:popsign_v2_1/test/apple/af6d-apple-2023_01_25_17_02_46.404-0.mp4,apple,apple,ps:af6d,sign,19,49,apple,0.545,0.4924,apple|love|tomorrow,True,False,False,confidence 0.54 < 0.85
+ps:popsign_v2_1/test/apple/616e-apple-2023_01_26_18_40_30.710-0.mp4,apple,apple,ps:616e,sign,19,48,apple,0.9567,0.9529,apple|why|yes,True,True,False,
+ps:popsign_v2_1/test/apple/111c-apple-2023_01_26_20_43_40.147-0.mp4,apple,apple,ps:111c,sign,16,39,apple,0.8479,0.8345,apple|thirsty|eat,True,False,False,confidence 0.85 < 0.85
+ps:popsign_v2_1/test/apple/616e-apple-2023_01_26_18_25_45.896-0.mp4,apple,apple,ps:616e,sign,19,53,apple,0.9701,0.9681,apple|understand|why,True,True,False,
+ps:popsign_v2_1/test/apple/111c-apple-2023_01_26_18_05_52.692-0.mp4,apple,apple,ps:111c,sign,25,70,apple,0.9535,0.9485,apple|understand|need,True,True,False,
+ps:popsign_v2_1/test/apple/af36-apple-2023_01_03_09_26_05.035-0.mp4,apple,apple,ps:af36,sign,18,209,apple,0.9582,0.9553,apple|yes|understand,True,True,False,
+ps:popsign_v2_1/test/apple/66d7-apple-2023_01_25_20_31_38.244-0.mp4,apple,apple,ps:66d7,sign,16,40,apple,0.5437,0.4971,apple|drink|understand,True,False,False,confidence 0.54 < 0.85
+ps:popsign_v2_1/test/tomorrow/616e-tomorrow-2023_01_26_16_51_09.902-0.mp4,tomorrow,tomorrow,ps:616e,sign,21,48,tomorrow,0.8338,0.8153,tomorrow|how|chicken,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/tomorrow/66d7-tomorrow-2023_01_25_18_15_20.809-0.mp4,tomorrow,tomorrow,ps:66d7,sign,19,57,tomorrow,0.8843,0.8636,tomorrow|help|apple,True,True,False,
+ps:popsign_v2_1/test/tomorrow/111c-tomorrow-2023_01_26_17_45_13.236-0.mp4,tomorrow,tomorrow,ps:111c,sign,29,52,tomorrow,0.87,0.8557,tomorrow|come|you,True,True,False,
+ps:popsign_v2_1/test/tomorrow/af6d-tomorrow-2023_01_25_14_19_52.815-0.mp4,tomorrow,tomorrow,ps:af6d,sign,20,64,help,0.4618,0.2848,help|how|tomorrow,False,False,False,confidence 0.46 < 0.85
+ps:popsign_v2_1/test/tomorrow/111c-tomorrow-2023_01_26_16_56_39.218-0.mp4,tomorrow,tomorrow,ps:111c,sign,0,69,tomorrow,0.4422,0.2715,tomorrow|bathroom|work,True,False,False,confidence 0.44 < 0.85
+ps:popsign_v2_1/test/tomorrow/af6d-tomorrow-2023_01_23_19_07_56.174-0.mp4,tomorrow,tomorrow,ps:af6d,sign,23,47,help,0.426,0.1607,help|tomorrow|how,False,False,False,confidence 0.43 < 0.85
+ps:popsign_v2_1/test/tomorrow/a1ba-tomorrow-2023_01_09_19_43_33.319-0.mp4,tomorrow,tomorrow,ps:a1ba,sign,17,39,tomorrow,0.6483,0.4941,tomorrow|how|help,True,False,False,confidence 0.65 < 0.85
+ps:popsign_v2_1/test/tomorrow/af36-tomorrow-2022_12_16_12_10_46.797-0.mp4,tomorrow,tomorrow,ps:af36,sign,39,152,tomorrow,0.7874,0.7579,tomorrow|help|how,True,False,False,confidence 0.79 < 0.85
+ps:popsign_v2_1/test/tomorrow/a1ba-tomorrow-2023_01_10_23_38_57.294-0.mp4,tomorrow,tomorrow,ps:a1ba,sign,20,44,tomorrow,0.9437,0.9368,tomorrow|how|name,True,True,False,
+ps:popsign_v2_1/test/tomorrow/af36-tomorrow-2022_12_21_10_53_21.634-0.mp4,tomorrow,tomorrow,ps:af36,sign,0,100,tomorrow,0.8194,0.7611,tomorrow|how|name,True,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/tomorrow/616e-tomorrow-2023_01_26_17_07_12.787-0.mp4,tomorrow,tomorrow,ps:616e,sign,21,50,tomorrow,0.9323,0.9185,tomorrow|how|name,True,True,False,
+ps:popsign_v2_1/test/tomorrow/66d7-tomorrow-2023_01_25_19_25_59.581-0.mp4,tomorrow,tomorrow,ps:66d7,sign,16,35,tomorrow,0.8602,0.8347,tomorrow|how|come,True,True,False,
+ps:popsign_v2_1/test/tomorrow/111c-tomorrow-2023_01_26_20_11_04.081-0.mp4,tomorrow,tomorrow,ps:111c,sign,24,45,tomorrow,0.8294,0.8131,tomorrow|how|come,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/tomorrow/af6d-tomorrow-2023_01_25_16_57_45.576-0.mp4,tomorrow,tomorrow,ps:af6d,sign,12,56,help,0.8309,0.7998,help|tomorrow|how,False,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/tomorrow/a1ba-tomorrow-2023_01_10_23_54_45.949-0.mp4,tomorrow,tomorrow,ps:a1ba,sign,7,40,tomorrow,0.9385,0.9319,tomorrow|how|name,True,True,False,
+ps:popsign_v2_1/test/tomorrow/af36-tomorrow-2022_12_21_10_56_02.733-0.mp4,tomorrow,tomorrow,ps:af36,sign,40,128,tomorrow,0.8124,0.7956,tomorrow|help|love,True,False,False,confidence 0.81 < 0.85
+ps:popsign_v2_1/test/tomorrow/616e-tomorrow-2023_01_26_18_19_49.926-0.mp4,tomorrow,tomorrow,ps:616e,sign,19,47,tomorrow,0.9522,0.9459,tomorrow|how|name,True,True,False,
+ps:popsign_v2_1/test/tomorrow/66d7-tomorrow-2023_01_25_20_42_38.295-0.mp4,tomorrow,tomorrow,ps:66d7,sign,15,32,tomorrow,0.9512,0.9477,tomorrow|name|my,True,True,False,
+ps:popsign_v2_1/test/tomorrow/111c-tomorrow-2023_01_26_20_22_36.360-0.mp4,tomorrow,tomorrow,ps:111c,sign,41,71,tomorrow,0.8197,0.8022,tomorrow|come|you,True,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/tomorrow/af6d-tomorrow-2023_01_25_18_18_17.890-0.mp4,tomorrow,tomorrow,ps:af6d,sign,16,40,help,0.6894,0.6083,help|tomorrow|stop,False,False,False,confidence 0.69 < 0.85
+ps:popsign_v2_1/test/sick/616e-sick-2023_01_26_16_59_00.079-0.mp4,sick,sick,ps:616e,sign,21,57,sick,0.6767,0.5233,sick|why|now,True,False,False,confidence 0.68 < 0.85
+ps:popsign_v2_1/test/sick/a1ba-sick-2023_01_10_23_47_04.926-0.mp4,sick,sick,ps:a1ba,sign,23,45,sick,0.9664,0.962,sick|why|bread,True,True,False,
+ps:popsign_v2_1/test/sick/66d7-sick-2023_01_25_19_21_13.838-0.mp4,sick,sick,ps:66d7,sign,19,41,why,0.4943,0.1412,why|sick|now,False,False,False,confidence 0.49 < 0.85
+ps:popsign_v2_1/test/sick/111c-sick-2023_01_26_17_58_54.367-0.mp4,sick,sick,ps:111c,sign,40,74,sick,0.9519,0.9421,sick|why|stop,True,True,False,
+ps:popsign_v2_1/test/sick/af36-sick-2022_12_16_12_18_41.238-0.mp4,sick,sick,ps:af36,sign,67,93,sick,0.9684,0.9654,sick|why|bread,True,True,False,
+ps:popsign_v2_1/test/sick/af6d-sick-2023_01_23_19_11_05.610-0.mp4,sick,sick,ps:af6d,sign,28,48,sick,0.9433,0.9373,sick|now|bread,True,True,False,
+ps:popsign_v2_1/test/sick/616e-sick-2023_01_26_16_48_34.185-0.mp4,sick,sick,ps:616e,sign,25,73,sick,0.9672,0.9632,sick|why|bread,True,True,False,
+ps:popsign_v2_1/test/sick/a1ba-sick-2023_01_09_19_45_14.994-0.mp4,sick,sick,ps:a1ba,sign,83,174,why,0.8275,0.7816,why|sick|hello,False,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/sick/66d7-sick-2023_01_25_18_16_56.197-0.mp4,sick,sick,ps:66d7,sign,19,58,sick,0.8896,0.8601,sick|why|bread,True,True,False,
+ps:popsign_v2_1/test/sick/111c-sick-2023_01_26_16_59_56.223-0.mp4,sick,sick,ps:111c,sign,0,72,sick,0.873,0.8332,sick|why|now,True,True,False,
+ps:popsign_v2_1/test/sick/af36-sick-2023_01_03_09_44_22.907-0.mp4,sick,sick,ps:af36,sign,46,167,sick,0.3097,0.1874,sick|sleep|stop,True,False,False,confidence 0.31 < 0.85
+ps:popsign_v2_1/test/sick/af6d-sick-2023_01_25_14_16_21.811-0.mp4,sick,sick,ps:af6d,sign,19,45,sick,0.9324,0.9273,sick|bread|now,True,True,False,
+ps:popsign_v2_1/test/sick/af36-sick-2023_01_05_10_47_49.473-0.mp4,sick,sick,ps:af36,sign,0,149,sick,0.5492,0.2391,sick|why|OTHER,True,False,False,confidence 0.55 < 0.85
+ps:popsign_v2_1/test/sick/af6d-sick-2023_01_25_17_00_14.257-0.mp4,sick,sick,ps:af6d,sign,11,48,sick,0.8249,0.8094,sick|stop|why,True,False,False,confidence 0.82 < 0.85
+ps:popsign_v2_1/test/sick/616e-sick-2023_01_26_18_23_25.060-0.mp4,sick,sick,ps:616e,sign,20,58,sick,0.8915,0.8495,sick|why|school,True,True,False,
+ps:popsign_v2_1/test/sick/a1ba-sick-2023_01_10_23_56_38.695-0.mp4,sick,sick,ps:a1ba,sign,19,54,why,0.5007,0.1297,why|sick|stop,False,False,False,confidence 0.50 < 0.85
+ps:popsign_v2_1/test/sick/66d7-sick-2023_01_25_20_26_02.085-0.mp4,sick,sick,ps:66d7,sign,18,48,sick,0.7175,0.6009,sick|why|finish,True,False,False,confidence 0.72 < 0.85
+ps:popsign_v2_1/test/sick/111c-sick-2023_01_26_18_04_23.190-0.mp4,sick,sick,ps:111c,sign,35,71,sick,0.9169,0.8896,sick|why|stop,True,True,False,
+ps:popsign_v2_1/test/sick/af36-sick-2023_01_06_15_26_48.134-0.mp4,sick,sick,ps:af36,sign,23,82,why,0.662,0.4662,why|sick|stop,False,False,False,confidence 0.66 < 0.85
+ps:popsign_v2_1/test/sick/af6d-sick-2023_01_25_18_19_15.219-0.mp4,sick,sick,ps:af6d,sign,16,38,stop,0.4471,0.3257,stop|eat|what,False,False,False,confidence 0.45 < 0.85
+ps:popsign_v2_1/test/hurt/16f0-hurt-2023_10_02_20_36_16.668-1.mp4,hurt,hurt,ps:16f0,sign,22,51,eat,0.435,0.1655,eat|today|friend,False,False,False,confidence 0.44 < 0.85
+ps:popsign_v2_1/test/hurt/3d3f-hurt-2024_03_11_16_08_34.878-1.mp4,hurt,hurt,ps:3d3f,sign,5,75,hurt,0.8532,0.8033,hurt|when|friend,True,True,False,
+ps:popsign_v2_1/test/hurt/66d7-hurt-2023_09_03_12_19_48.700-0.mp4,hurt,hurt,ps:66d7,sign,7,44,hurt,0.9762,0.972,hurt|when|today,True,True,False,
+ps:popsign_v2_1/test/hurt/66e7-hurt-2024_02_15_17_42_50.130-1.mp4,hurt,hurt,ps:66e7,sign,0,60,hurt,0.4894,0.39,hurt|friend|today,True,False,False,confidence 0.49 < 0.85
+ps:popsign_v2_1/test/hurt/66d7-hurt-2023_09_02_10_46_53.667-0.mp4,hurt,hurt,ps:66d7,sign,5,49,hurt,0.9363,0.9131,hurt|today|what,True,True,False,
+ps:popsign_v2_1/test/hurt/66e7-hurt-2024_02_14_15_37_33.503-1.mp4,hurt,hurt,ps:66e7,sign,0,92,how,0.5628,0.498,how|friend|love,False,False,False,confidence 0.56 < 0.85
+ps:popsign_v2_1/test/hurt/933d-hurt-2024_03_13_16_15_24.938-1.mp4,hurt,hurt,ps:933d,sign,27,32,hurt,0.5611,0.3342,hurt|friend|when,True,False,False,confidence 0.56 < 0.85
+ps:popsign_v2_1/test/hurt/a1ba-hurt-2023_08_30_23_57_08.704-0.mp4,hurt,hurt,ps:a1ba,sign,7,60,friend,0.5616,0.4314,friend|hurt|doctor,False,False,False,confidence 0.56 < 0.85
+ps:popsign_v2_1/test/hurt/933d-hurt-2024_03_11_15_43_02.619-1.mp4,hurt,hurt,ps:933d,sign,32,47,hurt,0.982,0.9797,hurt|friend|when,True,True,False,
+ps:popsign_v2_1/test/hurt/a1ba-hurt-2023_08_27_23_47_26.707-0.mp4,hurt,hurt,ps:a1ba,sign,41,58,hurt,0.83,0.8165,hurt|where|now,True,False,False,confidence 0.83 < 0.85
+ps:popsign_v2_1/test/hurt/16f0-hurt-2023_10_01_19_39_40.297-1.mp4,hurt,hurt,ps:16f0,sign,21,62,hurt,0.9406,0.9293,hurt|today|friend,True,True,False,
+ps:popsign_v2_1/test/hurt/3d3f-hurt-2024_02_20_13_02_30.422-1.mp4,hurt,hurt,ps:3d3f,sign,24,47,hurt,0.9763,0.9742,hurt|friend|name,True,True,False,
+ps:popsign_v2_1/test/hurt/933d-hurt-2024_03_14_13_35_26.635-1.mp4,hurt,hurt,ps:933d,sign,45,62,hurt,0.7736,0.6534,hurt|friend|when,True,False,False,confidence 0.77 < 0.85
+ps:popsign_v2_1/test/hurt/a1ba-hurt-2023_08_31_00_11_19.136-0.mp4,hurt,hurt,ps:a1ba,sign,35,50,hurt,0.9754,0.9734,hurt|when|today,True,True,False,
+ps:popsign_v2_1/test/hurt/16f0-hurt-2023_10_09_13_27_37.393-1.mp4,hurt,hurt,ps:16f0,sign,15,43,hurt,0.9466,0.9401,hurt|friend|today,True,True,False,
+ps:popsign_v2_1/test/hurt/3d3f-hurt-2024_03_11_16_10_40.085-1.mp4,hurt,hurt,ps:3d3f,sign,0,66,hurt,0.7969,0.6942,hurt|friend|when,True,False,False,confidence 0.80 < 0.85
+ps:popsign_v2_1/test/hurt/66d7-hurt-2023_09_03_19_32_48.569-0.mp4,hurt,hurt,ps:66d7,sign,24,69,hurt,0.8557,0.8339,hurt|friend|like,True,True,False,
+ps:popsign_v2_1/test/hurt/66e7-hurt-2024_02_17_18_33_43.184-1.mp4,hurt,hurt,ps:66e7,sign,0,68,hurt,0.7464,0.6827,hurt|bathroom|when,True,False,False,confidence 0.75 < 0.85
+ps:popsign_v2_1/test/hurt/933d-hurt-2024_03_18_19_22_54.227-1.mp4,hurt,hurt,ps:933d,sign,57,65,hurt,0.9443,0.928,hurt|when|friend,True,True,False,
+ps:popsign_v2_1/test/hurt/a1ba-hurt-2023_09_03_15_03_06.578-0.mp4,hurt,hurt,ps:a1ba,sign,0,67,hurt,0.9685,0.9618,hurt|friend|when,True,True,False,
+ps:popsign_v2_1/test/doctor/66e7-doctor-2024_02_14_18_36_51.021-1.mp4,doctor,doctor,ps:66e7,sign,19,48,doctor,0.4106,0.25,doctor|how|work,True,False,False,confidence 0.41 < 0.85
+ps:popsign_v2_1/test/doctor/16f0-doctor-2023_10_01_22_06_39.660-1.mp4,doctor,doctor,ps:16f0,sign,22,66,doctor,0.7259,0.5858,doctor|how|medicine,True,False,False,confidence 0.73 < 0.85
+ps:popsign_v2_1/test/doctor/3d3f-doctor-2024_02_20_13_08_45.224-1.mp4,doctor,doctor,ps:3d3f,sign,22,26,doctor,0.947,0.9407,doctor|please|how,True,True,False,
+ps:popsign_v2_1/test/doctor/a1ba-doctor-2023_08_27_23_47_01.062-0.mp4,doctor,doctor,ps:a1ba,sign,0,57,doctor,0.7691,0.662,doctor|how|bathroom,True,False,False,confidence 0.77 < 0.85
+ps:popsign_v2_1/test/doctor/66d7-doctor-2023_09_03_10_27_08.255-0.mp4,doctor,doctor,ps:66d7,sign,16,88,doctor,0.9509,0.9463,doctor|please|how,True,True,False,
+ps:popsign_v2_1/test/doctor/933d-doctor-2024_03_13_15_00_06.528-1.mp4,doctor,doctor,ps:933d,sign,42,48,doctor,0.9267,0.9193,doctor|how|please,True,True,False,
+ps:popsign_v2_1/test/doctor/66e7-doctor-2024_02_14_18_46_23.186-1.mp4,doctor,doctor,ps:66e7,sign,16,40,work,0.3878,0.2145,work|bathroom|doctor,False,False,False,confidence 0.39 < 0.85
+ps:popsign_v2_1/test/doctor/16f0-doctor-2023_10_02_20_45_19.930-1.mp4,doctor,doctor,ps:16f0,sign,18,52,doctor,0.9191,0.897,doctor|how|please,True,True,False,
+ps:popsign_v2_1/test/doctor/66e7-doctor-2024_02_17_18_30_16.235-1.mp4,doctor,doctor,ps:66e7,sign,0,62,bathroom,0.4019,0.2446,bathroom|love|doctor,False,False,False,confidence 0.40 < 0.85
+ps:popsign_v2_1/test/doctor/16f0-doctor-2023_10_09_10_14_06.199-1.mp4,doctor,doctor,ps:16f0,sign,33,98,doctor,0.9147,0.8952,doctor|how|please,True,True,False,
+ps:popsign_v2_1/test/doctor/3d3f-doctor-2024_02_27_09_03_23.185-1.mp4,doctor,doctor,ps:3d3f,sign,0,63,doctor,0.9363,0.921,doctor|more|please,True,True,False,
+ps:popsign_v2_1/test/doctor/a1ba-doctor-2023_08_30_23_27_02.736-0.mp4,doctor,doctor,ps:a1ba,sign,0,71,doctor,0.8136,0.7904,doctor|more|love,True,False,False,confidence 0.81 < 0.85
+ps:popsign_v2_1/test/doctor/3d3f-doctor-2024_02_26_15_48_33.727-1.mp4,doctor,doctor,ps:3d3f,sign,0,70,doctor,0.8966,0.8764,doctor|more|friend,True,True,False,
+ps:popsign_v2_1/test/doctor/a1ba-doctor-2023_08_30_23_11_34.556-0.mp4,doctor,doctor,ps:a1ba,sign,0,114,doctor,0.7838,0.6756,doctor|how|friend,True,False,False,confidence 0.78 < 0.85
+ps:popsign_v2_1/test/doctor/66d7-doctor-2023_09_03_12_16_38.728-0.mp4,doctor,doctor,ps:66d7,sign,13,59,doctor,0.9635,0.9579,doctor|please|more,True,True,False,
+ps:popsign_v2_1/test/doctor/933d-doctor-2024_03_13_15_43_25.583-1.mp4,doctor,doctor,ps:933d,sign,34,57,doctor,0.9359,0.9296,doctor|how|please,True,True,False,
+ps:popsign_v2_1/test/doctor/66d7-doctor-2023_09_03_19_35_32.894-0.mp4,doctor,doctor,ps:66d7,sign,16,40,doctor,0.9586,0.953,doctor|please|more,True,True,False,
+ps:popsign_v2_1/test/doctor/933d-doctor-2024_03_13_18_07_16.582-1.mp4,doctor,doctor,ps:933d,sign,31,50,doctor,0.9437,0.9375,doctor|please|how,True,True,False,
+ps:popsign_v2_1/test/doctor/66e7-doctor-2024_02_18_13_40_29.274-1.mp4,doctor,doctor,ps:66e7,sign,139,152,doctor,0.4945,0.343,doctor|bathroom|how,True,False,False,confidence 0.49 < 0.85
+ps:popsign_v2_1/test/doctor/16f0-doctor-2023_10_10_20_00_24.219-1.mp4,doctor,doctor,ps:16f0,sign,13,54,doctor,0.9009,0.8718,doctor|how|please,True,True,False,

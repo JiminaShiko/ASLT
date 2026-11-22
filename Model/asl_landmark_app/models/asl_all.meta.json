@@ -104,37 +104,40 @@
     "dropout": 0.25,
     "n_classes": 24
   },
-  "trained_at": "2026-11-15 13:43:46",
-  "cross_dataset_pooled_accuracy": 0.6697831790060396,
-  "cross_dataset_macro_accuracy": 0.759021841706001,
-  "cross_dataset_pooled_accuracy_round1_subset": 0.6916,
+  "trained_at": "2026-11-21 11:18:27",
+  "cross_dataset_pooled_accuracy": 0.6869800983451385,
+  "cross_dataset_macro_accuracy": 0.7902196199266301,
+  "cross_dataset_pooled_accuracy_round1_subset": 0.7086,
   "cross_dataset_headline": "pooled",
   "cross_dataset_small_holdouts": [
     "danrasband"
   ],
   "cross_dataset_per_holdout": {
-    "danrasband": 0.9438,
-    "grassknoted": 0.7948,
-    "massey": 0.5384
+    "danrasband": 0.934,
+    "grassknoted": 0.7989,
+    "massey": 0.5625,
+    "rushil": 0.8655
   },
   "optimistic_blocksplit_accuracy": {
     "danrasband": 0.8261,
     "grassknoted": 0.9596,
-    "massey": 0.9632
+    "massey": 0.9632,
+    "rushil": 0.9744
   },
   "held_out_group_accuracy": {
     "massey": 0.8567
   },
-  "final_model_optimistic_val_accuracy": 0.9635,
+  "final_model_optimistic_val_accuracy": 0.9684,
   "sample_counts_per_dataset": {
     "danrasband": 712,
     "grassknoted": 61562,
-    "massey": 60085
+    "massey": 60085,
+    "rushil": 2304
   },
   "landmark_cache_version": 2,
-  "n_training_rows": 122359,
+  "n_training_rows": 124663,
   "style_weight": 1.0,
   "divergent_cells": [],
   "seed": 0,
-  "reproduce_command": "python src/train.py --profile all --dump-preds reports/oof_all.csv"
+  "reproduce_command": "python src/train.py --epochs 80 --fold-epochs 30 --profile all"
 }

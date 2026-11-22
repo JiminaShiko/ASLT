@@ -143,13 +143,17 @@ def validate_training_samples(train_samples: pd.DataFrame | None,
     if smoke:
         return
     words = [w.word for w in spec.active]
+    # A word with no ASL Citizen gloss can never appear in the Citizen val
+    # split: its held-out clips are the PopSign ps_val group instead.
+    ps_only = {w.word for w in spec.active if not w.glosses}
     problems = []
     for split, samples in (("train", train_samples), ("val", val_samples)):
-        required = words + [label for label, cfg in
-                            ((config.REST_LABEL, spec.rest),
-                             (config.OTHER_LABEL, spec.other))
-                            if label in spec.labels
-                            and int(cfg.get(f"cap_{split}", 0)) > 0]
+        need = words if split != "val" else [w for w in words if w not in ps_only]
+        required = need + [label for label, cfg in
+                           ((config.REST_LABEL, spec.rest),
+                            (config.OTHER_LABEL, spec.other))
+                           if label in spec.labels
+                           and int(cfg.get(f"cap_{split}", 0)) > 0]
         if samples is None or samples.empty:
             problems.append(f"{split}: no samples (missing {', '.join(required)})")
             continue
@@ -170,6 +174,15 @@ def validate_training_samples(train_samples: pd.DataFrame | None,
         missing = [w for w in required if w not in present]
         if missing:
             problems.append(f"{split}: missing samples for {', '.join(missing)}")
+    if ps_only:
+        man = dataset.extract.read_manifest()
+        held = man[man["split"].astype(str).isin(("ps_val", "ps_test"))]
+        held = held[held["status"].astype(str) == "ok"]
+        have = set(held["word"].astype(str))
+        absent = sorted(ps_only - have)
+        if absent:
+            problems.append("val: no cached PopSign held-out clips for "
+                            f"{', '.join(absent)}")
     if problems:
         raise ValueError("Training blocked: " + "; ".join(problems)
                          + ". Extract the active vocabulary's train,val cache first; "
@@ -1000,6 +1013,52 @@ def write_split_report(bt: Batcher, net, labels: list[str], name: str,
 # ---------------------------------------------------------------------------
 # the run
 # ---------------------------------------------------------------------------
+# Set by the --allow-vocab-change flag. Read by the release guard below on every
+# code path (single run, --seeds sweep, --fair), because all three can write
+# models/words_core20.pt.
+ALLOW_VOCAB_CHANGE = False
+
+
+def _release_label_guard(labels, log, release) -> None:
+    """Refuse to overwrite the shipped weights with a different label set.
+
+    `vocab.json` enables batches 1-4, i.e. 95 words + REST + OTHER = 97
+    outputs, while the shipped checkpoint (`models/words_core20.pt`) knows the
+    20 core words + REST + OTHER = 22. Before this guard `python -m src.train`
+    with the default vocabulary silently replaced the release model with a
+    97-class one that had never been evaluated or promoted - the only thing
+    that noticed was tests/test_logic.py, which could merely SKIP its
+    feature-path check ("expanded vocabulary is not trained yet").
+
+    A candidate run is exempt automatically: config.use_candidate() points
+    FOR_RELEASE at candidates/<name>/models/, so `release` is not the shipped
+    path. Overwriting the release on purpose needs --allow-vocab-change.
+    """
+    if ALLOW_VOCAB_CHANGE or Path(release) != Path(config.FOR_RELEASE):
+        return
+    if not config.META_JSON.is_file():
+        return
+    try:
+        shipped = list(json.loads(
+            config.META_JSON.read_text(encoding="utf-8")).get("labels") or [])
+    except (OSError, json.JSONDecodeError):
+        return
+    if not shipped or sorted(shipped) == sorted(labels):
+        return
+    added = [x for x in labels if x not in shipped]
+    removed = [x for x in shipped if x not in labels]
+    raise SystemExit(
+        f"refusing to overwrite {config.FOR_RELEASE.name}: it was trained on "
+        f"{len(shipped)} labels, this run would write {len(labels)}.\n"
+        f"  added  : {added[:12]}{' ...' if len(added) > 12 else ''}\n"
+        f"  removed: {removed[:12]}{' ...' if len(removed) > 12 else ''}\n"
+        "Train it as a candidate instead and keep the shipped model:\n"
+        "  python -m src.train --candidate vocab-word\n"
+        "  python check_results.py --candidate vocab-word   # compare, then decide\n"
+        "Only pass --allow-vocab-change when you mean to replace the release "
+        "weights with this vocabulary.")
+
+
 def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
           blocks=None, log=None, eval_splits=("val", "test", "ps_test"),
           release: Path | None = None, ckpt: Path | None = None,
@@ -1032,6 +1091,7 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
     labels = spec.labels
     if len(set(labels)) != len(labels):
         raise RuntimeError("duplicate label in vocab.json")
+    _release_label_guard(labels, log, release)
     log.info("labels: %d (%s)", len(labels), ", ".join(labels))
     log.info("feature version %d -> %d dims%s", fver,
              features.feature_dim(fver),
@@ -1400,8 +1460,16 @@ def main(argv=None) -> int:
                          "loser loadable as models/words_v<ver>.pt")
     ap.add_argument("--compare", action="store_true",
                     help="print the baseline-vs-new table and exit")
+    ap.add_argument("--allow-vocab-change", action="store_true",
+                    help="permit writing models/words_core20.pt when the label "
+                         "set differs from the shipped checkpoint's")
     ap.add_argument("--log", default=None)
     args = ap.parse_args(argv)
+    # One switch, read by every code path that can write the release weights.
+    # `global` is not needed here because the guard lives in this module and the
+    # flag is set before any training starts.
+    global ALLOW_VOCAB_CHANGE
+    ALLOW_VOCAB_CHANGE = bool(args.allow_vocab_change)
     # Reject unsupported combinations before even opening a log file.
     if args.fair and args.promote == "none":
         ap.error("--fair does not support --promote none; use separate --seeds sweeps")

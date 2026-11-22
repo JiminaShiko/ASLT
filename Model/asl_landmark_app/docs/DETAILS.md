@@ -24,17 +24,21 @@ streamlit run app.py     # browser UI: live webcam, photo upload, results
 
 ---
 
-## Measured results (this machine, 2026-11-15, profile `all`, full run on 122,359 hands)
+## Measured results (profile `all`)
 
-Every number below is the shipped seed-0 model, retrained on 2026-11-15 to
-regenerate the out-of-fold dump (`reports/oof_all.csv`); it reproduced the
-round-3 headline exactly, so the table is unchanged apart from this note. What
-round 5 added is on the *decision* layer, not the model — see *What round 5
-changed*.
+**Current shipped model (2026-11-21, `rushil` added): 68.7 % [68.4–69.0 %]
+pooled over 124,663 held-out images, macro 79.0 %, same-yardstick-as-round-1
+70.9 % (`reports/report_all.md`). The tables on this page are the 2026-11-15
+three-dataset run and are kept as that run's record.**
+
+The 2026-11-15 seed-0 model was retrained to regenerate the out-of-fold dump
+(`reports/oof_all.csv`); it reproduced the round-3 headline exactly, so the table
+is unchanged apart from this note. What round 5 added is on the *decision* layer,
+not the model — see *What round 5 changed*.
 
 | what | number | meaning |
 |---|---|---|
-| **cross-dataset, leave-one-dataset-out, POOLED** | **67.0 %** [66.7–67.2 %] — danrasband 94.4 % (712 imgs, small-n), grassknoted 79.5 %, massey 53.8 % | the honest headline for the shipped profile `all`: every test image was predicted by a model that never saw its dataset |
+| **cross-dataset, leave-one-dataset-out, POOLED** (2026-11-15, 3 datasets) | **67.0 %** [66.7–67.2 %] — danrasband 94.4 % (712 imgs, small-n), grassknoted 79.5 %, massey 53.8 % | the honest headline for profile `all` on that run: every test image was predicted by a model that never saw its dataset. The shipped 2026-11-21 model is 68.7 % with rushil added |
 | the other profile, `standard` | 66.0 % pooled; grassknoted M 3.3 → 1.7 %, N 0.2 → 0.0 %, T 31.9 → 17.0 % | removing the minority-style cells rescued nothing where it was meant to, so `all` ships — see `python src/profile_compare.py` and REPORT.md |
 | same yardstick as round 1 | 69.2 % on the 101,932 images round 1's detector could find at all | the only cell comparable with round 1's 67.6 %, and inside the run-to-run band: no measurable change |
 | **held-out capture group** (massey A+B → C+D+E) | **85.7 %** over 35,893 images | unseen hands, matched imaging style — the closest *dataset-side* proxy for your webcam. It is still not a webcam measurement |

@@ -1,4 +1,16 @@
 pair,swapped,a_as_b,b_as_a,n_a,n_b,swap_rate
-good / thanks,11,1,10,40,40,0.1375
-good / happy,7,0,7,40,40,0.0875
-thanks / happy,1,0,1,40,40,0.0125
+good / thanks,8,0,8,20,20,0.2
+when / hurt,8,8,0,20,20,0.2
+now / today,7,7,0,20,20,0.175
+friend / hurt,5,4,1,20,20,0.125
+why / sick,5,1,4,20,20,0.125
+good / happy,4,0,4,20,20,0.1
+help / how,4,1,3,20,20,0.1
+help / tomorrow,4,0,4,20,20,0.1
+eat / bad,3,0,3,20,20,0.075
+eat / go,3,0,3,20,20,0.075
+friend / when,3,0,3,20,20,0.075
+yes / work,3,3,0,20,20,0.075
+no / where,3,3,0,20,20,0.075
+happy / how,3,3,0,20,20,0.075
+what / now,3,0,3,20,20,0.075

@@ -1,7 +1,16 @@
 pair,swapped,a_as_b,b_as_a,n_a,n_b,swap_rate
-happy / please,3,3,0,4,4,0.375
-thanks / bad,2,2,0,3,4,0.2857
-good / thanks,1,0,1,4,3,0.1429
+want / wait,4,0,4,7,4,0.3636
+happy / my,3,3,0,4,4,0.375
+good / thanks,2,0,2,4,3,0.2857
+now / today,2,1,1,3,4,0.2857
+please / my,2,2,0,4,4,0.25
+what / want,2,0,2,7,7,0.1429
 hello / bye,1,1,0,4,3,0.1429
-love / sorry,1,1,0,5,3,0.125
-help / love,1,0,1,5,5,0.1
+sorry / hungry,1,0,1,3,4,0.1429
+sorry / doctor,1,0,1,3,4,0.1429
+no / where,1,1,0,3,4,0.1429
+my / like,1,0,1,4,3,0.1429
+need / when,1,0,1,3,4,0.1429
+like / hungry,1,1,0,3,4,0.1429
+how / doctor,1,0,1,3,4,0.1429
+good / bad,1,1,0,4,4,0.125

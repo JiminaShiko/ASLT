@@ -152,8 +152,17 @@ def local_table(df: pd.DataFrame, backend, labels, per: int, seed: int) -> pd.Da
     return pd.DataFrame(rows)
 
 
-def msl_table(backend, labels, per_clips: int, seed: int) -> pd.DataFrame:
-    shards = sorted(config.CACHE_DIR.glob("msl_landmarks/*.npz"))
+def msl_table(backend, labels, per_clips: int, seed: int,
+              clips_dir: Path | None = None) -> pd.DataFrame:
+    """Per-letter fire rates on real clips.
+
+    `clips_dir` defaults to the MSL shards the project shipped with; point it at
+    `cache/jz_landmarks` (built by `src/extract_jz_landmarks.py`) to measure a
+    corpus you downloaded yourself. The shard schema is identical, so the same
+    live rule is replayed either way and no second code path exists.
+    """
+    base = Path(clips_dir) if clips_dir else config.CACHE_DIR / "msl_landmarks"
+    shards = sorted(base.glob("*.npz"))
     if not shards:
         return pd.DataFrame()
     rng = np.random.default_rng(seed)
@@ -229,8 +238,13 @@ def main() -> int:
     ap.add_argument("--profile", default=None, choices=sorted(config.PROFILES))
     ap.add_argument("--backend", default="torch", choices=["torch", "onnx"])
     ap.add_argument("--msl-clips", type=int, default=8,
-                    help="MSL clips per letter (0 = skip that table)")
+                    help="clips per letter (0 = skip that table)")
     ap.add_argument("--no-msl", action="store_true")
+    ap.add_argument("--clips-dir", default=None,
+                    help="trajectory shards to measure instead of the shipped "
+                         "cache/msl_landmarks, e.g. cache/jz_landmarks after "
+                         "python src/download_jz_data.py && "
+                         "python src/extract_jz_landmarks.py")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=str(config.REPORTS_DIR / "jz_trigger.md"))
     args = ap.parse_args()
@@ -248,7 +262,10 @@ def main() -> int:
     df = df[df.groupby("letter")["letter"].transform("size") >= 50]
     loc = local_table(df, backend, labels, args.per, args.seed)
     msl = pd.DataFrame() if args.no_msl or args.msl_clips == 0 else \
-        msl_table(backend, labels, args.msl_clips, args.seed)
+        msl_table(backend, labels, args.msl_clips, args.seed,
+                  Path(args.clips_dir).resolve() if args.clips_dir else None)
+    clips_name = (Path(args.clips_dir).name if args.clips_dir
+                  else "msl_landmarks")
     # computed once, here, so no sentence below can assert what the table says
     oth_msl = msl[~msl["letter"].isin(["J", "Z"])] if len(msl) else None
     false_msl_old = int((oth_msl["j_old"] + oth_msl["z_old"]).sum()) if oth_msl is not None else 0
@@ -409,11 +426,10 @@ def main() -> int:
            "display gate as 47.3 % where the frames themselves said 23.6 %. Any "
            "percentage quoted from before that fix is a mean of means and is not "
            "comparable with the tables above.\n",
-           "## Per letter, real movement (MSL dynamic clips)\n"]
+           f"## Per letter, real movement ({clips_name})\n"]
     if len(msl):
-        md += ["Mexican Sign Language clips, another language, but the only data "
-               "here with genuine continuous strokes. Frame interval is each "
-               "clip's own fps.\n",
+        md += [f"Shards from `{clips_name}` - the only data here with genuine "
+               "continuous strokes. Frame interval is each clip's own fps.\n",
                "| letter | clips | frames | shape gate opens | display gate "
                "opens | refused by the OLD flat ceiling | J fires old -> new | "
                "Z fires old -> new |",
@@ -424,13 +440,20 @@ def main() -> int:
                       f"{r['ceil_pct']:.1f}% | "
                       f"{int(r['j_old'])} -> {int(r['j_new'])} | "
                       f"{int(r['z_old'])} -> {int(r['z_new'])} |")
-        md.append("\nAn MSL fire rate is **not** an ASL fire rate: the hands, the "
-                  "camera and the letters all differ. It is here to answer one "
-                  "narrower question - can the display precondition see movement "
-                  "the shape gate could not - and nothing more. The trained "
-                  "motion head measured on this corpus is in "
-                  "`reports/msl_motion.md`; it is *not* shipped, because it "
-                  "transferred to local ASL at 0.8 % recall for J.\n")
+        if clips_name == "msl_landmarks":
+            md.append("\nAn MSL fire rate is **not** an ASL fire rate: the hands, "
+                      "the camera and the letters all differ. It is here to "
+                      "answer one narrower question - can the display "
+                      "precondition see movement the shape gate could not - and "
+                      "nothing more. The trained motion head measured on this "
+                      "corpus is in `reports/msl_motion.md`; it is *not* "
+                      "shipped, because it transferred to local ASL at 0.8 % "
+                      "recall for J.\n")
+        else:
+            md.append(f"\nA fire rate on `{clips_name}` is **not** a webcam "
+                      "rate: these are recorded clips, and the rule's real "
+                      "protection is the stroke, not the corpus. Confirm on "
+                      "your own hand with `python src/live.py --calibrate-jz`.\n")
     else:
         md.append("Skipped (`--no-msl` / no MSL landmark cache).\n")
     md += ["## What changed in the code, and what did not\n",

@@ -4,136 +4,164 @@ Backend: `onnx` (`asl_all.onnx`), 71 features from `xy+tip_dists+curl+thumb`. Fr
 
 **This is a wiring test, not an accuracy test.** The model deployed by `live.py` and `app.py` is the final one, trained on every dataset in the cache, so every frame below is one it has already seen. A high score here proves the live path is connected correctly - colour order, video-mode timestamps, the shared `normalize.features()`, the gate, the smoother, the exported weights. It says nothing about transfer accuracy, which is the leave-one-dataset-out number in the profile's report. A *low* score here would be a bug, and that is the whole point.
 
-Answered correctly per block: **70/72** (97.2%); 19/72 blocks committed inside the clip.
+Answered correctly per block: **92/95** (96.8%); 51/95 blocks committed inside the clip.
 
 | measure | video tracking only | + retry (what ships) |
 |---|---|---|
-| loop speed, median per block (incl. decoding each frame from disk, which a webcam does not cost) | 99.3 frames/s | **82.4 frames/s** (PASS the 20 FPS target) |
-| frames with a hand | 715/864 (82.8%) | 844/864 (97.7%) |
-| usable detections/s | 82.9 | 82.4 |
-| retry | – | recovery(conf=0.3, after=1, every=3, flip=on): 149 empty frames, retried on 145 (97.3% of them), found 129 hands (5 via mirror), 18.0 ms per try, 17.5 ms amortised |
+| loop speed, median per block (incl. decoding each frame from disk, which a webcam does not cost) | 49.0 frames/s | **60.2 frames/s** (PASS the 20 FPS target) |
+| frames with a hand | 1625/1873 (86.8%) | 1830/1873 (97.7%) |
+| usable detections/s | 38.1 | 59.8 |
+| retry | – | recovery(conf=0.3, after=1, every=3, flip=on): 248 empty frames, retried on 234 (94.4% of them), found 205 hands (9 via mirror), 25.5 ms per try, 24.1 ms amortised |
 
 The two columns are the same frames in the same process, so the difference is the retry and nothing else. This is the only hand-coverage figure in the project measured frame by frame through the live path. It is not the same quantity as the extractor's recall in the training report, which is offline **image** recall over all 122k files and can afford five detections per image because it runs once instead of thirty times a second. Neither is a webcam measurement; only the self-test (`python src/live.py --selftest`) is.
 
-NOTE: only 19/72 clips were long enough for the 0.5s hold-to-commit timer to fire (12 frames = 0.6s of a 50ms tick, and the letter only has to be held long enough after it first clears the gate), so most `answer` cells below are the letter the app is still holding rather than one it committed. The held letter still exercises every stage of the pipeline; for a committed-letter count re-run with `--per 24`.
 
-## live-path answer on `danrasband` frames — 22/24 letters reproduced (in-sample)
+## live-path answer on `danrasband` frames — 23/24 letters reproduced (in-sample)
 
 | letter | frames | hand found | tracking only | via retry | answer | correct | mean top1 | % below gate | % uncertain (gap) |
 |---|---|---|---|---|---|---|---|---|---|
-| A | 12 | 12 | 9 | 3 | A | yes | 89% | 17% | 0% |
-| B | 12 | 12 | 8 | 4 | B | yes | 97% | 0% | 0% |
-| C | 12 | 12 | 11 | 1 | C | yes | 80% | 25% | 0% |
-| D | 12 | 12 | 12 | 0 | D | yes | 96% | 0% | 0% |
-| E | 12 | 12 | 11 | 1 | E | yes | 95% | 8% | 0% |
-| F | 12 | 12 | 11 | 1 | F | yes | 94% | 8% | 0% |
-| G | 12 | 12 | 9 | 3 | G | yes | 92% | 8% | 0% |
-| H | 12 | 12 | 12 | 0 | H | yes | 97% | 0% | 0% |
-| I | 12 | 12 | 7 | 5 | I | yes | 97% | 0% | 0% |
-| K | 12 | 12 | 11 | 1 | K | yes | 90% | 8% | 8% |
-| L | 12 | 12 | 12 | 0 | L | yes | 89% | 8% | 8% |
-| M | 12 | 11 | 7 | 4 | M | yes | 78% | 18% | 9% |
-| N | 12 | 12 | 9 | 3 | M | no | 71% | 58% | 42% |
-| O | 12 | 9 | 6 | 3 | O | yes | 84% | 22% | 0% |
-| P | 12 | 12 | 11 | 1 | P | yes | 97% | 0% | 0% |
-| Q | 12 | 11 | 8 | 3 | Q | yes | 87% | 9% | 0% |
-| R | 12 | 12 | 10 | 2 | R | yes | 93% | 8% | 8% |
-| S | 12 | 11 | 9 | 2 | S | yes | 78% | 18% | 9% |
-| T | 12 | 12 | 10 | 2 | nan | no | 64% | 67% | 0% |
-| U | 12 | 12 | 11 | 1 | U | yes | 72% | 42% | 8% |
-| V | 12 | 12 | 11 | 1 | V | yes | 85% | 8% | 8% |
-| W | 12 | 12 | 11 | 1 | W | yes | 95% | 0% | 0% |
-| X | 12 | 12 | 9 | 3 | X | yes | 81% | 17% | 17% |
-| Y | 12 | 12 | 10 | 2 | Y | yes | 92% | 8% | 0% |
+| A | 20 | 20 | 17 | 3 | A | yes | 92% | 5% | 5% |
+| B | 20 | 20 | 17 | 3 | B | yes | 90% | 10% | 5% |
+| C | 20 | 20 | 19 | 1 | C | yes | 75% | 35% | 10% |
+| D | 20 | 20 | 19 | 1 | D | yes | 95% | 5% | 0% |
+| E | 20 | 20 | 18 | 2 | E | yes | 84% | 25% | 0% |
+| F | 20 | 20 | 20 | 0 | F | yes | 96% | 0% | 0% |
+| G | 20 | 20 | 15 | 5 | G | yes | 84% | 25% | 0% |
+| H | 20 | 20 | 20 | 0 | H | yes | 97% | 0% | 0% |
+| I | 20 | 20 | 15 | 5 | I | yes | 93% | 5% | 0% |
+| K | 20 | 20 | 19 | 1 | K | yes | 92% | 5% | 0% |
+| L | 20 | 20 | 18 | 2 | L | yes | 88% | 10% | 10% |
+| M | 20 | 19 | 13 | 6 | M | yes | 84% | 16% | 5% |
+| N | 20 | 19 | 14 | 5 | M | no | 73% | 37% | 26% |
+| O | 20 | 20 | 16 | 4 | O | yes | 90% | 15% | 0% |
+| P | 20 | 20 | 17 | 3 | P | yes | 94% | 5% | 5% |
+| Q | 20 | 20 | 16 | 4 | Q | yes | 81% | 25% | 25% |
+| R | 20 | 20 | 18 | 2 | R | yes | 82% | 30% | 5% |
+| S | 20 | 19 | 19 | 0 | S | yes | 89% | 5% | 0% |
+| T | 20 | 20 | 19 | 1 | T | yes | 63% | 60% | 5% |
+| U | 20 | 20 | 19 | 1 | U | yes | 78% | 25% | 0% |
+| V | 20 | 19 | 15 | 4 | V | yes | 83% | 16% | 0% |
+| W | 20 | 20 | 20 | 0 | W | yes | 88% | 15% | 5% |
+| X | 20 | 20 | 13 | 7 | X | yes | 91% | 10% | 5% |
+| Y | 20 | 20 | 16 | 4 | Y | yes | 92% | 5% | 5% |
 
 ## live-path answer on `grassknoted` frames — 24/24 letters reproduced (in-sample)
 
 | letter | frames | hand found | tracking only | via retry | answer | correct | mean top1 | % below gate | % uncertain (gap) |
 |---|---|---|---|---|---|---|---|---|---|
-| A | 12 | 12 | 9 | 3 | A | yes | 85% | 17% | 8% |
-| B | 12 | 9 | 7 | 2 | B | yes | 82% | 22% | 11% |
-| C | 12 | 12 | 6 | 6 | C | yes | 95% | 8% | 0% |
-| D | 12 | 12 | 12 | 0 | D | yes | 92% | 0% | 0% |
-| E | 12 | 12 | 9 | 3 | E | yes | 84% | 25% | 0% |
-| F | 12 | 12 | 12 | 0 | F | yes | 76% | 33% | 17% |
-| G | 12 | 9 | 6 | 3 | G | yes | 96% | 0% | 0% |
-| H | 12 | 12 | 9 | 3 | H | yes | 82% | 25% | 17% |
-| I | 12 | 12 | 9 | 3 | I | yes | 94% | 0% | 0% |
-| K | 12 | 12 | 10 | 2 | K | yes | 94% | 8% | 0% |
-| L | 12 | 12 | 12 | 0 | L | yes | 78% | 33% | 8% |
-| M | 12 | 11 | 6 | 5 | M | yes | 94% | 0% | 0% |
-| N | 12 | 11 | 6 | 5 | N | yes | 90% | 0% | 0% |
-| O | 12 | 12 | 8 | 4 | O | yes | 95% | 0% | 0% |
-| P | 12 | 12 | 9 | 3 | P | yes | 92% | 8% | 0% |
-| Q | 12 | 12 | 8 | 4 | Q | yes | 91% | 8% | 8% |
-| R | 12 | 12 | 11 | 1 | R | yes | 86% | 17% | 0% |
-| S | 12 | 10 | 7 | 3 | S | yes | 95% | 0% | 0% |
-| T | 12 | 11 | 7 | 4 | T | yes | 92% | 9% | 0% |
-| U | 12 | 12 | 7 | 5 | U | yes | 87% | 25% | 0% |
-| V | 12 | 12 | 9 | 3 | V | yes | 78% | 33% | 17% |
-| W | 12 | 12 | 8 | 4 | W | yes | 90% | 8% | 0% |
-| X | 12 | 12 | 8 | 4 | X | yes | 77% | 33% | 17% |
-| Y | 12 | 12 | 6 | 6 | Y | yes | 97% | 0% | 0% |
+| A | 20 | 20 | 14 | 6 | A | yes | 92% | 5% | 0% |
+| B | 20 | 20 | 13 | 7 | B | yes | 94% | 5% | 0% |
+| C | 20 | 17 | 11 | 6 | C | yes | 91% | 6% | 0% |
+| D | 20 | 20 | 18 | 2 | D | yes | 92% | 5% | 0% |
+| E | 20 | 20 | 16 | 4 | E | yes | 87% | 15% | 5% |
+| F | 20 | 20 | 16 | 4 | F | yes | 84% | 25% | 0% |
+| G | 20 | 19 | 14 | 5 | G | yes | 86% | 16% | 11% |
+| H | 20 | 18 | 14 | 4 | H | yes | 91% | 11% | 6% |
+| I | 20 | 20 | 14 | 6 | I | yes | 94% | 5% | 0% |
+| K | 20 | 20 | 16 | 4 | K | yes | 88% | 15% | 0% |
+| L | 20 | 19 | 14 | 5 | L | yes | 93% | 5% | 0% |
+| M | 20 | 19 | 11 | 8 | M | yes | 79% | 26% | 26% |
+| N | 20 | 17 | 9 | 8 | N | yes | 90% | 6% | 6% |
+| O | 20 | 18 | 13 | 5 | O | yes | 90% | 11% | 0% |
+| P | 20 | 20 | 16 | 4 | P | yes | 90% | 10% | 5% |
+| Q | 20 | 20 | 13 | 7 | Q | yes | 86% | 20% | 5% |
+| R | 20 | 20 | 18 | 2 | R | yes | 83% | 25% | 0% |
+| S | 20 | 19 | 14 | 5 | S | yes | 88% | 11% | 5% |
+| T | 20 | 20 | 15 | 5 | T | yes | 88% | 15% | 5% |
+| U | 20 | 20 | 11 | 9 | U | yes | 95% | 0% | 0% |
+| V | 20 | 19 | 13 | 6 | V | yes | 95% | 5% | 0% |
+| W | 20 | 19 | 14 | 5 | W | yes | 93% | 5% | 5% |
+| X | 20 | 19 | 18 | 1 | X | yes | 79% | 26% | 11% |
+| Y | 20 | 20 | 13 | 7 | Y | yes | 94% | 5% | 0% |
 
 ## live-path answer on `massey` frames — 24/24 letters reproduced (in-sample)
 
 | letter | frames | hand found | tracking only | via retry | answer | correct | mean top1 | % below gate | % uncertain (gap) |
 |---|---|---|---|---|---|---|---|---|---|
-| A | 12 | 12 | 12 | 0 | A | yes | 76% | 33% | 25% |
-| B | 12 | 12 | 12 | 0 | B | yes | 98% | 0% | 0% |
-| C | 12 | 11 | 10 | 1 | C | yes | 86% | 18% | 9% |
-| D | 12 | 12 | 11 | 1 | D | yes | 88% | 17% | 0% |
-| E | 12 | 12 | 12 | 0 | E | yes | 91% | 8% | 0% |
-| F | 12 | 12 | 12 | 0 | F | yes | 96% | 0% | 0% |
-| G | 12 | 12 | 12 | 0 | G | yes | 89% | 8% | 8% |
-| H | 12 | 12 | 12 | 0 | H | yes | 90% | 8% | 0% |
-| I | 12 | 12 | 12 | 0 | I | yes | 89% | 8% | 8% |
-| K | 12 | 12 | 12 | 0 | K | yes | 96% | 0% | 0% |
-| L | 12 | 12 | 12 | 0 | L | yes | 93% | 8% | 0% |
-| M | 12 | 12 | 12 | 0 | M | yes | 87% | 17% | 0% |
-| N | 12 | 12 | 12 | 0 | N | yes | 88% | 17% | 8% |
-| O | 12 | 10 | 8 | 2 | O | yes | 70% | 40% | 10% |
-| P | 12 | 12 | 12 | 0 | P | yes | 76% | 25% | 17% |
-| Q | 12 | 12 | 10 | 2 | Q | yes | 78% | 33% | 17% |
-| R | 12 | 12 | 12 | 0 | R | yes | 90% | 17% | 8% |
-| S | 12 | 12 | 12 | 0 | S | yes | 78% | 25% | 25% |
-| T | 12 | 12 | 12 | 0 | T | yes | 91% | 8% | 0% |
-| U | 12 | 12 | 12 | 0 | U | yes | 93% | 8% | 8% |
-| V | 12 | 12 | 12 | 0 | V | yes | 91% | 8% | 8% |
-| W | 12 | 12 | 12 | 0 | W | yes | 92% | 8% | 0% |
-| X | 12 | 12 | 12 | 0 | X | yes | 91% | 0% | 0% |
-| Y | 12 | 12 | 12 | 0 | Y | yes | 97% | 0% | 0% |
+| A | 20 | 20 | 18 | 2 | A | yes | 79% | 30% | 15% |
+| B | 20 | 20 | 20 | 0 | B | yes | 97% | 0% | 0% |
+| C | 20 | 20 | 20 | 0 | C | yes | 92% | 10% | 0% |
+| D | 20 | 20 | 18 | 2 | D | yes | 90% | 5% | 5% |
+| E | 20 | 20 | 20 | 0 | E | yes | 89% | 10% | 5% |
+| F | 20 | 20 | 20 | 0 | F | yes | 96% | 0% | 0% |
+| G | 20 | 20 | 20 | 0 | G | yes | 87% | 15% | 0% |
+| H | 20 | 20 | 20 | 0 | H | yes | 96% | 0% | 0% |
+| I | 20 | 20 | 20 | 0 | I | yes | 94% | 5% | 5% |
+| K | 20 | 20 | 20 | 0 | K | yes | 84% | 20% | 5% |
+| L | 20 | 20 | 20 | 0 | L | yes | 97% | 0% | 0% |
+| M | 20 | 20 | 20 | 0 | M | yes | 96% | 5% | 0% |
+| N | 20 | 20 | 20 | 0 | N | yes | 92% | 10% | 5% |
+| O | 20 | 20 | 20 | 0 | O | yes | 82% | 25% | 5% |
+| P | 20 | 18 | 13 | 5 | P | yes | 87% | 17% | 6% |
+| Q | 20 | 20 | 16 | 4 | Q | yes | 90% | 5% | 5% |
+| R | 20 | 19 | 19 | 0 | R | yes | 90% | 5% | 0% |
+| S | 20 | 20 | 20 | 0 | S | yes | 93% | 5% | 0% |
+| T | 20 | 20 | 20 | 0 | T | yes | 85% | 20% | 0% |
+| U | 20 | 20 | 20 | 0 | U | yes | 93% | 5% | 0% |
+| V | 20 | 20 | 20 | 0 | V | yes | 93% | 5% | 0% |
+| W | 20 | 20 | 20 | 0 | W | yes | 97% | 0% | 0% |
+| X | 20 | 20 | 20 | 0 | X | yes | 87% | 15% | 5% |
+| Y | 20 | 20 | 20 | 0 | Y | yes | 94% | 5% | 0% |
+
+## live-path answer on `rushil` frames — 21/23 letters reproduced (in-sample)
+
+| letter | frames | hand found | tracking only | via retry | answer | correct | mean top1 | % below gate | % uncertain (gap) |
+|---|---|---|---|---|---|---|---|---|---|
+| A | 20 | 20 | 20 | 0 | A | yes | 82% | 15% | 0% |
+| B | 20 | 20 | 20 | 0 | B | yes | 97% | 0% | 0% |
+| C | 20 | 20 | 20 | 0 | C | yes | 94% | 0% | 0% |
+| D | 20 | 20 | 20 | 0 | D | yes | 96% | 0% | 0% |
+| E | 20 | 20 | 20 | 0 | E | yes | 97% | 0% | 0% |
+| F | 20 | 20 | 20 | 0 | F | yes | 91% | 0% | 0% |
+| G | 17 | 17 | 17 | 0 | nan | no | 55% | 94% | 6% |
+| I | 20 | 20 | 20 | 0 | I | yes | 93% | 5% | 0% |
+| K | 20 | 20 | 20 | 0 | K | yes | 96% | 0% | 0% |
+| L | 20 | 20 | 20 | 0 | L | yes | 97% | 0% | 0% |
+| M | 20 | 20 | 20 | 0 | M | yes | 82% | 20% | 5% |
+| N | 13 | 13 | 13 | 0 | N | yes | 78% | 23% | 8% |
+| O | 20 | 20 | 20 | 0 | O | yes | 93% | 0% | 0% |
+| P | 20 | 1 | 0 | 1 | nan | no | 38% | 100% | 100% |
+| Q | 11 | 11 | 10 | 1 | Q | yes | 95% | 0% | 0% |
+| R | 20 | 20 | 19 | 1 | R | yes | 99% | 0% | 0% |
+| S | 20 | 20 | 20 | 0 | S | yes | 90% | 5% | 5% |
+| T | 20 | 20 | 20 | 0 | T | yes | 96% | 0% | 0% |
+| U | 20 | 20 | 20 | 0 | U | yes | 93% | 0% | 0% |
+| V | 20 | 20 | 20 | 0 | V | yes | 94% | 0% | 0% |
+| W | 20 | 20 | 20 | 0 | W | yes | 98% | 0% | 0% |
+| X | 12 | 12 | 12 | 0 | X | yes | 71% | 42% | 0% |
+| Y | 20 | 20 | 20 | 0 | Y | yes | 98% | 0% | 0% |
 
 ## Where the letters went, including the wrong ones
 
 | committed | expected | count |
 |---|---|---|
-| A | A | 3 |
-| B | B | 3 |
-| C | C | 3 |
-| D | D | 3 |
-| E | E | 3 |
-| F | F | 3 |
+| A | A | 4 |
+| B | B | 4 |
+| C | C | 4 |
+| D | D | 4 |
+| E | E | 4 |
+| F | F | 4 |
+| I | I | 4 |
+| K | K | 4 |
+| L | L | 4 |
+| M | M | 4 |
+| O | O | 4 |
+| Q | Q | 4 |
+| R | R | 4 |
+| S | S | 4 |
+| T | T | 4 |
+| U | U | 4 |
+| V | V | 4 |
+| W | W | 4 |
+| X | X | 4 |
+| Y | Y | 4 |
 | G | G | 3 |
 | H | H | 3 |
-| I | I | 3 |
-| K | K | 3 |
-| L | L | 3 |
-| M | M | 3 |
-| O | O | 3 |
 | P | P | 3 |
-| Q | Q | 3 |
-| R | R | 3 |
-| S | S | 3 |
-| U | U | 3 |
-| V | V | 3 |
-| W | W | 3 |
-| X | X | 3 |
-| Y | Y | 3 |
-| N | N | 2 |
-| T | T | 2 |
+| N | N | 3 |
 | M | N | 1 |
-| nan | T | 1 |
+| nan | G | 1 |
+| nan | P | 1 |
 
 A block that commits *nothing* is the uncertain state working as designed: the gate or the top1-top2 margin refused to vote, which is better than a wrong letter on the screen. A block that commits the wrong letter is a real error and should be read against the profile report's per-letter table.
 

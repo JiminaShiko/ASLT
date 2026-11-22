@@ -1,71 +1,72 @@
 # ASL landmark recogniser - training report
 
-Generated 2026-11-15 13:43:48 · model `asl_all` · 24 classes (A-Z minus J, Z) · input 71 dims
+Generated 2026-11-21 11:18:29 · model `asl_all` · 24 classes (A-Z minus J, Z) · input 71 dims
 
 ## Headline number
 
-**Cross-dataset accuracy, POOLED (headline): 67.0% [66.7–67.2% 95% CI] (81,954/122,359 held-out images)**
+**Cross-dataset accuracy, POOLED (headline): 68.7% [68.4–69.0% 95% CI] (85,641/124,663 held-out images)**
 
-**Cross-dataset accuracy, MACRO (mean of the 3 held-out datasets, unweighted): 75.9%**
+**Cross-dataset accuracy, MACRO (mean of the 4 held-out datasets, unweighted): 79.0%**
 
-**Same yardstick as round 1 (pooled, scored only on the 83% of these images that round 1's single-pass detector could find at all): 69.2% (70,493/101,932)**
+**Same yardstick as round 1 (pooled, scored only on the 83% of these images that round 1's single-pass detector could find at all): 70.9% (73,138/103,208)**
 
-Round 1 headlined 67.6% pooled on a cache that was missing 20,885 hands. Stage C put them back, and they are not neutral: the recovered images are the flat palms, the silhouettes and the small crops, i.e. the frames a real webcam is most likely to give you. The line directly above this one scores only the images round 1 could also score, so it is the only cell in this report that may be compared with 67.6% — and on that like-for-like subset this model is at 69.2% against round 1's 67.6%, a 1.6-point difference. Per the Reproducibility section that is inside the run-to-run band, so it is neither a measured improvement nor a measured regression.
+Round 1 headlined 67.6% pooled on a cache that was missing 20,885 hands. Stage C put them back, and they are not neutral: the recovered images are the flat palms, the silhouettes and the small crops, i.e. the frames a real webcam is most likely to give you. The line directly above this one scores only the images round 1 could also score, so it is the only cell in this report that may be compared with 67.6% — and on that like-for-like subset this model is at 70.9% against round 1's 67.6%, a 3.3-point difference. Per the Reproducibility section that is inside the run-to-run band, so it is neither a measured improvement nor a measured regression.
 What moved the headline is the denominator. Whether the recovered images also moved the *model* was then measured with `--train-how direct_0.5`, which leaves the test rows alone and withholds the ladder-rescued images from training only: same seed, same 71 features, same style weight, same folds.
 
 
-| training rows | pooled, all 122,359 | round 1's 101,932 | ladder-rescued 20,427 |
+| training rows | pooled, all 122,359 | round 1's 101,932 | ladder-rescued 21,455 |
 |---|---|---|---|
-| every recovered image (this model) | 67.0% | 69.2% | 56.1% |
+| every recovered image (this model) | 68.7% | 70.9% | 58.3% |
 | round 1's data mix only (control) | 66.1% | 68.2% | 55.4% |
 
 
-Two paired runs on identical held-out images, and the largest gap in the table is 0.9 points, which is the size of one re-roll of this pipeline. So the recovered images neither helped nor hurt the average.
-What the ladder buys is coverage, and the two coverage numbers are not the same thing. **Offline:** the extractor finds a hand in 88.5% of dataset images instead of 74.0% - that is image recall over 144,446 files, where five detections per image cost nothing. **Live:** the app cannot afford that ladder per frame, so it retries a frame at confidence 0.3 only when tracking has just lost the hand, and it finds a hand in 98.3% of frames instead of 84.3%, measured frame by frame in `reports/live_path.md` at 85.0 frames/s for the whole pipeline. A frame with no hand produces nothing at all, so coverage is the part worth paying for; accuracy is the table above.
-The **pooled (micro)** number is the headline: every held-out image counts exactly once, so it estimates "a random image from hands the model never trained on", which is what the webcam will actually give you. The **macro** mean weights each *dataset* equally, so a small holdout can carry it far beyond the truth — an earlier version of this report headlined the macro mean (75.9%) while the pooled figure was 67.0%.
+**This table is void in this run.** The control above was measured on 122,359 held-out images and this report has 124,663, so the two did not score the same test set — which happens whenever a report is generated from a `--quick` or partial cache. Re-run both commands on the full cache to get the comparison back.
+The **pooled (micro)** number is the headline: every held-out image counts exactly once, so it estimates "a random image from hands the model never trained on", which is what the webcam will actually give you. The **macro** mean weights each *dataset* equally, so a small holdout can carry it far beyond the truth — an earlier version of this report headlined the macro mean (79.0%) while the pooled figure was 68.7%.
 
-Datasets under 2000 held-out images are flagged **small-n** and do not carry the headline: danrasband. They are still used IN TRAINING for every other fold and for the final model; only their role as a *measuring stick* is limited. Excluding them, the pooled cross-dataset accuracy is **66.8%** over 121,647 images [66.6–67.1%] and the macro mean of the headline-bearing datasets is **66.7%**.
+Datasets under 2000 held-out images are flagged **small-n** and do not carry the headline: danrasband. They are still used IN TRAINING for every other fold and for the final model; only their role as a *measuring stick* is limited. Excluding them, the pooled cross-dataset accuracy is **68.6%** over 123,951 images [68.3–68.8%] and the macro mean of the headline-bearing datasets is **74.2%**.
 
 This is leave-one-dataset-out: every test sample was predicted by a model trained only on the *other* datasets, i.e. on hands, cameras and backgrounds it never saw. Treat it as the expected live accuracy ceiling.
 
 | held-out dataset | test images | letters covered | accuracy | carries headline? |
 |---|---|---|---|---|
-| danrasband | 712 | 24 (ABCDEFGHIKLM…) | 94.4% | **no — small-n** |
-| grassknoted | 61562 | 24 (ABCDEFGHIKLM…) | 79.5% | yes |
-| massey | 60085 | 24 (ABCDEFGHIKLM…) | 53.8% | yes |
+| danrasband | 712 | 24 (ABCDEFGHIKLM…) | 93.4% | **no — small-n** |
+| grassknoted | 61562 | 24 (ABCDEFGHIKLM…) | 79.9% | yes |
+| massey | 60085 | 24 (ABCDEFGHIKLM…) | 56.3% | yes |
+| rushil | 2304 | 23 (ABCDEFGIKLMN…) | 86.5% | yes |
 
 All numbers are over the 24-letter static alphabet (`ABCDEFGHIKLMNOPQRSTUVWXY`); J and Z are moving letters and are handled by the trajectory rule in `src/live.py`, not by this classifier.
+- **rushil** only covers `ABCDEFGIKLMNOPQRSTUVWXY`, so its accuracy is measured over that subset and is not directly comparable to the others.
 
 ## Per-letter accuracy for each held-out dataset
 
 A letter can look strong in the pooled table and still be dataset-specific. Each column is a model that never saw that dataset; `–` means no test images for that letter, and a bracketed number is a small test count (< 100 images), so read it loosely.
 
-| letter | danrasband | grassknoted | massey | spread | worst dataset |
-|---|---|---|---|---|---|
-| **A** | 100% (30) | 93.8% | 87.0% | 13 pts | **massey 87.0%** |
-| **B** | 100% (30) | 96.0% | 91.5% | 9 pts | **massey 91.5%** |
-| **C** | 87% (30) | 61.6% | 14.4% | 72 pts | **massey 14.4%** |
-| **D** | 100% (30) | 50.6% | 28.1% | 72 pts | **massey 28.1%** |
-| **E** | 100% (30) | 86.7% | 83.4% | 17 pts | **massey 83.4%** |
-| **F** | 100% (30) | 91.4% | 93.7% | 9 pts | **grassknoted 91.4%** |
-| **G** | 100% (30) | 90.8% | 12.1% | 88 pts | **massey 12.1%** |
-| **H** | 100% (30) | 88.0% | 98.8% | 12 pts | **grassknoted 88.0%** |
-| **I** | 100% (25) | 94.9% | 57.7% | 42 pts | **massey 57.7%** |
-| **K** | 100% (28) | 69.1% | 47.4% | 53 pts | **massey 47.4%** |
-| **L** | 100% (30) | 99.1% | 97.5% | 2 pts | **massey 97.5%** |
-| **M** | 93% (30) | 3.3% | 2.1% | 91 pts | **massey 2.1%** |
-| **N** | 37% (30) | 0.2% | 0.2% | 37 pts | **massey 0.2%** |
-| **O** | 100% (29) | 95.6% | 35.3% | 65 pts | **massey 35.3%** |
-| **P** | 90% (30) | 71.4% | 2.4% | 88 pts | **massey 2.4%** |
-| **Q** | 97% (30) | 93.1% | 8.2% | 88 pts | **massey 8.2%** |
-| **R** | 100% (30) | 93.0% | 47.9% | 52 pts | **massey 47.9%** |
-| **S** | 97% (30) | 93.5% | 86.1% | 11 pts | **massey 86.1%** |
-| **T** | 73% (30) | 31.9% | 1.1% | 72 pts | **massey 1.1%** |
-| **U** | 100% (30) | 92.4% | 71.7% | 28 pts | **massey 71.7%** |
-| **V** | 93% (30) | 93.8% | 41.8% | 52 pts | **massey 41.8%** |
-| **W** | 100% (30) | 96.2% | 97.4% | 4 pts | **grassknoted 96.2%** |
-| **X** | 100% (30) | 91.0% | 85.0% | 15 pts | **massey 85.0%** |
-| **Y** | 100% (30) | 97.0% | 90.9% | 9 pts | **massey 90.9%** |
+| letter | danrasband | grassknoted | massey | rushil | spread | worst dataset |
+|---|---|---|---|---|---|---|
+| **A** | 100% (30) | 94.1% | 83.2% | 68.3% | 32 pts | **rushil 68.3%** |
+| **B** | 100% (30) | 96.9% | 75.8% | 92.5% | 24 pts | **massey 75.8%** |
+| **C** | 80% (30) | 71.1% | 9.7% | 50% (22) | 70 pts | **massey 9.7%** |
+| **D** | 100% (30) | 57.9% | 53.6% | 87.5% | 46 pts | **massey 53.6%** |
+| **E** | 100% (30) | 86.8% | 78.0% | 29.1% | 71 pts | **rushil 29.1%** |
+| **F** | 100% (30) | 95.2% | 97.4% | 75.3% | 25 pts | **rushil 75.3%** |
+| **G** | 100% (30) | 88.7% | 9.6% | 0% (17) | 100 pts | **rushil 0.0%** |
+| **H** | 100% (30) | 88.1% | 98.4% | – | 12 pts | **grassknoted 88.1%** |
+| **I** | 100% (25) | 95.0% | 71.9% | 100.0% | 28 pts | **massey 71.9%** |
+| **K** | 100% (28) | 82.6% | 52.3% | 93.9% | 48 pts | **massey 52.3%** |
+| **L** | 100% (30) | 99.1% | 97.8% | 87.7% | 12 pts | **rushil 87.7%** |
+| **M** | 93% (30) | 6.7% | 21.4% | 74.1% | 87 pts | **grassknoted 6.7%** |
+| **N** | 30% (30) | 0.0% | 0.2% | 0% (13) | 30 pts | **grassknoted 0.0%** |
+| **O** | 100% (29) | 95.4% | 37.3% | 100.0% | 63 pts | **massey 37.3%** |
+| **P** | 90% (30) | 87.7% | 6.4% | 73.3% | 84 pts | **massey 6.4%** |
+| **Q** | 100% (30) | 72.6% | 10.9% | 100% (11) | 89 pts | **massey 10.9%** |
+| **R** | 100% (30) | 92.0% | 53.0% | 100.0% | 47 pts | **massey 53.0%** |
+| **S** | 97% (30) | 94.0% | 89.1% | 68.6% | 28 pts | **rushil 68.6%** |
+| **T** | 60% (30) | 14.4% | 10.4% | 83.5% | 73 pts | **massey 10.4%** |
+| **U** | 100% (30) | 92.6% | 82.4% | 92.9% | 18 pts | **massey 82.4%** |
+| **V** | 93% (30) | 93.9% | 41.0% | 98.6% | 58 pts | **massey 41.0%** |
+| **W** | 100% (30) | 96.2% | 97.2% | 100.0% | 4 pts | **grassknoted 96.2%** |
+| **X** | 100% (30) | 87.4% | 68.6% | 83% (12) | 31 pts | **massey 68.6%** |
+| **Y** | 100% (30) | 95.0% | 92.5% | 100.0% | 8 pts | **massey 92.5%** |
 
 Read the spread column, not just the averages: a letter whose datasets disagree by 30+ points is signed or imaged differently across them, which is a data problem, not a model problem. The contact sheets in `reports/samples/` (Stage B) are the visual evidence for that call.
 
@@ -112,10 +113,16 @@ The weight is applied inside `WeightedRandomSampler` in `train_one()`, so it cha
 |---|---|---|---|---|
 | danrasband | grassknoted | 24 | 61562 | 79.6% |
 | danrasband | massey | 24 | 60085 | 54.7% |
+| danrasband | rushil | 23 | 2304 | 62.9% |
 | grassknoted | danrasband | 24 | 712 | 92.7% |
 | grassknoted | massey | 24 | 60085 | 50.6% |
+| grassknoted | rushil | 23 | 2304 | 74.7% |
 | massey | danrasband | 24 | 712 | 77.1% |
 | massey | grassknoted | 24 | 61562 | 73.5% |
+| massey | rushil | 23 | 2304 | 80.0% |
+| rushil | danrasband | 23 | 682 | 56.9% |
+| rushil | grassknoted | 23 | 58911 | 59.5% |
+| rushil | massey | 23 | 57421 | 51.2% |
 
 ## Held-out capture group (unseen hands, same dataset)
 
@@ -130,58 +137,59 @@ This is the number closest to what the webcam will do for you: the model has nev
 - within-dataset, **contiguous-block** split of `danrasband` (190 blocks, 184 held-out images): **82.6%** — optimistic, because the same signer, camera and background appear in both halves.
 - within-dataset, **contiguous-block** split of `grassknoted` (192 blocks, 15231 held-out images): **96.0%** — optimistic, because the same signer, camera and background appear in both halves.
 - within-dataset, **contiguous-block** split of `massey` (960 blocks, 15116 held-out images): **96.3%** — optimistic, because the same signer, camera and background appear in both halves.
-- final model, contiguous-block validation slice: **96.4%** — also optimistic, same reason.
+- within-dataset, **contiguous-block** split of `rushil` (177 blocks, 587 held-out images): **97.4%** — optimistic, because the same signer, camera and background appear in both halves.
+- final model, contiguous-block validation slice: **96.8%** — also optimistic, same reason.
 
 ## Per-class accuracy (pooled cross-dataset predictions)
 
 | letter | test images | correct | accuracy |
 |---|---|---|---|
-| A | 4695 | 4254 | 90.6% |
-| B | 4993 | 4677 | 93.7% |
-| C | 5063 | 1864 | 36.8% |
-| D | 5285 | 2117 | 40.1% |
-| E | 4856 | 4135 | 85.2% |
-| F | 5530 | 5115 | 92.5% |
-| G | 5485 | 2901 | 52.9% |
-| H | 5345 | 4996 | 93.5% |
-| I | 5146 | 3932 | 76.4% |
-| K | 5693 | 3321 | 58.3% |
-| L | 5517 | 5424 | 98.3% |
-| M | 4953 | 159 | 3.2% |
-| N | 4575 | 19 | 0.4% |
-| O | 4791 | 3229 | 67.4% |
-| P | 4210 | 1682 | 40.0% |
-| Q | 4286 | 2369 | 55.3% |
-| R | 5578 | 3912 | 70.1% |
-| S | 5255 | 4736 | 90.1% |
-| T | 5150 | 863 | 16.8% |
-| U | 5277 | 4353 | 82.5% |
-| V | 5444 | 3711 | 68.2% |
-| W | 5253 | 5085 | 96.8% |
-| X | 4926 | 4341 | 88.1% |
-| Y | 5053 | 4759 | 94.2% |
+| A | 4758 | 4220 | 88.7% |
+| B | 5126 | 4412 | 86.1% |
+| C | 5085 | 1972 | 38.8% |
+| D | 5429 | 3090 | 56.9% |
+| E | 4942 | 4032 | 81.6% |
+| F | 5611 | 5383 | 95.9% |
+| G | 5502 | 2776 | 50.5% |
+| H | 5345 | 4988 | 93.3% |
+| I | 5268 | 4421 | 83.9% |
+| K | 5825 | 3962 | 68.0% |
+| L | 5671 | 5566 | 98.1% |
+| M | 5034 | 799 | 15.9% |
+| N | 4588 | 15 | 0.3% |
+| O | 4951 | 3428 | 69.2% |
+| P | 4255 | 2158 | 50.7% |
+| Q | 4297 | 1955 | 45.5% |
+| R | 5730 | 4181 | 73.0% |
+| S | 5408 | 4925 | 91.1% |
+| T | 5253 | 741 | 14.1% |
+| U | 5433 | 4774 | 87.9% |
+| V | 5592 | 3837 | 68.6% |
+| W | 5408 | 5233 | 96.8% |
+| X | 4938 | 3868 | 78.3% |
+| Y | 5214 | 4905 | 94.1% |
 
 ## Weakest letters
 
-- **N**: 0.4% (19/4575)
-- **M**: 3.2% (159/4953)
-- **T**: 16.8% (863/5150)
-- **C**: 36.8% (1864/5063)
-- **P**: 40.0% (1682/4210)
-- **D**: 40.1% (2117/5285)
+- **N**: 0.3% (15/4588)
+- **T**: 14.1% (741/5253)
+- **M**: 15.9% (799/5034)
+- **C**: 38.8% (1972/5085)
+- **Q**: 45.5% (1955/4297)
+- **G**: 50.5% (2776/5502)
 
 ## Most-confused pairs
 
 | true | predicted | errors | fraction of that class |
 |---|---|---|---|
-| T | A | 2255 | 43.8% |
-| G | H | 2362 | 43.1% |
-| M | S | 1725 | 34.8% |
-| C | B | 1702 | 33.6% |
-| T | L | 1611 | 31.3% |
-| P | N | 1287 | 30.6% |
-| Q | N | 1308 | 30.5% |
-| D | X | 1508 | 28.5% |
+| G | H | 2417 | 43.9% |
+| T | A | 2056 | 39.1% |
+| T | L | 1966 | 37.4% |
+| M | S | 1648 | 32.7% |
+| N | S | 1371 | 29.9% |
+| C | B | 1509 | 29.7% |
+| N | P | 1319 | 28.7% |
+| Q | N | 1225 | 28.5% |
 
 ## Confusion matrix
 
@@ -196,24 +204,25 @@ The extractor now walks a ladder of forward image transforms and stops at the fi
 | danrasband | 780 | 95.3% | 99.0% | +3.7 pts | 29 | 8 |
 | grassknoted | 78,000 | 77.3% | 85.8% | +8.5 pts | 6,652 | 11,066 |
 | massey | 65,666 | 69.9% | 91.5% | +21.6 pts | 14,204 | 5,581 |
+| rushil | 7,696 | 18.3% | 33.7% | +15.4 pts | 1,187 | 5,103 |
 
 Recovered images per letter (top 10), and whether the recovery landed where round 1 was blind:
 
 | letter | recovered | still dropped |
 |---|---|---|
-| B | 1,907 | 765 |
-| W | 1,651 | 777 |
-| M | 1,561 | 787 |
-| A | 1,260 | 1,011 |
-| C | 1,130 | 883 |
-| S | 1,079 | 559 |
-| N | 1,064 | 1,149 |
-| O | 1,059 | 895 |
-| U | 982 | 406 |
-| E | 980 | 855 |
+| B | 1,985 | 924 |
+| W | 1,754 | 934 |
+| M | 1,624 | 970 |
+| A | 1,300 | 1,218 |
+| C | 1,144 | 1,143 |
+| S | 1,085 | 712 |
+| O | 1,078 | 1,055 |
+| N | 1,077 | 1,440 |
+| U | 1,058 | 562 |
+| E | 1,024 | 1,071 |
 
-Which retry step found them: `upscale_pad_0.3` 12,913, `direct_0.3` 6,454, `flip_upscale_pad_0.3` 775, `flip_0.3` 743.
-Detections still fail most often on: P (1623), Q (1416), N (1149), A (1011), O (895), C (883) — flat palms filling the frame (massey B), curled/edge-on hands, and the backlit silhouette photographs inside grassknoted, where the hand is almost black against a bright window. The Stage B section corrects the round-1 wording, which called those silhouettes "synthetic renders"; they are real underexposed photos.
+Which retry step found them: `upscale_pad_0.3` 13,390, `direct_0.3` 6,979, `flip_upscale_pad_0.3` 859, `flip_0.3` 844.
+Detections still fail most often on: P (1884), Q (1673), N (1440), A (1218), C (1143), X (1141) — flat palms filling the frame (massey B), curled/edge-on hands, and the backlit silhouette photographs inside grassknoted, where the hand is almost black against a bright window. The Stage B section corrects the round-1 wording, which called those silhouettes "synthetic renders"; they are real underexposed photos.
 
 ## Stage D: which features actually help
 
@@ -232,7 +241,7 @@ Caveat that applies to every number in the two tables below: these sweeps were r
 **The 71-dim thumb set is what this model trains on** (`xy + tip_dists + curl + thumb`). Three things decided it:
 
 * z coordinates hurt (-1.4, outside the noise). MediaPipe documents z as an arbitrary scale, and measured across our datasets it is not comparable: the palm-width / wrist-to-MCP ratio is 0.67 for grassknoted and danrasband but 1.05 for massey. Feeding it in teaches the model a per-dataset signature.
-* thumb relations are the only addition that never made a watched letter worse, and the number that carried the decision is K 43.7% -> 58.9%. Read it with two things in mind: per-letter noise in that same table reaches 14 points, and the sweep predates the seed fix, so the pair is a lead rather than a measurement. The half of it that this run can check is the destination - K is 58.3% pooled cross-dataset here, which is at least consistent with 58.9%. Re-measuring all five sets under the pinned seed is a round-3 task. The reason the block is believed at all is structural: the thumb is the one digit whose *relationship to the other fingers* carries a letter (A/S/U, F, P/Q/R), and plain fingertip-to-fingertip distances do not express it.
+* thumb relations are the only addition that never made a watched letter worse, and the number that carried the decision is K 43.7% -> 58.9%. Read it with two things in mind: per-letter noise in that same table reaches 14 points, and the sweep predates the seed fix, so the pair is a lead rather than a measurement. The half of it that this run can check is the destination - K is 68.0% pooled cross-dataset here, which is at least consistent with 58.9%. Re-measuring all five sets under the pinned seed is a round-3 task. The reason the block is believed at all is structural: the thumb is the one digit whose *relationship to the other fingers* carries a letter (A/S/U, F, P/Q/R), and plain fingertip-to-fingertip distances do not express it.
 * the headline gain over the 57-dim baseline is +0.2, which is **inside every noise band measured** — the 1.6-point seed-to-seed spread of that table and the 0.7 points a single repeated command moved — so it is not evidence of a better model on its own. It is promoted on the brief's stated rule — best pooled set unless it costs a currently strong letter more than 3 points — and it is the only set that costs nothing.
 
 N stays at 0.3-0.6% under every one of the five sets. No feature can fix a letter whose datasets disagree about what it looks like; see Stage B.
