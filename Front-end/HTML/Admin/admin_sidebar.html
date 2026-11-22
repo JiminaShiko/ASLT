@@ -1,0 +1,355 @@
+<style>
+#admin-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  display: flex;
+  width: 236px;
+  flex-direction: column;
+  color: var(--text, #304037);
+  background: var(--surface, #f8f7f1);
+  border-right: 1px solid var(--border, #d9dfd7);
+  transition: width 0.2s, transform 0.2s;
+}
+
+#admin-sidebar .brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 31px 25px 17px;
+  font: 27px "Playfair Display", Georgia, serif;
+  white-space: nowrap;
+}
+
+#admin-sidebar #brand-icon,
+#admin-sidebar .brand-mark {
+  display: inline-flex;
+  flex: 0 0 29px;
+  width: 29px;
+  height: 29px;
+}
+
+#admin-sidebar #brand-icon img,
+#admin-sidebar .brand-mark img {
+  display: block;
+  width: 29px;
+  height: 29px;
+  border-radius: 50%;
+  object-fit: contain;
+}
+
+#admin-sidebar .sidebar-collapse {
+  display: flex;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  padding: 0;
+  color: var(--muted, #718075);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#admin-sidebar .sidebar-collapse:hover {
+  background: var(--border, #d9dfd7);
+}
+
+#admin-sidebar svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#admin-sidebar .nav-label {
+  margin: 10px 0 14px;
+  padding: 0 26px;
+  color: var(--muted, #718075);
+  font: 9px Inter, Arial, sans-serif;
+  letter-spacing: 1.6px;
+}
+
+#admin-sidebar .nav {
+  overflow: auto;
+  padding: 0 13px;
+}
+
+#admin-sidebar .nav-item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 43px;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 5px;
+  padding: 12px 14px;
+  color: var(--muted, #718075);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  font: 12px Inter, Arial, sans-serif;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+#admin-sidebar .nav-item:hover {
+  background: color-mix(in oklab, var(--sage, #759783) 9%, transparent);
+}
+
+#admin-sidebar .nav-item.active {
+  color: var(--text, #304037);
+  background: color-mix(in oklab, var(--sage, #759783) 18%, transparent);
+}
+
+#admin-sidebar .nav-item.active::before {
+  position: absolute;
+  left: -13px;
+  width: 3px;
+  height: 22px;
+  background: var(--sage, #759783);
+  border-radius: 0 3px 3px 0;
+  content: "";
+}
+
+#admin-sidebar .nav-item svg {
+  color: inherit;
+}
+
+#admin-sidebar .nav-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#admin-sidebar .soon {
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+#admin-sidebar .personalize {
+  margin-top: 27px;
+}
+
+#admin-sidebar .side-bottom {
+  margin-top: auto;
+  padding: 22px 21px;
+  border-top: 1px solid var(--border, #d9dfd7);
+}
+
+#admin-sidebar .admin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+#admin-sidebar .avatar {
+  display: inline-flex;
+  width: 35px;
+  height: 35px;
+  flex: 0 0 35px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--muted, #718075);
+  background: color-mix(in oklab, var(--sage, #759783) 23%, var(--surface, #f8f7f1));
+  border: 1px solid color-mix(in oklab, var(--sage, #759783) 45%, var(--surface, #f8f7f1));
+  border-radius: 50%;
+  font: 11px Inter, Arial, sans-serif;
+}
+
+#admin-sidebar .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#admin-sidebar .admin-info {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  font: 12px Inter, Arial, sans-serif;
+}
+
+#admin-sidebar .admin-name {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#admin-sidebar .admin-info small {
+  color: var(--muted, #718075);
+  font-size: 10px;
+}
+
+#admin-sidebar .logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 21px;
+  padding: 0;
+  color: var(--muted, #718075);
+  background: transparent;
+  border: 0;
+  font: 11px Inter, Arial, sans-serif;
+  cursor: pointer;
+}
+
+#admin-sidebar .logout:hover {
+  color: var(--text, #304037);
+}
+
+.mobile-overlay {
+  display: none;
+}
+
+.mobile-collapse {
+  display: none;
+}
+
+.theme-toggle .theme-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.notification-bell {
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-bell svg {
+  width: 18px;
+  height: 18px;
+}
+
+.app.collapsed #admin-sidebar {
+  width: 74px;
+}
+
+.app.collapsed #admin-sidebar .brand {
+  gap: 0;
+  padding-right: 8px;
+  padding-left: 8px;
+}
+
+.app.collapsed #admin-sidebar .brand-name,
+.app.collapsed #admin-sidebar .nav-label,
+.app.collapsed #admin-sidebar .nav-item span,
+.app.collapsed #admin-sidebar .admin-info,
+.app.collapsed #admin-sidebar .logout span {
+  display: none;
+}
+
+.app.collapsed #admin-sidebar .sidebar-collapse {
+  margin-left: 1px;
+}
+
+.app.collapsed #admin-sidebar .nav {
+  padding: 0 10px;
+}
+
+.app.collapsed #admin-sidebar .nav-item {
+  justify-content: center;
+  padding: 13px 14px;
+}
+
+.app.collapsed #admin-sidebar .side-bottom {
+  padding: 22px 19px;
+}
+
+.app.collapsed #admin-sidebar .logout {
+  justify-content: center;
+}
+
+@media (max-width: 800px) {
+  #admin-sidebar {
+    transform: translateX(-100%);
+  }
+
+  .app.mobile-open #admin-sidebar {
+    transform: translateX(0);
+  }
+
+  .app.mobile-open .mobile-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 19;
+    display: block;
+    background: rgb(0 0 0 / 55%);
+    border: 0;
+  }
+
+  .mobile-collapse {
+    display: flex;
+  }
+
+  .app.collapsed #admin-sidebar {
+    width: 236px;
+  }
+}
+</style>
+
+<button class="mobile-overlay" type="button" aria-label="Close navigation" onclick="closeMobile()"></button>
+<aside class="sidebar" id="admin-sidebar" aria-label="Admin navigation">
+  <div class="brand">
+    <span id="brand-icon"><img src="/assets/images/logo_bgremove.png" alt="" width="29" height="29"></span>
+    <span class="brand-name">Signrest</span>
+    <button class="collapse sidebar-collapse" id="collapse" type="button" aria-label="Toggle sidebar" onclick="collapseSidebar()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg>
+    </button>
+  </div>
+  <div class="nav-label">WORKSPACE</div>
+  <nav class="nav" id="nav" aria-label="Admin pages">
+    <a class="nav-item active" href="/admin-dashboard/" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>
+      <span>Overview</span>
+    </a>
+    <a class="nav-item" href="/admin-dashboard/accuracy.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10 M10 20V4 M16 20v-7 M22 20H2"/></svg>
+      <span>AI Accuracy &amp; Logs</span>
+    </a>
+    <a class="nav-item" href="/admin-dashboard/materials.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v16 M12 5C8 2 4 3 2 4v15c4-1 7-1 10 2 3-3 6-3 10-2V4c-4-1-7-2-10 1Z"/></svg>
+      <span>Sign Materials</span>
+    </a>
+    <button class="nav-item" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v4H8z M7 5H4v16h16V5h-3 M8 12l2 2 5-5 M8 18h7"/></svg><span>Quiz Manager</span><i class="soon" aria-hidden="true"></i></button>
+    <button class="nav-item" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2c0-4-12-4-12 0v2 M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M17 4c4 0 4 6 0 6 M20 21v-3c0-2-1-3-3-3"/></svg><span>Users &amp; Sessions</span><i class="soon" aria-hidden="true"></i></button>
+    <button class="nav-item" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4H3v13h4v4l5-4h9z M7 8h10 M7 12h6"/></svg><span>Feedbacks</span><i class="soon" aria-hidden="true"></i></button>
+    <button class="nav-item" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 3 6 18 3-7 7-3Z M14 15l5 6"/></svg><span>Cursor Effects</span><i class="soon" aria-hidden="true"></i></button>
+    <div class="nav-label personalize">PERSONALIZE</div>
+    <a class="nav-item" href="/admin-dashboard/profile.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1Z"/></svg>
+      <span>Profile Settings</span>
+    </a>
+  </nav>
+  <div class="side-bottom">
+    <div class="admin">
+      <span class="avatar" id="admin-initials">A</span>
+      <div class="admin-info">
+        <span class="admin-name" id="admin-name">Administrator</span>
+        <small>Admin</small>
+      </div>
+    </div>
+    <button class="logout" id="logout" type="button" onclick="logout()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H4v16h6 M9 12h12m-4-4 4 4-4 4"/></svg>
+      <span>Logout</span>
+    </button>
+  </div>
+</aside>

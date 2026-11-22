@@ -1,16 +1,20 @@
 # Signrest Admin Dashboard — Foundation
 
-Open `admin_dashboard.html` in a modern browser. No installation or build is needed.
-For local serving, run `python3 -m http.server 8000` in this folder and open http://localhost:8000/admin_dashboard.html.
+The Overview page requires the Flask backend. Run `Backend/app.py` and open
+`/admin-dashboard/` on that server; serving this page with a static file server
+does not provide its API endpoint.
 
 ## Structure
 - admin_dashboard.html — dashboard shell and Overview entry point
 - accuracy.html — AI Accuracy & Logs, read-only model evaluations and predictions
 - materials.html — Sign Materials, API-backed library with search, categories, details, add/edit/delete
+- profile.html — Profile Settings and account details
 - css/style.css — shared styles and light/dark theme tokens
-- js/app.js — shared page controls, Overview demo, and theme preference
+- css/profile.css — Profile Settings styles
+- js/app.js — shared page controls, live Overview, and theme preference
 - js/api.js — FastAPI connection adapter used by accuracy.html and materials.html
 - js/materials.js — material library and editing controls (load before js/app.js on materials.html)
+- js/profile.js — Profile Settings loading and form controls
 - assets/images/mist.jpg — light mode cover photo
 - assets/images/forest.jpg — dark mode cover photo
 - assets/icons/ — 26 standalone SVG files, one per icon used in the interface
@@ -24,11 +28,18 @@ the on-screen rendering.
 
 ## Scope
 This is the foundation setup, not the complete eight-module dashboard.
-Overview, AI Accuracy & Logs, and Sign Materials work; the other five navigation entries show a coming-soon message.
+Overview is connected to the Flask API. AI Accuracy & Logs and Sign Materials
+have API-backed frontends but need their documented endpoints; the other four
+navigation entries show a coming-soon message.
 Light mode uses sage and parchment; dark mode uses the original deep forest palette.
-Theme choice and Overview demo state are saved only in this browser's localStorage.
-AI Accuracy & Logs does not use sample records or browser-stored records. It requests FastAPI data and shows loading, empty, or connection-error states. Overview remains a demo and is not converted in this update.
-No running FastAPI service or MySQL connection is included. Authentication must be supplied by your existing application; no AI training or prediction review is added.
+Theme choice is saved only in this browser's localStorage. Overview data comes
+from the Flask `/api/admin/overview` endpoint and the configured MySQL database.
+AI Accuracy & Logs does not use sample records or browser-stored records; it
+still requires the documented FastAPI endpoints. Authentication uses the
+existing application session. No AI training or prediction review is added.
+Profile Settings is reachable and loads the signed-in administrator's profile
+from Flask. Profile edits, photo upload, and password changes still need
+backend endpoints.
 Sign Materials also contains no demo or cached records. It uses the existing sign_materials fields, including image_path (a public HTTP image path/URL, not a local disk path). No video or status columns are assumed. Changes are confirmed only after successful API responses. Images must be served by your existing app; file uploads are not included.
 Fonts use Google Fonts when online, with local serif/sans-serif fallbacks.
 Existing Overview charts are vanilla JavaScript; Chart.js can be added during the analytics page step.

@@ -1,0 +1,57 @@
+.brand .sidebar-collapse {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.brand .sidebar-collapse:hover {
+  background: var(--border);
+}
+
+.app.collapsed .brand {
+  gap: 0;
+  padding-right: 8px;
+  padding-left: 8px;
+}
+
+.app.collapsed .brand #brand-icon {
+  display: inline-flex;
+  flex: 0 0 29px;
+}
+
+.app.collapsed .brand .sidebar-collapse {
+  margin-left: 1px;
+}
+
+.mobile-collapse {
+  display: none;
+}
+
+.theme-toggle .theme-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.notification-bell {
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-bell svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 800px) {
+  .mobile-collapse {
+    display: flex;
+  }
+}

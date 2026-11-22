@@ -13,6 +13,7 @@ function matches(item){return JSON.stringify(item).toLowerCase().includes(state.
 function table(headers,rows){return '<div class="table-wrap"><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+(rows.length?rows.join(''):'<tr><td colspan="'+headers.length+'" class="empty">No matching records</td></tr>')+'</tbody></table></div>'}
 function nav(){document.getElementById('nav').innerHTML=pages.map((p,i)=>(i===6?'<div class="nav-label" style="margin-top:27px;padding-left:13px">PERSONALIZE</div>':'')+'<button onclick="navigate(\''+p[0]+'\')" class="'+(state.page===p[0]?'active':'')+'" '+(state.page===p[0]?'aria-current="page"':'')+' title="'+p[1]+(ready.includes(p[0])?'':' (coming soon)')+'"'+(ready.includes(p[0])?'':' data-soon')+'>'+icon(p[2])+'<span>'+p[1]+'</span>'+(ready.includes(p[0])?(p[0]==='feedback'?'<span class="count">'+pendingCount()+'</span>':''):'<span class="soon" aria-hidden="true"></span>')+'</button>').join('')}
 const ready=['overview','logs','materials'];const files={'overview':'admin_dashboard','logs':'accuracy','materials':'materials','quiz':'quiz','users':'users','feedback':'feedback','effects':'effects','profile':'profile'};function navigate(page,filter){if(page!==state.page){if(!ready.includes(page)){toast('This page is coming soon.');return}saveState();location.href=files[page]+'.html'+(filter?'?filter='+filter:'');return}state.page=page;state.filter='all';state.query='';document.getElementById('search').value='';closeMobile();render();window.scrollTo(0,0)}
+ready.push('profile');
 function closeMobile(){document.getElementById('app').classList.remove('mobile-open')}
 function collapseSidebar(){let app=document.getElementById('app');if(innerWidth<=800)app.classList.toggle('mobile-open');else app.classList.toggle('collapsed')}
 function searchView(q){state.query=q;logPage=1;if(state.page==='materials'){materialSearch();return}if(state.page==='logs'){clearTimeout(searchTimer);searchTimer=setTimeout(loadTranslations,300)}else renderContent()}
@@ -90,7 +91,8 @@ function applyTheme(theme) {
  if (control) {
   const label = selected === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
   control.setAttribute('aria-label', label); control.title = label;
-  control.innerHTML = selected === 'dark' ? '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/></svg>' : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z"/></svg>';
+  const image = selected === 'dark' ? 'sun_bgremove.png' : 'moon_bgremove.png';
+  control.innerHTML = '<img class="theme-icon" src="/assets/images/' + image + '" alt="" width="20" height="20">';
  }
 }
 function toggleTheme() {
@@ -101,3 +103,4 @@ function toggleTheme() {
 let savedTheme = 'light';
 try { savedTheme = localStorage.getItem('signrest-admin-theme') || 'light'; } catch (_) {}
 applyTheme(savedTheme);
+document.getElementById('brand-icon').innerHTML = '<img src="/assets/images/logo_bgremove.png" alt="" width="29" height="29" style="display:block;object-fit:contain;border-radius:50%">';

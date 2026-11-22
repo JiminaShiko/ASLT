@@ -12,6 +12,8 @@ if str(BACKEND_DIR) not in sys.path:
 
 from config.database.db_connection import get_db_connection
 from config.environment import load_environment
+from admin.overview import admin_overview_bp
+from admin.profile import admin_profile_bp
 from login_signup_pages.forgot_password_process import forgot_password_bp
 from login_signup_pages.google_auth import google_bp
 from login_signup_pages.login_process import ensure_login_columns, login_bp
@@ -64,6 +66,8 @@ app.register_blueprint(login_bp)
 app.register_blueprint(forgot_password_bp)
 app.register_blueprint(google_bp)
 app.register_blueprint(profile_bp)
+app.register_blueprint(admin_overview_bp)
+app.register_blueprint(admin_profile_bp)
 
 
 LOOPBACK_ADDRESSES = {"127.0.0.1", "::1", "::ffff:127.0.0.1", "localhost"}
