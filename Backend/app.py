@@ -17,6 +17,8 @@ from login_signup_pages.google_auth import google_bp
 from login_signup_pages.login_process import ensure_login_columns, login_bp
 from login_signup_pages.signup_process import ensure_auth_tables, signup_bp
 from login_signup_pages.profile_process import profile_bp
+from agent_mail import agent_mail_bp
+from user.text_to_sign import text_to_sign_bp
 
 PROJECT_ROOT = BACKEND_DIR.parent
 FRONTEND_DIR = PROJECT_ROOT / "Front-end"
@@ -52,6 +54,14 @@ sys.modules[translation_api_spec.name] = translation_api
 translation_api_spec.loader.exec_module(translation_api)
 app.register_blueprint(translation_api.api_bp)
 
+# Text to Sign: word signs from the word model's vocabulary plus alphabet
+# fingerspelling, served from the same origin as the page.
+app.register_blueprint(text_to_sign_bp)
+
+# AgentMail: the backend agent's own inbox, outbound mail and the signed webhook
+# that answers replies.
+app.register_blueprint(agent_mail_bp)
+
 # Reads SECRET_KEY strictly from .env (localhost) or Render Environment Variables
 app.secret_key = os.getenv("SECRET_KEY", "dev-fallback-secret-key")
 
@@ -83,7 +93,8 @@ def require_login_for_translation_api():
     # Browsers send CORS preflights without cookies, so they must pass here.
     if request.method == "OPTIONS":
         return None
-    if request.blueprint == "asl_translation_api" and not session.get("user_email"):
+    if (request.blueprint in {"asl_translation_api", "text_to_sign_api"}
+            and not session.get("user_email")):
         if _translation_auth_bypassed():
             return None
         return jsonify({"error": "Authentication required."}), 401

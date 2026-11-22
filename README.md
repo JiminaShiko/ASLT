@@ -5,7 +5,7 @@ This is a school project.
 ## Project structure
 
 - `Front-end/` — static website: HTML pages, CSS, JS, images, login/profile pages, the admin dashboard UI, and the logged-in `user_homepage/` (dashboard + translation).
-- `Backend/` — Flask application: `app.py`, authentication blueprints (`login_signup_pages/`), database/mail/Cloudinary config (`config/`), `ca.pem`.
+- `Backend/` — Flask application: `app.py`, authentication blueprints (`login_signup_pages/`), the Text to Sign planner (`user/text_to_sign.py`), database/mail/Cloudinary config (`config/`), `ca.pem`.
 - `Model/` — AI projects: `asl_landmark_app/` (letter recognizer), `sign language photo model/` (photo recognizer + live API), `videoModel/` (word recognizer), and `EDA/` notebooks/reports.
 - `Assignments/`, `Diagrams/`, `Doc/` — course deliverables and design documents.
 
@@ -61,3 +61,10 @@ also accepts `Backend\.env`, but do not create both). Without `DB_HOST`,
 `DB_USER`, `DB_PASS` and `DB_NAME` login cannot reach the database; `MAIL_*` is
 needed for the OTP emails, `SECRET_KEY` for sessions, and `GOOGLE_*` /
 `CLOUDINARY_*` are optional.
+
+`.env.example` lists the backend agent email settings, empty: `AGENTMAIL_API_KEY`
+and `AGENTMAIL_WEBHOOK_SECRET` (`Backend/agent_mail.py`). With a key in `.env`,
+`python agent_mail.py` from `Backend/` opens the agent inbox and
+`python agent_mail.py you@example.com` sends one test email; point an AgentMail
+webhook with the `message.received` event at `POST /api/agent/email/webhook` and
+the agent answers each reply with how the app would sign that sentence.

@@ -611,6 +611,53 @@
 
     .sgap { width: 24px; }
 
+    .sign-word {
+      border: 1px dashed rgba(44, 74, 44, 0.45);
+      border-radius: 14px;
+      padding: 6px 8px 4px 8px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .sign-word .word-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.72;
+      text-align: center;
+    }
+
+    .sign-word .word-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .tile.word-tile { width: 104px; }
+
+    .tile.word-tile .imgbox {
+      width: 88px;
+      height: 64px;
+    }
+
+    .tile .imgbox video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #0f1a10;
+    }
+
+    .tile .caption {
+      font-size: 0.66rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.62;
+    }
+
+    .tile.speaking { outline: 2px solid #2c4a2c; }
+
+
     .drop-zone {
       border: 2px dashed var(--input-line);
       border-radius: 18px;
@@ -808,12 +855,18 @@
       <label for="txt" style="font-size:0.92rem; font-weight:600; display:block; margin-bottom:6px;">Type your text</label>
       <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
         <input class="underlined-input" id="txt" type="text" placeholder="For example: hello" autocomplete="off" />
+        <button type="button" id="speak" class="forest-outline-btn">
+          <span id="speak-label">Speak</span>
+        </button>
         <button type="button" id="voice" class="forest-outline-btn">
-          <span id="voice-label">Speak</span>
+          <span id="voice-label">Voice</span>
         </button>
       </div>
 
-      <button type="button" id="show-sign" class="forest-pill-btn">Show signs</button>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button type="button" id="show-sign" class="forest-pill-btn">Show signs</button>
+        <button type="button" id="clear-signs" class="forest-outline-btn">Clear</button>
+      </div>
       <div class="status-line" id="text-status" role="status" aria-live="polite"></div>
 
       <div style="margin-top:16px;">
@@ -1323,77 +1376,325 @@
   });
 
   /* ---------- 5. Text to Sign Panel ---------- */
+  /* The backend decides, per word, whether the word model has a sign for it or
+     whether it must be fingerspelled with the alphabet model, and returns a
+     media URL for each item. Speech reuses the existing /api/tts route. */
   const txtInput = document.getElementById("txt");
   const signsGrid = document.getElementById("signs");
   const textStatus = document.getElementById("text-status");
+  const clearSignsBtn = document.getElementById("clear-signs");
 
-  function showSigns() {
-    const raw = txtInput.value.trim();
-    const up = raw.toUpperCase();
-    signsGrid.innerHTML = "";
-    let count = 0;
+  let speechAudio = null;
+  let speechToken = 0;
 
-    for (let i = 0; i < up.length; i++) {
-      const ch = up.charAt(i);
-      if (ch >= "A" && ch <= "Z") {
-        const tile = document.createElement("div");
-        tile.className = "tile";
+  function setTextStatus(message, isError) {
+    textStatus.textContent = message || "";
+    textStatus.className = isError ? "status-line error" : "status-line";
+  }
 
-        const imgBox = document.createElement("div");
-        imgBox.className = "imgbox";
-        const img = document.createElement("img");
-        img.alt = "ASL sign for " + ch;
-        img.src = "../assets/images/signs/" + ch + ".png";
-        img.onerror = () => {
-          imgBox.innerHTML = `<strong style="font-size:1.45rem;">${ch}</strong>`;
-        };
-        imgBox.appendChild(img);
+  function stopSpeech() {
+    speechToken++;
+    if (speechAudio) { speechAudio.pause(); speechAudio = null; }
+    if ("speechSynthesis" in window) { window.speechSynthesis.cancel(); }
+    document.querySelectorAll(".tile.speaking").forEach((el) => el.classList.remove("speaking"));
+  }
 
-        const letterDiv = document.createElement("div");
-        letterDiv.className = "letter";
-        letterDiv.textContent = ch;
+  async function playAudio(url) {
+    const audio = new Audio(url);
+    speechAudio = audio;
+    await new Promise((resolve, reject) => {
+      audio.addEventListener("ended", resolve, { once: true });
+      audio.addEventListener("error", () => reject(new Error("Could not play the voice.")), { once: true });
+      audio.play().catch(reject);
+    });
+    URL.revokeObjectURL(url);
+  }
 
-        tile.appendChild(imgBox);
-        tile.appendChild(letterDiv);
-        signsGrid.appendChild(tile);
-        count++;
-      } else if (ch === " ") {
-        const gap = document.createElement("div");
-        gap.className = "sgap";
-        signsGrid.appendChild(gap);
+  async function speakText(text) {
+    const token = speechToken;
+    try {
+      const res = await fetch(API_BASE + "/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: API_CREDENTIALS,
+        body: JSON.stringify({ text: text, lang: "en" })
+      });
+      if (!res.ok) {
+        let message = "The Google voice is unavailable.";
+        try {
+          const data = await res.json();
+          if (data && data.error) message = data.error;
+        } catch (e) {}
+        throw new Error(message);
       }
+      const blob = await res.blob();
+      if (token !== speechToken) return false;
+      await playAudio(URL.createObjectURL(blob));
+      return token === speechToken;
+    } catch (err) {
+      if (token !== speechToken) return false;
+      if ("speechSynthesis" in window) {
+        await new Promise((resolve) => {
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.onend = resolve;
+          utter.onerror = resolve;
+          window.speechSynthesis.speak(utter);
+        });
+        return token === speechToken;
+      }
+      throw err;
+    }
+  }
+
+  function mediaSource(media) {
+    if (!media || !media.url) return "";
+    return media.url.charAt(0) === "/" ? API_BASE + media.url : media.url;
+  }
+
+  function makeTile(label, media, spoken, kind) {
+    const tile = document.createElement("div");
+    tile.className = "tile" + (kind === "word" ? " word-tile" : "");
+    tile.tabIndex = 0;
+    tile.setAttribute("role", "button");
+    tile.title = "Click to hear " + spoken;
+
+    const imgBox = document.createElement("div");
+    imgBox.className = "imgbox";
+    const src = mediaSource(media);
+    if (src && media.type === "video") {
+      const video = document.createElement("video");
+      video.src = src;
+      video.muted = true;
+      video.loop = true;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.addEventListener("error", () => {
+        imgBox.innerHTML = '<strong style="font-size:1.45rem;">' + esc(label) + "</strong>";
+      });
+      imgBox.appendChild(video);
+      video.play().catch(() => {});
+    } else if (src) {
+      const img = document.createElement("img");
+      img.alt = "ASL sign for " + label;
+      img.src = src;
+      img.onerror = () => {
+        imgBox.innerHTML = '<strong style="font-size:1.45rem;">' + esc(label) + "</strong>";
+      };
+      imgBox.appendChild(img);
+    } else {
+      imgBox.innerHTML = '<strong style="font-size:1.45rem;">' + esc(label) + "</strong>";
     }
 
-    if (count === 0) {
-      signsGrid.innerHTML = '<p style="opacity:0.72; font-size:0.9rem;">Type letters A to Z to see the signs.</p>';
-      textStatus.textContent = "";
+    const labelDiv = document.createElement("div");
+    labelDiv.className = "letter";
+    labelDiv.textContent = label;
+    tile.appendChild(imgBox);
+    tile.appendChild(labelDiv);
+
+    if (kind === "word") {
+      const caption = document.createElement("div");
+      caption.className = "caption";
+      caption.textContent = media ? "word sign" : "spelled";
+      tile.appendChild(caption);
+    }
+
+    const speakSelf = () => sayTile(tile, spoken);
+    tile.addEventListener("click", speakSelf);
+    tile.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        speakSelf();
+      }
+    });
+    return tile;
+  }
+
+  async function sayTile(tile, spoken) {
+    stopSpeech();
+    tile.classList.add("speaking");
+    try {
+      await speakText(spoken);
+    } catch (err) {
+      setTextStatus(err.message, true);
+    } finally {
+      tile.classList.remove("speaking");
+    }
+  }
+
+  function makeGap() {
+    const gap = document.createElement("div");
+    gap.className = "sgap";
+    return gap;
+  }
+
+  async function fetchSignPlan(text) {
+    let response;
+    try {
+      response = await fetch(API_BASE + "/api/text-to-sign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: API_CREDENTIALS,
+        body: JSON.stringify({ text: text })
+      });
+    } catch (err) {
+      throw new Error('Could not reach the sign API. Start the backend with "python app.py" in the Backend folder.');
+    }
+    let result;
+    try {
+      result = await response.json();
+    } catch (err) {
+      throw new Error("The sign API returned an invalid response (HTTP " + response.status + ").");
+    }
+    if (!response.ok) {
+      throw new Error(result.error || "Could not build the signs.");
+    }
+    return result;
+  }
+
+  async function showSigns() {
+    const raw = txtInput.value.trim();
+    stopSpeech();
+    if (!raw) {
+      signsGrid.innerHTML = '<p style="opacity:0.72; font-size:0.9rem;">Type a word or a sentence first.</p>';
+      setTextStatus("");
       return;
     }
-    textStatus.textContent = "";
+    signsGrid.innerHTML = '<p style="opacity:0.72; font-size:0.9rem;">Choosing signs...</p>';
+    setTextStatus("");
+    let result;
+    try {
+      result = await fetchSignPlan(raw);
+    } catch (err) {
+      signsGrid.innerHTML = "";
+      setTextStatus(err.message, true);
+      return;
+    }
+
+    signsGrid.innerHTML = "";
+    let tileCount = 0;
+    result.items.forEach((item) => {
+      if (item.type === "space") {
+        signsGrid.appendChild(makeGap());
+        return;
+      }
+      if (item.type !== "word") return;
+      if (item.sign === "word") {
+        signsGrid.appendChild(makeTile(item.text.toUpperCase(), item.media, item.text, "word"));
+        tileCount++;
+        return;
+      }
+      // The word model has no sign for this word: fingerspell it a letter at a time.
+      const group = document.createElement("div");
+      group.className = "sign-word";
+      const title = document.createElement("div");
+      title.className = "word-label";
+      title.textContent = item.text;
+      group.appendChild(title);
+      const row = document.createElement("div");
+      row.className = "word-row";
+      item.letters.forEach((letter) => {
+        row.appendChild(makeTile(letter.letter, letter.media, letter.letter, "letter"));
+        tileCount++;
+      });
+      group.appendChild(row);
+      signsGrid.appendChild(group);
+    });
+
+    if (!tileCount) {
+      signsGrid.innerHTML = '<p style="opacity:0.72; font-size:0.9rem;">Type letters A to Z to see the signs.</p>';
+      return;
+    }
+    const summary = result.summary || {};
+    const parts = [];
+    if (summary.words_signed) {
+      parts.push(summary.words_signed + " word sign" + (summary.words_signed === 1 ? "" : "s") + " (word model)");
+    }
+    if (summary.words_fingerspelled) {
+      parts.push(summary.words_fingerspelled + " word" + (summary.words_fingerspelled === 1 ? "" : "s") +
+        " fingerspelled (alphabet model)");
+    }
+    if (!summary.letter_images) {
+      parts.push("letter photos go in Front-end/text_to_sign_demo/alphabet");
+    }
+    setTextStatus(parts.concat(result.notes || []).join(" · "), false);
     saveHistory("Text to Sign", raw);
   }
 
   document.getElementById("show-sign").addEventListener("click", showSigns);
+  clearSignsBtn.addEventListener("click", () => {
+    stopSpeech();
+    signsGrid.innerHTML = '<p style="opacity:0.72; font-size:0.9rem;">Type a word, then tap "Show signs".</p>';
+    setTextStatus("");
+  });
   txtInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") showSigns();
   });
 
+  // Voice: reads the typed text aloud through the existing /api/tts voice.
   const voiceBtn = document.getElementById("voice");
   const voiceLabel = document.getElementById("voice-label");
+  voiceBtn.addEventListener("click", async () => {
+    const text = txtInput.value.trim();
+    if (!text) {
+      setTextStatus("Type a word or a sentence first.", true);
+      return;
+    }
+    stopSpeech();
+    const token = speechToken;
+    voiceBtn.disabled = true;
+    voiceLabel.textContent = "Speaking...";
+    try {
+      await speakText(text);
+    } catch (err) {
+      if (token === speechToken) setTextStatus(err.message, true);
+    } finally {
+      if (token === speechToken) {
+        voiceLabel.textContent = "Voice";
+        voiceBtn.disabled = false;
+      }
+    }
+  });
+
+  // Speak: microphone speech-to-text. Dictated words are written into the input
+  // and their signs are shown straight away.
+  const speakBtn = document.getElementById("speak");
+  const speakLabel = document.getElementById("speak-label");
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
-    voiceBtn.disabled = true;
+    speakBtn.disabled = true;
+    speakBtn.title = "This browser has no speech recognition.";
   } else {
     const rec = new SR();
     rec.lang = "en-US";
-    rec.onresult = (e) => {
-      txtInput.value = e.results[0][0].transcript;
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onstart = () => {
+      speakLabel.textContent = "Listening...";
+      setTextStatus("Listening... say the letters or words you want to sign.");
+    };
+    rec.onresult = (event) => {
+      const said = (event.results[0][0].transcript || "").trim();
+      if (!said) return;
+      stopSpeech();
+      txtInput.value = said;
       showSigns();
     };
-    rec.onend = () => { voiceLabel.textContent = "Speak"; };
-    voiceBtn.addEventListener("click", () => {
-      voiceLabel.textContent = "Listening...";
-      try { rec.start(); } catch (e) {}
+    rec.onerror = (event) => {
+      if (event.error !== "aborted") {
+        setTextStatus("The microphone could not be used (" + event.error + ").", true);
+      }
+    };
+    rec.onend = () => {
+      speakLabel.textContent = "Speak";
+      speakBtn.disabled = false;
+    };
+    speakBtn.addEventListener("click", () => {
+      speakBtn.disabled = true;
+      try {
+        rec.start();
+      } catch (err) {
+        speakBtn.disabled = false;
+      }
     });
   }
 
