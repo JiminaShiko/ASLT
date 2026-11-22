@@ -28,6 +28,13 @@ Pillow==12.3.0
 gunicorn==27.0.1
 
 # ---------------------------------------------------------------------------
+# Agent email channel (Backend/agent_mail.py: AgentMail inbox, outbound mail and
+# the signature-verified reply webhook; svix verifies the webhook signatures)
+# ---------------------------------------------------------------------------
+agentmail==2.0.26
+svix==2.10.0
+
+# ---------------------------------------------------------------------------
 # Landmark runtime imported by Backend at startup
 # (Model/asl_landmark_app via Model/sign language photo model/api.py)
 # ---------------------------------------------------------------------------
