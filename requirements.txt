@@ -78,7 +78,6 @@ tensorflow==2.22.0rc0
 # ---------------------------------------------------------------------------
 # NOT installed on purpose
 # ---------------------------------------------------------------------------
-# fastapi / uvicorn: Backend/admin/overview_router.py is a FastAPI module, but it
-# is not imported by app.py and imports a missing `.dependencies` module
-# (get_db, require_admin). The admin dashboard currently calls /api/admin/*,
-# which this Flask app does not implement.
+# fastapi / uvicorn: the Overview API is implemented as a Flask blueprint in
+# Backend/admin/overview.py. AI Accuracy & Logs and Sign Materials still need
+# their documented FastAPI endpoints before those pages can load live data.
