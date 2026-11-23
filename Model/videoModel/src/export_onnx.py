@@ -1,16 +1,4 @@
-"""
-Stage 6b - ONNX export and the parity check, kept separate from training.
-
-    python -m src.export_onnx
-
-Exports models/words_core20.pt to models/words_core20.onnx (opset 17, dynamic
-batch) and then proves the two runtimes agree on real features: the same
-[64, D] matrices go through torch and through onnxruntime, and the biggest
-probability difference is reported. Parity is checked on cached clips, not on
-random noise, because noise does not exercise the mask and hand-absent paths.
-
-Nothing is written to the dataset folder and no webcam is involved.
-"""
+"""Stage 6b - ONNX export (opset 17, dynamic batch) plus a parity check on real clips, not noise."""
 from __future__ import annotations
 
 import json
@@ -54,8 +42,7 @@ def export(weights: Path | None = None, out: Path | None = None,
     dummy = torch.zeros(1, config.NUM_FRAMES, dim)
     config.ensure_dirs()
     tmp = out.with_suffix(".onnx.part")
-    # the checkpoint outputs logits; the shipped graph outputs probabilities
-    # so the live path can feed it straight into the commit rule
+    # the shipped graph returns probabilities; live's commit rule expects them
     torch.onnx.export(
         _Probs(net), dummy, str(tmp), opset_version=17,
         input_names=["features"], output_names=["probabilities"],
@@ -63,14 +50,11 @@ def export(weights: Path | None = None, out: Path | None = None,
                       "probabilities": {0: "batch"}},
         dynamo=False)
     tmp.replace(out)
-    # torch.onnx.export leaves the module it traced in train mode, and the
-    # dropout in the head would then randomise every comparison: 1.9e-02
-    # difference on a model that is bit-identical once eval() is restored
+    # tracing leaves the module in train mode; that dropout would corrupt parity
     net.eval()
     log.info("exported %s (%.1f MB) from %s", out,
              out.stat().st_size / 1e6, weights)
 
-    # --- parity on real cached features ------------------------------------
     bt = None
     for s in ("test", "val", "train"):
         bt = T.make_batcher(s, labels, None, None, version=fver)

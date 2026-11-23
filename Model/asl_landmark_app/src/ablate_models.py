@@ -1,21 +1,8 @@
 """Stage E - is the bottleneck the model or the features?
 
-Runs the same leave-one-dataset-out folds with three learners:
-
-  mlp 128-64    the round-1 architecture
-  mlp 256-128   twice as wide, identical regularisation and early stopping
-  hgb           sklearn HistGradientBoostingClassifier, class_weight=balanced
-
-and reports per learner the pooled (headline) and macro cross-dataset accuracy,
-the watched letters, and the single-frame inference cost - a learner that wins
-but cannot hold 20 FPS live is not a candidate.
-
-    python src/ablate_models.py
-    python src/ablate_models.py --models "mlp 128-64,hgb"
-    python src/ablate_models.py --blocks xy,tip_dists,curl,thumb,orient
-
-Writes reports/ablation_models.md. Nothing under models/ is touched: this is a
-measurement script, and the real fit is still `python src/train.py`.
+Same leave-one-dataset-out folds for three learners (two MLP widths and
+HistGradientBoosting), reporting accuracy and single-frame cost - a learner that
+cannot hold 20 FPS is not a candidate. Writes reports/ablation_models.md.
 """
 from __future__ import annotations
 

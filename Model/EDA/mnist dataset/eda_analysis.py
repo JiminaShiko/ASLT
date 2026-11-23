@@ -1,7 +1,4 @@
-#Sign Language MNIST - Exploratory Data Analysis (EDA)
-#--------------------------------------------------
-# 1. Import Libraries
-#--------------------------------------------------
+"""EDA for Sign Language MNIST: charts + results.json."""
 import json
 import os
 import shutil
@@ -13,52 +10,38 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Hide warning messages to keep the output clean
 warnings.filterwarnings("ignore")
 
-# Use a clean grid style for all charts
 sns.set_theme(style = "whitegrid")
 
-# Show up to 12 columns when printing a DataFrame
 pd.set_option("display.max_columns", 12)
 pd.set_option("display.width", 140)
 
-#--------------------------------------------------
-# 2. Folder Paths
-#--------------------------------------------------
-DATA_DIR  = "dataset"       # Folder that contains the two CSV files
-CHART_DIR = "charts"        # Folder where the charts are saved
-TABLE_DIR = "tables"        # Folder where the summary tables are saved
+DATA_DIR  = "dataset"
+CHART_DIR = "charts"
+TABLE_DIR = "tables"
 
-# Create the output folders if they do not exist yet
 os.makedirs(CHART_DIR, exist_ok = True)
 os.makedirs(TABLE_DIR, exist_ok = True)
 
-# Dictionary that stores every result - saved to results.json at the end
 R = {}
 
-# Label 0-24 -> ASL letter (label 9 = J never appears, 10 = K, ..., 24 = Y)
+# Label 0-24 -> ASL letter (9 = J never appears)
 def letter(label):
     return chr(65 + int(label))
 
-#--------------------------------------------------
-# 3. Download the Dataset (Automatic)
-#--------------------------------------------------
 TRAIN_CSV = os.path.join(DATA_DIR, "sign_mnist_train.csv")
 TEST_CSV  = os.path.join(DATA_DIR, "sign_mnist_test.csv")
 
-# Download only if the two CSV files are not in the dataset folder yet
 if not (os.path.exists(TRAIN_CSV) and os.path.exists(TEST_CSV)):
     print("Dataset not found. Downloading Sign Language MNIST from Kaggle........")
 
     os.makedirs(DATA_DIR, exist_ok = True)
 
     try:
-        # kagglehub downloads the public Kaggle dataset into its cache folder
         import kagglehub
         download_path = kagglehub.dataset_download("datamunge/sign-language-mnist")
 
-        # Search the downloaded folder and copy the two CSV files into dataset/
         for folder, subfolders, files in os.walk(download_path):
             for file_name in files:
                 if file_name in ["sign_mnist_train.csv", "sign_mnist_test.csv"]:
@@ -73,17 +56,12 @@ if not (os.path.exists(TRAIN_CSV) and os.path.exists(TEST_CSV)):
         print("and put sign_mnist_train.csv and sign_mnist_test.csv in the dataset folder.")
         sys.exit(1)
 
-#--------------------------------------------------
-# 3b. Load the Dataset
-#--------------------------------------------------
 print("Loading Sign Language MNIST........")
 
 train = pd.read_csv(TRAIN_CSV)
 test  = pd.read_csv(TEST_CSV)
 
-#--------------------------------------------------
-# 4. Task 1 - Inspect the Dataset
-#--------------------------------------------------
+# Task 1 - inspect
 print("\nFirst five rows:")
 print(train.head())
 
@@ -106,9 +84,7 @@ R["n_cols"]      = int(train.shape[1])
 R["dtype_counts"] = {str(k): int(v) for k, v in train.dtypes.value_counts().items()}
 R["memory_mb"]   = round(float(train.memory_usage(deep = True).sum() / 1e6), 1)
 
-#--------------------------------------------------
-# 5. Task 2 - Features and Target Variable
-#--------------------------------------------------
+# Task 2 - features/target: 784 pixels -> label
 feature_cols = [c for c in train.columns if c != "label"]
 
 X      = train[feature_cols].to_numpy(dtype = "float32")
@@ -127,27 +103,19 @@ TASK 2 - FEATURES AND TARGET
                    that will train the base letter classifier.
 """)
 
-#--------------------------------------------------
-# 6. Task 3 - Check Missing Values
-#--------------------------------------------------
+# Task 3 - quality
 R["missing_train"] = int(train.isna().sum().sum())
 R["missing_test"]  = int(test.isna().sum().sum())
 
-#--------------------------------------------------
-# 7. Task 3 - Check Duplicate Records
-#--------------------------------------------------
 R["dup_train"] = int(train.duplicated().sum())
 R["dup_test"]  = int(test.duplicated().sum())
 
 hash_train = pd.util.hash_pandas_object(train, index = False)
 hash_test  = pd.util.hash_pandas_object(test,  index = False)
 
-# Count test images that also appear in the training set (data leakage)
+# Test images that also appear in training (leakage)
 R["test_rows_in_train"] = int(hash_test.isin(set(hash_train)).sum())
 
-#--------------------------------------------------
-# 8. Task 3 - Check Data Types and Column Names
-#--------------------------------------------------
 expected_cols = ["label"] + ["pixel" + str(i) for i in range(1, 785)]
 
 R["columns_as_expected"] = bool(
@@ -155,9 +123,6 @@ R["columns_as_expected"] = bool(
 )
 R["all_int"] = bool(all(np.issubdtype(t, np.integer) for t in train.dtypes))
 
-#--------------------------------------------------
-# 9. Task 3 - Check Unusual or Invalid Values
-#--------------------------------------------------
 R["pix_min"]           = float(X.min())
 R["pix_max"]           = float(X.max())
 R["pix_out_of_range"]  = int(((X < 0) | (X > 255)).sum())
@@ -168,17 +133,15 @@ R["label_min"]       = labels_present[0]
 R["label_max"]       = labels_present[-1]
 R["n_classes"]       = len(labels_present)
 
-# Label ids that are missing between the min and max (should be 9 = J)
+# Gap in label ids should be only 9 = J
 R["unused_label_ids"] = [i for i in range(R["label_max"] + 1)
                         if i not in labels_present]
 
-# Completely black images
 R["blank_images"] = int((X.sum(axis = 1) == 0).sum())
 
-# Pixel columns that never change
 R["constant_pixel_cols"] = int((X.std(axis = 0) == 0).sum())
 
-# Brightness outliers (IQR rule)
+# Brightness outliers via the 1.5 IQR rule
 img_mean = X.mean(axis = 1)
 q1, q3   = np.percentile(img_mean, [25, 75])
 iqr      = q3 - q1
@@ -192,9 +155,7 @@ for key in ["missing_train", "missing_test", "dup_train", "dup_test",
             "brightness_outliers"]:
     print(f"  {key:22s}: {R[key]}")
 
-#--------------------------------------------------
-# 10. Task 4 - Pixel Statistics
-#--------------------------------------------------
+# Task 4 - pixel statistics
 all_pixels = X.ravel()
 mean       = float(all_pixels.mean())
 std        = float(all_pixels.std())
@@ -214,7 +175,7 @@ R["img_mean_std"] = float(img_mean.std())
 R["img_mean_min"] = float(img_mean.min())
 R["img_mean_max"] = float(img_mean.max())
 
-# Mean pixel value of the centre 14x14 block and of the outer 4-pixel frame
+# Centre 14x14 block vs outer 4-pixel frame
 mean_grid = X.mean(axis = 0).reshape(28, 28)
 R["center_mean"] = float(mean_grid[7:21, 7:21].mean())
 R["border_mean"] = float(np.concatenate([
@@ -222,9 +183,7 @@ R["border_mean"] = float(np.concatenate([
     mean_grid[:, :4].ravel(), mean_grid[:, -4:].ravel()
 ]).mean())
 
-#--------------------------------------------------
-# 11. Task 4 - Class (Target) Summary
-#--------------------------------------------------
+# Task 4 - class summary
 df_classes = pd.DataFrame({
     "label":    y,
     "letter":   [letter(v) for v in y],
@@ -257,9 +216,7 @@ R["bright_min_letter"]      = brightness.idxmin()
 R["bright_min"]             = float(brightness.min())
 R["avg_within_class_std"]   = float(class_table["std_brightness"].mean())
 
-#--------------------------------------------------
-# 12. Task 4 - Compare Train and Test Classes
-#--------------------------------------------------
+# Train vs test class proportions
 share_train = pd.Series(y).value_counts(normalize = True).sort_index() * 100
 share_test  = pd.Series(y_test).value_counts(normalize = True).sort_index() * 100
 difference  = (share_test.reindex(share_train.index, fill_value = 0) - share_train).abs()
@@ -267,9 +224,7 @@ difference  = (share_test.reindex(share_train.index, fill_value = 0) - share_tra
 R["max_prop_diff_pp"]     = float(difference.max())
 R["max_prop_diff_letter"] = letter(difference.idxmax())
 
-#--------------------------------------------------
-# 13. Average Image of Each Class and Similar Letters
-#--------------------------------------------------
+# Per-class mean images and nearest pairs
 class_means = np.stack([X[y == c].mean(axis = 0) for c in labels_present])
 
 distance = np.sqrt(((class_means[:, None, :] - class_means[None, :, :]) ** 2)
@@ -286,9 +241,7 @@ R["closest_pairs"] = [
 ]
 R["median_pair_dist"] = float(np.median(pair_distances))
 
-#--------------------------------------------------
-# 14. Pixel Correlation and PCA
-#--------------------------------------------------
+# Pixel correlation and PCA (on a 5k sample for speed)
 rng    = np.random.default_rng(42)
 sample = X[rng.choice(len(X), size = min(5000, len(X)), replace = False)]
 
@@ -310,9 +263,7 @@ R["pca_90"]    = int(np.argmax(cumulative >= 0.90) + 1)
 R["pca_95"]    = int(np.argmax(cumulative >= 0.95) + 1)
 R["pca_first"] = float(cumulative[0] * 100)
 
-#--------------------------------------------------
-# 15. Chart 1 - Bar Chart: Class Distribution
-#--------------------------------------------------
+# Chart 1 - class distribution
 letters_order = [letter(c) for c in labels_present]
 
 chart_df = pd.concat([
@@ -330,9 +281,7 @@ plt.tight_layout()
 plt.savefig(os.path.join(CHART_DIR, "01_class_distribution.png"), dpi = 150)
 plt.show()
 
-#--------------------------------------------------
-# 16. Chart 2 - Histogram: Pixel Intensity
-#--------------------------------------------------
+# Chart 2 - pixel intensity histogram
 random_rows = np.random.default_rng(1).choice(len(X), size = min(3000, len(X)),
                                               replace = False)
 
@@ -346,9 +295,7 @@ plt.tight_layout()
 plt.savefig(os.path.join(CHART_DIR, "02_pixel_intensity_histogram.png"), dpi = 150)
 plt.show()
 
-#--------------------------------------------------
-# 17. Chart 3 - Example Image of Each Letter
-#--------------------------------------------------
+# Chart 3 - one example per letter
 fig, axes = plt.subplots(4, 6, figsize = (9, 6.5))
 axes = axes.ravel()
 for i in range(len(axes)):
@@ -362,9 +309,7 @@ plt.tight_layout()
 plt.savefig(os.path.join(CHART_DIR, "03_sample_images.png"), dpi = 150)
 plt.show()
 
-#--------------------------------------------------
-# 18. Chart 4 - Average Image of Each Letter
-#--------------------------------------------------
+# Chart 4 - average image per letter
 fig, axes = plt.subplots(4, 6, figsize = (9, 6.5))
 axes = axes.ravel()
 for i in range(len(axes)):
@@ -377,9 +322,7 @@ plt.tight_layout()
 plt.savefig(os.path.join(CHART_DIR, "04_class_mean_images.png"), dpi = 150)
 plt.show()
 
-#--------------------------------------------------
-# 19. Chart 5 - Box Plot: Brightness by Letter
-#--------------------------------------------------
+# Chart 5 - brightness boxplot
 plt.figure(figsize = (11, 4.5))
 sns.boxplot(data = df_classes, x = "letter", y = "img_mean",
             order = letters_order, color = "#90cdf4", fliersize = 2)
@@ -390,9 +333,7 @@ plt.tight_layout()
 plt.savefig(os.path.join(CHART_DIR, "05_brightness_boxplot.png"), dpi = 150)
 plt.show()
 
-#--------------------------------------------------
-# 20. Chart 6 - Mean and Standard Deviation of Each Pixel
-#--------------------------------------------------
+# Chart 6 - pixel-wise mean and std
 fig, axes = plt.subplots(1, 2, figsize = (9, 4.2))
 
 picture = axes[0].imshow(X.mean(axis = 0).reshape(28, 28), cmap = "magma")
@@ -412,9 +353,7 @@ plt.tight_layout()
 plt.savefig(os.path.join(CHART_DIR, "06_pixel_mean_std_heatmap.png"), dpi = 150)
 plt.show()
 
-#--------------------------------------------------
-# 21. Chart 7 - Correlation Heatmap
-#--------------------------------------------------
+# Chart 7 - correlation heatmap
 plt.figure(figsize = (7, 6))
 sns.heatmap(corr, cmap = "coolwarm", center = 0, vmin = -1, vmax = 1,
             xticklabels = False, yticklabels = False,
@@ -426,9 +365,7 @@ plt.tight_layout()
 plt.savefig(os.path.join(CHART_DIR, "07_pixel_correlation_heatmap.png"), dpi = 150)
 plt.show()
 
-#--------------------------------------------------
-# 22. Chart 8 - PCA Explained Variance
-#--------------------------------------------------
+# Chart 8 - PCA explained variance
 plt.figure(figsize = (7.5, 4.5))
 plt.plot(np.arange(1, len(cumulative) + 1), cumulative * 100, color = "#2b6cb0")
 plt.axhline(90, color = "gray", linestyle = "--", linewidth = 1)
@@ -441,9 +378,7 @@ plt.tight_layout()
 plt.savefig(os.path.join(CHART_DIR, "08_pca_explained_variance.png"), dpi = 150)
 plt.show()
 
-#--------------------------------------------------
-# 23. Save the Results
-#--------------------------------------------------
+# Save results
 with open("results.json", "w") as f:
     json.dump(R, f, indent = 2, default = str)
 

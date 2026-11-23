@@ -43,10 +43,7 @@ def _get_google_credentials() -> tuple[str, str]:
 
 
 def _build_callback_uri() -> str:
-    """
-    Auto-detects http://127.0.0.1:5000 on localhost and https://<domain> on Render
-    thanks to ProxyFix in app.py.
-    """
+    """ProxyFix in app.py makes url_for emit the right scheme/host per environment."""
     return url_for("google_bp.google_callback", _external=True)
 
 
@@ -58,10 +55,7 @@ def _redirect_with_oauth_error(message: str, mode: str = "login"):
 
 @google_bp.route("/api/auth/google", methods=["GET"])
 def google_login_start():
-    """
-    Step 1: Reusable entry point for both 'Sign up with Google' (?mode=signup)
-    and 'Login with Google' (?mode=login).
-    """
+    """Step 1: shared entry point for Google signup and login."""
     mode = (request.args.get("mode") or "login").strip().lower()
     if mode not in ("signup", "login"):
         mode = "login"
@@ -90,10 +84,7 @@ def google_login_start():
 
 @google_bp.route("/api/auth/google/callback", methods=["GET"])
 def google_callback():
-    """
-    Step 2: Handles Google's OAuth callback, verifies user status ('banned', 'pending', 'active'),
-    creates new accounts if needed, logs login_history, and routes to /profile-setup, /home, or /admin-dashboard.
-    """
+    """Step 2: callback; upserts the user by status and routes to setup, home, or admin."""
     mode = session.pop("google_oauth_mode", "login")
     expected_state = session.pop("google_oauth_state", None)
     returned_state = request.args.get("state")
@@ -111,7 +102,6 @@ def google_callback():
     try:
         client_id, client_secret = _get_google_credentials()
 
-        # Exchange authorization code for access token
         token_payload = urllib.parse.urlencode(
             {
                 "code": code,
@@ -135,7 +125,6 @@ def google_callback():
         if not access_token:
             raise ValueError(token_data.get("error_description") or "Failed to obtain Google access token.")
 
-        # Fetch Google profile info
         userinfo_req = urllib.request.Request(
             GOOGLE_USERINFO_URL,
             headers={"Authorization": f"Bearer {access_token}"},
@@ -176,7 +165,7 @@ def google_callback():
             role = (existing_user.get("role") or "user").lower()
             status = (existing_user.get("status") or "active").lower()
 
-            # 1. Block banned accounts
+            # Banned accounts cannot sign in via Google either.
             if status == "banned":
                 _record_login_history(cursor, user_id, "login_fail", now_utc)
                 conn.commit()
@@ -186,7 +175,7 @@ def google_callback():
                     "login",
                 )
 
-            # 2. If account was 'pending' email OTP, Google verifies email ownership -> activate & go to profile setup
+            # Google already proved email ownership, so 'pending' accounts can be activated.
             if status == "pending":
                 cursor.execute(
                     """
@@ -199,7 +188,6 @@ def google_callback():
                 cursor.execute("DELETE FROM otp WHERE user_id = %s AND purpose = 'signup'", (user_id,))
                 is_new_account = True
             else:
-                # Active existing user -> clear any failed password attempts
                 cursor.execute(
                     """
                     UPDATE users
@@ -214,8 +202,7 @@ def google_callback():
             profile_photo = existing_user.get("profile_photo")
 
         else:
-            # 3. Brand-new user via Google -> insert as active user with username & profile_photo NULL
-            #    so they proceed straight to profile_form.html
+            # Active user with NULL username/photo so they land on profile setup.
             dummy_hash = generate_password_hash(secrets.token_hex(24))
             cursor.execute(
                 """
@@ -256,7 +243,6 @@ def google_callback():
         session["profile_photo"] = profile_photo
         session["profile_completed"] = has_complete_profile
 
-        # Routing rules
         if role == "admin":
             return redirect("/admin-dashboard")
         if is_new_account or not has_complete_profile:

@@ -1,20 +1,13 @@
 """Step 1 - acquire the datasets.
 
-Everything here is idempotent and offline-friendly:
-
-* if a dataset is already in the kagglehub cache we use it and never re-download;
-* if it is missing we try to download it with kagglehub;
-* if we have no Kaggle credentials we print a short how-to instead of a stack
-  trace, skip that dataset, and continue with whatever is available.
-
-Run:  python src/download_data.py [--force]
+Idempotent: cached copies are reused, missing datasets are downloaded, and absent
+credentials print a how-to instead of a stack trace.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import os
-import shutil
 import sys
 import time
 import urllib.request
@@ -30,9 +23,6 @@ IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp"}
 MANIFEST = config.DATA_DIR / "datasets.json"
 
 
-# ---------------------------------------------------------------------------
-# Kaggle cache handling
-# ---------------------------------------------------------------------------
 def kaggle_cache_root() -> Path:
     try:
         from kagglehub.cache import get_cache_folder
@@ -58,7 +48,7 @@ def find_cached_version(ref: str) -> Path | None:
             continue
         ver = int(entry.name)
         if not (marker_parent / f"{ver}.complete").exists():
-            # kagglehub only writes the marker once extraction succeeded
+            # kagglehub writes the marker only once extraction succeeded
             continue
         if best is None or ver > best[0]:
             best = (ver, entry)
@@ -66,8 +56,7 @@ def find_cached_version(ref: str) -> Path | None:
 
 
 def has_kaggle_credentials() -> bool:
-    # New-style access token ("KGAT_..."): kagglehub reads it from this variable,
-    # which may also hold the PATH of a file containing the token.
+    # KAGGLE_API_TOKEN may hold the token itself or the path of a file with it.
     if os.environ.get("KAGGLE_API_TOKEN"):
         return True
     if os.environ.get("KAGGLE_USERNAME") and os.environ.get("KAGGLE_KEY"):
@@ -84,11 +73,7 @@ def has_kaggle_credentials() -> bool:
     return False
 
 
-# Credentials kept inside this folder, so the project is self-contained and
-# nobody has to remember to export an environment variable in every new shell.
-# Kaggle now issues two kinds of credential and both are supported:
-#   * an access token ("KGAT_...") -> a one-line file, exported as KAGGLE_API_TOKEN
-#   * a legacy kaggle.json           -> KAGGLE_CONFIG_DIR pointed at its folder
+# Credentials may live inside this folder: an access token or a legacy kaggle.json.
 LOCAL_ACCESS_TOKEN_FILES = (
     Path(".secrets") / "kaggle_token.txt",
     Path(".secrets") / "access_token",
@@ -99,22 +84,14 @@ LOCAL_JSON_FILES = (Path("kaggle.json"), Path(".secrets") / "kaggle.json")
 
 
 def activate_local_credentials() -> tuple[str, Path | None]:
-    """Let kagglehub use a credential that sits inside this folder.
-
-    kagglehub only looks in ~/.kaggle (or wherever KAGGLE_API_TOKEN /
-    KAGGLE_CONFIG_DIR point), so a token dropped next to the code would
-    otherwise be ignored and every run would keep reporting "no Kaggle
-    credentials".  Anything already set in the environment wins over the local
-    copy.  Returns (what we used, where it is) for the caller to print; never the
-    secret itself.
-    """
+    """Point kagglehub at a credential in this folder; env vars win. Never returns the secret."""
     if os.environ.get("KAGGLE_API_TOKEN"):
         return "KAGGLE_API_TOKEN (environment)", None
 
     for rel in LOCAL_ACCESS_TOKEN_FILES:
         p = config.ROOT / rel
         if p.is_file() and p.read_text(encoding="utf-8", errors="ignore").strip():
-            # kagglehub accepts a path here and reads the token out of the file.
+            # kagglehub accepts a path here and reads the token from the file
             os.environ["KAGGLE_API_TOKEN"] = str(p)
             return "access token (project folder)", p
 
@@ -155,9 +132,6 @@ Already-cached datasets work without credentials, so this step still completes.
 """.strip()
 
 
-# ---------------------------------------------------------------------------
-# Image discovery + label mapping
-# ---------------------------------------------------------------------------
 def normalize_label(folder: str) -> str | None:
     """Map any dataset's folder name onto a single uppercase letter label."""
     key = folder.strip().lower().replace("-", "_")
@@ -173,18 +147,7 @@ def normalize_label(folder: str) -> str | None:
 
 
 def iter_letter_images(root: Path, spec: dict, max_depth: int = 2):
-    """Yield (image_path, letter, session_id) for a dataset root.
-
-    Two layouts are supported, selected by spec["letter_from"]:
-
-      "top_folder"  root/<LETTER>/[<subgroup>/]image   (grassknoted, danrasband)
-      "sub_folder"  root/<GROUP>/<LETTER>/image        (massey: the *inner*
-                    folder is the letter and the outer one is the capture
-                    group / signer - see the note in config.DATASETS)
-
-    session_id is the grouping used for honest blocked splits; it must be
-    unique inside this dataset root, so it is namespaced by root folder name.
-    """
+    """Yield (image_path, letter, session_id); session_id namespaces blocked splits."""
     if spec.get("letter_from") == "sub_folder":
         for group_dir in sorted(p for p in root.iterdir() if p.is_dir()):
             for letter_dir in sorted(p for p in group_dir.iterdir() if p.is_dir()):
@@ -239,9 +202,7 @@ def locate_roots(ref_path: Path, spec: dict) -> list[Path]:
         if inner.is_dir() and any(normalize_label(p.name) for p in inner.iterdir() if p.is_dir()):
             cand = inner
         found.append(cand)
-    # A spec may list both the nested folder and the root as fallbacks (the newer
-    # Kaggle sets do). Keeping both would count every image twice and hand
-    # extract_landmarks.py two overlapping roots, so only the deepest survives.
+    # Overlapping fallback roots would count images twice; keep only the deepest.
     return [p for p in found if not any(p != q and p in q.parents for q in found)]
 
 
@@ -268,9 +229,6 @@ def inventory(result: dict, spec: dict) -> dict:
     return result
 
 
-# ---------------------------------------------------------------------------
-# Acquisition
-# ---------------------------------------------------------------------------
 def acquire(spec: dict, force: bool) -> dict:
     ref = spec["ref"]
     result = {"id": spec["id"], "ref": ref, "role": spec["role"],
@@ -278,10 +236,7 @@ def acquire(spec: dict, force: bool) -> dict:
               "status": "unknown", "path": None, "n_images": 0,
               "n_bytes": 0, "letters": {}, "note": ""}
 
-    # A dataset that this project downloads itself (not through kagglehub) is
-    # registered as kind="local": the downloader puts it under datasets/ and
-    # this branch only inventories it. Nothing is fetched here, so a fresh
-    # clone without the download still reports a clean "missing_local".
+    # kind="local" is only inventoried here, never fetched.
     if spec.get("kind") == "local":
         local = (config.ROOT / spec["path"]).resolve()
         if not local.is_dir():
@@ -331,21 +286,12 @@ def human(nbytes: float) -> str:
     return f"{nbytes:.1f} TB"
 
 
-# ---------------------------------------------------------------------------
-# MediaPipe model asset
-# ---------------------------------------------------------------------------
 def ensure_hand_model(quiet: bool = False) -> Path:
     config.ensure_dirs()
     if config.HAND_MODEL_PATH.is_file() and config.HAND_MODEL_PATH.stat().st_size > 1_000_000:
         if not quiet:
             print(f"  [ok] hand model already present ({human(config.HAND_MODEL_PATH.stat().st_size)})")
         return config.HAND_MODEL_PATH
-    for legacy in config.LEGACY_HAND_MODEL_CANDIDATES:
-        if legacy.is_file():
-            shutil.copy2(legacy, config.HAND_MODEL_PATH)
-            if not quiet:
-                print(f"  [ok] reused hand model from {legacy.name} (read-only copy)")
-            return config.HAND_MODEL_PATH
     for url in config.HAND_MODEL_URLS:
         try:
             if not quiet:
@@ -363,7 +309,6 @@ def ensure_hand_model(quiet: bool = False) -> Path:
     )
 
 
-# ---------------------------------------------------------------------------
 def main() -> int:
     ap = argparse.ArgumentParser(description="Download/locate the ASL datasets.")
     ap.add_argument("--force", action="store_true",
@@ -413,9 +358,7 @@ def main() -> int:
     if missing:
         print(f"\n  WARNING: continuing without {missing}")
 
-    # Store project-relative paths whenever possible.  The manifest is tracked,
-    # while the data itself is local and ignored; absolute paths would make a
-    # pull on another machine point back to this user's drive and username.
+    # Store project-relative paths: the manifest is tracked, the data is not.
     for result in results:
         for key in ("path", "roots"):
             value = result.get(key)

@@ -31,14 +31,13 @@ document.addEventListener('DOMContentLoaded', function () {
     s.name = name; s.email = email;
     A.setSession(s);
 
-    // Update the top bar avatar without reloading
     var av = document.getElementById('top-avatar');
     if (av) { av.textContent = name.charAt(0).toUpperCase(); av.title = name; }
     fill();
     A.toast('Changes saved');
   });
 
-  /* Cursor effects switch (uses the top bar toggle when it exists) */
+  /* Falls back to a theme row toggle when the top bar has none */
   var sw = document.getElementById('fx-switch');
   function paintSwitch() { sw.setAttribute('aria-checked', A.read('asl_fx', true) !== false ? 'true' : 'false'); }
   paintSwitch();

@@ -1,7 +1,4 @@
-/* Public settings only; never add database passwords or API secrets.
-   Serve over HTTP(S). Set window.SIGNREST_API_CONFIG before this script to
-   override baseUrl, e.g. {baseUrl:'https://your-api.example/api/admin'}.
-   Authentication uses your FastAPI application's secure HttpOnly cookie. */
+/* Public settings only: never put passwords, API secrets, or tokens in this file. */
 window.SignrestAPI = (() => {
   const baseUrl = (window.SIGNREST_API_CONFIG?.baseUrl || '/api/admin').replace(/\/$/, '');
   async function get(path, params, signal) {

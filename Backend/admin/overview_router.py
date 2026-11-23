@@ -1,24 +1,18 @@
-"""Signrest admin Overview endpoint (FastAPI + MySQL, existing tables only).
-
-Plug in your own `get_db` (returns a DB-API cursor-capable connection, e.g. PyMySQL)
-and `require_admin` (validates the session cookie and users.role == 'admin',
-raising 401 / 403). Then: app.include_router(router)
-"""
+"""Signrest admin Overview endpoint (FastAPI + MySQL, existing tables only)."""
 from datetime import date, datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from .dependencies import get_db, require_admin  # <- your existing helpers
+from .dependencies import get_db, require_admin
 
 router = APIRouter(prefix="/api/admin", tags=["admin-overview"])
 
-# Map your stored translations.mode values to the two display names.
 SIGN_TO_TEXT = ("sign_to_text", "Sign to Text")
 TEXT_TO_SIGN = ("text_to_sign", "Text to Sign")
 PENDING_FEEDBACK = ("pending", "new")
 
 
 def iso(value):
-    # MySQL DATETIME has no timezone; set your server's real zone here.
+    # MySQL DATETIME is naive; no server timezone is applied.
     return value.isoformat() if isinstance(value, (datetime, date)) else None
 
 
@@ -81,7 +75,7 @@ def overview(days: int = Query(7, ge=7, le=30), admin=Depends(require_admin), db
             feedback = [{"feedback_id": r[0], "user_name": r[1], "rating_score": r[2], "message": r[3],
                          "status": r[4], "created_at": iso(r[5])} for r in cur.fetchall()]
     except Exception:
-        # Log privately; never return SQL or credentials to the browser.
+        # Never leak SQL or credentials to the browser.
         raise HTTPException(500, "Could not load overview")
 
     return {

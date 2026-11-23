@@ -1,25 +1,9 @@
 """
-Text -> sign plan for the "Text to Sign" panel.
+Text -> sign plan for the "Text to Sign" panel (pure lookup, no models loaded).
 
-The panel needs, for every word the user types, either the sign of that word
-(the word model's vocabulary, Model/videoModel) or the letter-by-letter
-fingerspelling (the alphabet model, Model/asl_landmark_app). This module is the
-lookup that decides which one, and it hands the browser a media URL for each
-item. Nothing here runs a model: no torch, no MediaPipe, no TensorFlow, so the
-route works even when the weights are not loaded.
-
-Where the picture comes from, in this order:
-  1. a file the project owns, Front-end/text_to_sign_demo/word/<word>.*
-     (mp4 / webm / gif / png / jpg / webp) and, for letters,
-     Front-end/text_to_sign_demo/alphabet/<A-Z>.*;
-  2. for a trained word with no owned file, the shortest cached ASL Citizen
-     clip for that word (Model/videoModel/cache/manifest.csv), read-only from
-     Model/videoModel/ASL_Citizen/videos.
-A word with neither is returned as fingerspelling, so the answer is never an
-invented sign.
-
-Speech is not implemented here: the panel calls the existing /api/tts route
-(Backend/user/api.py), which reads Google's voice.
+Media order: owned files in Front-end/text_to_sign_demo, then cached ASL Citizen
+clips; a word with neither is fingerspelled rather than invented. Speech stays in
+/api/tts (Backend/user/api.py).
 """
 
 from __future__ import annotations
@@ -46,12 +30,10 @@ ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 MEDIA_EXTS = (".mp4", ".webm", ".gif", ".webp", ".png", ".jpg", ".jpeg")
 VIDEO_EXTS = {".mp4", ".webm"}
 
-# Browsers decode these inside MP4; older clips in the dataset that are
-# MPEG-4 Part 2 (mp4v) fail in Chrome/Edge and would show as a text card.
+# MPEG-4 Part 2 (mp4v) clips in the dataset fail in Chrome/Edge.
 PLAYABLE_VIDEO_CODECS = {"avc1", "avc3", "vp08", "vp09", "av01"}
 
-# English written forms that are the same sign in the word model's vocabulary.
-# Only consulted when the target word really is in vocab.json.
+# Written forms sharing one sign; only used when the word is in vocab.json.
 ALIASES = {
     "i": "me",
     "im": "me",
@@ -70,9 +52,6 @@ _CATALOG = None
 _CATALOG_KEY = None
 
 
-# ---------------------------------------------------------------------------
-# sources
-# ---------------------------------------------------------------------------
 def _videos_dir() -> Path:
     """Same folder contract as Model/videoModel/src/config.py."""
     custom = os.environ.get("ASL_WORDS_DATASET_DIR", "").strip()
@@ -95,7 +74,7 @@ def _vocab_words() -> list[str]:
 
 
 def _boxes(handle, start: int, end: int):
-    """Yield (type, body_start, limit) for the MP4 boxes between start and end."""
+    """Walk MP4 boxes in [start, end)."""
     pos = start
     while pos + 8 <= end:
         handle.seek(pos)
@@ -136,7 +115,7 @@ _CODECS: dict[str, str] = {}
 
 
 def _video_codec(path: Path) -> str:
-    """Video codec tag ('avc1', 'mp4v', ...) from the MP4 sample description."""
+    """Codec tag ('avc1', 'mp4v', ...) from the stsd sample description."""
     key = str(path)
     if key in _CODECS:
         return _CODECS[key]
@@ -224,9 +203,6 @@ def _catalog_key():
     )
 
 
-# ---------------------------------------------------------------------------
-# index
-# ---------------------------------------------------------------------------
 def _build_catalog() -> dict:
     vocab = _vocab_words()
     clips = _word_clips()
@@ -238,7 +214,6 @@ def _build_catalog() -> dict:
             path = None
             source = "clip"
             for _frames, candidate in clips.get(word, ()):
-                # Skip clips the browser cannot decode (e.g. MPEG-4 Part 2).
                 if _browser_playable(candidate):
                     path = candidate
                     break
@@ -349,9 +324,6 @@ def plan(text: str) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# routes
-# ---------------------------------------------------------------------------
 @text_to_sign_bp.post("/api/text-to-sign")
 def text_to_sign():
     data = request.get_json(silent=True) or {}

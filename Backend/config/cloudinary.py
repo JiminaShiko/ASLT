@@ -13,10 +13,7 @@ load_environment()
 
 
 def _get_cloudinary_config() -> tuple[str, str, str]:
-    """
-    Reads CLOUDINARY_URL (cloudinary://api_key:api_secret@cloud_name)
-    or individual CLOUDINARY_* env vars for both Localhost and Render.
-    """
+    """CLOUDINARY_URL (cloudinary://key:secret@cloud) or individual CLOUDINARY_* vars."""
     cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
     if cloudinary_url:
         parsed = urllib.parse.urlparse(cloudinary_url)
@@ -44,11 +41,7 @@ def upload_to_cloudinary(
     filename: str = "upload.png",
     resource_type: str = "auto",
 ) -> str:
-    """
-    Reusable helper across Signrest for user/admin photos & files.
-    Accepts either a file path (str/Path), raw bytes, or a file-like stream (.read()).
-    Uploads to `signrest/<folder>` on Cloudinary and returns the public HTTPS `secure_url`.
-    """
+    """Upload a path, bytes, or stream to `signrest/<folder>`; returns the secure_url."""
     cloud_name, api_key, api_secret = _get_cloudinary_config()
 
     if isinstance(file_source, (str, Path)):
@@ -67,7 +60,7 @@ def upload_to_cloudinary(
     timestamp = str(int(time.time()))
     target_folder = f"signrest/{folder.strip('/')}"
 
-    # Cloudinary SHA-1 signature over sorted non-empty parameters
+    # Cloudinary requires SHA-1 over sorted params with the api_secret appended.
     params_to_sign = {
         "folder": target_folder,
         "timestamp": timestamp,

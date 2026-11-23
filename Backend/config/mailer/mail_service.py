@@ -7,7 +7,6 @@ from email.utils import formataddr
 from pathlib import Path
 from config.environment import load_environment
 
-# Resolve backend / project root directories (Backend/config/mailer/mail_service.py)
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 PROJECT_ROOT = BACKEND_DIR.parent
 FRONTEND_DIR = PROJECT_ROOT / "Front-end"
@@ -16,7 +15,7 @@ load_environment()
 
 
 def _get_required_env(key: str) -> str:
-    """Strictly fetches a required variable from .env (localhost) or Render Environment."""
+    """Read a required environment variable or raise."""
     val = os.getenv(key, "").strip().strip('"').strip("'")
     if not val:
         raise ValueError(f"Missing required environment variable: {key}")
@@ -24,7 +23,7 @@ def _get_required_env(key: str) -> str:
 
 
 def _resolve_paper_image_path() -> Path | None:
-    """Resolves MAIL_PAPER_BG path from .env / Render Environment."""
+    """Locate the MAIL_PAPER_BG image, if configured."""
     configured = os.getenv("MAIL_PAPER_BG", "").strip().strip('"').strip("'")
     if not configured:
         return None
@@ -47,11 +46,7 @@ def _build_paper_otp_html(
     otp_type_label: str,
     purpose_text: str,
 ) -> str:
-    """
-    Builds a responsive botanical HTML email on a pure white background (#ffffff).
-    Uses percentage-based padding + mobile media queries so the text stays centered
-    inside the torn paper strip across both desktop (600px) and mobile screens.
-    """
+    """Botanical OTP email; % padding + media queries keep text inside the paper strip."""
     safe_name = recipient_name.strip() if recipient_name and recipient_name.strip() else "Friend"
     serif_stack = "Palatino, Georgia, Garamond, serif"
 
@@ -140,10 +135,7 @@ def send_email(
     plain_body: str = "",
     inline_images: dict[str, Path] | None = None,
 ) -> tuple[bool, str]:
-    """
-    Universal SMTP email sender reading all credentials and host config strictly
-    from .env (localhost) or Render Environment Variables.
-    """
+    """Send one SMTP email using host/credential settings from the environment."""
     try:
         smtp_host = _get_required_env("MAIL_SERVER")
         smtp_port = int(_get_required_env("MAIL_PORT"))
@@ -204,13 +196,7 @@ def send_otp_email(
     purpose: str = "signup",
     recipient_name: str | None = None,
 ) -> tuple[bool, str]:
-    """
-    Sends the styled torn-paper OTP email clearly labeled for:
-    - 'signup'          -> Sign Up OTP
-    - 'resend'          -> Resent OTP
-    - 'forgot_password' / 'reset_password' -> Password Reset OTP
-    - 'login'           -> Login OTP
-    """
+    """Send the styled OTP email; purpose is signup, resend, reset_password, or login."""
     display_name = recipient_name or to_email.split("@")[0]
     normalized_purpose = (purpose or "signup").strip().lower()
 

@@ -1,30 +1,7 @@
-"""
-Stage 3 - the ONE feature function, used by training and by the live demo.
+"""Stage 3 - the single feature function shared by training and live inference.
 
-Input : a packed landmark array [T, P_TOTAL, 3] (NaN = that group was not
-        detected in that frame), straight from src/landmarks.py.
-Output: [NUM_FRAMES, feature_dim()] float32, blocks concatenated in
-        FEATURE_BLOCKS order.
-
-Geometry, exactly once for both paths:
-  * centred on the shoulder midpoint and scaled by shoulder width, so a
-    person close to the camera and a person far away produce the same numbers,
-  * y flipped so positive is up (MediaPipe image coords grow downwards),
-  * resampled to NUM_FRAMES=64 by linear interpolation in clip-relative time,
-  * a hand that dropped out of detection for GAP_FILL_FRAMES frames or fewer
-    is bridged by interpolation between the detections around it, and the
-    mask still says it was not seen there (v3; the old v2 vector left holes),
-  * a hand that was not detected becomes zeros in its block plus mask = 0,
-  * one block ("segment") is a read-out of the WHOLE clip - the same number
-    on every frame - because where a hand starts, stops and turns back
-    around is a property of the sign, not of a frame,
-  * z is not used: MediaPipe pose z is metres from the hip while hand z is
-    relative to the wrist, so mixing them across groups is meaningless.
-    Depth enters instead as the hand-to-face/chin/chest distances and the mask.
-
-src/predictor.py and src/live.py call sequence(); src/dataset.py calls it with
-augment=True. Same file, same numbers - that is the whole point of splitting
-it out, and src/train.py --parity proves the two paths agree.
+Packed landmarks -> [NUM_FRAMES, D] in shoulder widths, y up; z is ignored because pose z
+(metres from the hip) and hand z (from the wrist) are incomparable. `train.py --parity` proves both paths agree.
 """
 from __future__ import annotations
 
@@ -34,7 +11,6 @@ import numpy as np
 
 from . import config
 
-# --- packed-array lookups ---------------------------------------------------
 _POSE = {name: config.pose_row(i) for name, i in {
     "nose": 0, "l_eye": 2, "r_eye": 5, "l_ear": 7, "r_ear": 8,
     "l_mouth": 9, "r_mouth": 10, "l_shoulder": 11, "r_shoulder": 12,
@@ -52,7 +28,6 @@ FACE_COLS = {g: np.array([k for k, i in enumerate(config.FACE_ORDER)
              for g, group in config.FACE_GROUPS.items()}
 FACE_ABS = {g: config.N_POSE + c for g, c in FACE_COLS.items()}
 
-# hand skeleton constants (21 landmarks per hand)
 WRIST = 0
 THUMB_TIP, INDEX_PIP, INDEX_TIP = 4, 6, 8
 MIDDLE_PIP, MIDDLE_TIP = 10, 12
@@ -64,28 +39,15 @@ CURLS = [(THUMB_TIP, 2), (INDEX_TIP, INDEX_PIP), (MIDDLE_TIP, MIDDLE_PIP),
 SPREADS = [(INDEX_TIP, MIDDLE_TIP), (MIDDLE_TIP, RING_TIP),
            (RING_TIP, PINKY_TIP)]
 
-# --- block layout -----------------------------------------------------------
 BLOCK_WIDTHS = {
-    "pose": 2 * len(POSE_ORDER),        # 15 upper-body points, xy
-    "hands": 4 * 21,                    # both hands, 21 points, xy
-    "hand_shape": 2 * 9,                # palm size, curl x5, spread, thumb-index, pinky
-    "face": 12,                         # mouth centre/width/open/corner lift,
-                                        # nose, chin, brow line, brow width
-    "hand_to_body": 2 * 5,              # per hand: wrist-nose, palm-chin,
-                                        # palm-chest, nearest fingertip-lips,
-                                        # palm above shoulder line
-    "mask": 4,                          # left hand, right hand, pose, face present
-    "velocity": 12,                     # wrist/palm/mouth speeds, signed y and x
-                                        # motion, wrist acceleration
-    "segment": 2 * 14 + 2,              # whole-clip read-out, per hand:
-                                        # mouth/chin/chest distance at the
-                                        # start, middle and end, maximum
-                                        # excursion, travel, distance gained
-                                        # after the closest mouth approach,
-                                        # wrist height at that approach,
-                                        # presence fraction; plus wrist to
-                                        # wrist at the end and the fraction of
-                                        # frames with BOTH hands seen
+    "pose": 2 * len(POSE_ORDER),
+    "hands": 4 * 21,
+    "hand_shape": 2 * 9,
+    "face": 12,
+    "hand_to_body": 2 * 5,
+    "mask": 4,
+    "velocity": 12,
+    "segment": 2 * 14 + 2,
 }
 BLOCK_NAMES = list(BLOCK_WIDTHS)
 FEATURE_BLOCKS: dict[str, tuple[int, int]] = {}
@@ -97,10 +59,7 @@ for _b in BLOCK_NAMES:
 FEATURE_DIM = _start
 FEATURE_VERSION = config.FEATURE_VERSION
 
-# v2 - the 170-dim vector that shipped on 2026-11-16: the same blocks in the
-# same order minus the segment read-out, and sequence() did not gap-fill the
-# hands. The fair comparison has to be able to build both, which is why the
-# layout is a function and not just these two module constants.
+# v2 is the older 170-dim vector (no segment block, no gap fill), kept for comparison
 V2_BLOCK_NAMES = [b for b in BLOCK_NAMES if b != "segment"]
 _LAYOUTS: dict[int, tuple[dict[str, tuple[int, int]], int]] = {
     FEATURE_VERSION: (FEATURE_BLOCKS, FEATURE_DIM),
@@ -145,12 +104,7 @@ def block_of(index: int) -> str:
 
 def block_columns(selected: list[str] | None,
                   version: int | None = None) -> np.ndarray | slice:
-    """Column selection for the ablation study (--blocks pose,hands,mask).
-
-    A repeated block is counted once: --blocks pose,pose must not silently
-    widen the input and change FEATURE_DIM for the run. Unknown blocks raise
-    per version - 'segment' does not exist in the v2 layout.
-    """
+    """Column selection for --blocks ablations; duplicates count once, unknown names raise."""
     blocks, dim = layout(version)
     if not selected or selected == ["all"]:
         return slice(0, dim)
@@ -163,16 +117,13 @@ def block_columns(selected: list[str] | None,
         if b not in seen:
             seen.append(b)
     cols: list[int] = []
-    for b in blocks:                       # keep the canonical order
+    for b in blocks:
         if b in seen:
             s, w = blocks[b]
             cols.extend(range(s, s + w))
     return np.array(cols, dtype=int)
 
 
-# ---------------------------------------------------------------------------
-# small numeric helpers
-# ---------------------------------------------------------------------------
 def _interp(rows: np.ndarray, pos: np.ndarray) -> np.ndarray:
     """NaN-aware linear resampling of [T, P, 2] at float positions `pos`."""
     T = rows.shape[0]
@@ -231,30 +182,16 @@ def _zero_missing(block: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 
 def fill_gaps(rows: np.ndarray, max_gap: int | None = None) -> np.ndarray:
-    """Bridge short detection dropouts in a [T, P, 2] landmark block.
+    """Bridge detection dropouts of <= max_gap frames in a [T, P, 2] block.
 
-    MediaPipe loses a hand for a frame or two constantly - the hand crosses
-    the body, the signer's shirt is the same colour as the skin, the wrist
-    leaves frame for a beat. Those holes are not information; they are
-    detector noise, and leaving them as zeros makes the hand look like it
-    teleported to the origin and back. A run of <= max_gap missing frames
-    between two detections is therefore filled by a straight line between
-    them, and a run at either end of the clip is held flat from the nearest
-    detection.
-
-    What is NOT filled: a run longer than max_gap, and a block with no
-    detection at all. A hand that is absent for half the clip was genuinely
-    out of shot or was never raised - the other hand is signing - and
-    inventing a trajectory for it would teach the model that every sign is
-    two-handed. The mask is taken from the un-filled rows (see seen_frames),
-    so a filled frame still reports "not detected here" and the model can
-    always tell the difference between a measurement and a bridge.
+    Longer absences are real, so no trajectory is invented; the mask comes from the
+    un-filled rows, so a bridge never counts as a sighting.
     """
     n = config.GAP_FILL_FRAMES if max_gap is None else int(max_gap)
     out = np.array(rows, dtype=np.float32, copy=True)
     if n <= 0 or out.ndim != 3 or len(out) < 2:
         return out
-    miss = np.isnan(out).any(axis=2).any(axis=1)          # [T] frame has no hand
+    miss = np.isnan(out).any(axis=2).any(axis=1)
     if not miss.any() or miss.all():
         return out
     T, t = len(miss), 0
@@ -265,7 +202,7 @@ def fill_gaps(rows: np.ndarray, max_gap: int | None = None) -> np.ndarray:
         b = t
         while b + 1 < T and miss[b + 1]:
             b += 1
-        if b - t + 1 <= n:                     # short enough to bridge
+        if b - t + 1 <= n:
             a, c = t - 1, b + 1
             if a >= 0 and c < T:
                 out[t:b + 1] = np.linspace(out[a], out[c], b - t + 3)[1:-1]
@@ -291,9 +228,6 @@ def _dist(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     return np.linalg.norm(a - b, axis=-1)
 
 
-# ---------------------------------------------------------------------------
-# per-hand shape and face summary
-# ---------------------------------------------------------------------------
 def hand_shape(hand: np.ndarray) -> np.ndarray:
     """[T,21,2] (zero-filled, shoulder units) -> [T,9]."""
     palm = _dist(hand[:, TIPS], hand[:, WRIST][:, None, :]).mean(1)
@@ -309,16 +243,7 @@ def hand_shape(hand: np.ndarray) -> np.ndarray:
 
 
 def face_summary(face: np.ndarray) -> np.ndarray:
-    """[T,N_FACE,2] normalised -> [T,12]. Summaries, not 60 raw points:
-    what a word needs from the face is where the mouth is, how open it is and
-    how wide - which is also what survives a mirror.
-
-    A clip where MediaPipe never found a face is normal (measured: the face
-    block is NaN for some whole videos), so every slice here can be empty.
-    The answer is zeros, and the 17 numpy "empty slice" warnings that used to
-    print on every such video are silenced - they describe the expected case,
-    not a problem.
-    """
+    """[T,N_FACE,2] -> [T,12] face summaries; empty slices are expected, so warn nothing."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
         return _face_summary(face)
@@ -348,24 +273,13 @@ def _face_summary(face: np.ndarray) -> np.ndarray:
                          posinf=0.0, neginf=0.0).astype(np.float32)
 
 
-# ---------------------------------------------------------------------------
-# the shared function
-# ---------------------------------------------------------------------------
 def sequence(arr: np.ndarray, num_frames: int | None = None,
              augment: bool = False, rng: np.random.Generator | None = None,
              blocks: list[str] | None = None,
              version: int | None = None) -> np.ndarray:
-    """[T, P_TOTAL, 3] packed landmarks -> [num_frames, D] feature matrix.
+    """[T, P_TOTAL, 3] -> [num_frames, D]; version picks the layout (v3 or v2).
 
-    version picks the layout: the current vector (v3, 200 dims) or v2, the
-    170-dim vector that shipped on 2026-11-16 - same blocks in the same order
-    minus the segment read-out, and without hand gap filling. The fair
-    comparison trains both with the same seeds; the loser's weights carry
-    their feature_version in the checkpoint, so the live path knows which
-    layout to build for them.
-
-    augment=True adds exactly the training-time variation documented in
-    AUGMENT_DOC. It must only ever be True for the train split.
+    The checkpoint records its feature_version. augment=True is for the train split only.
     """
     v = FEATURE_VERSION if version is None else int(version)
     names, dim = layout(v)
@@ -386,7 +300,6 @@ def sequence(arr: np.ndarray, num_frames: int | None = None,
 
     T = len(arr)
     if augment and T > 6:
-        # sub-window: the only place real signing speed survives resampling
         span = float(rng.uniform(*config.AUG["speed"]))
         keep = int(np.clip(round(T / span), max(6, T // 2), T))
         start = int(rng.integers(0, T - keep + 1)) if keep < T else 0
@@ -395,18 +308,15 @@ def sequence(arr: np.ndarray, num_frames: int | None = None,
 
     xy = arr[..., :2]
     pos = np.linspace(0, T - 1, num_frames)
-    src = _resample_index(pos, T)                # source frame per output frame
+    src = _resample_index(pos, T)
     pose = _interp(xy[:, config.COLS_POSE], pos)
     face = _interp(xy[:, config.COLS_FACE], pos)
     l_raw, r_raw = xy[:, config.COLS_LHAND], xy[:, config.COLS_RHAND]
     l_seen, r_seen = seen_frames(l_raw), seen_frames(r_raw)
     if v >= 3:
-        # bridge short dropouts; the mask still says the hand was not seen
         lh = _interp(fill_gaps(l_raw), pos)
         rh = _interp(fill_gaps(r_raw), pos)
     else:
-        # v2 behaviour: a hole stayed a hole, and an unfilled frame became
-        # zeros - the teleport-to-origin artefact the bridge was built to fix
         lh = _interp(l_raw, pos)
         rh = _interp(r_raw, pos)
 
@@ -415,8 +325,7 @@ def sequence(arr: np.ndarray, num_frames: int | None = None,
     face_n = _norm(face, mid, w)
     lh_z, _ = _zero_missing(_norm(lh, mid, w))
     rh_z, _ = _zero_missing(_norm(rh, mid, w))
-    # the hand mask comes from the UN-filled rows: a bridged frame carries
-    # interpolated geometry and mask = 0, so it is never counted as a sighting
+    # mask from un-filled rows: a bridged frame is not a sighting
     lh_ok = l_seen[src].astype(np.float32)
     rh_ok = r_seen[src].astype(np.float32)
 
@@ -455,14 +364,14 @@ def _hand_to_body(pose_n: np.ndarray, lh: np.ndarray, rh: np.ndarray) -> np.ndar
     nose = pose_n[:, _POSE["nose"]]
     mouth = (pose_n[:, _POSE["l_mouth"]] + pose_n[:, _POSE["r_mouth"]]) / 2.0
     chin = mouth.copy()
-    chin[:, 1] -= 0.35                    # below the mouth, in shoulder widths
-    chest = np.zeros_like(nose)           # the origin IS the shoulder midpoint
+    chin[:, 1] -= 0.35
+    chest = np.zeros_like(nose)
     blocks = []
     for hand in (lh, rh):
         palm = hand[:, TIPS].mean(1)
         tips = hand[:, TIPS]
         tip_to_mouth = _dist(tips, mouth[:, None, :]).min(1)
-        above = (palm[:, 1] > 0.0).astype(np.float32)   # y up: 0 = shoulder line
+        above = (palm[:, 1] > 0.0).astype(np.float32)
         blocks.append(np.stack([_dist(hand[:, WRIST], nose),
                                 _dist(palm, chin),
                                 _dist(palm, chest),
@@ -491,20 +400,11 @@ def _velocity(pose_n, lh, rh, lh_ok, rh_ok) -> np.ndarray:
     ], axis=1).astype(np.float32)
 
 
-# ---------------------------------------------------------------------------
-# whole-segment read-out
-# ---------------------------------------------------------------------------
 def _hand_segment(h: np.ndarray, ok: np.ndarray, mouth: np.ndarray,
                   chin: np.ndarray, chest: np.ndarray) -> np.ndarray:
-    """One hand's summary of the clip it was in -> [14] float32.
+    """One hand's whole-clip summary -> [14]; start/middle/end = first/middle/last detected frame.
 
-    start / middle / end mean the first, middle and last frame where this
-    hand was actually DETECTED, so a hand raised late still reports where it
-    ended up. Every distance is in shoulder widths.
-
-    A hand that is never detected returns fourteen zeros rather than a
-    plausible-looking trajectory: the idle hand of a one-handed sign is a
-    fact about the sign, not a measurement to report.
+    A never-detected hand returns zeros, not an invented trajectory.
     """
     out = np.zeros(14, np.float32)
     have = np.flatnonzero(ok > 0.5)
@@ -517,36 +417,25 @@ def _hand_segment(h: np.ndarray, ok: np.ndarray, mouth: np.ndarray,
     out[0:3] = d_mouth[pick]
     out[3:6] = _dist(palm, chin)[pick]
     out[6:9] = _dist(palm, chest)[pick]
-    out[9] = float(np.max(_dist(wrist[have], wrist[i0])))     # max excursion
-    out[10] = float(_dist(wrist[i1], wrist[i0]))              # net travel
-    ic = have[int(np.argmin(d_mouth[have]))]                  # closest approach
-    out[11] = float(_dist(wrist[i1], wrist[ic]))              # gained after it
-    out[12] = float(wrist[ic, 1])                             # its height, y up
-    out[13] = float(len(have) / len(ok))                      # presence fraction
+    out[9] = float(np.max(_dist(wrist[have], wrist[i0])))
+    out[10] = float(_dist(wrist[i1], wrist[i0]))
+    ic = have[int(np.argmin(d_mouth[have]))]
+    out[11] = float(_dist(wrist[i1], wrist[ic]))
+    out[12] = float(wrist[ic, 1])
+    out[13] = float(len(have) / len(ok))
     return out
 
 
 def _segment(pose_n: np.ndarray, lh: np.ndarray, rh: np.ndarray,
              lh_ok: np.ndarray, rh_ok: np.ndarray) -> np.ndarray:
-    """[num_frames, 30]: the shape of the whole clip, on every frame.
+    """[num_frames, 30]: whole-clip read-out repeated down the time axis.
 
-    This is a read-out, not a per-frame feature - each column is one number
-    for the clip, repeated down the time axis so the model can read it at any
-    frame. It exists because the two things the raw blocks hide are exactly
-    the two things that separate GOOD from THANKS: where the hand finishes
-    relative to where it started, and how far it came back out afterwards.
-
-    wrist-to-wrist at the end is only defined when BOTH hands are in shot,
-    which is rare for a one-handed sign. It is taken from the last frame that
-    has both, and the companion column says what fraction of the clip had
-    both - together they distinguish "the hands were 0.6 apart" from "there
-    is no two-handed data in this clip at all", which the old zero alone
-    could not.
+    wrist-to-wrist needs both hands, so the presence fraction separates "0.6 apart" from "no data".
     """
     mouth = (pose_n[:, _POSE["l_mouth"]] + pose_n[:, _POSE["r_mouth"]]) / 2.0
     chin = mouth.copy()
-    chin[:, 1] -= 0.35                       # below the mouth, shoulder widths
-    chest = np.zeros_like(mouth)             # the origin IS the shoulder midpoint
+    chin[:, 1] -= 0.35
+    chest = np.zeros_like(mouth)
     both = (lh_ok > 0.5) & (rh_ok > 0.5)
     seen = np.flatnonzero(both)
     ww_end = float(_dist(lh[:, WRIST], rh[:, WRIST])[seen[-1]]) if len(seen) else 0.0
@@ -565,29 +454,18 @@ SEG_NAMES = ([f"l_{c}" for c in SEG_COLS] + [f"r_{c}" for c in SEG_COLS]
              + ["wrist_to_wrist_end", "both_hands_present_frac"])
 
 
-# ---------------------------------------------------------------------------
-# augmentation
-# ---------------------------------------------------------------------------
-# augmentation
-# ---------------------------------------------------------------------------
+# one line per config.AUG knob; a test asserts every knob is named here
 AUGMENT_DOC = """
-before the features are built (landmark level):
-  mirror       swap the two hand blocks, exchange every anatomical left/right
-               pose pair and flip x. p = AUG['mirror'] = 0.5. This is the
-               handedness handling: the model cannot rely on which hand signs,
-               so it never has to know who is dominant.
-  scale        all positions x (1 + N(0, AUG['scale']))
-  rotate       in-image rotation up to AUG['rotate'] degrees
-  translate    shift by up to AUG['translate'] shoulder widths
-  jitter       gaussian noise, sigma = AUG['jitter'] per landmark per frame
-  sub-window   a random contiguous slice covering AUG['speed'] = 0.80-1.20 of
-               the clip, so the same sign arrives at 64 frames faster or slower
-after the features are built (feature level):
-  frame dropout  AUG['frame_dropout'] of frames replaced by the previous frame
-  velocity scale  the velocity block x U(AUG['speed']) = 0.8-1.2
-  (the segment block is one number per clip repeated down the time axis, so
-   frame dropout cannot change it; mirroring swaps its left and right halves
-   along with the hands, which is what keeps it handedness-free)
+landmark level:
+  mirror         swap hands + anatomical pose pairs + flip x (handedness-agnostic)
+  scale          positions x (1 + N(0, AUG['scale']))
+  rotate         in-image rotation up to AUG['rotate'] degrees
+  translate      shift up to AUG['translate'] shoulder widths
+  jitter         gaussian noise, sigma AUG['jitter'] per landmark per frame
+  sub-window     random slice of AUG['speed'] (0.80-1.20) of the clip
+feature level:
+  frame_dropout  AUG['frame_dropout'] of frames repeat the previous frame
+  velocity scale velocity block x U(AUG['speed']) (0.8-1.2)
 """.strip()
 
 
@@ -609,12 +487,7 @@ def _augment_landmarks(arr: np.ndarray, rng: np.random.Generator) -> np.ndarray:
 
 
 def mirror_pack(arr: np.ndarray) -> np.ndarray:
-    """Left/right swap + x mirror of a packed landmark array.
-
-    The face block needs no index permutation: face_summary() is built from
-    means, widths and openings, which are invariant to a left/right exchange
-    once x is negated. Only the hands and the anatomical pose pairs swap.
-    """
+    """Left/right swap + x mirror; the face block needs no permutation (summaries are invariant)."""
     out = np.asarray(arr).copy()
     out[..., 0] = -out[..., 0]
     lh = out[:, config.COLS_LHAND].copy()
@@ -641,9 +514,6 @@ def _augment_features(feat: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     return out
 
 
-# ---------------------------------------------------------------------------
-# live buffer
-# ---------------------------------------------------------------------------
 class RingBuffer:
     """Fixed-capacity landmark buffer for the live segmenter (memory only)."""
 

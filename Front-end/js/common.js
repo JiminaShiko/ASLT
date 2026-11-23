@@ -1,8 +1,7 @@
-/* ASL Translator - shared code (icons, storage, layout, cursor effects) */
+/* Shared shell: icons, storage, nav, cursor effects */
 (function () {
   'use strict';
 
-  /* ---------- Icons ---------- */
   var ICONS = {
     home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
     chat: '<path d="M4 5h16v11H9l-5 4z"/>',
@@ -52,7 +51,6 @@
     });
   }
 
-  /* ---------- Storage ---------- */
   function read(key, fallback) {
     try {
       var v = localStorage.getItem(key);
@@ -64,7 +62,6 @@
   }
   function emit() { document.dispatchEvent(new CustomEvent('asl:update')); }
 
-  /* ---------- Sign data ---------- */
   var LETTER_NOTES = {
     A: 'Make a fist and keep your thumb on the side.',
     B: 'Hold your fingers straight up together. Fold your thumb across your palm.',
@@ -117,7 +114,6 @@
     { id: 'home', label: 'Home', note: 'Bunch your fingertips and touch them near your mouth. Then touch them near your cheek.' }
   ];
 
-  /* ---------- Stores ---------- */
   var HK = 'asl_history';
   var history = {
     list: function () { return read(HK, []); },
@@ -173,7 +169,6 @@
     }
   };
 
-  /* ---------- Session / profile ---------- */
   function getSession() { return read('asl_session', null); }
   function setSession(s) { write('asl_session', s); }
   function logout() {
@@ -200,7 +195,6 @@
     return Promise.resolve(btoa(unescape(encodeURIComponent(str))));
   }
 
-  /* ---------- Small UI helpers ---------- */
   function imgBox(src, label, alt) {
     var box = document.createElement('div');
     box.className = 'imgbox';
@@ -230,7 +224,6 @@
   }
 
 
-  /* ---------- Shared history list (used by Home and History pages) ---------- */
   var KIND_ICON = { 'Sign to Text': 'camera', 'Text to Sign': 'type', 'Upload Media': 'upload' };
 
   function fmtTime(t) {
@@ -247,7 +240,6 @@
       '</div></div>';
   }
 
-  // Save / delete buttons inside a history list
   function bindHistoryActions(listEl) {
     listEl.addEventListener('click', function (e) {
       var b = e.target.closest('button[data-act]');
@@ -257,7 +249,6 @@
     });
   }
 
-  /* ---------- Theme (light / dark) ---------- */
   function getTheme() {
     var t = read('asl_theme', null);
     if (t === 'light' || t === 'dark') { return t; }
@@ -288,7 +279,6 @@
     return b;
   }
 
-  /* ---------- Layout (top navigation bar) ---------- */
   var NAV = [
     { key: 'home', href: 'home.html', icon: 'home', label: 'Home' },
     { key: 'translate', href: 'translation.html', icon: 'chat', label: 'Translation' },
@@ -340,7 +330,6 @@
     }, { passive: true });
   }
 
-  /* ---------- Cursor effects ---------- */
   function initFx() {
     var btn = document.getElementById('fx-toggle');
     var fine = window.matchMedia('(pointer: fine)').matches;
@@ -423,7 +412,6 @@
     apply();
   }
 
-  /* ---------- Start ---------- */
   document.addEventListener('DOMContentLoaded', function () {
     var page = document.body.dataset.page || '';
     if (page !== 'login' && !getSession()) {

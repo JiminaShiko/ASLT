@@ -1,14 +1,6 @@
-"""MediaPipe Hands wrapper shared by the extractor and the live app.
+"""MediaPipe Tasks `HandLandmarker` wrapper shared by extractor and live app.
 
-mediapipe>=1.0 removed `mp.solutions.hands`, so this uses the Tasks API
-(`HandLandmarker`). The brief's settings map onto it exactly:
-
-    static_image_mode=True            -> vision.RunningMode.IMAGE
-    max_num_hands=1                   -> num_hands=1
-    min_detection_confidence=0.5      -> min_hand_detection_confidence=0.5
-
-Input is always COLOR: OpenCV hands us BGR, we convert to RGB and only then
-hand the frame to MediaPipe. Grayscale is never used.
+mediapipe>=1.0 removed `mp.solutions.hands`. Input is always colour (BGR->RGB).
 """
 from __future__ import annotations
 
@@ -37,8 +29,7 @@ from mediapipe.tasks.python import vision  # noqa: E402
 
 RunningMode = vision.RunningMode
 
-# 21-landmark skeleton, needed because mp.solutions.drawing_utils is gone in
-# mediapipe>=1.0. Used only for drawing; the model never sees it.
+# drawing only (drawing_utils is gone in mediapipe>=1.0)
 HAND_CONNECTIONS = [
     (0, 1), (1, 2), (2, 3), (3, 4),
     (0, 5), (5, 6), (6, 7), (7, 8),
@@ -64,24 +55,12 @@ def draw_landmarks(bgr: np.ndarray, lm_px) -> np.ndarray:
 @dataclass
 class HandResult:
     landmarks: np.ndarray | None      # (21,3) float32, normalized image coords
-    handedness: str | None            # MediaPipe's raw label, audit only.
-    #   It is defined for a horizontally MIRRORED (selfie) frame, so on the
-    #   unmirrored frames this project feeds it names each chirality family by
-    #   the opposite word; measured over the 127,791 cached hands the two tests
-    #   sort hands into the same groups 98.4 / 91.1 / 87.0 % of the time
-    #   (danrasband / grassknoted / massey). Nothing here is used for features
-    #   or for the on-screen "which hand" line - see
-    #   `normalize.chirality_family`, which is the image-plane test.
-    cross_sign: float                 # geometric handedness test (see normalize)
+    handedness: str | None            # raw label, audit only (selfie-frame convention)
+    cross_sign: float                 # geometric test, see normalize.chirality_family
 
 
 def swap_label(label: str | None) -> str | None:
-    """The MediaPipe label for the same hand in a horizontally flipped image.
-
-    One definition, used by the live recovery rung and (inline) by the offline
-    extraction ladder, so a `flip_0.3` row cannot mean two different things in
-    the two paths.
-    """
+    """Label of the same hand in a flipped image; shared by both flip rungs."""
     if label in ("Left", "Right"):
         return "Right" if label == "Left" else "Left"
     return label
@@ -102,11 +81,7 @@ def _base_options(mode: RunningMode, model_path: Path,
 
 def create_detector(model_path: Path | None = None, static: bool = True,
                     confidence: float | None = None):
-    """Build a landmarker. static=True for still images, False for the webcam.
-
-    confidence=None keeps the brief's spec value (0.5). The extractor passes
-    0.3 only for its RETRY detectors, never for the primary one.
-    """
+    """Build a landmarker; static=True for stills. 0.3 is for retry detectors only."""
     model_path = Path(model_path or config.HAND_MODEL_PATH)
     if not model_path.is_file():
         if __package__:
@@ -121,7 +96,7 @@ def create_detector(model_path: Path | None = None, static: bool = True,
 
 
 def bgr_to_rgb(bgr: np.ndarray) -> np.ndarray:
-    """The one place colour conversion happens. Never grayscale."""
+    """The one colour conversion. Never grayscale."""
     if bgr.ndim == 2:
         raise ValueError("got a grayscale frame; the pipeline requires colour")
     return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
@@ -154,23 +129,12 @@ def detect_image(detector, bgr: np.ndarray) -> HandResult:
 
 
 def _stamp(detector, timestamp_ms: int) -> int:
-    """The stamp this detector is allowed to see - never a rewind.
+    """Stamp to feed this detector, clamped forward.
 
-    MediaPipe's VIDEO mode keeps a temporal state machine keyed on the caller's
-    clock. Anything at or behind the last stamp raises
-    `ValueError: Input timestamp must be monotonically increasing.`, and the
-    detector stays poisoned until wall-clock time passes it, which from outside
-    looks like "the webcam died". So the rule *one clock per detector, moving
-    only forward* belongs with the detector, not with whichever loop happens to
-    be reading the camera: `live.py` runs three loops over one detector (typing,
-    J/Z calibration, the A-Z drill), `app.py` re-runs its page on every rerun,
-    and each of those used to invent its own epoch - a calibration followed by
-    typing rewound the clock by however long the calibration took and killed the
-    session on its first frame.
-
-    The high-water mark is stored on the detector object itself, so it is born
-    with the detector, dies with it, and cannot be forgotten by a caller. A
-    caller that keeps one clock, as they all should, never trips the clamp.
+    VIDEO mode rejects stamps <= the last one ("Input timestamp must be
+    monotonically increasing") and stays poisoned until wall clock passes it,
+    so the high-water mark lives on the detector: several loops and reruns
+    share one detector, each with its own epoch.
     """
     ts = int(timestamp_ms)
     last = getattr(detector, "_hb_last_ts", None)
@@ -182,9 +146,7 @@ def _stamp(detector, timestamp_ms: int) -> int:
 
 
 def detect_video(detector, bgr: np.ndarray, timestamp_ms: int) -> HandResult:
-    """Webcam detection (Step 5). `timestamp_ms` may come from any clock: see
-    `_stamp`, which makes the monotonicity MediaPipe demands a property of the
-    detector rather than a promise from the caller."""
+    """Webcam detection. Any clock is fine: `_stamp` enforces monotonicity."""
     return _unpack(detector.detect_for_video(_to_mp_image(bgr_to_rgb(bgr)),
                                              _stamp(detector, timestamp_ms)))
 
@@ -198,24 +160,10 @@ def load_image_rgb(path: str | Path) -> np.ndarray | None:
 
 
 class Recovery:
-    """The cheap version of the extractor's ladder, for live frames.
+    """Cheap two-rung retry (low-conf IMAGE, then mirrored), for live frames.
 
-    The extractor can afford five detections per image because it runs once,
-    offline, over 122k files. A webcam cannot. This keeps the one rung that is
-    both cheap and safe to repeat: an IMAGE-mode detection at a lower
-    confidence, then the same on a mirrored copy.
-
-    Two knobs decide when it runs. `after` is how many consecutive frames the
-    tracker has to miss before the first retry - a single dropped frame costs
-    the smoother nothing, so retrying it would be pure waste. `every` is the
-    cadence after that: once the streak is established, the retry repeats every
-    `every`-th frame rather than every frame, because a hand that is genuinely
-    out of shot only has to be probed to know it is gone. Tracking successes
-    never touch it, so a clean session pays nothing.
-
-    A mirrored hit is mapped back to the original frame (x -> 1-x) so the
-    feature vector always describes the pixels the user is looking at;
-    `normalize.canonicalize` still does the chirality work afterwards.
+    Runs after `after` consecutive misses, then every `every`-th frame. A
+    mirrored hit is mapped back (x -> 1-x) so features describe the seen pixels.
     """
 
     def __init__(self, conf: float = 0.3, after: int = 1, every: int = 3,
@@ -227,12 +175,12 @@ class Recovery:
         self.enabled = self.after > 0
         self._det = None
         self.model_path = model_path
-        self.frames = 0          # frames seen by this helper
-        self.tries = 0           # how many got the expensive retry
-        self.hits = 0            # ... of which found a hand
+        self.frames = 0          # empty frames seen
+        self.tries = 0
+        self.hits = 0
         self.flip_hits = 0
-        self.cost = 0.0          # seconds spent inside recovery
-        self.detects = 0         # detections per tried frame, for the cost note
+        self.cost = 0.0          # seconds inside recovery
+        self.detects = 0
 
     def _detector(self):
         if self._det is None:
@@ -246,8 +194,7 @@ class Recovery:
             self._det = None
 
     def attempt(self, bgr: np.ndarray) -> tuple[HandResult, str]:
-        """One rung at a time; stop at the first hand. `how` matches the
-        extractor's vocabulary so live and offline numbers can be compared."""
+        """One rung at a time; `how` uses the extractor's vocabulary."""
         det = self._detector()
         t0 = time.perf_counter()
         self.tries += 1
@@ -266,19 +213,14 @@ class Recovery:
                 self.hits += 1
                 self.flip_hits += 1
                 self.cost += time.perf_counter() - t0
-                # The landmarks are mapped back into the original frame, so the
-                # label has to be mapped back too, or the live path would report
-                # the opposite hand from the extractor's flip rung
-                # (extract_landmarks.py does exactly this swap).
+                # label must be swapped with the coordinates (see extract_landmarks)
                 return (HandResult(lm, swap_label(fres.handedness),
                                    -fres.cross_sign), "flip_0.3")
         self.cost += time.perf_counter() - t0
         return HandResult(None, None, 0.0), "none"
 
     def summary(self) -> str:
-        """`frames` counts the frames the VIDEO tracker returned nothing for,
-        which is the only population recovery can act on. The retry rate is
-        therefore 'tried / empty', not 'tried / all'."""
+        """Retry rate is tried/empty, not tried/all."""
         pct = 100 * self.tries / self.frames if self.frames else 0.0
         per = self.cost / self.tries if self.tries else 0.0
         avg = self.cost / self.frames if self.frames else 0.0
@@ -293,12 +235,9 @@ class Recovery:
 def detect_frame(detector, bgr: np.ndarray, timestamp_ms: int,
                  recovery: Recovery | None = None,
                  empty_streak: int = 0) -> tuple[HandResult, str]:
-    """THE live detection path, shared by live.py and verify_livepath.py.
+    """The live detection path shared by live.py and verify_livepath.py.
 
     Returns (result, how) with how in {video, direct_0.3, flip_0.3, none}.
-    `empty_streak` is how many frames including this one the tracker has
-    returned nothing for; recovery only starts once it reaches the threshold,
-    so a session of clean tracking pays nothing for it.
     """
     res = detect_video(detector, bgr, timestamp_ms)
     if res.landmarks is not None:
@@ -308,10 +247,7 @@ def detect_frame(detector, bgr: np.ndarray, timestamp_ms: int,
     recovery.frames += 1
     if empty_streak < recovery.after:
         return res, "none"
-    # Cadence. Once the threshold is crossed, retry every `every`-th frame
-    # instead of every frame: a hand that is genuinely out of shot needs one
-    # retry to prove it, not thirty, and an unbounded retry is what pushes the
-    # loop under the 20 FPS target during a long pause.
+    # retry at `every` cadence so a long pause stays above 20 FPS
     if (empty_streak - recovery.after) % recovery.every:
         return res, "none"
     return recovery.attempt(bgr)

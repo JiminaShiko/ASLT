@@ -1,23 +1,6 @@
-"""
-Stage 5 - the word buffer and phrase assembly.
+"""Stage 5 - word buffer and phrase assembly; deterministic rewrite driven by phrases.json.
 
-    python -m src.phrases
-
-phrases.json is the editable spec: multi-word rules, single-word forms and a
-cap on how many words the buffer remembers. Nothing here is learned - it is a
-deterministic rewrite of the committed word sequence, so the same signs always
-produce the same sentence.
-
-The buffer only ever receives committed words. REST and OTHER are never
-committed by src/predictor.py, so they can neither break a phrase nor appear
-in one.
-
-Two honesty notes carried into the README:
-  * ASL has no copula. There is no separate sign for "am"/"is": ME SAD means
-    "I am sad". A rule that writes the English copula is a convenience for the
-    reader, not a claim about ASL grammar, and it is deletable.
-  * Signing order is preserved. This module never reorders words into English
-    syntax; it only substitutes the runs listed in phrases.json.
+Signing order is preserved, and REST/OTHER never reach the buffer.
 """
 from __future__ import annotations
 
@@ -81,13 +64,7 @@ def load_book(path: Path | None = None) -> PhraseBook:
 
 
 class PhraseBuilder:
-    """Keeps the committed words, applies the rules, produces the text.
-
-    The text is re-rendered from the word list every time, with a greedy
-    left-to-right scan and the longest rule winning at each position. That
-    keeps the state to exactly one thing - the list of committed words - so
-    the cap and the trimming can never cut a phrase in half by accident.
-    """
+    """Holds committed words and re-renders text greedily, longest rule first."""
 
     def __init__(self, book: PhraseBook | None = None,
                  path: Path | None = None) -> None:
@@ -105,7 +82,7 @@ class PhraseBuilder:
         last: Rule | None = None
         i = 0
         while i < len(words):
-            for r in self.rules:                   # longest first
+            for r in self.rules:
                 if tuple(words[i:i + r.size]) == r.pattern:
                     out.append(r.text)
                     last = r if i + r.size == len(words) else None
@@ -121,7 +98,7 @@ class PhraseBuilder:
     def commit(self, word: str) -> str:
         w = str(word).strip().lower()
         if not w or w in (config.REST_LABEL.lower(), config.OTHER_LABEL.lower()):
-            return self.text()                     # never typed, never trimmed
+            return self.text()
         self.words.append(w)
         while len(self.words) > self.book.max_buffer_words:
             self.words.pop(0)
@@ -158,8 +135,7 @@ if __name__ == "__main__":
     out = {}
     for d in demos:
         s = sentence(d, book)
-        # a demo whose words are not all trainable yet is marked, so this output
-        # can never be read as "the recogniser already says my name"
+        # demos with untrainable words are tagged so they are not read as working
         out[", ".join(d)] = s if all(w in known for w in d) else s + "  [batch 2]"
     print(json.dumps({
         "max_buffer_words": book.max_buffer_words,
