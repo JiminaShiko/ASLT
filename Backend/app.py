@@ -1,4 +1,3 @@
-import importlib.util
 import os
 from pathlib import Path
 import sys
@@ -20,6 +19,7 @@ from login_signup_pages.login_process import ensure_login_columns, login_bp
 from login_signup_pages.signup_process import ensure_auth_tables, signup_bp
 from login_signup_pages.profile_process import profile_bp
 from agent_mail import agent_mail_bp
+from user.api import api_bp as translation_api_bp
 from user.text_to_sign import text_to_sign_bp
 
 PROJECT_ROOT = BACKEND_DIR.parent
@@ -45,16 +45,7 @@ CORS(
 
 # Register the landmark translator routes on the main website app. This keeps
 # the model API and the authenticated UI on the same origin and port.
-translation_api_path = PROJECT_ROOT / "Model" / "sign language photo model" / "api.py"
-translation_api_spec = importlib.util.spec_from_file_location(
-    "aslt_translation_api", translation_api_path
-)
-if translation_api_spec is None or translation_api_spec.loader is None:
-    raise RuntimeError(f"Could not load translation API from {translation_api_path}")
-translation_api = importlib.util.module_from_spec(translation_api_spec)
-sys.modules[translation_api_spec.name] = translation_api
-translation_api_spec.loader.exec_module(translation_api)
-app.register_blueprint(translation_api.api_bp)
+app.register_blueprint(translation_api_bp)
 
 # Text to Sign: word signs from the word model's vocabulary plus alphabet
 # fingerspelling, served from the same origin as the page.
