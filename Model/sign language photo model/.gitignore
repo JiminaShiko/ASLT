@@ -1,6 +1,0 @@
-dataset/photo_data_cache.npz
-dataset/sign_mnist/
-dataset/asl_alphabet/
-dataset/user_calibration/
-hand_landmarker.task
-__pycache__/

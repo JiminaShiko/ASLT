@@ -19,7 +19,7 @@ A word with neither is returned as fingerspelling, so the answer is never an
 invented sign.
 
 Speech is not implemented here: the panel calls the existing /api/tts route
-(Model/sign language photo model/api.py), which reads Google's voice.
+(Backend/user/api.py), which reads Google's voice.
 """
 
 from __future__ import annotations

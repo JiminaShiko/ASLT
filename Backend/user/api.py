@@ -33,12 +33,16 @@ from flask import Blueprint, Flask, jsonify, request, send_file
 from flask_cors import CORS
 from PIL import Image
 
-LANDMARK_APP = Path(__file__).resolve().parents[1] / "asl_landmark_app"
-sys.path.insert(0, str(LANDMARK_APP.parent))
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = BACKEND_DIR.parent
+MODEL_DIR = PROJECT_ROOT / "Model"
+LANDMARK_APP = MODEL_DIR / "asl_landmark_app"
+sys.path.insert(0, str(MODEL_DIR))
 
 from asl_landmark_app.src import config as landmark_config  # noqa: E402
 from asl_landmark_app.src import hand_backend, live as landmark_live  # noqa: E402
 from asl_landmark_app.src import normalize  # noqa: E402
+from videoModel.src import config as words_config  # noqa: E402
 
 PORT = 5000
 MAX_SIDE = 640
@@ -65,6 +69,13 @@ DEFAULT_SETTINGS = {
     "jz": "",
     "calibrate_reps": 3,
 }
+WORD_DEFAULT_SETTINGS = {
+    "fps": 20.0,
+    "stride": max(1, int(words_config.LIVE_STRIDE)),
+    "buffer": float(words_config.BUFFER_SECONDS),
+    "conf": float(words_config.CONFIDENCE_MIN),
+    "margin": float(words_config.MARGIN_MIN),
+}
 
 api_bp = Blueprint("asl_translation_api", __name__)
 
@@ -76,6 +87,8 @@ CORS(app, origins=[
 
 SESSIONS = {}
 SESSIONS_LOCK = threading.Lock()
+WORD_SESSIONS = {}
+WORD_SESSIONS_LOCK = threading.Lock()
 STATIC_DETECTOR_LOCK = threading.Lock()
 STATIC_DETECTOR = None
 
@@ -469,6 +482,102 @@ def predict_photo(image, settings):
     }
 
 
+def validate_word_settings(payload):
+    settings = dict(WORD_DEFAULT_SETTINGS)
+    if payload:
+        for key in settings:
+            if payload.get(key) is not None:
+                settings[key] = payload[key]
+    settings["fps"] = float(settings["fps"])
+    settings["stride"] = int(settings["stride"])
+    settings["buffer"] = float(settings["buffer"])
+    settings["conf"] = float(settings["conf"])
+    settings["margin"] = float(settings["margin"])
+    if not 5.0 <= settings["fps"] <= 60.0:
+        raise ValueError("fps must be between 5 and 60")
+    if not 1 <= settings["stride"] <= 8:
+        raise ValueError("stride must be between 1 and 8")
+    if not 0.5 <= settings["buffer"] <= 10.0:
+        raise ValueError("buffer must be between 0.5 and 10 seconds")
+    for key in ("conf", "margin"):
+        if not 0.0 <= settings[key] <= 1.0:
+            raise ValueError(f"{key} must be between 0 and 1")
+    return settings
+
+
+def word_model_info():
+    weights = Path(words_config.FOR_RELEASE)
+    return {
+        "available": weights.is_file(),
+        "weights": weights.name,
+        "default_settings": WORD_DEFAULT_SETTINGS,
+    }
+
+
+class WordLiveSession:
+    """One live word-recognition session over the shared camera frames."""
+
+    def __init__(self, raw_settings):
+        from videoModel.src import predictor as word_predictor
+
+        self.lock = threading.RLock()
+        self.settings = validate_word_settings(raw_settings)
+        self.predictor = word_predictor.WordPredictor(
+            weights=Path(words_config.FOR_RELEASE),
+            fps=self.settings["fps"],
+            stride=self.settings["stride"],
+            buffer_seconds=self.settings["buffer"],
+            min_conf=self.settings["conf"],
+            min_margin=self.settings["margin"],
+        )
+        self.started_at = time.monotonic()
+        self.last_activity = self.started_at
+        self.frames = 0
+        self.hands = 0
+        self.last_frame_ms = 0.0
+        self.last_result = self.predictor.result()
+
+    def process_frame(self, image):
+        with self.lock:
+            started = time.perf_counter()
+            self.last_activity = time.monotonic()
+            rgb = np.asarray(image.convert("RGB"), dtype=np.uint8)
+            result = self.predictor.update(rgb)
+            self.frames += 1
+            if any(result.get("hand_in_frame") or ()):
+                self.hands += 1
+            self.last_frame_ms = (time.perf_counter() - started) * 1000.0
+            self.last_result = result
+            return self.response()
+
+    def response(self):
+        elapsed = time.monotonic() - self.started_at
+        out = dict(self.last_result)
+        out.update({
+            "model": "words",
+            "fps": float(self.frames / elapsed) if elapsed > 0 else 0.0,
+            "frame_ms": float(self.last_frame_ms),
+            "frames": self.frames,
+            "hands": self.hands,
+            "backend": "torch",
+            "model_profile": "words",
+        })
+        return out
+
+    def action(self, name):
+        with self.lock:
+            if name != "clear":
+                raise ValueError(f"Unknown word live action: {name}")
+            self.predictor.reset()
+            self.last_activity = time.monotonic()
+            self.last_result = self.predictor.result()
+            return self.response()
+
+    def close(self):
+        with self.lock:
+            self.predictor.close()
+
+
 def tts_chunks(text, limit=TTS_CHUNK_CHARS):
     chunks = []
     current = ""
@@ -556,6 +665,7 @@ def health():
         "labels": landmark_config.LABELS,
         "pair_margins": landmark_live.PAIR_MARGINS,
         "default_settings": DEFAULT_SETTINGS,
+        "word_model": word_model_info(),
     })
 
 
@@ -641,6 +751,71 @@ def live_stop():
     if session is None:
         return jsonify({"error": "Session not found"}), 404
     text = session.text
+    session.close()
+    return jsonify({"text": text})
+
+
+@api_bp.post("/api/words/live/start")
+def words_live_start():
+    try:
+        data = request.get_json(silent=True) or {}
+        session = WordLiveSession(data.get("settings"))
+        session_id = uuid.uuid4().hex
+        with WORD_SESSIONS_LOCK:
+            now = time.monotonic()
+            expired = [
+                key for key, value in WORD_SESSIONS.items()
+                if now - value.last_activity > 600
+            ]
+            for key in expired:
+                WORD_SESSIONS.pop(key).close()
+            WORD_SESSIONS[session_id] = session
+        return jsonify({"session_id": session_id, "state": session.response()})
+    except Exception as error:
+        return jsonify({"error": str(error)}), 400
+
+
+@api_bp.post("/api/words/live/frame")
+def words_live_frame():
+    data = request.get_json(silent=True) or {}
+    session_id = data.get("session_id")
+    if not session_id:
+        return jsonify({"error": "session_id required"}), 400
+    with WORD_SESSIONS_LOCK:
+        session = WORD_SESSIONS.get(session_id)
+    if session is None:
+        return jsonify(
+            {"error": "Word session expired. Start live translation again."}
+        ), 404
+    if "image" not in data:
+        return jsonify({"error": "image required"}), 400
+    try:
+        return jsonify(session.process_frame(decode_image(data["image"])))
+    except Exception as error:
+        return jsonify({"error": str(error)}), 500
+
+
+@api_bp.post("/api/words/live/action")
+def words_live_action():
+    data = request.get_json(silent=True) or {}
+    with WORD_SESSIONS_LOCK:
+        session = WORD_SESSIONS.get(data.get("session_id"))
+    if session is None:
+        return jsonify({"error": "Session not found"}), 404
+    try:
+        return jsonify(session.action(data.get("action", "")))
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+
+
+@api_bp.post("/api/words/live/stop")
+def words_live_stop():
+    data = request.get_json(silent=True) or {}
+    with WORD_SESSIONS_LOCK:
+        session = WORD_SESSIONS.pop(data.get("session_id"), None)
+    if session is None:
+        return jsonify({"error": "Session not found"}), 404
+    text = session.last_result.get("text", "")
     session.close()
     return jsonify({"text": text})
 
