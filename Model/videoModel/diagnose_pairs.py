@@ -1,17 +1,7 @@
-"""
-Stage-A diagnostics, kept so the before/after comparison is repeatable.
+"""Stage-A diagnostics on cache/landmarks, manifest and predictions; writes nothing.
 
-    cd "D:\\sign language project\\ASTL project\\ASLT\\videoModel"
-    python diagnose_pairs.py                          # the four confused words
-    python diagnose_pairs.py --words good,thanks      # one pair
-    python diagnose_pairs.py --all-rates              # segment hand rate, all words
-    python diagnose_pairs.py --gaps                   # dropout histogram only
-
-Reads cache/landmarks/*.npy, cache/manifest.csv and reports/predictions.csv.
-Writes nothing, re-extracts nothing, never touches a camera. The AUC columns
-are a linear probe: they ask "could a linear model read this distinction out
-of what we hand it", which is a different question from what the trained GRU
-manages, and on a few dozen clips it is directional evidence, not a verdict.
+The AUC columns are a linear probe - directional evidence on a few dozen
+clips, not a verdict. See README for flags.
 """
 from __future__ import annotations
 
@@ -53,9 +43,10 @@ def hand_rate(seg: np.ndarray) -> float:
 
 
 def measures(seg: np.ndarray) -> dict:
-    """Wrist geometry in shoulder widths, y up-positive, origin at the
-    shoulder line. 's/m/e' = first / middle / last frame of the segment in
-    which that hand is actually seen; 'a' = the frame closest to the mouth."""
+    """Wrist geometry in shoulder widths, y up, origin at the shoulder line.
+
+    's/m/e' = first/middle/last frame the hand is seen; 'a' = closest to the mouth.
+    """
     out: dict[str, float] = {}
     if len(seg) < 3:
         return out
@@ -70,12 +61,12 @@ def measures(seg: np.ndarray) -> dict:
     for name, col in (("L", config.HAND_WRIST_COLS[0]),
                       ("R", config.HAND_WRIST_COLS[1])):
         xy = (seg[:, col, :2] - sh) / scale[:, None]
-        xy = np.column_stack([xy[:, 0], -xy[:, 1]])       # up is positive
+        xy = np.column_stack([xy[:, 0], -xy[:, 1]])
         pres = float(np.mean(~np.isnan(xy[:, 0])))
         out[f"{name}_pres"] = pres
         if pres == 0:
             continue
-        mouth = np.hypot(*(xy - mo).T)                     # per frame, to the mouth
+        mouth = np.hypot(*(xy - mo).T)
         idx = np.where(~np.isnan(xy[:, 0]))[0]
         near = idx[int(np.argmin(np.where(np.isnan(mouth), np.inf,
                                           mouth)[idx]))]
@@ -90,9 +81,7 @@ def measures(seg: np.ndarray) -> dict:
             out[f"{name}_dy"] = float(xy[idx[-1], 1] - xy[idx[0], 1])
             out[f"{name}_travel"] = float(np.hypot(out[f"{name}_dx"],
                                                    out[f"{name}_dy"]))
-            # travel measured from the mouth-closest frame to the end: what the
-            # sign does AFTER it reaches the reference point, which is where
-            # GOOD (away and down) and THANKS (stays near) should differ
+            # travel after the mouth-closest frame: where GOOD and THANKS should differ
             tail = idx[idx >= near]
             if len(tail) >= 2:
                 out[f"{name}_away"] = float(mouth[tail[-1]] - mouth[near])
@@ -133,14 +122,10 @@ def _runs(mask: np.ndarray) -> list[int]:
 
 
 def gap_report(man: pd.DataFrame, cache: dict) -> pd.DataFrame:
-    """How much of a hand's absence is detector noise rather than a real one.
+    """What fill_gaps() recovers per word, plus a gap-length histogram.
 
-    features.fill_gaps() bridges runs of config.GAP_FILL_FRAMES frames or
-    fewer. This measures what that actually buys back per word, in frames
-    seen: seen_raw is what MediaPipe returned, seen_filled what the model
-    will now be handed. The gap-length histogram underneath says the rest -
-    a pile of 1-3 frame holes is noise, a long tail past 5 is a hand that
-    was genuinely not in shot, and only the first kind should be filled.
+    Many 1-3 frame holes are noise; a tail past GAP_FILL_FRAMES is a hand
+    genuinely out of shot.
     """
     from collections import Counter
     hist: Counter = Counter()
@@ -179,7 +164,6 @@ def gap_report(man: pd.DataFrame, cache: dict) -> pd.DataFrame:
     return g
 
 
-# ---------------------------------------------------------------------------
 def rates(man: pd.DataFrame, cache: dict) -> pd.DataFrame:
     per = []
     for r in man.itertuples(index=False):

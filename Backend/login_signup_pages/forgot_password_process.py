@@ -30,10 +30,7 @@ def _is_strong_password(password: str) -> tuple[bool, str]:
 
 @forgot_password_bp.route("/api/forgot-password", methods=["POST"])
 def initiate_forgot_password():
-    """
-    Step 1: Validates email exists and is active, generates a 6-digit OTP
-    with purpose='forgot_password' in `otp`, emails it, and redirects to /verify-otp.
-    """
+    """Step 1: for an active account, store a reset OTP and email it."""
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
 
@@ -112,10 +109,7 @@ def initiate_forgot_password():
 
 @forgot_password_bp.route("/api/forgot-password/verify-otp", methods=["POST"])
 def verify_forgot_password_otp():
-    """
-    Step 2: Verifies the 6-digit reset OTP in `otp`, deletes the used row,
-    marks the email as verified in session, and redirects to /reset-password.
-    """
+    """Step 2: consume the reset OTP and mark the email verified in session."""
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or session.get("pending_reset_email") or "").strip().lower()
     otp_input = (data.get("otp") or "").strip()
@@ -243,10 +237,7 @@ def resend_forgot_password_otp():
 
 @forgot_password_bp.route("/api/reset-password", methods=["POST"])
 def complete_password_reset():
-    """
-    Step 3: Updates `users.password_hash` for the OTP-verified email,
-    clears failed login attempts/locks, and redirects back to /login.
-    """
+    """Step 3: store the new hash and clear lockout state for the verified email."""
     email = (session.get("password_reset_verified_email") or "").strip().lower()
     if not email:
         return jsonify(

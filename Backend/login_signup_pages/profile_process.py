@@ -9,11 +9,7 @@ profile_bp = Blueprint("profile_bp", __name__)
 
 @profile_bp.route("/api/profile/setup", methods=["POST"])
 def save_user_profile():
-    """
-    Receives cropped `profile_photo` (multipart/form-data file) and `username`,
-    uploads photo to Cloudinary (`signrest/profiles`), updates `users` table,
-    and redirects to `/home`.
-    """
+    """Upload the cropped photo to Cloudinary, save username + photo, redirect home."""
     user_id = session.get("user_id")
     if not user_id:
         return jsonify({"success": False, "message": "Session expired. Please login again."}), 401
@@ -85,7 +81,7 @@ def save_user_profile():
 
 @profile_bp.route("/api/profile/skip", methods=["POST"])
 def skip_profile_setup():
-    """Allows skipping profile setup while keeping user logged in."""
+    """Skip profile setup but keep the session; photo + username still gate completion."""
     if not session.get("user_id"):
         return jsonify({"success": False, "redirect_url": "/login"}), 401
 

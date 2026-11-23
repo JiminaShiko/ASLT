@@ -1,31 +1,37 @@
-# Local secrets (examples without real credentials can still be committed).
+# Secrets
 .env
 .env.*
 *.env
 !.env.example
 ca.pem
-# Kaggle API tokens, in case one is ever dropped in the project folder.
 kaggle.json
+.streamlit/secrets.toml
 
-# Dependencies and generated files, wherever a subproject lives.
+# Dependencies and generated files
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .ipynb_checkpoints/
 .venv/
 venv/
 node_modules/
+dist/
+build/
+*.egg-info/
 *.part
+*.tmp
+*.bak
+*.orig
+*.log
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
 
-# Local legacy videoModel data, caches, downloads, and old checkpoints stay on
-# this machine. Active code and the one tracked deployed model set live under
-# Model/videoModel/. New PopSign downloads go under its ignored datasets/ folder.
+# Local-only model data, caches and uploads
 /asl_landmark_app/
-/sign language photo model/
 /videoModel/
-
-# Raw MNIST downloads used by the EDA script, not runtime dependencies.
-# Keep the EDA code, charts, tables, source link and results in Git.
+/Backend/uploads/
 /Model/EDA/mnist dataset/dataset/*.csv

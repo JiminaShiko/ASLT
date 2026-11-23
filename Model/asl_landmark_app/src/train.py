@@ -1,35 +1,8 @@
-"""Step 4 - train the landmark MLP and produce REPORT.md.
+"""Step 4 - train the landmark MLP and write REPORT.md.
 
-Evaluation policy (this is the part that matters):
-
-  PRIMARY   cross-dataset / leave-one-dataset-out. For every dataset D we train
-            on all the OTHER datasets and test only on D, so the model has never
-            seen that signer, camera, background or lighting. Each sample is
-            therefore scored by a model blind to its own dataset, and those
-            pooled predictions give the confusion matrix and the weakest pairs.
-            This is the honest proxy for your webcam.
-
-            The HEADLINE is the POOLED (micro) accuracy over all those held-out
-            predictions, with a 95% CI. The MACRO mean (average of the per-
-            dataset numbers) is reported next to it but never headlined, and any
-            held-out dataset with fewer than config.HOLDOUT_MIN_FOR_HEADLINE
-            images is flagged as too small to carry a headline while still being
-            used in training.
-
-  SECONDARY pairwise A->B and B->A for every ordered pair, so you can see which
-            direction is harder.
-
-  REFERENCE a within-dataset split by SESSION folders (never random images),
-            because neighbouring frames of one clip are the same hand in the
-            same pose. It is printed and labelled OPTIMISTIC - it is never
-            quoted as "the accuracy".
-
-  FINAL     the shipped model is trained on all datasets combined. Its own
-            session-held-out number is also reported as optimistic.
-
-No random-split score is used as a headline anywhere.
-
-Run:  python src/train.py [--epochs 80] [--quick]
+The headline is always cross-dataset (leave-one-dataset-out) POOLED accuracy;
+within-dataset session splits and the final model's own split are labelled
+optimistic. No random-split score is headlined anywhere.
 """
 from __future__ import annotations
 
@@ -60,14 +33,10 @@ import normalize  # noqa: E402
 
 torch.set_num_threads(os.cpu_count() or 4)
 LABELS = config.LABELS
-# A per-letter cell with fewer test images than this gets its count printed:
-# one image is worth 100 percentage points there, so the number alone misleads.
+# tiny cells: print the count, one image is worth 100 points
 SMALL_CELL_N = 40
 
 
-# ---------------------------------------------------------------------------
-# data
-# ---------------------------------------------------------------------------
 def load_dataset(quick: bool = False, max_rows_per_ds: int | None = None):
     df = LS.load_raw()
     df = LS.keep_static_classes(df)
@@ -97,9 +66,6 @@ def load_dataset(quick: bool = False, max_rows_per_ds: int | None = None):
     return {"lm": prepared, "y": y, "ds": ds, "sess": sess, "blk": blk, "df": df}
 
 
-# ---------------------------------------------------------------------------
-# Stage B: style divergence between datasets
-# ---------------------------------------------------------------------------
 DIVERGENCE_CSV = config.CACHE_DIR / "divergence.csv"
 
 
@@ -114,10 +80,8 @@ def _pair_means(dv: pd.DataFrame) -> dict[tuple[str, str], list[float]]:
 def style_cluster(dv: pd.DataFrame) -> tuple[tuple[str, str], str] | None:
     """Split the datasets into (majority pair, odd one out) by mean shape.
 
-    Averaged over every letter, which is what makes it robust: a single letter's
-    distance to the 30-image-per-letter dataset is noise, but the mean over 24
-    letters is not. Returns None when there is no clear two-against-one
-    structure, in which case we do not guess a minority style at all.
+    Averaged over all letters so one small dataset's noise cannot sway it;
+    None when there is no clear two-against-one structure.
     """
     means = {k: sum(v) / len(v) for k, v in _pair_means(dv).items()}
     if len(means) < 3:
@@ -134,38 +98,11 @@ def style_cluster(dv: pd.DataFrame) -> tuple[tuple[str, str], str] | None:
 def divergent_cells(mult: float = 2.0) -> set[tuple[str, str]]:
     """(letter, dataset) cells where one dataset signs that letter differently.
 
-    `cache/divergence.csv` (written by `python src/inspect_data.py`) holds one
-    row per letter and dataset pair: `shape_dist` is the distance between the
-    two mean normalised hand shapes in bone units, `within_ds` the split-half
-    gap inside a dataset.
-
-    Two findings from the contact sheets shape this rule, and both replace
-    earlier attempts that were wrong:
-
-      * `ratio` = shape_dist / within_ds is NOT a usable screen. within_ds is a
-        floor, not a scale - every dataset agrees with itself to ~0.2 units - so
-        on the v2 cache 24 of 24 letters clear ratio 5 and the metric says
-        "everything is a different sign", which is useless. What separates the
-        real conflicts is the absolute distance against the *typical* absolute
-        distance, so `mult` is a multiple of the median over letters.
-      * "minority" cannot be decided per letter by row counts either. An earlier
-        version picked the smaller side of the worst pair; the per-cell counts
-        are capped at the same subsample size, so the comparison tied and the
-        tie-break fell through to column order - it returned "downweight
-        grassknoted on all 24 letters". Instead the minority dataset is decided
-        once, globally, by `style_cluster()`: two datasets form a tight cluster
-        and the third is the odd style. Here that is grassknoted + danrasband
-        (one signer, one crop, 4.4 units apart on average over the alphabet)
-        versus massey (6.8 and 7.8), exactly what the sheets show.
-
-    A letter is flagged when the odd dataset's distance to the better-sampled
-    cluster member is at least `mult` times the median such distance over all
-    letters (2.0 on this cache gives M, N and P - the three the sheets flagged -
-    while 1.5 would also pull in C, G, H and Q, where the shape gap is real but
-    only ~1.9x the median). If the two clustered datasets themselves disagree on
-    that letter and that pair is well sampled, the letter is skipped: three
-    different signs is an imaging mess, not a two-style conflict we can fix by
-    weighting one side.
+    Reads cache/divergence.csv (src/inspect_data.py). Uses absolute distance
+    as a multiple of the median over letters: the shape_dist/within_ds ratio
+    is useless (within_ds is a floor). The minority dataset comes from
+    style_cluster(), not row counts, which tie. Skipped when the cluster pair
+    itself disagrees or is too small. mult=2.0 flags M, N, P.
     """
     if not DIVERGENCE_CSV.exists():
         return set()
@@ -174,9 +111,8 @@ def divergent_cells(mult: float = 2.0) -> set[tuple[str, str]]:
     if cl is None:
         return set()
     (maj_a, maj_b), odd = cl
-    # distance of the odd dataset to the BETTER SAMPLED member of the cluster:
-    # the other member may be a few dozen images per letter, and a mean over
-    # that is not worth trusting for a single-letter decision.
+    # compare against the better-sampled cluster member: the other may hold
+    # only a few dozen images per letter
     per: dict[str, dict[str, float]] = {}
     for r in dv.itertuples():
         pair = {str(r.ds_a), str(r.ds_b)}
@@ -203,9 +139,7 @@ def divergent_cells(mult: float = 2.0) -> set[tuple[str, str]]:
             continue
         if v["odd_ref"] < mult * med:
             continue
-        # if the two clustered datasets themselves disagree on this letter, it
-        # is not a two-style conflict; and we can only say that when the
-        # cluster pair is itself sampled well enough to mean anything.
+        # cluster pair disagreeing (or too small to tell) is not a two-style conflict
         if v.get("within_n", 0) >= 200 and v["odd_ref"] <= v["within"]:
             continue
         cells.add((lab, odd))
@@ -227,10 +161,7 @@ def style_weights(data: dict, cells: set[tuple[str, str]], weight: float) -> np.
 def divergence_summary(mult: float = 2.0) -> tuple[pd.DataFrame, dict]:
     """Per-letter style-conflict view of cache/divergence.csv, plus the cluster.
 
-    Returns (table, info). The table is one row per letter, sorted by how far
-    the odd-style dataset sits from the majority cluster, in multiples of the
-    median of that measure - which is the quantity `divergent_cells()` actually
-    thresholds on, so the table and the weights can never disagree.
+    Sorted by the same measure `divergent_cells()` thresholds on.
     """
     if not DIVERGENCE_CSV.exists():
         return pd.DataFrame(), {}
@@ -275,17 +206,10 @@ def feats_of(lm: np.ndarray) -> np.ndarray:
     return normalize.features_from_normalized_batch(lm.astype(np.float64))
 
 
-# ---------------------------------------------------------------------------
-# training
-# ---------------------------------------------------------------------------
 def train_one(data, train_idx: np.ndarray, cfg: dict, seed: int,
               val_idx: np.ndarray | None = None, verbose: bool = True):
-    # Every random draw in a training run has to come from `seed`. The network
-    # init and the sampler below both pull from torch's *global* RNG unless they
-    # are told otherwise, and only the augmentation used the seeded numpy `rng`,
-    # so before these two lines the same command twice in a row produced two
-    # different models - measured: pooled cross-dataset 63.9% and 64.6% from two
-    # identical invocations, which is more than the effect Stage D promoted.
+    # everything random must come from `seed`: without this the torch init and
+    # sampler drew from the global RNG (63.9 vs 64.6% for two identical runs).
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
     lm_tr, y_tr = data["lm"][train_idx], data["y"][train_idx]
@@ -354,31 +278,21 @@ def train_one(data, train_idx: np.ndarray, cfg: dict, seed: int,
 
 def evaluate(net, lm: np.ndarray, y: np.ndarray,
              want_probs: bool = False):
-    """Return (true labels, predicted labels) for a non-augmented slice.
-
-    With `want_probs` the full softmax matrix comes back as a third value. It is
-    off by default because every caller but `--dump-preds` throws it away, and
-    60k x 24 floats is not free.
-    """
+    """(true labels, predicted labels); `want_probs` adds the full softmax."""
     probs = M.predict_probs(net, feats_of(lm))
     p = probs.argmax(1)
     return (y, p, probs) if want_probs else (y, p)
 
 
 def top_two(probs: np.ndarray) -> np.ndarray:
-    """Collapse a softmax matrix to the three numbers a live frame can see.
+    """Softmax matrix -> `[p1, p2, runner_up_index]`, what `live.frame_call()` sees.
 
-    One row per sample: `[p1, p2, runner_up_class_index]`. That is exactly the
-    information `live.frame_call()` acts on - top score, runner-up score, and
-    which letter the runner-up is - so pair-specific refusal margins can be
-    measured out-of-fold instead of guessed, without writing the full matrix
-    (122k x 24) to disk.
+    Lets pair margins be measured out-of-fold without dumping 122k x 24 floats.
     """
     n = len(probs)
     part = np.argpartition(-probs, 1, axis=1)[:, :2]
     rows = np.arange(n)
-    # argpartition only guarantees position 0 is one of the two largest, so the
-    # winner still has to be picked out of the pair.
+    # argpartition only guarantees position 0 is one of the two largest
     first = np.where(probs[rows, part[:, 0]] >= probs[rows, part[:, 1]],
                      part[:, 0], part[:, 1])
     second = np.where(first == part[:, 0], part[:, 1], part[:, 0])
@@ -386,9 +300,6 @@ def top_two(probs: np.ndarray) -> np.ndarray:
                             second.astype(np.float64)])
 
 
-# ---------------------------------------------------------------------------
-# metrics
-# ---------------------------------------------------------------------------
 def per_class(y: np.ndarray, p: np.ndarray) -> pd.DataFrame:
     rows = []
     for i, lab in enumerate(LABELS):
@@ -456,13 +367,9 @@ def wilson_ci(correct: int, n: int, z: float = 1.96) -> tuple[float, float]:
 
 def headline_stats(cross: list[dict], pooled_y: np.ndarray,
                    pooled_p: np.ndarray) -> dict:
-    """Pooled (micro) and macro (mean-of-datasets) cross-dataset accuracy.
+    """Pooled (micro, the headline) and macro (mean-of-datasets) accuracy.
 
-    POOLED is the headline: every held-out image is counted exactly once, so it
-    is an honest estimate of "a random hand image from a hand we did not train
-    on". MACRO weights the datasets equally, which is how the old 75.0 % figure
-    was produced - danrasband's 683 images scored 92.7 % and pulled that mean
-    7 points above the pooled truth, so it is reported but never headlined.
+    MACRO is reported, never headlined: small easy datasets pull it up.
     """
     n = int(len(pooled_y))
     correct = int((pooled_y == pooled_p).sum()) if n else 0
@@ -514,17 +421,11 @@ def per_letter_by_dataset(cross: list[dict]) -> pd.DataFrame:
     return wide, counts
 
 
-# ---------------------------------------------------------------------------
-# folds
-# ---------------------------------------------------------------------------
 def cross_dataset_folds(data, cfg, seed=0, train_how: str | None = None):
     """Leave-one-dataset-out: the primary, honest evaluation.
 
-    `train_how` narrows the TRAINING rows to one detection path (e.g.
-    "direct_0.5", what round 1 had) without touching the test rows, so a run
-    restricted that way can be compared with round 1 on the same images the
-    same way. It exists to answer "did the extra recovered images help the
-    model or cost it accuracy", which no other pair of numbers here separates.
+    `train_how` narrows only the training rows to one detection path, so the
+    effect of the recovered images can be isolated.
     """
     cfg = fold_cfg(cfg)
     ds_ids = sorted(set(data["ds"]))
@@ -568,15 +469,8 @@ ROUND1_HOW = "direct_0.5"
 def dump_oof(cross, data, out: Path) -> int:
     """Write every leave-one-dataset-out prediction as one CSV row per image.
 
-    Re-analysing a letter (confusion rows, accuracy by detection path, accuracy
-    by capture session) otherwise costs a full retrain, and the folds are the
-    only evaluation here worth trusting. `image` is the source file, so the rows
-    can be joined back to `cache/landmarks.parquet` or looked at by hand.
-
-    When the folds carried their softmax (`top_two`) the row also gets `p1`,
-    `p2` and `runner_up`, which is what makes a refusal margin measurable rather
-    than guessed: the gap a live frame sees, sorted by the letter pair it was
-    wrong about. Four decimals keeps the file honest at a fraction of its size.
+    With `p1`, `p2` and `runner_up` when the folds carried their softmax, so
+    refusal margins can be measured. `image` joins back to the landmark cache.
     """
     cols = data["df"].reset_index(drop=True)
     img = cols["image"].astype(str).to_numpy() if "image" in cols else np.full(len(cols), "")
@@ -633,20 +527,15 @@ def round1_comparable(cross, data) -> dict | None:
 
 
 def fold_cfg(cfg: dict) -> dict:
-    """Evaluation models train for fewer epochs than the final model.
-
-    There are ~15 of them and they only need to converge enough to score a
-    transfer set; early stopping still applies on top of the smaller cap.
-    """
+    """Shorter training for the ~15 evaluation models; early stopping still applies."""
     return {**cfg, "epochs": cfg.get("fold_epochs") or cfg["epochs"]}
 
 
 def _group_val(data, train_idx: np.ndarray) -> np.ndarray:
     """Contiguous-block validation inside the training datasets (never random).
 
-    Grouping on `blk` (see landmark_store.block_id) keeps every class present
-    on both sides of the split, which grouping on the raw session does not for
-    the photo datasets - there one session folder *is* one whole letter.
+    Groups on `blk` so every class lands on both sides (a session folder is
+    one whole letter for the photo datasets).
     """
     groups = data["blk"][train_idx]
     if len(np.unique(groups)) < 4:
@@ -697,11 +586,9 @@ def within_dataset_blocksplit(data, cfg, dataset_id: str, seed=2):
 
 
 def unseen_group_split(data, cfg, dataset_id: str, seed=3):
-    """Held-out capture group (as close to held-out-subject as this data allows).
+    """Held-out capture group, the closest this data gets to held-out subject.
 
-    Only possible when a dataset has several sessions that each contain many
-    letters. Massey does (5 capture groups x 24 letters); the photo datasets do
-    not (one folder = one letter), so they return None and are skipped.
+    None for the photo datasets (one folder = one letter).
     """
     cfg = fold_cfg(cfg)
     idx = np.where(data["ds"] == dataset_id)[0]
@@ -723,17 +610,8 @@ def unseen_group_split(data, cfg, dataset_id: str, seed=3):
             "accuracy": float((y[keep] == p[keep]).mean())}
 
 
-# ---------------------------------------------------------------------------
-# report
-# ---------------------------------------------------------------------------
 def live_path_summary() -> dict | None:
-    """Read the live hand-coverage and FPS figures out of reports/live_path.md.
-
-    They live in exactly one place - the run that measures them - so the
-    training report quotes whatever that file currently says instead of
-    repeating a number by hand. Returns None when the file is missing or was
-    written by an older generator that did not contain the two rows.
-    """
+    """Live hand-coverage and FPS from reports/live_path.md, or None if absent."""
     p = config.REPORTS_DIR / "live_path.md"
     if not p.is_file():
         return None
@@ -762,10 +640,7 @@ def extractor_recall(skipped_csv: Path):
 def coverage_sentence(offline_rec, live) -> str:
     """The two coverage numbers, stated as the different quantities they are.
 
-    Stage A's point: the extractor's 88.5% is *image* recall over 122k files,
-    where five detections per image are free; the live path's figure is *frame*
-    coverage through the bounded retry, and it is a different measurement on a
-    different denominator. Collapsing them is how the previous report misled.
+    Extractor = image recall offline; live path = frame coverage. Never merge.
     """
     off = (f"the extractor finds a hand in {100 * offline_rec[1]:.1f}% of dataset "
            f"images instead of {100 * offline_rec[0]:.1f}% - that is image recall "
@@ -790,12 +665,7 @@ def write_report(cfg, cross, pooled_y, pooled_p, pairs, blocksplit, groups, fina
                  data, skipped_csv: Path, out_md: Path) -> None:
     cm_pooled = confusion(pooled_y, pooled_p)
     pc = per_class(pooled_y, pooled_p)
-    # Every profile owns exactly one figure, named after the profile it came
-    # from (`reports/confusion_matrix_<profile>.png`). Until 2026-11-15 the
-    # default profile wrote the bare legacy `reports/confusion_matrix.png`
-    # instead, while its report text pointed at `confusion_matrix_all.png`, so
-    # one run left two identical PNGs and refreshed the one nobody read. The
-    # bare file was pruned in the folder cleanup and nothing writes it now.
+    # one figure per profile: reports/confusion_matrix_<profile>.png
     png = config.REPORTS_DIR / f"confusion_matrix_{out_md.stem.replace('report_', '')}.png"
     plot_confusion(cm_pooled, png, "Cross-dataset confusion (each sample scored by a "
                                    "model that never saw its dataset)")
@@ -823,8 +693,7 @@ def write_report(cfg, cross, pooled_y, pooled_p, pairs, blocksplit, groups, fina
           f"{100 * r1['share_of_test']:.0f}% of these images that round 1's "
           f"single-pass detector could find at all): {100 * r1['accuracy']:.1f}% "
           f"({r1['correct']:,}/{r1['n']:,})**\n")
-        # Paired control, measured on the seeded pipeline so "same seed" is true.
-        # Re-derive with:
+        # paired control on the seeded pipeline; re-derive with
         #   python src/train.py --folds-only --no-save --train-how direct_0.5
         CTRL = {"correct_all": 80861, "n_all": 122359,
                 "correct_easy": 69538, "n_easy": 101932}
@@ -1419,13 +1288,8 @@ def main() -> int:
     prof = config.profile(args.profile)
     pconf = config.PROFILES[prof]
     cfg["name"] = pconf["prefix"]   # so the report and meta name the file they describe
-    # The profile owns the minority-style weight unless the caller overrode it by
-    # hand. Until 2026-11-15 this only fired when `--profile` was actually typed,
-    # so a bare `python src/train.py` - which resolves to profile `all` and then
-    # overwrites `models/asl_all.pt` and `reports/report_all.md` - trained at the
-    # legacy argparse default of 0.5, i.e. round 2's weighting under round 3's
-    # name, and its own report said so out loud. `run_all.py` was never affected
-    # because it always passes `--profile`.
+    # the profile owns the style weight unless the caller overrode it by hand
+    # (a bare run resolves to profile `all` and overwrites its artifacts)
     if args.drop_divergent:
         sw, explicit = 0.0, True
     elif args.style_weight is not None:
@@ -1482,11 +1346,7 @@ def main() -> int:
             print(f"            pooled, excluding small-n {hs['small_datasets']}: "
                   f"{100 * hs['pooled_big']:.1f}% over {hs['n_pooled_big']:,} images")
         if args.folds_only:
-            # Feature-ablation mode: one number per feature set, nothing written
-            # to disk, so a sweep cannot overwrite the real model or REPORT.md.
-            # An explicit --dump-preds is still honoured (you named the file),
-            # which is the cheap way to refresh the out-of-fold rows: the folds
-            # are the only thing they come from, so the final model never runs.
+            # feature-ablation mode writes nothing but an explicit --dump-preds
             if args.dump_preds:
                 n = dump_oof(cross, data, Path(args.dump_preds))
                 print(f"\n  wrote {args.dump_preds} ({n:,} out-of-fold prediction rows)")
@@ -1582,9 +1442,7 @@ def main() -> int:
         "style_weight": cfg.get("style_weight"),
         "divergent_cells": cfg.get("divergent_cells"),
         "seed": args.seed,
-        # the literal arguments this artifact came from. Empty means "all
-        # defaults", which is what run_all.py passes, so `python run_all.py`
-        # reproduces this model - see the Reproducibility section of REPORT.md.
+        # the literal arguments this artifact came from (empty = all defaults)
         "reproduce_command": "python src/train.py"
                              + ("" if args.profile or len(sys.argv) < 2
                                 else f" --profile {prof}")

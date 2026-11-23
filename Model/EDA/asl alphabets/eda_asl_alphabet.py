@@ -1,7 +1,4 @@
-#ASL Alphabet - Exploratory Data Analysis (EDA)
-#--------------------------------------------------
-# 1. Import Libraries
-#--------------------------------------------------
+"""EDA for the Kaggle ASL Alphabet image dataset: charts + results JSON."""
 import json
 import os
 import shutil
@@ -16,9 +13,6 @@ from PIL import Image
 warnings.filterwarnings("ignore")
 sns.set_theme(style = "whitegrid")
 
-#--------------------------------------------------
-# 2. Folder Paths and Settings
-#--------------------------------------------------
 CHART_DIR = "charts_asl_alphabet"
 os.makedirs(CHART_DIR, exist_ok = True)
 
@@ -28,14 +22,11 @@ N_HEADER = 500
 
 R = {}
 
-#--------------------------------------------------
-# 3. Download the Dataset (Automatic, ~1 GB)
-#--------------------------------------------------
 print("Downloading ASL Alphabet from Kaggle (~1 GB, temporary)........")
 import kagglehub
 cache_root = kagglehub.dataset_download("grassknoted/asl-alphabet")
 
-# Find the asl_alphabet_train folder anywhere under the cache
+# The train folder can sit at any depth inside the cache
 TRAIN_DIR = None
 for root, subs, _ in os.walk(cache_root):
     if "asl_alphabet_train" in subs:
@@ -50,12 +41,8 @@ if TRAIN_DIR is None:
 
 print("Images at:", TRAIN_DIR)
 
-#--------------------------------------------------
-# 4. Task 1 - Load and Inspect the Dataset
-#--------------------------------------------------
 print("Scanning for images (recursive)........")
 
-# The 29 expected class folder names
 EXPECTED_CLASSES = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ") | {"space", "del", "nothing"}
 
 rows = []
@@ -104,9 +91,7 @@ R["n_images"]     = int(len(df))
 R["n_classes"]    = int(df["label"].nunique())
 R["label_values"] = found
 
-#--------------------------------------------------
-# 5. Task 2 - Features and Target Variable
-#--------------------------------------------------
+# Task 2 - features (200x200x3 RGB) and target ('label')
 print("""
 TASK 2 - FEATURES AND TARGET
   Input features : RGB pixel arrays of size 200 x 200 x 3
@@ -117,9 +102,7 @@ TASK 2 - FEATURES AND TARGET
                    useful control classes for live prediction.
 """)
 
-#--------------------------------------------------
-# 6. Task 3 - Check Data Quality
-#--------------------------------------------------
+# Task 3 - data quality
 R["missing_labels"] = int(df["label"].isna().sum())
 R["missing_files"]  = int((~df["path"].map(os.path.exists)).sum())
 
@@ -148,9 +131,7 @@ print("Corrupt (sample):", corrupt)
 print("Image sizes     :", R["sizes_sample"])
 print("Per class (min/mean/max):", R["class_min"], R["class_mean"], R["class_max"])
 
-#--------------------------------------------------
-# 7. Task 4 - Descriptive Statistics
-#--------------------------------------------------
+# Task 4 - brightness on a sample
 bright = []
 for p in df.sample(min(N_PIXEL, len(df)), random_state = 1)["path"]:
     try:
@@ -171,9 +152,7 @@ print(f"  range = {R['brightness_min']:.1f} to {R['brightness_max']:.1f}")
 
 print("\nPer-class counts:\n", counts.sort_index())
 
-#--------------------------------------------------
-# 8. Task 5 - EDA Visualizations
-#--------------------------------------------------
+# Task 5 - charts
 plt.figure(figsize = (14, 4.5))
 counts.sort_index().plot(kind = "bar", color = "steelblue")
 plt.axhline(counts.mean(), color = "red", linestyle = "--",
@@ -224,14 +203,12 @@ plt.tight_layout()
 plt.savefig(os.path.join(CHART_DIR, "04_filesize_by_class.png"), dpi = 150)
 plt.show()
 
-#--------------------------------------------------
-# 9. Save Results and Cleanup
-#--------------------------------------------------
 with open("results_asl_alphabet.json", "w") as f:
     json.dump(R, f, indent = 2, default = str)
 
 print("\nEDA finished. Charts in", CHART_DIR + "/")
 
+# Optional cleanup: free the ~1 GB download
 if CLEANUP:
     print("Freeing ~1 GB by deleting the downloaded images........")
     shutil.rmtree(cache_root, ignore_errors = True)

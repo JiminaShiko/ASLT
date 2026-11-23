@@ -1,18 +1,6 @@
 """One command: download -> extract -> train -> report -> export.
 
-    python run_all.py                    full pipeline
-    python run_all.py --quick            small smoke run of the whole chain
-    python run_all.py --skip-download    reuse data/datasets.json
-    python run_all.py --skip-extract     reuse cache/landmarks.parquet
-    python run_all.py --skip-train       reuse models/asl_all.pt + REPORT.md
-    python run_all.py --skip-export      stop before ONNX
-    python run_all.py --live             then start the webcam app
-
-Every stage is idempotent: extraction is skipped automatically if the landmark
-cache already exists (use --force-extract to rebuild it), and downloads are
-skipped if the datasets are already on disk.
-
-The live app itself is NOT part of the pipeline - run `python src/live.py`.
+Every stage is idempotent. The live app is NOT part of the pipeline.
 """
 from __future__ import annotations
 

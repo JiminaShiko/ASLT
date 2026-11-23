@@ -12,10 +12,7 @@ OTP_EXPIRY_MINUTES = 10
 
 
 def ensure_auth_tables() -> None:
-    """
-    Ensures `users.username` allows NULL and drops any temporary `signup_otps` table
-    so the existing `otp` table is used exclusively.
-    """
+    """Allow NULL `users.username` and drop the legacy `signup_otps` table."""
     conn = None
     try:
         conn = get_db_connection()
@@ -50,10 +47,7 @@ def _generate_otp(length: int = 6) -> str:
 
 @signup_bp.route("/api/signup", methods=["POST"])
 def initiate_signup():
-    """
-    Step 1: Validates email & password, inserts/updates user in `users` with status='pending',
-    saves a 6-digit OTP in your existing `otp` table, and sends the botanical email.
-    """
+    """Step 1: validate, upsert the user as 'pending', store an OTP, send the email."""
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
@@ -106,13 +100,11 @@ def initiate_signup():
         otp_code = _generate_otp(6)
         expires_at = now_utc + timedelta(minutes=OTP_EXPIRY_MINUTES)
 
-        # Clear any old unverified signup OTPs for this user_id in `otp`
         cursor.execute(
             "DELETE FROM otp WHERE user_id = %s AND purpose = 'signup'",
             (user_id,),
         )
 
-        # Insert fresh OTP into your `otp` table
         cursor.execute(
             """
             INSERT INTO otp (user_id, otp_code, purpose, expires_at, is_verified, created_at)
@@ -151,11 +143,7 @@ def initiate_signup():
 
 @signup_bp.route("/api/signup/verify-otp", methods=["POST"])
 def verify_signup_otp():
-    """
-    Step 2: Verifies the 6-digit OTP in `otp`, activates `users.status = 'active'`,
-    deletes the used OTP row from `otp`, logs the user into the Flask session,
-    and redirects to `/profile-setup` (`profile_form.html`, which is skippable).
-    """
+    """Step 2: consume the OTP, activate the account, open the session."""
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or session.get("pending_signup_email") or "").strip().lower()
     otp_input = (data.get("otp") or "").strip()
@@ -197,7 +185,6 @@ def verify_signup_otp():
         if otp_input != record["otp_code"]:
             return jsonify({"success": False, "message": "Invalid OTP code. Please try again."}), 401
 
-        # Activate the user account
         cursor.execute(
             """
             UPDATE users
@@ -207,7 +194,6 @@ def verify_signup_otp():
             (now_utc, record["user_id"]),
         )
 
-        # Delete the used OTP row from `otp`
         cursor.execute(
             "DELETE FROM otp WHERE user_id = %s AND purpose = 'signup'",
             (record["user_id"],),

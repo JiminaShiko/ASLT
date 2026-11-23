@@ -1,27 +1,7 @@
-"""Round-3 Stage B evidence for one letter at a time, from files already on disk.
+"""Diagnose a weak letter from the out-of-fold dump and cached landmarks.
 
-A letter that scores ~3 % cross-dataset can fail for three different reasons, and
-they call for three different fixes:
-
-  1. a *detection-path artifact* - the ladder rescued those hands and the rescue
-     produced worse landmarks than a first-try detection does;
-  2. a *landmark-quality* problem - e.g. a tucked thumb that MediaPipe puts
-     inside the palm, so the features carry noise rather than a shape;
-  3. a *style / geometry conflict* - the hand is fine and correctly detected,
-     but the letter is either signed differently in another dataset (fixable by
-     training-weighting) or sits on top of another letter in feature space
-     (not fixable by weighting at all).
-
-This script answers (1) and separates (3) into the two cases, using only the
-out-of-fold predictions that `src/train.py --dump-preds` already wrote and the
-cached landmarks. It never touches a camera and writes nothing except the file
-you point `--out` at.
-
-Run:
-    cd "D:/sign language project/ASTL project/ASLT/asl_landmark_app"
-    python src/diagnose_letter.py --letters T,N,M --profile all
-    python src/diagnose_letter.py --letters T,N,M --profile all \
-        --out reports/letter_diagnosis.md
+Separates detection-path artifacts, landmark-quality problems and style or
+feature-space conflicts. No camera; writes only the `--out` file.
 """
 from __future__ import annotations
 
@@ -34,8 +14,7 @@ import pandas as pd
 import config
 import normalize
 
-# The ladder rungs, as recorded in the `how` column of the extractor cache and
-# reproduced in the prediction dump.
+# Ladder rungs, as recorded in the `how` column of the cache and pred dump.
 FAMILIES = {
     "direct (first try)": ["direct_0.5", "direct_0.3"],
     "upscale+pad": ["upscale_pad_0.3", "flip_upscale_pad_0.3"],

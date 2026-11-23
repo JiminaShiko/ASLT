@@ -1,23 +1,8 @@
 """
-AgentMail channel for the ASLT backend agent.
+AgentMail channel for the ASLT backend agent: one reused inbox, signature-verified
+webhook replies. Credentials come only from the environment (see config/environment.py).
 
-The backend keeps its own email address here: it opens (or reuses) one AgentMail
-inbox, sends messages from it, and answers the replies it receives through the
-signature-verified AgentMail webhook. A reply is built the same way the "Text to
-Sign" panel signs a sentence (user.text_to_sign.plan), so the agent answers word by
-word with whether the app uses the word model's sign or fingerspells it.
-
-Credentials come from the environment only (.env at the repository root, through
-config/environment.py):
-  AGENTMAIL_API_KEY          API key from https://console.agentmail.to
-  AGENTMAIL_WEBHOOK_SECRET   signing secret (whsec_...) of the AgentMail webhook
-                             pointed at /api/agent/email/webhook
-
-Routes:
-  POST /api/agent/email/send     send a message from the agent inbox (signed-in user)
-  POST /api/agent/email/webhook  AgentMail events; a received message is answered
-
-Check the key and open the inbox from a shell (from Backend/):
+Checks the key and opens the inbox from a shell (from Backend/):
   python agent_mail.py                       # opens (or reuses) the inbox
   python agent_mail.py you@example.com       # also sends one test email
 """
@@ -37,13 +22,11 @@ from user.text_to_sign import plan as sign_plan
 
 load_environment()
 
-# Fixed client id, so the API hands back the same inbox on every restart instead
-# of creating a new address each time.
+# Fixed client id keeps the same inbox across restarts instead of a new address.
 AGENT_INBOX_CLIENT_ID = "aslt-backend-agent-v1"
 AGENT_DISPLAY_NAME = "ASLT Sign Language Translator"
 
-# The SDKs are used by this channel only; a guarded import keeps the rest of the
-# website running until requirements.txt has been installed.
+# Guarded imports keep the rest of the site running before requirements are installed.
 try:
     from agentmail import AgentMail
     from agentmail.inboxes import CreateInboxRequest
@@ -72,7 +55,7 @@ def _env(name: str) -> str:
 
 
 def _client():
-    """AgentMail client for the API key in the environment."""
+    """AgentMail client from AGENTMAIL_API_KEY."""
     if AgentMail is None:
         raise RuntimeError(_MISSING_SDK)
     api_key = _env("AGENTMAIL_API_KEY")
@@ -82,7 +65,7 @@ def _client():
 
 
 def inbox(api=None):
-    """The agent's own inbox, created once and reused afterward."""
+    """The agent inbox: created once, then reused."""
     global _INBOX
     with _LOCK:
         if _INBOX is None:
@@ -114,7 +97,7 @@ def send_email(to: str, subject: str, text: str, html_body: str | None = None) -
 
 
 def reply_to_message(message: dict, text: str, html_body: str | None = None) -> dict:
-    """Reply inside the thread of a received message."""
+    """Reply in the received message's thread."""
     sent = _client().inboxes.messages.reply(
         message["inbox_id"], message["message_id"], text=text, html=html_body
     )
@@ -122,7 +105,7 @@ def reply_to_message(message: dict, text: str, html_body: str | None = None) -> 
 
 
 def sign_answer(body: str) -> str:
-    """Plain-text explanation of how the app would sign the emailed sentence."""
+    """Explain, word by word, how the app would sign the emailed sentence."""
     try:
         result = sign_plan(body[:200])
     except Exception:  # noqa: BLE001 - a lookup problem must not break the reply
@@ -158,7 +141,7 @@ def sign_answer(body: str) -> str:
 
 
 def _answer(message: dict) -> bool:
-    """Reply to a received message. Returns True when a reply was sent."""
+    """Reply to a received message; True when a reply was sent."""
     body = str(message.get("extracted_text") or message.get("text") or "").strip()
     inbox_id = message.get("inbox_id")
     message_id = message.get("message_id")
@@ -166,7 +149,7 @@ def _answer(message: dict) -> bool:
     if not (inbox_id and message_id and body):
         return False
     if sender and sender.lower() == (inbox().email or "").lower():
-        return False  # never answer the agent's own mail
+        return False  # never answer the agent's own mail (webhook loop)
     text = sign_answer(body)
     reply_to_message(message, text=text, html_body=f"<pre>{html.escape(text)}</pre>")
     return True

@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   document.getElementById('user-name').textContent = A.getProfile().name;
 
-  /* ---------- Recent history (last 24 hours only) ---------- */
   var hlist = document.getElementById('hlist');
 
   function renderHistory() {
@@ -19,7 +18,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   A.bindHistoryActions(hlist);
 
-  /* ---------- Progress strip ---------- */
   function renderStats() {
     document.getElementById('st-trans').textContent = A.history.list().length;
     document.getElementById('st-learn').textContent = A.learned.list().length + ' / ' + A.learned.total();

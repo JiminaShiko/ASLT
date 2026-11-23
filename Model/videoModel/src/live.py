@@ -1,29 +1,7 @@
-"""
-Stage 6 - the live demo.
+"""Stage 6 - the live demo (webcam, --selftest, --benchmark, --render-test, --logic-test).
 
-    python -m src.live                      webcam (q or ESC quits, r resets)
-    python -m src.live --selftest           guided drill over the core words
-    python -m src.live --selftest hello yes no
-    python -m src.live --benchmark          CPU fps against the 15 fps target
-    python -m src.live --render-test        a dataset clip through the live
-                                            code path, no camera at all
-    python -m src.live --logic-test         the decision rules, no camera and
-                                            no trained weights
-
-PRIVACY, enforced here rather than promised:
-  * every frame is a local variable. This module contains no VideoWriter and
-    no image-save call; --render-test proves it by snapshotting the folder
-    tree (contents and mtimes) before and after a run that streams real uint8
-    frames through update() and the drawing code.
-  * --selftest prints its table to the terminal only. Keeping a record means
-    copying it yourself.
-  * the weights come from ASL Citizen alone; nothing here is fitted to webcam
-    data.
-
-WHAT THE WINDOW SHOWS: mirrored video, the skeleton overlay (upper body, both
-hands, and exactly the face subset features.py reads), the state
-(REST / SIGNING / UNCERTAIN), the top-3 words with probabilities, and the
-sentence built from the committed words.
+Privacy: frames stay local variables - no VideoWriter and no image save;
+--render-test proves it by comparing folder snapshots. See README for commands.
 """
 from __future__ import annotations
 
@@ -39,10 +17,7 @@ import numpy as np
 
 from . import config, features, landmarks, phrases, predictor, vocab
 
-# ---------------------------------------------------------------------------
-# skeleton: MediaPipe's own indices, mapped into the packed layout by
-# src/landmarks.py, so the overlay can never drift from what features reads
-# ---------------------------------------------------------------------------
+# MediaPipe's own indices, mapped via src/landmarks.py so the overlay matches features
 POSE_CONN = [(11, 12), (11, 13), (13, 15), (12, 14), (14, 16),
              (11, 23), (12, 24), (23, 24),
              (15, 17), (15, 19), (15, 21), (16, 18), (16, 20), (16, 22)]
@@ -103,11 +78,7 @@ def _chain(mesh_indices):
 
 
 def overlay(rgb: np.ndarray, row: np.ndarray, mirror: bool = True) -> np.ndarray:
-    """Draw the skeleton on the frame (BGR, ready for cv2.imshow).
-
-    A frame with no landmarks at all draws nothing and cannot crash - every
-    group is skipped while its points are NaN.
-    """
+    """Draw the skeleton on the frame (BGR, ready for cv2.imshow); NaN groups are skipped."""
     img = cv2.cvtColor(np.ascontiguousarray(rgb), cv2.COLOR_RGB2BGR)
     if mirror:
         img = cv2.flip(img, 1)
@@ -132,15 +103,12 @@ def overlay(rgb: np.ndarray, row: np.ndarray, mirror: bool = True) -> np.ndarray
 
 def hud(img: np.ndarray, r: dict, fps: float, hint: str = "",
         manual: bool = False, segment_open: bool = False) -> np.ndarray:
-    """State, what it heard, sentence and top-3. Only numbers and labels are
-    drawn - never a pixel of the frame is kept."""
+    """State, heard word, sentence and top-3 overlay; draws numbers and labels only."""
     h, w = img.shape[:2]
     cv2.rectangle(img, (0, 0), (w, 30), DARK, -1)
     cv2.putText(img, r["state"], (8, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                 STATE_COLOUR.get(r["state"], GREY), 2, cv2.LINE_AA)
-    # the word it is prepared to stand behind, or the word "uncertain". A
-    # near-tie is shown as uncertain rather than as its argmax: the viewer has
-    # to be able to tell a refusal from a reading.
+    # a near-tie shows "uncertain", never its argmax: a refusal must look different
     disp = str(r.get("display") or "")
     if disp:
         cv2.putText(img, disp.upper()[:14], (130, 22),
@@ -177,9 +145,6 @@ def hud(img: np.ndarray, r: dict, fps: float, hint: str = "",
     return img
 
 
-# ---------------------------------------------------------------------------
-# construction
-# ---------------------------------------------------------------------------
 def build_predictor(args, log=None) -> predictor.WordPredictor:
     return predictor.WordPredictor(
         weights=Path(args.weights) if args.weights else None,
@@ -204,9 +169,6 @@ def open_camera(index: int, want_fps: float = 30.0):
     return cap
 
 
-# ---------------------------------------------------------------------------
-# webcam
-# ---------------------------------------------------------------------------
 def live(args) -> int:
     log = config.logger_for("live", Path(args.log) if args.log else None)
     p = build_predictor(args, log)
@@ -269,11 +231,8 @@ def live(args) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# --selftest: guided drill, one terminal table, nothing written
-# ---------------------------------------------------------------------------
 def selftest_words(p: predictor.WordPredictor, requested) -> list[str]:
-    """Use trained label order, never the possibly expanded vocabulary file."""
+    """Resolve against trained labels, never the (possibly expanded) vocabulary file."""
     active = [w for w in p.labels
               if w not in (config.REST_LABEL, config.OTHER_LABEL)]
     by_lower = {w.lower(): w for w in active}
@@ -286,7 +245,7 @@ def selftest_words(p: predictor.WordPredictor, requested) -> list[str]:
 
 def selftest_row(want: str, cut: dict | None, intermediate: dict | None,
                  opened: bool, too_short: str = "") -> dict:
-    """Final cut and last intermediate are different observations, not votes."""
+    """Final cut and last intermediate are separate observations, not votes."""
     final, mid = cut or {}, intermediate or {}
     hand = final.get("hand_rate")
     notes = []
@@ -414,9 +373,6 @@ def selftest(args) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# --benchmark: CPU frames per second on real dataset frames, nothing saved
-# ---------------------------------------------------------------------------
 def cached_videos(n: int) -> list[Path]:
     vids: list[Path] = []
     if config.MANIFEST_CSV.is_file():
@@ -447,7 +403,7 @@ def benchmark(args) -> int:
             r = p.update(rgb, ts_ms=ts)
             t1 = time.perf_counter()
             full.append((t1 - t0) * 1000.0)
-            if frames >= 5:                       # ignore the warm-up frames
+            if frames >= 5:  # skip warm-up frames
                 # the same frame, measured in three pieces
                 t2 = time.perf_counter()
                 row = tracker.detect(rgb, ts)
@@ -491,12 +447,8 @@ def benchmark(args) -> int:
     return 0 if out["meets_target"] else 1
 
 
-# ---------------------------------------------------------------------------
-# --render-test: the live code path on dataset frames, no camera, no writes
-# ---------------------------------------------------------------------------
 def snapshot() -> dict[str, float]:
-    """Every file this project may write, with its mtime. Never walks the
-    dataset - that folder is read-only and enormous."""
+    """Every file this project may write, with its mtime; never walks the dataset."""
     out = {}
     for d in ("src", "cache", "models", "reports", "logs"):
         root = config.ROOT / d
@@ -509,11 +461,7 @@ def snapshot() -> dict[str, float]:
 
 
 def render_test(args) -> int:
-    """Feeds real uint8 frames from the dataset through update() and overlay().
-
-    Proves three things at once: camera-shaped input works, the drawing code
-    survives a frame with no landmarks, and nothing is written to disk.
-    """
+    """Runs dataset frames through update() and overlay(), proving nothing hits disk."""
     p = build_predictor(args)
     before = snapshot()
     states: dict[str, int] = {}
@@ -556,15 +504,8 @@ def render_test(args) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# --logic-test: the decision rules, driven with made-up numbers
-# ---------------------------------------------------------------------------
 class _ScriptedNet:
-    """A stand-in whose probabilities are supplied.
-
-    Lets the whole live path (segmenter -> features -> decide -> phrase
-    buffer -> commit) be tested without trained weights and without a camera.
-    """
+    """Stub net with supplied probabilities, so the live path needs no weights or camera."""
 
     def __init__(self, probs) -> None:
         self.probs = np.asarray(probs, np.float32)
@@ -577,8 +518,7 @@ class _ScriptedNet:
 
 
 def fake_row(signing: bool, drop: float = 0.25) -> np.ndarray:
-    """A landmark row with both hands above (signing) or below (rest) the
-    shoulder line - the only geometry the segmenter looks at."""
+    """Row with both hands above (signing) or below (rest) the shoulder line."""
     row = np.full((config.P_TOTAL, 3), np.nan, np.float32)
     sh_y = 0.40
     row[config.POSE_L_SHOULDER, :2] = (0.42, sh_y)
@@ -593,9 +533,7 @@ def fake_row(signing: bool, drop: float = 0.25) -> np.ndarray:
 
 
 def nohand_row(signing: bool = True) -> np.ndarray:
-    """Pose wrists up, hand landmarks absent: the framing failure the hint is
-    for. The segmenter opens (it reads the pose wrists), the model gets a
-    buffer with no hand in it, and the demo has to say so."""
+    """Wrists up but no hand landmarks: the segmenter opens, the model sees no hand."""
     row = fake_row(signing)
     for hand in ("left", "right"):
         for k in range(config.N_HAND):
@@ -629,9 +567,7 @@ def logic_test(args) -> int:
     check("p1 below the floor is refused, with the reason",
           not d.certain and "confidence" in d.reason, d.reason)
 
-    # 2 - the margin bar, and it names the runner-up. At the shipped 0.85 floor
-    # a near-tie is already refused by confidence, so the margin is shown at a
-    # lowered floor - which is exactly what --conf/--margin are for.
+    # 2 - the margin bar; shown at a lowered floor because 0.85 already forces a 0.70 gap
     d = predictor.decide(floor_row(0.70, 0.60), labels, min_conf=0.60)
     check("0.10 gap under the margin floor is refused against 'good'",
           not d.certain and "'good'" in d.reason, d.reason)
@@ -648,8 +584,6 @@ def logic_test(args) -> int:
           config.CONFIDENCE_MIN >= 0.85, str(config.CONFIDENCE_MIN))
     check("0.80 is refused at that default",
           not predictor.decide(floor_row(0.80, 0.05), labels).certain)
-    # p1 - p2 >= 2*p1 - 1, so a 0.85 floor already implies a 0.70 margin: the
-    # margin is the lever for a lowered --conf, never for the default gate
     check("a 0.85/0.14 reading clears any margin up to 0.70",
           predictor.decide(floor_row(0.85, 0.14), labels,
                            min_margin=0.70).certain)
@@ -686,8 +620,7 @@ def logic_test(args) -> int:
             detail, raised = str(exc), True
         check(f"a malformed pair key {bad_key!r} fails loud", raised, detail)
 
-    # 3b - the live hedge: a hedged pair's top-2 types neither word, at any
-    # confidence, in either order; everything else is untouched
+    # 3b - the live hedge: a hedged top-2 types neither word, at any confidence
     def pair_row(w1, p1, w2, p2=0.0):
         r = np.full(K, 0.0, np.float32)
         r[labels.index(w1)] = p1
@@ -785,7 +718,7 @@ def logic_test(args) -> int:
     check("ME is written as I", phrases.sentence(["me", "sad"]) == "I sad",
           phrases.sentence(["me", "sad"]))
 
-    # 7 - the whole live path, with no weights and no camera
+    # 7 - the whole live path, no weights and no camera
     def run(probs, flags):
         p = predictor.WordPredictor(net=_ScriptedNet(probs),
                                     meta={"labels": labels}, fps=30.0,
@@ -813,7 +746,7 @@ def logic_test(args) -> int:
           "remaining closing debounce frames",
           cuts[0]["decision_frames"] == 14,
           str(cuts[0]["decision_frames"]))
-    got2 = run(ro, rise_rest)          # OTHER on top
+    got2 = run(ro, rise_rest)
     cuts2 = [g for g in got2 if g["segment_cut"]]
     check("an OTHER-only stream commits nothing and types nothing",
           len(cuts2) == 1 and cuts2[0]["committed_word"] == ""
@@ -871,8 +804,7 @@ def logic_test(args) -> int:
                                                   np.float32))[-1]["display"]
           == "uncertain")
 
-    # weights that expect a vector no feature version builds must refuse,
-    # and the v2 fair-comparison loser (170 dims) must stay loadable
+    # unknown feature vectors must refuse; the v2 loser (170 dims) must stay loadable
     wrong = _ScriptedNet(hl)
     wrong.arch = type("Arch", (), {"in_dim": features.FEATURE_DIM + 3})()
     pstale = predictor.WordPredictor(net=wrong, meta={"labels": labels},
@@ -940,7 +872,6 @@ def logic_test(args) -> int:
     return 0 if ok == len(checks) else 1
 
 
-# ---------------------------------------------------------------------------
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Live word recognizer.")
     ap.add_argument("--camera", type=int, default=0)

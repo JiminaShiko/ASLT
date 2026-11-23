@@ -4,7 +4,6 @@ import mysql.connector
 from mysql.connector import Error
 from config.environment import load_environment
 
-# Resolve backend root directory (Backend/config/database/db_connection.py -> Backend/)
 BASE_DIR = Path(__file__).resolve().parents[2]
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -13,18 +12,16 @@ load_environment()
 
 
 def _resolve_ssl_ca_path() -> str | None:
-    """
-    Resolves DB_SSL_CA path cleanly across localhost, config/database/, and Render Secret Files.
-    """
+    """Find DB_SSL_CA across localhost and Render Secret Files locations."""
     ssl_ca = os.getenv("DB_SSL_CA", "").strip()
     if not ssl_ca:
         return None
 
     candidate_paths = [
-        Path(ssl_ca),                         # Absolute path or relative to CWD
-        BASE_DIR / ssl_ca,                    # Relative to backend root (e.g., Backend/ca.pem)
-        PROJECT_ROOT / ssl_ca,                # Relative to project root
-        CURRENT_DIR / ssl_ca,                 # Relative to Backend/config/database/
+        Path(ssl_ca),  # absolute or relative to CWD
+        BASE_DIR / ssl_ca,
+        PROJECT_ROOT / ssl_ca,
+        CURRENT_DIR / ssl_ca,
         Path("/etc/secrets") / Path(ssl_ca).name,  # Render Secret Files default location
     ]
 
@@ -36,10 +33,7 @@ def _resolve_ssl_ca_path() -> str | None:
 
 
 def get_db_connection():
-    """
-    Creates and returns a new MySQL/TiDB database connection using environment variables.
-    Works seamlessly on both localhost (.env) and Render (Environment Variables).
-    """
+    """Open a new MySQL/TiDB connection from environment variables."""
     db_host = os.getenv("DB_HOST")
     db_port = int(os.getenv("DB_PORT", "4000"))
     db_user = os.getenv("DB_USER")
@@ -65,7 +59,7 @@ def get_db_connection():
     if ssl_ca_path:
         conn_config["ssl_ca"] = ssl_ca_path
         conn_config["ssl_disabled"] = False
-        # Cloud MySQL providers (Aiven/TiDB) often require ssl_verify_cert=False with mysql-connector-python
+        # Aiven/TiDB fail with cert verification enabled in mysql-connector-python.
         verify_ssl = os.getenv("DB_SSL_VERIFY", "false").lower() == "true"
         conn_config["ssl_verify_cert"] = verify_ssl
         conn_config["ssl_verify_identity"] = False
@@ -79,7 +73,7 @@ def get_db_connection():
 
 
 def test_db_connection() -> bool:
-    """Quick helper to verify database connectivity."""
+    """Verify database connectivity."""
     conn = None
     try:
         conn = get_db_connection()

@@ -88,10 +88,6 @@ def _profile_response(user):
     }
 
 
-# ---------------------------------------------------------
-# GET ADMIN PROFILE
-# ---------------------------------------------------------
-
 @admin_profile_bp.get("/api/admin/profile")
 def get_admin_profile():
     auth_error = _auth_error()
@@ -131,10 +127,6 @@ def get_admin_profile():
         if conn:
             conn.close()
 
-
-# ---------------------------------------------------------
-# UPDATE ADMIN ACCOUNT INFORMATION
-# ---------------------------------------------------------
 
 @admin_profile_bp.put("/api/admin/profile")
 def update_admin_profile():
@@ -246,10 +238,6 @@ def update_admin_profile():
             conn.close()
 
 
-# ---------------------------------------------------------
-# UPLOAD ADMIN PROFILE PICTURE TO CLOUDINARY
-# ---------------------------------------------------------
-
 @admin_profile_bp.post("/api/admin/profile/upload-picture")
 def upload_admin_profile_picture():
     auth_error = _auth_error()
@@ -287,7 +275,7 @@ def upload_admin_profile_picture():
             "message": "Profile picture must be smaller than 5 MB."
         }), 400
 
-    # Basic file-signature validation.
+    # Never trust the extension alone.
     valid_signatures = {
         "jpg": image_bytes.startswith(b"\xff\xd8\xff"),
         "jpeg": image_bytes.startswith(b"\xff\xd8\xff"),
@@ -363,10 +351,6 @@ def upload_admin_profile_picture():
         if conn:
             conn.close()
 
-
-# ---------------------------------------------------------
-# CHANGE ADMIN PASSWORD
-# ---------------------------------------------------------
 
 @admin_profile_bp.post("/api/admin/profile/change-password")
 def change_admin_password():

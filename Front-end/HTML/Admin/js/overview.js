@@ -1,5 +1,3 @@
-/* Overview page: real data only, loaded from FastAPI GET /api/admin/overview.
-   Nothing here is cached in browser storage and no sample numbers are shown. */
 let overviewState = { status: 'loading', error: '', data: null, days: 7 };
 let overviewRequest;
 const overviewNumber = value => value === null || value === undefined ? '—' : new Intl.NumberFormat().format(value);

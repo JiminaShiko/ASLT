@@ -9,7 +9,6 @@
 
 .count{background:color-mix(in oklab,var(--tan) 26%,var(--surface));color:oklch(0.37 0.06 72)}
 .welcome{box-shadow:inset 0 0 0 1px oklch(1 0 0 / .35)}
-/* Theme tokens: light is the default; dark restores the original forest palette. */
 :root { color-scheme: light; }
 :root[data-theme="dark"] {
  color-scheme: dark;

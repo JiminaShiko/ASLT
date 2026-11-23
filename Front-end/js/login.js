@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var A = window.ASL;
   var mode = 'login';
 
-  // Already signed in? Go straight to the app.
   if (A.getSession() && location.search.indexOf('switch') === -1) {
     location.replace('home.html');
     return;

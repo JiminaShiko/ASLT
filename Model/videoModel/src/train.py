@@ -1,29 +1,8 @@
-"""
-Stage 4c - training and the official signer-disjoint evaluation.
+"""Stage 4c - training and the official signer-disjoint evaluation.
 
-    python -m src.train --epochs 60
-
-What the numbers depend on is fixed and written to models/meta.json: the
-seed, the vocab.json batch, the landmark/feature version and a fingerprint of
-the exact sample list. Early stopping watches the VAL split only; TEST is
-touched once, at the end, and every test number is reported with the number
-of videos and distinct signers behind it.
-
-Outputs
-  models/words_core20.pt        weights + arch + standardisation buffers
-  models/meta.json              what produced them
-  models/checkpoints/           resumable state (epoch, optimiser, patience)
-  logs/train.log                human-readable run log
-  reports/words_summary.json    the compact file check_results.py reads
-  reports/per_word[_split].csv  per-word accuracy, with counts
-  reports/confusion_words*.csv  the full confusion matrix
-  reports/confused_pairs*.csv   the most confused pairs
-  reports/predictions*.csv      per-sample predictions
-  reports/seed_runs[.csv|.md]   every seed measured, with its spread (src/seedreport.py)
-
---fair trains the current vector (v3) and the pre-Stage-B vector (v2, 170
-dims, no gap fill, no segment block) with the same seeds and config, decides
-on VAL, promotes the winner and keeps the loser loadable via --weights.
+Early stopping watches VAL only; TEST is touched once and reported with the
+number of videos and signers behind it. --fair trains v3 and v2 with the same
+seeds and decides on VAL.
 """
 from __future__ import annotations
 
@@ -41,9 +20,7 @@ import torch.nn as nn
 
 from . import config, dataset, features, model, seedreport, vocab
 
-# The sweep table lives in src/seedreport.py (torch-free, so check_results.py
-# can read it). These names are re-exported because train.py is what the
-# scripts and the tests reach for.
+# re-exported from seedreport so scripts and tests keep reaching for train.py
 SEED_RUN_COLUMNS = seedreport.SEED_RUN_COLUMNS
 SWEEP_METRICS = seedreport.SWEEP_METRICS
 append_seed_rows = seedreport.append_seed_rows
@@ -54,16 +31,10 @@ seed_row_path = seedreport.seed_row_path
 write_seed_table = seedreport.write_seed_table
 
 
-# ---------------------------------------------------------------------------
-# data plumbing
-# ---------------------------------------------------------------------------
 class Batcher:
-    """(features, label) batches, rebuilt from landmarks on every pass.
+    """(features, label) batches, rebuilt from landmarks every pass.
 
-    Features are recomputed rather than cached because the augmentation works
-    at landmark level - a mirror or a 0.8x sub-window has to be able to change
-    the numbers. The landmark arrays are memory-mapped, so the full cache
-    never has to fit in RAM at once.
+    Features are not cached because augmentation works at landmark level.
     """
 
     def __init__(self, sp: dataset.Split, labels: list[str],
@@ -114,7 +85,7 @@ def make_batcher(split: str, labels: list[str], limit: int | None,
         return None
     smp = dataset.build_samples((split,), None, man)
     if limit:
-        # keep a spread of labels instead of the first N rows
+        # keep a spread of labels, not the first N rows
         keep, seen = [], Counter()
         for i, r in smp.iterrows():
             if seen[r["label"]] < 2:
@@ -134,17 +105,15 @@ def validate_training_samples(train_samples: pd.DataFrame | None,
                               spec: vocab.VocabSpec,
                               official_val: pd.DataFrame | None = None,
                               *, smoke: bool = False) -> None:
-    """Fail before feature building/fitting when the active cache is incomplete.
+    """Fail before fitting if the cache is incomplete.
 
-    Validation must contain genuine official ASL Citizen rows, not external
-    held-out clips or a fallback to the training set. Caps of zero explicitly
-    disable the corresponding background requirement for that split.
+    Validation must hold genuine official ASL Citizen rows, never external
+    held-out clips or a fallback to train.
     """
     if smoke:
         return
     words = [w.word for w in spec.active]
-    # A word with no ASL Citizen gloss can never appear in the Citizen val
-    # split: its held-out clips are the PopSign ps_val group instead.
+    # gloss-less words can never appear in Citizen val; their held-out data is ps_val
     ps_only = {w.word for w in spec.active if not w.glosses}
     problems = []
     for split, samples in (("train", train_samples), ("val", val_samples)):
@@ -201,9 +170,6 @@ def evaluation_splits(splits, *, smoke: bool = False) -> tuple[str, ...]:
     return out
 
 
-# ---------------------------------------------------------------------------
-# one epoch / one evaluation
-# ---------------------------------------------------------------------------
 def run_epoch(bt: Batcher, net, crit, opt, sched, bs: int, seed: int):
     net.train()
     n = len(bt)
@@ -253,8 +219,7 @@ def score(bt: Batcher, net, word_only: bool = False) -> dict:
 
 
 def _num(x, nd: int = 4):
-    """Round for JSON, and never write NaN: json.dump's NaN is not valid JSON
-    and check_results.py has to be able to read this file."""
+    """Round for JSON; never emit NaN (invalid JSON, check_results.py must parse it)."""
     v = float(x)
     return None if not np.isfinite(v) else round(v, nd)
 
@@ -274,9 +239,6 @@ def _clean(obj):
     return obj
 
 
-# ---------------------------------------------------------------------------
-# the numbers a seed sweep reports (Stage B4)
-# ---------------------------------------------------------------------------
 BG = (config.REST_LABEL, config.OTHER_LABEL)
 
 
@@ -287,20 +249,10 @@ def word_columns(labels: list[str]) -> list[int]:
 
 def gate_metrics(pred: pd.DataFrame, gate: float,
                  min_margin: float = 0.0) -> dict:
-    """What the live confidence gate would have done with these readings.
+    """What the live confidence gate would do: commit = p1 >= gate, margin ok, real word.
 
-    committed  = p1 >= gate AND margin >= min_margin AND the top-1 is a real
-                 word. REST and OTHER on top are refusals, not commits, which
-                 is what makes the precision column honest: typing a word over
-                 a clip that is really not in the vocabulary is a miss.
-
-    typed_share      - of the clips that ARE vocabulary words, how many the
-                       gate lets through (the demo's recall for real signs)
-    typed_precision  - of everything it let through, how many were the right
-                       word
-    other_slip / rest_slip - of the clips that are NOT words, how many it
-                       would type anyway. This is the false-alarm rate the
-                       README has to promise.
+    typed_precision counts commits on REST/OTHER clips (all wrong) as the live
+    demo does; typed_precision_words drops those rows.
     """
     if pred is None or not len(pred):
         return {}
@@ -314,11 +266,6 @@ def gate_metrics(pred: pd.DataFrame, gate: float,
     out = {"gate": _num(gate, 2), "margin_min": _num(min_margin, 2),
            "n_words": tw, "n_rows": int(len(pred)),
            "typed_share": _num(float((committed & truth_word).sum()) / max(tw, 1)),
-           # typed_precision counts every commit, including the ones the gate
-           # makes over REST/OTHER clips - all of which are wrong - so it is
-           # the number the live demo delivers. typed_precision_words drops
-           # those rows and answers "when it types on a real word clip, how
-           # often is it right".
            "typed_precision": _num(float((committed & correct).sum())
                                     / max(int(committed.sum()), 1)),
            "typed_precision_words": _num(float((twc & correct).sum())
@@ -347,7 +294,7 @@ def commit_policy(gate: float | None = None) -> dict:
 
 
 def gate_stats(res: dict, labels: list[str], policy: dict | None = None) -> dict:
-    """Score full-precision probabilities with the actual predictor commit rule."""
+    """Score probabilities with the actual predictor commit rule."""
     from .predictor import decide, commitable
     policy = policy or commit_policy()
     kw = dict(min_conf=policy["confidence_min"],
@@ -356,7 +303,7 @@ def gate_stats(res: dict, labels: list[str], policy: dict | None = None) -> dict
               hedge_pairs=policy["hedge_pairs"])
     readings = [decide(p, labels, **kw) for p in res["probs"]]
     committed = np.array([commitable(r) for r in readings], dtype=bool)
-    # Count refusals caused by the hedge, not already-refused low-confidence rows.
+    # count hedge refusals only, not rows already refused for low confidence
     unhedged = {**kw, "hedge_pairs": {}}
     hedge_refused = np.array([
         not commitable(r) and commitable(decide(p, labels, **unhedged))
@@ -438,7 +385,7 @@ def collect_metrics(rep: Path, pairs: list[tuple[str, str]], gate: float,
             out[f"{sp}_macro_words"] = ev.get("macro_top1_words")
             out[f"{sp}_other_as_word"] = ((ev.get("background") or {})
                                           .get("other_as_word_rate"))
-            # Saved predictor-policy metrics, not a re-tuned gate on test CSVs.
+            # saved predictor-policy metrics, not a re-tuned gate
             for k, v in (ev.get("gate") or {}).items():
                 if k != "policy":
                     out[f"{sp}_{k}"] = v
@@ -454,7 +401,7 @@ def collect_metrics(rep: Path, pairs: list[tuple[str, str]], gate: float,
             out[f"{sp}_swap_{a}_{b}"] = pair_swaps(pred, a, b)
             sub = pred[pred["label"].isin([a, b])]
             out[f"{sp}_n_{a}_{b}"] = int(len(sub))
-    # best epoch, straight from the history the run wrote
+    # best epoch from the run's own history
     if js.is_file() and out.get("epochs_ran"):
         s = json.loads(js.read_text(encoding="utf-8"))
         hist = s.get("history") or []
@@ -465,20 +412,17 @@ def collect_metrics(rep: Path, pairs: list[tuple[str, str]], gate: float,
     return out
 
 
-# ---------------------------------------------------------------------------
-# regularization: presets plus per-flag overrides (Stage B3)
-# ---------------------------------------------------------------------------
 @dataclass
 class Reg:
-    """What this run trains with. Defaults are exactly the 2026-11-16 run."""
+    """What this run trains with; defaults match the 2026-11-16 run."""
     name: str = "none"
     dropout: float = config.DROPOUT
     weight_decay: float = config.WEIGHT_DECAY
     label_smoothing: float = config.LABEL_SMOOTHING
-    hidden: int = 0                      # 0 = take model.Arch's default
+    hidden: int = 0  # 0 = model.Arch default
     gru_layers: int = 0
     conv_channels: tuple[int, ...] = ()
-    aug: dict = field(default_factory=dict)      # overrides of config.AUG
+    aug: dict = field(default_factory=dict)  # overrides of config.AUG
 
     def as_dict(self) -> dict:
         return {"preset": self.name, "dropout": self.dropout,
@@ -492,10 +436,9 @@ class Reg:
                                   for k, v in config.AUG.items()}}
 
 
-# Each preset is a hypothesis about why 400 clips are not enough, and only
-# one of them can be decided by the validation split:
+# each preset is a hypothesis about why ~400 clips are not enough
 REG_PRESETS: dict[str, dict] = {
-    "none": {},                                     # the measured baseline
+    "none": {},
     "small": {"hidden": 64, "gru_layers": 1, "conv_channels": (48, 64)},
     "reg": {"dropout": 0.45, "weight_decay": 1e-3},
     "smooth": {"label_smoothing": 0.15},
@@ -511,12 +454,9 @@ REG_PRESETS: dict[str, dict] = {
 
 
 def make_reg(preset: str | None, overrides: dict | None) -> Reg:
-    """Preset first, then the individual flags on top, then apply the AUG part.
+    """Preset, then per-flag overrides, then the AUG overrides.
 
-    config.AUG is a module-level dict that features.py reads at build time, so
-    overriding it here changes training augmentation for this process only.
-    Live inference does not read it (augment is never True in the demo), so
-    nothing a run does to AUG can change what the camera path computes.
+    Mutating config.AUG affects this process only, and live never augments.
     """
     name = (preset or "none").strip().lower()
     if name not in REG_PRESETS:
@@ -542,11 +482,7 @@ def make_reg(preset: str | None, overrides: dict | None) -> Reg:
 
 
 def parse_aug_flags(items: list[str]) -> dict:
-    """--aug jitter=0.03 --aug speed=0.7,1.3  ->  {'jitter': 0.03, ...}
-
-    A key whose old value is a range takes a comma pair; anything else is a
-    float. Unknown keys are checked by make_reg, not here.
-    """
+    """'--aug jitter=0.03' style flags -> {'jitter': 0.03, ...}; unknown keys checked in make_reg."""
     out: dict = {}
     for it in items or []:
         if "=" not in it:
@@ -639,16 +575,8 @@ def background_stats(res: dict, labels: list[str]) -> dict:
     return out
 
 
-# ---------------------------------------------------------------------------
-# seed sweep: mean +- spread, so a 2-point gain can stop looking like a win
-# ---------------------------------------------------------------------------
 def promote_from(rep: Path, weights: Path, log) -> None:
-    """Copy one sweep run over the release artefacts, unchanged in behaviour.
-
-    The sweep trains into its own folders; only the run that wins on VAL is
-    allowed to touch models/words_core20.pt and reports/*.csv, so status.py
-    and check_results.py keep describing exactly one model.
-    """
+    """Copy one sweep run over the release artefacts; only the VAL winner may do this."""
     import shutil
     for p in sorted(rep.glob("*")):
         if p.suffix in (".csv", ".json") and p.name != "meta.json":
@@ -670,10 +598,8 @@ def seed_sweep(seeds: list[int], *, epochs=None, batch=None, limit=None,
                smoke: bool = False) -> pd.DataFrame:
     """Train N seeds of one config and write the mean +- spread table.
 
-    The point is the spread: with ~430 training clips a seed can move the
-    test number by a couple of points on its own, so a change is only real
-    when its gain is larger than that. The deciding column is always VAL;
-    TEST is reported alongside it and used for nothing.
+    With ~430 clips a seed moves test by a couple of points on its own, so a
+    change is only real above the spread. VAL decides; TEST is reported only.
     """
     eval_splits = evaluation_splits(eval_splits, smoke=smoke)
     if not seeds:
@@ -717,16 +643,9 @@ def seed_sweep(seeds: list[int], *, epochs=None, batch=None, limit=None,
                 "not used)", sd, row.get("val_words_top1") or 0.0,
                 row.get("test_words_top1"))
     df = pd.DataFrame(rows)
-    # The deciding column is plain val top-1 over all 22 classes. The old
-    # words-only key (REST/OTHER dropped from the argmax) is measured on
-    # only ~84 val rows and ignores exactly the mistakes the live gate
-    # pays for: in the 2026-11-17 sweep it tied two seeds at 0.9167 and
-    # promoted the first, whose test top-1 was 4.6 points below the seed
-    # it left on disk. Both columns are VAL - test is still used for
-    # nothing.
+    # val top-1 over all classes: the words-only key tied two seeds and promoted the wrong one
     key = "val_top1"
     if smoke:
-        # Scratch runs never select or promote a model and never enter the real table.
         append_seed_rows(rows, reports_dir=report_root)
         return df
     if key not in df or pd.to_numeric(df[key], errors="coerce").isna().any():
@@ -747,15 +666,13 @@ def seed_sweep(seeds: list[int], *, epochs=None, batch=None, limit=None,
     if promote_best and len(df):
         promote_from(config.REPORTS_DIR / "seeds" / f"{tag}-seed{best_seed}",
                      config.CKPT_DIR / f"seed{best_seed}" / "words.pt", log)
-        # the release ONNX must always match the model that was just promoted
-        # (a plain --seeds sweep used to leave the previous run's .onnx behind)
+        # keep the shipped ONNX in step with the model just promoted
         from . import export_onnx
         export_onnx.export(log=log)
     else:
         log.info("--promote none: %s and reports/ are left exactly as they "
                  "were; this run is measurement only", config.FOR_RELEASE.name)
-    # the best seed's weights always survive: fair_decide() promotes from them
-    # even when promote_best is False, and cleans them up afterwards itself
+    # the best seed's weights always survive; fair_decide() may promote from them
     drop = [int(s["seed"]) for s in rows if int(s["seed"]) != best_seed]
     for sd in drop:
         for junk in (config.CKPT_DIR / f"seed{sd}" / "words.pt",
@@ -767,9 +684,6 @@ def seed_sweep(seeds: list[int], *, epochs=None, batch=None, limit=None,
     return table
 
 
-# ---------------------------------------------------------------------------
-# --fair: the same seeds and config on feature v3 and the old v2 vector
-# ---------------------------------------------------------------------------
 def _drop_stash(stash: Path | None) -> None:
     """Delete the fair stash file and its folder (nothing temp stays behind)."""
     if stash is None:
@@ -782,13 +696,7 @@ def _drop_stash(stash: Path | None) -> None:
 
 
 def _stash_fair_best(tag: str, tab: pd.DataFrame, log) -> Path | None:
-    """Copy the v3 sweep's best-seed weights out of the per-seed folder.
-
-    Both fair sweeps write checkpoints into the same per-seed folders
-    (models/checkpoints/seed<seed>/), so the v2 sweep would overwrite exactly
-    the weights fair_decide needs when v3 wins or is the loser. Returns the
-    stash path, or None (with a loud log) when the sweep left nothing.
-    """
+    """Stash the v3 best-seed weights: the v2 sweep reuses the same seed folders."""
     import shutil
     g = tab[tab["run_tag"] == tag] if "run_tag" in tab.columns else tab.iloc[0:0]
     if not len(g):
@@ -813,21 +721,15 @@ def _stash_fair_best(tag: str, tab: pd.DataFrame, log) -> Path | None:
 
 def fair_decide(tags: dict[int, str], smoke: bool, log,
                 stash3: Path | None = None) -> None:
-    """Decide the fair comparison on VAL and wire the winner in.
+    """Decide the fair comparison on VAL: v3 only if its gain beats the pooled spread.
 
-    The winner is the higher mean val top-1. v3 is adopted only when its gap
-    over v2 is larger than the pooled seed-to-seed spread of the two runs -
-    otherwise the simpler v2 vector stays, per the plan. The winner's best
-    seed is promoted to the plain release names; the loser's best seed is
-    kept loadable as models/words_v<ver>.pt (--weights), and its checkpoint
-    meta carries feature_version so predictor/live build the right layout. A
-    smoke run computes and prints everything but copies nothing.
+    The loser's best seed stays loadable as models/words_v<ver>.pt; a smoke
+    run prints everything but copies nothing.
     """
     import shutil
 
     def weights_for(ver: int, sd: int) -> Path:
-        """v3 weights live in the stash (the v2 sweep reuses the seed
-        folders); v2 weights are the sweep's own last-written files."""
+        """v3 weights come from the stash; v2 weights are the sweep's own files."""
         src = (stash3 if (ver == config.FEATURE_VERSION
                           and stash3 is not None)
                else config.CKPT_DIR / f"seed{sd}" / "words.pt")
@@ -877,7 +779,6 @@ def fair_decide(tags: dict[int, str], smoke: bool, log,
     _drop_stash(stash3)
     log.info("loser kept loadable: %s (feature v%d, best seed %d, load with "
              "--weights %s)", loser_pt, l, sd_l, loser_pt)
-    # mark the promoted row, refresh the md table, clear the leftovers
     m = (df["run_tag"] == tags[w]) & (df["seed"] == sd_w)
     df.loc[m, "promoted"] = 1
     df.to_csv(p, index=False)
@@ -912,8 +813,6 @@ def fair(seeds: list[int], *, epochs=None, batch=None, limit=None,
         return
     tab3 = seed_sweep(seeds, tag=tags[config.FEATURE_VERSION],
                       feature_version=config.FEATURE_VERSION, **kw)
-    # the v2 sweep reuses the same per-seed checkpoint folders, so the v3
-    # best seed's weights must be stashed aside before it runs
     stash = _stash_fair_best(tags[config.FEATURE_VERSION], tab3, log)
     seed_sweep(seeds, tag=tags[2], feature_version=2, **kw)
     fair_decide(tags, smoke=smoke, log=log, stash3=stash)
@@ -955,7 +854,7 @@ def write_split_report(bt: Batcher, net, labels: list[str], name: str,
     stats["gate"] = decisions
     groups = summary.get("word_groups", {})
     if name == "val" and "core20" in groups:
-        # Choose once on VAL; test and ps_test reuse this exact membership.
+        # chosen once on VAL; test and ps_test reuse this membership
         weak = per[per["label"].isin(groups["core20"]) & per["n_samples"].gt(0)]
         groups["weak6"] = weak.sort_values(["top1", "label"]).head(6)["label"].tolist()
         summary["weak6_source"] = "six weakest core20 words on this run's official val split"
@@ -1010,29 +909,16 @@ def write_split_report(bt: Batcher, net, labels: list[str], name: str,
                            for _, r in weak.iterrows()))
 
 
-# ---------------------------------------------------------------------------
-# the run
-# ---------------------------------------------------------------------------
-# Set by the --allow-vocab-change flag. Read by the release guard below on every
-# code path (single run, --seeds sweep, --fair), because all three can write
-# models/words_core20.pt.
+# set by --allow-vocab-change; every path that can write the release weights reads it
 ALLOW_VOCAB_CHANGE = False
 
 
 def _release_label_guard(labels, log, release) -> None:
     """Refuse to overwrite the shipped weights with a different label set.
 
-    `vocab.json` enables batches 1-4, i.e. 95 words + REST + OTHER = 97
-    outputs, while the shipped checkpoint (`models/words_core20.pt`) knows the
-    20 core words + REST + OTHER = 22. Before this guard `python -m src.train`
-    with the default vocabulary silently replaced the release model with a
-    97-class one that had never been evaluated or promoted - the only thing
-    that noticed was tests/test_logic.py, which could merely SKIP its
-    feature-path check ("expanded vocabulary is not trained yet").
-
-    A candidate run is exempt automatically: config.use_candidate() points
-    FOR_RELEASE at candidates/<name>/models/, so `release` is not the shipped
-    path. Overwriting the release on purpose needs --allow-vocab-change.
+    Without this, a default-vocabulary run silently replaced the 22-class
+    release with an unevaluated one. Candidate runs are exempt because their
+    release path differs. Overriding on purpose needs --allow-vocab-change.
     """
     if ALLOW_VOCAB_CHANGE or Path(release) != Path(config.FOR_RELEASE):
         return
@@ -1099,9 +985,7 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
              else " (the pre-Stage-B vector: no gap fill, no segment block)")
 
     t0 = time.time()
-    # the mixed-corpus honesty check, before anything trains: no (source,
-    # signer) pair may appear in train and in a held-out split. A violation
-    # means a pipeline bug, so it fails loud instead of training on it.
+    # a leak here is a pipeline bug, so fail loud before training
     man_all = dataset._manifest(("train", "val", "test", "ps_test"))
     split_problems = dataset.check_disjoint(man_all)
     if split_problems:
@@ -1117,7 +1001,7 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
         smoke=smoke)
     if train_bt is None or not len(train_bt):
         raise ValueError("no cached train samples; extract the train split first")
-    # VAL is evaluated first so its weak-six membership is frozen for test.
+    # VAL first so its weak-six membership is frozen before test
     ordered_splits = sorted(eval_splits, key=lambda s: s != "val")
     testers = {s: (val_bt if s == "val" else
                    make_batcher(s, labels, limit, blocks, fver))
@@ -1137,9 +1021,7 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
     log.info("standardisation from %d train samples, %d frames each (%.1f s, "
              "%.1f ms per feature build)", len(P), config.NUM_FRAMES,
              time.time() - t0, 1000 * (time.time() - t0) / max(len(P), 1))
-    # P and Y are kept until the end: the released weights get one pass over
-    # them for the words-only TRAIN accuracy - the memorisation number the
-    # report shows next to val. Nothing else is written from them.
+    # P and Y stay for one pass to report train-split words-only accuracy
 
     defaults = model.Arch()
     arch = model.Arch(
@@ -1179,8 +1061,7 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
             opt.load_state_dict(st["opt"])
             start_epoch, best, bad = (int(st["epoch"]), float(st["best_val"]),
                                       int(st["bad"]))
-            # OneCycleLR counts batches, not epochs: put the clock back where
-            # the interrupted run left it, or the learning rate restarts high.
+            # OneCycleLR counts batches, not epochs, or the LR restarts high
             sched.last_epoch = start_epoch * steps_per_epoch - 1
             for g in opt.param_groups:
                 g["lr"] = sched.get_lr()[0]
@@ -1199,7 +1080,7 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
         if val_bt is not None and len(val_bt):
             val_acc = score(val_bt, net)["top1"]
         elif smoke:
-            val_acc = tr_acc  # scratch plumbing only, never a validation claim
+            val_acc = tr_acc  # smoke plumbing only, never a validation claim
         else:
             raise RuntimeError("validation disappeared; refusing a training-score fallback")
         improved = val_acc > best + 1e-4
@@ -1229,8 +1110,7 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
             break
 
     if not release.is_file():
-        # no epoch ever improved (possible in a 1-epoch smoke run): keep the
-        # weights from the last epoch rather than loading a stale file
+        # possible in a 1-epoch smoke run: never load a stale file
         log.warning("%s was not written by an improving epoch; saving the "
                     "final weights", release)
         model.save(net, release, {"best_val_top1": best,
@@ -1270,8 +1150,7 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
         "seconds": round(time.time() - t0, 1),
     }
     if not smoke and len(P):
-        # words-only accuracy of the RELEASED weights on their own training
-        # split: the memorisation number the report prints next to val
+        # memorisation check: released weights on their own train split
         tr_probs = np.concatenate([best_net.predict(P[a:a + 256])
                                    for a in range(0, len(P), 256)])
         cols = word_columns(labels)
@@ -1349,17 +1228,13 @@ def train(epochs=None, batch=None, limit=None, seed=None, fresh=False,
     log.info("saved %s (%.1f MB) and %s, %.1f s total",
              release, release.stat().st_size / 1e6 if release.is_file() else 0,
              meta_json, time.time() - t0)
-    # A finished run must leave no resume state behind: that leftover file is
-    # what made run_all.py want to train again after everything had succeeded.
+    # a finished run must leave no resume state, or run_all.py trains again
     if ckpt.is_file():
         ckpt.unlink()
         log.info("cleared the resume checkpoint %s - nothing to resume", ckpt)
     return summary
 
 
-# ---------------------------------------------------------------------------
-# --parity: the live feature path must be the training feature path
-# ---------------------------------------------------------------------------
 def parity(n: int = 5, log=None) -> int:
     log = log or config.logger_for("parity")
     labels = vocab.load_vocab().labels
@@ -1465,12 +1340,9 @@ def main(argv=None) -> int:
                          "set differs from the shipped checkpoint's")
     ap.add_argument("--log", default=None)
     args = ap.parse_args(argv)
-    # One switch, read by every code path that can write the release weights.
-    # `global` is not needed here because the guard lives in this module and the
-    # flag is set before any training starts.
     global ALLOW_VOCAB_CHANGE
     ALLOW_VOCAB_CHANGE = bool(args.allow_vocab_change)
-    # Reject unsupported combinations before even opening a log file.
+    # reject unsupported combinations before opening a log file
     if args.fair and args.promote == "none":
         ap.error("--fair does not support --promote none; use separate --seeds sweeps")
     if args.seeds < 1 or (args.fair and args.seeds < 2):

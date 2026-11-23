@@ -93,7 +93,6 @@
     try {
       localStorage.setItem("signrest-admin-theme", theme);
     } catch {
-      // Theme selection still works for this page when storage is unavailable.
     }
   };
 

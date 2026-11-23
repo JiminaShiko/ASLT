@@ -1,15 +1,7 @@
-"""Stage D - feature ablation under the honest cross-dataset protocol.
+"""Stage D - feature ablation under the cross-dataset protocol.
 
-Runs `src/train.py --folds-only` once per feature set, in a fresh subprocess
-with ASL_FEATURE_BLOCKS set. That is deliberate: the sweep uses the SAME code
-path, the SAME leave-one-dataset-out folds and the SAME augmentation as the
-headline number, so the table is comparable with REPORT.md, and it writes
-nothing to models/ or REPORT.md on the way.
-
-    python src/ablate_features.py                 # all five sets
-    python src/ablate_features.py --sets 1,5      # a subset
-    python src/ablate_features.py --fold-epochs 30
-
+Runs `train.py --folds-only` per feature set in a fresh subprocess with
+ASL_FEATURE_BLOCKS set, so the same code path, folds and augmentation apply.
 Writes reports/ablation_features.md.
 """
 from __future__ import annotations
@@ -25,16 +17,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import config  # noqa: E402
 
-# (label, blocks) - each is one row of the ablation table.
+# (label, blocks); one row of the table each. Set 3 is the shipped baseline.
 SETS = [
     ("1 baseline (57)",            "xy,tip_dists,curl"),
     ("2 + z coords",               "xyz,tip_dists,curl"),
     ("3 + thumb features",         "xy,tip_dists,curl,thumb"),
     ("4 + orientation features",   "xy,tip_dists,curl,orient"),
     ("5 thumb + orientation",      "xy,tip_dists,curl,thumb,orient"),
-    # Round 4: the shipped set plus the new thumb-crossing block. Set 3 is the
-    # shipped baseline and must stay first in `--sets` because the table
-    # measures every row against rows[0].
     ("6 shipped + thumb-cross",    "xy,tip_dists,curl,thumb,cross"),
 ]
 
@@ -51,10 +40,7 @@ def run_one(label: str, blocks: str, extra: list[str], quiet: bool) -> dict | No
                PYTHONUNBUFFERED="1")
     cmd = [sys.executable, "-u", str(Path(__file__).with_name("train.py")),
            "--folds-only"] + extra
-    # train.py only puts the letters in its own --watch list into the
-    # ABLATION_RESULT line, so ASL_WATCH has to be forwarded or the table
-    # reports nan for every letter the adoption rule cares about. Round 4 found
-    # this: C, D, Q and the strong letters were all missing from the first run.
+    # ASL_WATCH must be forwarded, or watched letters come back as nan
     if watch:
         cmd += ["--watch", watch]
     t0 = time.time()

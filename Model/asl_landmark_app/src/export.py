@@ -1,11 +1,4 @@
-"""Step 6 - export the MLP to ONNX and prove it matches PyTorch.
-
-Verification is done on real landmark samples from the cache (not random
-noise): features are computed with src/normalize.py, fed through both runtimes
-and compared. We check both the raw logits and the argmax agreement.
-
-Run:  python src/export.py [--samples 2000] [--opset 17] [--profile all]
-"""
+"""Step 6 - export the MLP to ONNX and prove it matches PyTorch on real cached hands."""
 from __future__ import annotations
 
 import argparse
@@ -41,10 +34,8 @@ def export(opset: int, prof: str) -> Path:
         output_names=["logits"],
         opset_version=opset,
         dynamic_axes={"features": {0: "batch"}, "logits": {0: "batch"}},
-        # torch >= 2.9 defaults to the dynamo exporter, which needs the
-        # `onnxscript` package. This MLP is a handful of Linear/BatchNorm/ReLu
-        # ops, so the classic tracer is enough and keeps the dependency list as
-        # the brief specified it.
+        # torch >= 2.9 defaults to the dynamo exporter, which needs `onnxscript`;
+        # the classic tracer is enough here and keeps the dependency list small.
         dynamo=False,
     )
     return config.onnx_path(prof)

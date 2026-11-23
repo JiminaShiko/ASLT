@@ -1,11 +1,8 @@
 """
 Flask bridge from the HTML translator to the ASL landmark console pipeline.
 
-Run from this folder:
-    python api.py
-
-The live API uses the same detector, model backend, frame gate, smoother,
-motion rules, and overlay renderer as asl_landmark_app/src/live.py.
+Shares the detector, backend, frame gate, smoother, motion rules, and overlay
+renderer with asl_landmark_app/src/live.py. Run from this folder: python api.py
 """
 
 import base64

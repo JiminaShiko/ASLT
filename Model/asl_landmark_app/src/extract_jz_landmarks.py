@@ -1,31 +1,7 @@
-"""Step 2b - turn the J/Z clips into cached hand trajectories.
+"""J/Z clips -> cache/jz_landmarks/<clip>.npz, in the MSL shard format.
 
-`src/verify_jz_trigger.py` can already measure the trajectory rule on real
-movement, but it only reads the MSL cache that was built once by a throwaway
-script. This is that step, kept: it walks the clips `src/download_jz_data.py`
-put under `datasets/jz/clips/`, runs MediaPipe VIDEO over each one, and writes
-`cache/jz_landmarks/<clip>.npz` with the SAME thirteen keys the MSL shards
-carry, so the verifier, a future motion head and any analysis all read one
-format:
-
-    lm (N,21,3) float32  normalised image coords, one row per frame with a hand
-    idx (N,) int32       source frame number of each kept row
-    clip signer letter split rep  frames fps cadence w h sec
-
-`cadence` is the integer milliseconds between kept rows that the live rule is
-replayed at; `fps` is the clip's own measured rate.
-
-Letters come from the filename. The MSL archive names every clip
-`S<signer>-<letter>-<view>-<rep>.mp4`; anything without that pattern falls back
-to a one-letter parent folder, and is skipped (with a count) when neither is
-available - a corpus whose labels are whole sentences cannot be used here
-without alignment, and guessing would poison the cache.
-
-No camera, no training, nothing written outside `cache/jz_landmarks/`.
-
-Run:
-    python src/extract_jz_landmarks.py
-    python src/extract_jz_landmarks.py --per-letter 100 --fps 30
+`lm (N,21,3)`, `idx` and clip metadata; `cadence` is the per-row ms the live
+rule replays at. Unlabelled clips are skipped, never guessed.
 """
 from __future__ import annotations
 
@@ -50,12 +26,7 @@ DEFAULT_FPS = 30.0
 
 
 def parse_clip(path: Path) -> dict | None:
-    """Signer / letter / view / repetition from a clip path, or None.
-
-    Order of evidence: the MSL filename convention first, because it is
-    explicit and carries the signer; then a one-letter parent folder, which is
-    what a plain `A/`, `B/`, ... corpus looks like.
-    """
+    """Signer / letter / view / repetition from a clip path, or None."""
     parts = path.stem.split("-")
     if len(parts) >= 3 and len(parts[1]) == 1 and parts[1].isalpha():
         letter = parts[1].upper()
@@ -66,8 +37,7 @@ def parse_clip(path: Path) -> dict | None:
     if len(parent) == 1 and parent.isalpha():
         return {"letter": parent.upper(), "signer": path.parent.parent.name,
                 "view": "", "rep": 0}
-    # A single alpha token anywhere in the name is the last resort; it is what
-    # an LSA64-style `<subject>_<class>_<rep>` file needs.
+    # last resort: an LSA64-style `<subject>_<class>_<rep>` name
     tokens = [t for t in path.stem.replace("_", "-").split("-")
               if len(t) == 1 and t.isalpha()]
     if len(tokens) == 1:

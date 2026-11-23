@@ -1,18 +1,6 @@
 """Download PopSign isolated-sign clips for the project's target glosses.
 
-Run from VS Code's terminal with:
-    python download_popsign_targets.py
-
-popsign_v2_1 (default) has no tar archives; the site serves one .mp4 per clip
-in per-sign folders, so this tool walks the folder listings, picks a seeded
-signer-spread subset (60 train + 20 val + 20 test clips per word by default),
-prints the total size, and only then asks for confirmation. Downloads are
-resumable via Range requests. popsign_v1_0 still works through the old
-one-archive-per-sign branch.
-
-PopSign v2.1 source and access guide:
-    https://signdata.cc.gatech.edu/view/datasets/popsign_v2_1/index.html
-    https://signdata.cc.gatech.edu/view/guides/downloading_popsign/index.html
+Source/access guide: https://signdata.cc.gatech.edu/view/guides/downloading_popsign/index.html
 """
 
 from __future__ import annotations
@@ -42,8 +30,7 @@ DATASET = "popsign_v2_1"
 CATEGORY = "game"  # Contains videos reviewed as the intended sign variant.
 SPLITS = ("train", "val", "test")
 BASE_URL = "https://signdata.cc.gatech.edu/data"
-SEED = 20261116      # must match config.SEED: vocab.external_jobs re-picks the
-                     # same subset with the same round-robin, seed and order
+SEED = 20261116      # must match config.SEED: vocab.external_jobs re-picks the same subset
 DEFAULT_WORDS = ["bye", "please", "sleep", "chicken"]
 TARGET_ALIASES = {
     "eat": ("eat",),
@@ -122,19 +109,13 @@ def request_bytes(url: str, timeout: int = 60, retries: int = 3) -> bytes:
             with urlopen_fallback(request, timeout) as response:
                 return response.read()
         except http.client.IncompleteRead as error:
-            # The signdata server truncates big directory listings mid-body
-            # (measured: the 563-folder train index stops at 91 KB of 97 KB).
-            # The partial HTML still parses, so keep it instead of failing;
-            # main_per_clip probes folders directly when a link is missing.
+            # The server truncates big listings mid-body; the partial HTML still parses.
             print(f"Note: the server cut this page at {len(error.partial)} of "
                   f"{len(error.partial) + error.expected} bytes; using the "
                   f"partial listing.", file=sys.stderr)
             return error.partial
         except urllib.error.HTTPError as error:
-            # A 404 means the folder/word simply does not exist on the server
-            # (main_per_clip probes candidate folder names), so retrying it
-            # only spams the same note; HTTPError subclasses URLError, so this
-            # must stay above the retry branch.
+            # HTTPError subclasses URLError: keep this branch above the retry one.
             raise
         except (TimeoutError, OSError, urllib.error.URLError) as error:
             if attempt == retries:
@@ -186,9 +167,6 @@ def matched_archives(dataset: str, splits: list[str]) -> tuple[list[dict[str, st
     return selected, missing
 
 
-# ---------------------------------------------------------------------------
-# per-clip branch (popsign_v2_1: one .mp4 per recording, no tar archives)
-# ---------------------------------------------------------------------------
 class FolderIndex(html.parser.HTMLParser):
     """Collect sign-folder links from a split's index page."""
 
@@ -208,12 +186,7 @@ class FolderIndex(html.parser.HTMLParser):
 
 
 class Mp4Index(html.parser.HTMLParser):
-    """Collect clip-folder links from one sign folder's listing.
-
-    Each recording is a subfolder named <signer>-<gloss>-<datetime>-<take>.mp4
-    (the listing shows a trailing slash). The video file inside carries the
-    same name again and is served with Accept-Ranges: bytes.
-    """
+    """Collect clip-folder links (<signer>-<gloss>-<datetime>-<take>.mp4/) from one sign folder."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -251,11 +224,7 @@ def fetch_split_folders(dataset: str, split: str) -> dict[str, str]:
 
 
 def fetch_folder_clips(dataset: str, split: str, folder: str) -> list[tuple[str, str]]:
-    """(file name, absolute video URL) for every recording in one sign folder.
-
-    Each listing entry is a subfolder <name>.mp4/ and the video file inside
-    repeats the name: <name>.mp4/<name>.mp4 (Range-probed: 206, resumable).
-    """
+    """(file name, absolute video URL) for every recording in one sign folder."""
     directory = (f"{BASE_URL}/{urllib.parse.quote(dataset)}/{CATEGORY}/{split}/"
                  f"{urllib.parse.quote(folder)}/")
     parser = Mp4Index()
@@ -274,14 +243,7 @@ def fetch_folder_clips(dataset: str, split: str, folder: str) -> list[tuple[str,
 
 def pick_spread(clips: list[tuple[str, str]], want: int, split: str,
                 gloss: str, dataset: str) -> list[tuple[str, str]]:
-    """The same seeded signer round-robin src/vocab.external_jobs re-runs.
-
-    Filenames are <signer>-<gloss>-<datetime>-<take>.mp4; the 4-char signer
-    code is the first field. `gloss` must be the SERVER's gloss (e.g.
-    "thankyou"): the seed string has to stay identical to the one
-    vocab.external_jobs builds from its own gloss keys, otherwise extraction
-    would pick a different subset than the download.
-    """
+    """Seeded signer round-robin; `gloss` must be the server's gloss, matching vocab.external_jobs."""
     by_signer: dict[str, list[tuple[str, str]]] = {}
     for name, url in sorted(clips):
         signer = name[:4]
@@ -344,13 +306,7 @@ def download_clip(url: str, destination: Path, expected: int | None,
 
 
 def vocab_targets() -> dict[str, tuple[str, ...]]:
-    """Every active vocab word, with the folder names it may appear under.
-
-    Built from vocab.json instead of the hand-written TARGET_ALIASES, so that
-    adding a word to the vocabulary is enough to make it downloadable. The
-    candidates are the word itself plus its ASL Citizen glosses and the PopSign
-    folder names already recorded in `external_glosses`.
-    """
+    """Every active vocab word, with the folder names it may appear under."""
     try:
         from src import vocab as vocab_module
     except ImportError:  # run as `python -m` from the repo root
@@ -364,15 +320,7 @@ def vocab_targets() -> dict[str, tuple[str, ...]]:
 
 
 def write_glosses(pairs: list[tuple[str, str]], vocab_path) -> list[str]:
-    """Record downloaded server folder names in vocab.json's external_glosses.
-
-    `src/vocab.py` maps a PopSign folder to a word through
-    `external_glosses` (EXTERNAL_GLOSS_WORDS is built from it at import), so a
-    clip whose server gloss is not listed there is downloaded but invisible to
-    the pipeline - the classic "the files are there and the dataset is empty"
-    bug. Only differences are written, and only when --write-glosses is asked
-    for.
-    """
+    """Record downloaded server folder names in vocab.json's external_glosses (differences only)."""
     path = Path(vocab_path)
     spec = json.loads(path.read_text(encoding="utf-8"))
     by_word = {w["word"]: w for w in spec["words"]}
@@ -394,9 +342,7 @@ def write_glosses(pairs: list[tuple[str, str]], vocab_path) -> list[str]:
 
 
 def main_per_clip(args: argparse.Namespace) -> int:
-    # --vocab-all widens the target list from the hand-written aliases to every
-    # enabled vocab.json word; the alias table stays the default because it is
-    # the set the shipped weights were trained on.
+    # --vocab-all uses every enabled vocab word; the alias table stays the default
     targets = vocab_targets() if args.vocab_all else TARGET_ALIASES
     words = args.words or (list(targets) if args.vocab_all else DEFAULT_WORDS)
     unknown = [w for w in words if w not in targets]
@@ -427,8 +373,7 @@ def main_per_clip(args: argparse.Namespace) -> int:
                     print(error, file=sys.stderr)
                     return 1
             else:
-                # the split index can arrive truncated (the server cuts big
-                # listings mid-body), so probe the alias folder directly
+                # the split index can arrive truncated, so probe the alias folder directly
                 for alias in targets[gloss]:
                     try:
                         probe = fetch_folder_clips(args.dataset, split, alias)
@@ -440,9 +385,7 @@ def main_per_clip(args: argparse.Namespace) -> int:
             if folder is None or not clips:
                 missing.append({"gloss": gloss, "split": split})
                 continue
-            # folder is the SERVER's gloss (e.g. "thankyou"); it names both
-            # the destination folder and the subset seed, so vocab's walk and
-            # round-robin (keyed on the same gloss) find exactly these clips
+            # folder is the SERVER's gloss; it keys both the destination and the subset seed
             picked = pick_spread(clips, want, split, folder, args.dataset)
             for name, url in picked:
                 plan.append({"gloss": folder, "word": gloss, "split": split,

@@ -1,19 +1,5 @@
-"""Round 3 Stage C - compare model profiles from their dumped predictions.
-
-Reads the leave-one-dataset-out prediction CSVs that `src/train.py --dump-preds`
-writes and prints one markdown table: pooled cross-dataset accuracy, then the
-per-letter rows the brief asked for, then the same letters split by dataset
-(which is the only place a down-weighted cell can show up).
-
-It re-trains nothing and scores nothing: every number comes from a fold model
-that never saw the dataset it is scored on, and the two files are the same
-images in the same order, so the comparison is paired by construction.
-
-Run:
-    python src/train.py --profile all --dump-preds reports/oof_all.csv
-    python src/train.py --profile standard --no-extra-splits --dump-preds reports/oof_standard.csv
-    python src/profile_compare.py
-"""
+"""Compare model profiles from the leave-one-dataset-out CSVs that
+`src/train.py --dump-preds` writes; re-trains nothing, paired by image."""
 from __future__ import annotations
 
 import argparse

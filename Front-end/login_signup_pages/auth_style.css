@@ -33,7 +33,7 @@ body.dark-mode {
   --toast-close-text: #ffffff;
   --toast-bar-active: #a3d98c;
   --toast-bar-inactive: rgba(163, 217, 140, 0.22);
-  /* Lamp-like warm bioluminescent glow for the same frog photo in dark mode */
+  /* Warm lamp glow on the frog in dark mode */
   --frog-filter:
     brightness(1.22)
     contrast(1.06)
@@ -60,7 +60,6 @@ body.dark-mode {
   background-color: #16202a;
 }
 
-/* Fullscreen blurred background photo layer */
 .bg-photo-layer {
   position: fixed;
   inset: -18px;
@@ -73,7 +72,6 @@ body.dark-mode {
   transition: background-image 0.55s ease, filter 0.45s ease;
 }
 
-/* Subtle readability veil over background */
 .bg-veil {
   position: fixed;
   inset: 0;
@@ -87,7 +85,6 @@ body.dark-mode .bg-veil {
   background: radial-gradient(circle at 50% 42%, rgba(10, 16, 24, 0.18), rgba(8, 13, 20, 0.42));
 }
 
-/* Top-left Brand Logo & "Signrest" earthy typography */
 .brand-header {
   position: fixed;
   top: 20px;
@@ -127,7 +124,6 @@ body.dark-mode .brand-title {
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
-/* Top-right theme toggle button (Sun in light mode, Moon in dark mode — borderless) */
 .theme-toggle-btn {
   position: fixed;
   top: 18px;
@@ -161,7 +157,6 @@ body.dark-mode .theme-toggle-btn img {
   filter: drop-shadow(0 0 8px rgba(210, 235, 255, 0.45));
 }
 
-/* Compact underlined minimalist inputs */
 .underlined-field {
   width: 100%;
   background: transparent;
@@ -193,7 +188,6 @@ body.dark-mode .theme-toggle-btn img {
   transition: color 0.3s ease;
 }
 
-/* Inline validation message directly under each input box */
 .field-error-msg {
   font-family: 'Inter', sans-serif;
   font-size: 0.74rem;
@@ -209,7 +203,6 @@ body.dark-mode .field-error-msg {
   color: #fca5a5;
 }
 
-/* Dark-green hypertext links ("forgot psw?", "login", "signup", "resent") */
 .sub-link {
   font-family: 'Inter', sans-serif;
   font-size: 0.8rem;
@@ -229,7 +222,6 @@ body.dark-mode .sub-link {
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
 }
 
-/* Compact pill buttons + circular loading spinner support */
 .btn-primary-pill {
   width: 100%;
   height: 44px;
@@ -290,7 +282,6 @@ body.dark-mode .sub-link {
   opacity: 0.85;
 }
 
-/* Circular spinner inside buttons during mail sending / Google OAuth loading */
 .btn-spinner {
   width: 18px;
   height: 18px;
@@ -308,9 +299,6 @@ body.dark-mode .sub-link {
   }
 }
 
-/* =========================================================================
-   LEAF PAPER-PLANE POPUP NOTIFICATION WITH 5-SEGMENT 5-SECOND COUNTDOWN
-   ========================================================================= */
 .leaf-toast-wrapper {
   position: fixed;
   top: 76px;
@@ -343,7 +331,6 @@ body.dark-mode .sub-link {
   transition: background-color 0.35s ease, color 0.35s ease;
 }
 
-/* Leaf paper-airplane cutout overlapping the top-left edge */
 .leaf-toast-plane {
   position: absolute;
   top: -28px;
@@ -369,7 +356,6 @@ body.dark-mode .sub-link {
   color: var(--toast-text);
 }
 
-/* Circular 'X' close button on top-right of popup */
 .leaf-toast-close {
   position: absolute;
   top: 8px;
@@ -396,7 +382,7 @@ body.dark-mode .sub-link {
   opacity: 0.9;
 }
 
-/* 5 dashed countdown bars along the bottom edge (1 bar = 1 second) */
+/* One bar per second of the 5s resend cooldown */
 .leaf-toast-bars {
   position: absolute;
   left: 0;
@@ -417,9 +403,6 @@ body.dark-mode .sub-link {
   background-color: var(--toast-bar-inactive);
 }
 
-/* =========================================================================
-   OTP VERIFICATION MINIMALIST 6-DASH INPUTS
-   ========================================================================= */
 .otp-dash-row {
   display: flex;
   align-items: center;
@@ -449,7 +432,6 @@ body.dark-mode .sub-link {
   transform: translateY(-2px);
 }
 
-/* Foreground nature scenery layers */
 .scenery-layer {
   position: fixed;
   inset: 0;
@@ -464,7 +446,6 @@ body.dark-mode .sub-link {
   transition: filter 0.5s ease;
 }
 
-/* Bigger Rock + Frog group sunk into the grass border */
 .rock-frog-group {
   position: absolute;
   bottom: -95px;
@@ -481,7 +462,7 @@ body.dark-mode .sub-link {
   z-index: 6;
 }
 
-/* Bigger frog anchored at its base on the stone, breathing slowly */
+/* Slow breathing loop, anchored at the base so the frog never floats */
 .rock-frog-group .frog-theme-toggle {
   position: absolute;
   bottom: 29%;
@@ -521,7 +502,7 @@ body.dark-mode .sub-link {
   border-radius: 50%;
 }
 
-/* Warm radial ambient light cast around frog in dark mode */
+/* Warm radial ambient light around the frog in dark mode */
 .rock-frog-group .frog-lamp-aura {
   position: absolute;
   bottom: 24%;
@@ -603,7 +584,6 @@ body.dark-mode .rock-frog-group .frog-lamp-aura {
   animation: bushBreezeSway 7.6s ease-in-out 0.4s infinite;
 }
 
-/* Status toast message box */
 .status-banner {
   font-family: 'Inter', sans-serif;
   font-size: 0.82rem;
@@ -638,7 +618,6 @@ body.dark-mode .status-banner.success {
   color: #bbf7d0;
 }
 
-/* Tablet responsive adjustments */
 @media (max-width: 1024px) {
   .rock-frog-group {
     left: 6%;
@@ -667,7 +646,6 @@ body.dark-mode .status-banner.success {
   }
 }
 
-/* Mobile responsive adjustments (phones) */
 @media (max-width: 640px) {
   .brand-header {
     top: 16px;
@@ -736,9 +714,6 @@ body.dark-mode .status-banner.success {
   }
 }
 
-/* =========================================================
-   LOGIN ALERT VARIANT (Warm Stone Beige + Crimson Horn)
-   ========================================================= */
 .leaf-toast-card.toast-horn {
   background: rgba(216, 210, 195, 0.96);
   color: #161816;

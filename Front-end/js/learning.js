@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', function () {
     list.forEach(function (t) { t.setAttribute('aria-selected', t === active ? 'true' : 'false'); });
   }
 
-  /* ---------- Progress ---------- */
   function renderProgress() {
     var n = A.learned.list().length;
     $('prog-text').textContent = n + ' of ' + TOTAL + ' signs learned';
@@ -19,7 +18,6 @@ document.addEventListener('DOMContentLoaded', function () {
     $('best-text').textContent = best ? 'Best quiz score: ' + best.score + '/' + best.total : 'No quiz taken yet';
   }
 
-  /* ---------- Top tabs ---------- */
   var tabCharts = $('tab-charts'), tabQuiz = $('tab-quiz');
   var quizStarted = false;
   tabCharts.addEventListener('click', function () {
@@ -33,7 +31,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   $('to-charts').addEventListener('click', function () { tabCharts.click(); });
 
-  /* ---------- Chart tabs ---------- */
   var tabAlpha = $('tab-alpha'), tabWord = $('tab-word');
   tabAlpha.addEventListener('click', function () {
     setTabs([tabAlpha, tabWord], tabAlpha);
@@ -44,7 +41,6 @@ document.addEventListener('DOMContentLoaded', function () {
     $('alpha-view').hidden = true; $('word-view').hidden = false;
   });
 
-  /* ---------- Alphabet ---------- */
   var grid = $('agrid');
   var alphaDetail = $('alpha-detail');
   var tileByLetter = {};
@@ -90,7 +86,6 @@ document.addEventListener('DOMContentLoaded', function () {
     alphaDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  /* ---------- Words ---------- */
   var wgrid = $('wgrid');
   var wordDetail = $('word-detail');
   var tileByWord = {};
@@ -134,7 +129,6 @@ document.addEventListener('DOMContentLoaded', function () {
     wordDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  /* ---------- Quiz ---------- */
   var QUESTIONS = [];
   var letters = Object.keys(NOTES);
   var wordLabels = WORDS.map(function (w) { return w.label; });

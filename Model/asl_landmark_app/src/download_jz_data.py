@@ -1,37 +1,7 @@
-"""Step 1b - download the motion corpora that J and Z need.
+"""Download the J/Z motion corpora (see src/config.py:MOTION_DATASETS).
 
-The 24-class classifier is a *shape* model and cannot contain J or Z: a single
-frame of either is a legal static letter (a J reads as I at 96.3 %, a Z as X at
-94.2 %), so the letters are produced by the trajectory rule in `src/live.py`.
-That rule is the only part of the project with no training data of its own, and
-this script is how it gets some.
-
-What is downloaded, and what each corpus is honestly good for:
-
-  msl_dynamic    Zenodo 10.5281/zenodo.14689869, CC-BY-4.0, ~2.2 GB.
-                 1,200 clips of the six *dynamic* letters of the Mexican manual
-                 alphabet (J K Ñ Q X Z) from 20 signers, split 18 train / 2 test
-                 by signer. Real fingerspelling strokes, which is the part that
-                 cannot be photographed. It is NOT ASL: fit and validate the
-                 trajectory stage on it, never the 24-class model, and confirm
-                 on your own hand with `python src/live.py --calibrate-jz`.
-
-  chicagofswild  TTIC, ~14 GB, 7,304 ASL fingerspelling sequences from 160
-                 signers recorded in the wild. This is real ASL, but the labels
-                 are per-sequence transcriptions with no per-letter timing, so
-                 nothing here can consume it yet; it is what a CTC / forced-
-                 alignment step would need. Off unless asked for by name.
-
-Everything lands under `datasets/jz/` (git-ignored) and the manifest
-`data/jz_datasets.json` records what was fetched, from where, under which
-licence, and how many clips arrived. Nothing is trained here, no camera is
-opened, and no frame is written.
-
-Run:
-    python src/download_jz_data.py                    # MSL dynamic only
-    python src/download_jz_data.py --list
-    python src/download_jz_data.py --only chicagofswild
-    python src/download_jz_data.py --force            # re-fetch
+msl_dynamic is NOT ASL: it trains the J/Z trajectory stage only, never the
+24-class shape model. Nothing is trained here and no frame is written.
 """
 from __future__ import annotations
 
@@ -56,9 +26,6 @@ USER_AGENT = "ASLT-jz-downloader/1.0 (+research project)"
 CHUNK = 1 << 20
 
 
-# ---------------------------------------------------------------------------
-# transport
-# ---------------------------------------------------------------------------
 def url_for(spec: dict, filename: str) -> str:
     if spec["kind"] == "zenodo":
         return (f"https://zenodo.org/api/records/{spec['record']}"
@@ -123,9 +90,6 @@ def fetch(url: str, dest: Path, expected: int | None = None) -> None:
           f"({human(dest.stat().st_size)})")
 
 
-# ---------------------------------------------------------------------------
-# extraction
-# ---------------------------------------------------------------------------
 def unpack(archive: Path, dest: Path, force: bool = False) -> None:
     dest.mkdir(parents=True, exist_ok=True)
     if not force and next((p for suffix in CLIP_SUFFIXES
@@ -157,9 +121,6 @@ def clip_count(root: Path) -> int:
     return sum(1 for p in root.rglob("*") if p.suffix.lower() in CLIP_SUFFIXES)
 
 
-# ---------------------------------------------------------------------------
-# main
-# ---------------------------------------------------------------------------
 def main() -> int:
     ap = argparse.ArgumentParser(description="Download the J/Z motion corpora.")
     ap.add_argument("--only", nargs="+", default=None, metavar="ID",

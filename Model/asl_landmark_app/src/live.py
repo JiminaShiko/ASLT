@@ -1,55 +1,9 @@
-"""Step 5 - the live webcam recogniser.
+"""Step 5 - the live webcam recogniser (MediaPipe -> normalize -> MLP, in memory).
 
-Pipeline per frame, entirely in memory:
-    webcam (BGR) -> cv2.cvtColor BGR2RGB -> MediaPipe Hands -> 21 landmarks
-    -> normalize.features() (the SAME function training uses) -> MLP -> letter
-
-Smoothing, top to bottom:
-  1. frames whose top-1 confidence is below --conf (default 0.7) cast no vote;
-  1b. frames whose top1-top2 gap is below --margin (default 0.10) are shown as
-      UNCERTAIN and also cast no vote - two nearly tied letters means one
-      finger is being read differently frame to frame; for a handful of letter
-      pairs the measured out-of-fold gaps say 0.10 is not enough, and those get
-      their own number (PAIR_MARGINS; `--pair-margins none` falls back to the
-      flat --margin for every pair);
-  2. a majority vote over the last --vote frames (default 7) picks the letter
-     currently shown as "held";
-  3. hold-to-commit: a letter is appended to the text only after it has been
-     the voted letter continuously for --hold seconds (default 0.5);
-  4. a letter can never be committed twice in a row - the hand must leave the
-     frame or move to a different letter first.
-
-The overlay always shows the top-3 letters with their probabilities, so you can
-see what the model thought even when it refused to commit.
-
-NOTHING is written to disk: no frames, no video, no landmarks, no logs. If you
-want a record of what it typed, read the on-screen buffer.
-
-Keys: SPACE force-commit · BACKSPACE delete · C clear · Q quit
-
-`--selftest` (also spelled `--drill`) is the guided live self-test: it shows one
-letter, gives you two seconds to get into shape, counts the model's raw
-per-frame top-1 for three seconds, then moves on, and prints a hit-rate table
-when the alphabet is done. It is the only measurement in this project of how the
-pipeline performs on your hand, and `--profile all,standard` runs the whole test
-once per model so the two can be compared letter by letter. Everything is
-counted in memory; the table is printed, never saved.
-
-J and Z are not in the 24-class model (they are moving letters). They are added
-back by `MotionDecider`, which reads the *trajectory* of a frame it already has
-a reason to suspect: a hand either holds the index-up shape, or the 24-class
-model reads that same frame as I (which is what real J looks like to it, at any
-confidence) or as an unsure X (which is what real Z looks like). A sideways
-hook is J, a fingertip zig-zag is Z. Disable with --no-motion, watch the numbers
-with --motion-debug.
-
-Run:  python src/live.py                     the typer, on the default profile
-      python src/live.py --selftest          guided self-test on YOUR camera,
-                                             saves nothing (alias: --drill)
-      python src/live.py --selftest --letters M,N,T --profile all,standard
-      python src/live.py --profile standard  typer on one specific model
-      python src/live.py --logic-test        smoothing/normalisation checks, no camera
-      python src/live.py --benchmark 200     FPS test, no camera
+Smoothing: confidence gate, top1-top2 margin gate (per-pair margins for measured
+pairs), majority vote, hold-to-commit, no-repeat. Keys: SPACE commit, BACKSPACE,
+C clear, Q quit. J and Z come from MotionDecider trajectory rules, not the
+classifier. --selftest is the guided drill; nothing is ever written to disk.
 """
 from __future__ import annotations
 
@@ -72,19 +26,8 @@ else:
     import normalize  # noqa: E402
 
 
-# ---------------------------------------------------------------------------
-# the one clock
-# ---------------------------------------------------------------------------
-# Every MediaPipe VIDEO timestamp in this file comes from here. It used to be
-# `time.monotonic() - <local epoch>` computed inside each loop, and this program
-# has three loops that share one VIDEO detector - the typing loop, the J/Z
-# calibration and the A-Z drill. Two epochs on one detector means the second
-# loop's clock starts at 0 while the detector has already seen thousands of
-# milliseconds, and MediaPipe answers with
-# `ValueError: Input timestamp must be monotonically increasing.`, on the first
-# frame, permanently. That is why `--calibrate-jz` then typing crashed every
-# time; `hb.detect_video` now clamps as a backstop, but one process, one clock
-# is the actual rule.
+# One process, one clock: all three loops share one VIDEO detector, and two
+# epochs make MediaPipe reject the second loop's first timestamp.
 _TS_EPOCH = time.monotonic()
 
 
@@ -93,9 +36,6 @@ def stamp_ms() -> int:
     return int((time.monotonic() - _TS_EPOCH) * 1000)
 
 
-# ---------------------------------------------------------------------------
-# model backends
-# ---------------------------------------------------------------------------
 class TorchBackend:
     name = "torch"
 
@@ -140,15 +80,10 @@ class OnnxBackend:
 
 
 def build_backend(prefer: str = "torch", profile: str | None = None):
-    """Load one trained profile. `profile=None` means config.PROFILE_DEFAULT,
-    so every front end (live.py, app.py, the self-test) resolves the same file
-    and the two of them can never disagree about what is deployed."""
+    """Load one trained profile; the one place every front end resolves the same file."""
     profile = config.profile(profile)
     meta = json.loads(config.meta_path(profile).read_text(encoding="utf-8"))
-    # Fail loudly, and before the first frame, if the model on disk was trained
-    # on a different feature set than normalize.py now produces. Without this a
-    # 57-dim model fed 71 features dies inside a matmul with a shape error that
-    # says nothing about the real cause.
+    # Fail before the first frame if the model's feature set differs from normalize.py.
     want, have = normalize.feature_dim(), int(meta["model"]["in_dim"])
     if want != have:
         raise SystemExit(
@@ -164,22 +99,11 @@ def build_backend(prefer: str = "torch", profile: str | None = None):
     return TorchBackend(path, profile), meta["labels"]
 
 
-# ---------------------------------------------------------------------------
-# smoothing state machine
-# ---------------------------------------------------------------------------
 class Smoother:
     """Confidence gate -> majority vote -> hold-to-commit -> no-repeat.
 
-    Three separate mechanisms, because they fix three different problems:
-      * the confidence gate stops the model talking when it is unsure;
-      * the majority vote kills single-frame landmark jitter;
-      * hold-to-commit stops a letter being typed just because you passed
-        through it on the way to the next one;
-      * the no-repeat lock stops one long-held letter filling the buffer.
-
-    The hold timer counts from the FIRST frame the hand has looked like that
-    letter (not from when the vote locked in), so at 20 FPS a commit takes
-    ~0.5 s + one frame, which is what the brief asks for.
+    The hold timer runs from the first frame the hand looked like that letter, not
+    from when the vote locked in.
     """
 
     def __init__(self, conf: float = 0.7, vote: int = 7, hold: float = 0.5,
@@ -233,8 +157,7 @@ class Smoother:
 
         committed = None
         if force:
-            # SPACE commits the letter you are holding right now, bypassing the
-            # vote window and the timer; the no-repeat rule still applies.
+            # SPACE bypasses the vote window and timer; no-repeat still applies
             if self.run_letter is not None and self.run_letter != self.last_committed:
                 committed = self.run_letter
         elif held is not None and (now - self.run_since) >= self.hold - 1e-6 \
@@ -253,67 +176,20 @@ class Smoother:
         return max(0.0, min(1.0, (now - self.run_since) / self.hold))
 
 
-# ---------------------------------------------------------------------------
-# what to show for one frame: top-3 with probabilities + an uncertain state
-# ---------------------------------------------------------------------------
 def top3_of(probs: np.ndarray, labels: list[str]) -> list[tuple[str, float]]:
     """The three most likely letters with their probabilities, best first."""
     order = np.argsort(probs)[::-1][:3]
     return [(labels[int(i)], float(probs[int(i)])) for i in order]
 
 
-# ---------------------------------------------------------------------------
-# pair-specific refusal margins
-# ---------------------------------------------------------------------------
-# The global --margin (0.10) treats every near-tie as equally suspicious, but the
-# out-of-fold data says the pairs differ enormously in how much a small gap is
-# worth: for P/Q, A/S, M/N and G/H a close second letter almost always means the
-# frame is wrong, while for most other pairs a 0.12 gap still means the model is
-# right. Each entry below raises the top1-top2 gap a frame needs before it may
-# vote, for that pair only. `frame_call` takes the max of this and --margin, so
-# an entry can only ever refuse MORE - it can never let a marginal frame through.
-#
-# MEASURED, not hand-picked. `python src/train.py --profile all --folds-only
-# --dump-preds reports/oof_all.csv` writes the top score, the runner-up score and
-# the runner-up letter for all 122,359 held-out images, and the table was chosen
-# by replaying the live vote window (4-of-7 frames, session-contiguous, never
-# mixed across letters) over every one of them:
-#
-#                                wrong held letters   correct held letters
-#   shipped flat 0.10                     13,094                40,134
-#   this table                            10,905 (-17%)          39,786 (-0.9%)
-#
-# 6.3 wrong letters deleted per correct one lost. Getting the same 3.1-point drop
-# in the wrong-window rate by raising the flat margin costs 3.7% of correct
-# letters, so a flat --margin 0.20 is about four times less efficient - which is
-# the whole argument for the table existing. Per letter the gain sits where the
-# pairs are: P 54.1% -> 36.8% wrong, Q 30.3% -> 16.4%, H 39.4% -> 33.3%,
-# S 36.7% -> 31.7%, A 44.3% -> 39.6%. It holds inside each fold separately
-# (grassknoted 11.6% -> 8.1% wrong, massey 39.1% -> 35.6%), so it is not one
-# dataset's quirk. `--pair-margins none` turns the table off to A/B it on camera.
-#
-# What this deliberately does NOT cover is P-as-N, Q-as-N and M-as-S - the three
-# collisions that looked like the targets when this was scoped. They are not
-# near-ties: the true letter is not even the runner-up in ~90% of those frames
-# (only 9.9% of true-P frames have P second, and the median gap on the wrong ones
-# is 0.4+), so a top1-top2 rule cannot see them at all. Raising the NP/NQ/MS
-# margins to 0.25-0.30 moves the global wrong-window rate by 0.1 points, which is
-# why they are absent. The same dump is also why M and N are the two letters to
-# re-check on your own camera: when the model says M or N on an unseen hand it is
-# right 9.7% and 0.5% of the time (top-1 precision - their per-letter accuracy is
-# 3.2% and 0.4%, a different denominator), and still only 14.9% and 0.0% at
-# p1 >= 0.85, so confidence does not rescue them.
+# Extra top1-top2 gap required for measured pairs, chosen by replaying the live
+# vote window over reports/oof_all.csv (held letters: 13,094 wrong -> 10,905).
+# frame_call takes max() with --margin, so this can only ever refuse more.
 PAIR_MARGINS: dict[str, float] = {"PQ": 0.50, "AS": 0.50, "MN": 0.50, "GH": 0.50}
 
 
 def pair_key(a: str, b: str) -> str:
-    """The lookup key for a top1 / runner-up pair, order-insensitive.
-
-    Two letters sorted and joined ("NP" for N-vs-P either way), because the
-    refusal rule cares about the *pair*, not about which one happened to win:
-    the model that confuses P with N produces both directions, and a margin has
-    to cover the shape, not the arrow.
-    """
+    """Order-insensitive pair key: the rule covers the shape, not the direction."""
     return "".join(sorted((a, b)))
 
 
@@ -321,27 +197,9 @@ def frame_call(probs: np.ndarray, labels: list[str], conf: float,
                margin: float, pairs: dict[str, float] | None = None) -> dict:
     """Decide what one frame is allowed to say.
 
-    Returns {"letter", "conf", "margin", "need", "low_conf", "close", "collide",
-    "pair", "uncertain", "top3"}.
-
-    `letter` is None - the frame casts no vote - for two independent reasons,
-    and the overlay names whichever one it is:
-      * `low_conf`: top1 is under the confidence gate, i.e. the model is not
-        sure it is looking at a letter at all; and
-      * `close`: the top1-top2 gap is under the margin this pair needs. With 24
-        classes a real near-tie (N 0.45 / S 0.40) is *also* under a 0.7 gate, so
-        the two conditions are kept separate and `uncertain` reports the tie,
-        not the gate - otherwise the state we were asked to add would never fire.
-
-    The margin is per-pair: `margin` is the floor for every pair, and
-    `PAIR_MARGINS` raises it for the four letter pairs whose close second letter
-    the out-of-fold data shows is nearly always a wrong answer. `need` is the
-    margin actually applied and `collide`/`pair` say whether a named pair rule
-    was the binding one, so the overlay can print "P/Q needs 50, got 31" instead
-    of refusing silently.
-
-    Marking a tie UNCERTAIN instead of letting it vote is what stops the vote
-    window from quietly majority-ruling the wrong letter into the text buffer.
+    `letter` is None for two independent reasons: `low_conf` (under the gate) or
+    `close` (gap under the margin this pair needs). `need` is the margin actually
+    applied and `collide`/`pair` name a binding pair rule.
     """
     pairs = PAIR_MARGINS if pairs is None else pairs
     order = np.argsort(probs)[::-1]
@@ -362,16 +220,7 @@ def frame_call(probs: np.ndarray, labels: list[str], conf: float,
 
 
 def blank_call() -> dict:
-    """What `frame_call` would return for a frame with no hand in it at all.
-
-    Every caller that has to render or count a frame before it knows whether
-    MediaPipe found anything needs this dict, and it has to carry exactly the
-    keys `frame_call` produces: `live.py`'s camera loop reads six of them
-    unconditionally, so a hand-written short list used to raise
-    `KeyError: 'need'` on the first frame with no hand and take the whole
-    webcam session down with it. `--logic-test` now compares this key set
-    against a real `frame_call` result, so the two cannot drift apart again.
-    """
+    """frame_call's result for a frame with no hand; must carry exactly the same keys."""
     return {"letter": None, "conf": 0.0, "margin": 0.0, "need": 0.0,
             "low_conf": False, "close": False, "collide": False, "pair": "",
             "uncertain": False, "top3": []}
@@ -383,15 +232,9 @@ def format_pair_margins(pairs: dict[str, float]) -> str:
 
 
 def resolve_pair_margins(spec: str | None) -> dict[str, float]:
-    """Turn `--pair-margins` into the table a session actually uses.
-
-    `None` keeps the measured `PAIR_MARGINS`; `none`/`off`/`flat` drops back to
-    the single flat --margin for every pair, which is what you want when A/B
-    testing the table on camera; anything else is a `PQ=0.4,AS=0.3` list that
-    REPLACES the table (keys are the two letters in either order, because
-    `pair_key` sorts them). Bad input raises rather than being ignored - a typo
-    here silently changes what the app refuses to say.
-    """
+    """`--pair-margins` -> table: None keeps PAIR_MARGINS, 'none' clears it, else a
+    `PQ=0.4,AS=0.3` list that replaces it. Bad input raises."""
+    
     if spec is None:
         return dict(PAIR_MARGINS)
     if spec.strip().lower() in ("", "none", "off", "flat"):
@@ -422,50 +265,14 @@ def resolve_pair_margins(spec: str | None) -> dict[str, float]:
     return out
 
 
-# ---------------------------------------------------------------------------
-# J and Z - trajectory rules (step 7)
-# ---------------------------------------------------------------------------
 class MotionDecider:
-    """Recognise J and Z from how the hand MOVES, never from one frame.
+    """Recognise J and Z from hand trajectory, never from a single frame.
 
-    Why a rule and not a trained model: in a single frame J is "index up,
-    everything else curled", which is indistinguishable from a stiff I/L/D, and
-    Z is the same shape mid-stroke. The information is entirely in the path, so
-    a frame classifier (the 24-class MLP) cannot supply it. Training a motion
-    network instead would need recorded fingerspelling video of J and Z, and the
-    brief forbids using anything from your webcam - so the rule below is written
-    from the shape of the letters and is deliberately conservative.
-
-    All distances are in palm units (the wrist -> middle-MCP bone, the same
-    scale the classifier normalises by) so sitting closer or further from the
-    camera does not change the thresholds.
-
-      shape gate : index extended, middle/ring/pinky curled, held >= MIN_HOLD s
-      display    : or the 24-class model reads the frame as I (-> J candidate,
-      gate         any confidence) or as an unsure X below the ceiling
-                   (-> Z candidate), named by >= DISPLAY_MIN_SHARE of the
-                   frames actually judged
-      J          : the hand hooks - it sweeps sideways and comes back once
-                   (>= 1 direction reversal of the wrist, net travel, finger
-                   still relative to the palm)
-      Z          : the hand stays put and the index TIP draws the zig-zag
-                   (>= 2 reversals of the tip, plus vertical progress)
-
-    A straight transit between two letters has no reversal, and hand jitter is
-    smaller than the hysteresis, so neither fires by accident. When in doubt
-    they do not fire: a missing J is better than a J that was never signed.
-
-    The shape gate alone was measured to be **unreachable**, which is the whole
-    reason J and Z never appeared: it opens on 0 % of local J, I, S, A, N and M
-    frames and 25 % of Z, because ASL Z is a "2" handshape and the
-    `others <= 1.20` clause forbids that letter by construction (numbers in
-    `reports/jz_trigger.md`). The 24-class MLP reads the same frame far better:
-    over 1,200 cached frames per letter it shows true **J as I on 92 %** of
-    frames and true **Z as X on 86 %**, and a frame whose top-1 is X with
-    `p1 < 0.90` is **93 % truly Z** (96 % below 0.70). So the classifier's own
-    reading is a second, independent way *into* the rule - it never replaces
-    the trajectory test, it only decides which frames the trajectory is
-    measured over.
+    Two preconditions open the watch: the index-up shape, or the classifier reading
+    the frame as I (J) or as an unsure X (Z). J = one wrist reversal plus travel
+    with the finger still; Z = two fingertip reversals plus vertical progress.
+    All distances are in palm units. The shape gate alone was measured unreachable
+    on real hands (reports/jz_trigger.md), hence the display gate.
     """
 
     WINDOW = 1.20        # s of trajectory kept
@@ -481,51 +288,25 @@ class MotionDecider:
     Z_DROP = 0.30        # the stroke must also go down/up, not just wobble
     Z_WRIST_MAX = 0.45   # the hand itself must be roughly still
 
-    # The same ten numbers as a dict, because `--calibrate-jz` and `--jz` need
-    # to override them for one session and the stroke replayer needs to judge a
-    # recorded series under a candidate set. These class attributes stay at the
-    # shipped defaults so the logic tests can quote them; a live instance copies
-    # them into instance attributes in `__init__` and only those are mutated.
-    # Every one of them was chosen from scripted synthetic strokes, which is
-    # exactly why a real hand can miss them: `--calibrate-jz` measures YOUR
-    # strokes and loosens (never tightens past the default) what is too strict.
+    # Shipped defaults; instances copy these and calibration only ever loosens them.
     DEFAULTS = {"WINDOW": WINDOW, "MIN_HOLD": MIN_HOLD, "COOLDOWN": COOLDOWN,
                 "SEG": SEG, "J_NET": J_NET, "J_PATH": J_PATH,
                 "J_TIP_STILL": J_TIP_STILL, "Z_PATH": Z_PATH, "Z_DROP": Z_DROP,
                 "Z_WRIST_MAX": Z_WRIST_MAX}
-    # The permissive limit of each threshold, in whichever direction that key is
-    # permissive (down for the "must travel at least this" keys, up for the
-    # "may wander this much" keys). Calibration may never move a number past
-    # its own default in the strict direction and never past this in the
-    # permissive one, so three tiny or sloppy strokes cannot turn J/Z into a
-    # fire-on-everything rule. COOLDOWN's limit equals its default because it is
-    # deliberately not calibrated: it protects against double-typing.
+    # Permissive limit per key, so a sloppy calibration cannot make J/Z fire on
+    # everything. COOLDOWN equals its default: it is never calibrated.
     FLOORS = {"WINDOW": 2.00, "MIN_HOLD": 0.25, "COOLDOWN": COOLDOWN,
               "SEG": 0.05, "J_NET": 0.12, "J_PATH": 0.35,
               "J_TIP_STILL": 0.85, "Z_PATH": 0.45, "Z_DROP": 0.12,
               "Z_WRIST_MAX": 0.90}
 
-    # --- the display precondition (rounds 6 and 7) --------------------------
-    # Which letter the 24-class MLP has to be showing for a frame to count as a
-    # J or Z candidate, and how unsure it has to look. Measured, not guessed:
-    # `top-1 == I` with p1 < 0.90 is 81 % truly J (ungated it is a coin flip
-    # against real I), and `top-1 == X` with p1 < 0.90 is 93 % truly Z.
-    # These are class constants and deliberately NOT in DEFAULTS: they are not
-    # trajectory thresholds, so `--calibrate-jz` must never move them, and a
-    # threshold key the calibrator cannot reach is a key nobody maintains.
+    # Display precondition: which classifier reading opens the watch. Not in
+    # DEFAULTS on purpose, so --calibrate-jz can never move them.
     DISPLAY_FOR = {"I": "J", "X": "Z"}
     DISPLAY_P1_MAX = 0.90      # default ceiling: a confident X is an X, not a Z
     DISPLAY_MIN_SHARE = 0.60   # of the judged window, how many frames must agree
-    # Round 7: the ceiling is per candidate, because the two routes are not
-    # alike. `None` means no ceiling - and for J that is the honest setting. A
-    # J frame *is* an index-up-other-curled frame, which is precisely what a
-    # confident I means, so confidence is not evidence against J; only the
-    # trajectory rule is. Measured on 400 sampled local J frames: 94 % are read
-    # as I at median p1 0.95, and 81 % of those sat above the flat 0.90, so the
-    # shipped ceiling refused the precondition on 76 % of real J frames and
-    # opened it on 18.2 % - the exemption takes that to 94.2 %. Z keeps 0.90
-    # (unchanged, 84.0 % -> 85.0 %) because a real Z is read as X at median p1
-    # 0.50: there, unsure really is the signal.
+    # Per-candidate ceiling. J has none: a confident I is exactly what a J looks
+    # like, so only the trajectory rule guards it. Z keeps 0.90 (median p1 0.50).
     DISPLAY_P1_MAX_FOR = {"J": None, "Z": DISPLAY_P1_MAX}
 
     def __init__(self):
@@ -541,8 +322,7 @@ class MotionDecider:
         self.wx: deque[float] = deque(maxlen=400)   # wrist x, palm units
         self.tx: deque[float] = deque(maxlen=400)   # index tip x relative to wrist
         self.ty: deque[float] = deque(maxlen=400)   # index tip y relative to wrist
-        # which letter each kept frame's classifier reading pointed at ("J",
-        # "Z" or None) - same length and same popleft as the series above
+        # per-frame classifier candidate ("J", "Z" or None), aligned with wx/tx
         self.dq: deque[str | None] = deque(maxlen=400)
         self.hold_since: float | None = None
         self.miss = 0                # consecutive frames that failed both gates
@@ -556,13 +336,7 @@ class MotionDecider:
         self.last_debug: dict = {}          # the measurements that produced `last`
 
     def reset(self):
-        """Forget the trajectory so far (hand left, shape lost, or after a fire).
-
-        The segment that just ended is first archived into `self.strokes` if it
-        lasted long enough to be a stroke, because that list is what
-        `--calibrate-jz` measures. Nothing leaves the process: the archive is a
-        few hundred floats per stroke and it is dropped when this object dies.
-        """
+        """Forget the trajectory; the segment that ended is archived for calibration."""
         self._close_stroke()
         self.t.clear(); self.wx.clear(); self.tx.clear(); self.ty.clear()
         self.dq.clear()
@@ -576,13 +350,10 @@ class MotionDecider:
     MAX_STROKES = 40          # a calibration needs 6; this is only a memory guard
 
     def _close_stroke(self) -> None:
-        """Archive the segment that just ended, for `--calibrate-jz`.
+        """Archive the segment that just ended, for --calibrate-jz.
 
-        Recording is gated on `self.intended`, which only the calibrator ever
-        sets: an ordinary long typing session must not grow this list. The
-        series is trimmed to the trailing WINDOW first, because that is exactly
-        the span `update()` judges - measuring a 3 s hold when the rule only
-        ever sees the last 1.2 s would derive thresholds that cannot fire.
+        Gated on `self.intended` (only the calibrator sets it) and trimmed to the
+        trailing WINDOW, the exact span update() judges.
         """
         seg, self._seg = self._seg, []
         if self.intended is None:
@@ -599,10 +370,7 @@ class MotionDecider:
         wx = [s[1] for s in seg]
         tx = [s[2] for s in seg]
         ty = [s[3] for s in seg]
-        # how much of this stroke the classifier reading supported, and whether
-        # it supported the letter the calibrator asked for. Reported, never used
-        # to derive a threshold: a stroke the model never saw as I or Z is still
-        # the user's real hand, but it is worth showing them the mismatch.
+        # share of frames the classifier reading supported; reported, never a threshold
         cand = [s[4] for s in seg]
         share = sum(1 for v in cand if v == self.intended) / max(len(cand), 1)
         self.strokes.append({
@@ -655,20 +423,10 @@ class MotionDecider:
 
     @classmethod
     def display_candidate(cls, top1, p1) -> str | None:
-        """The J/Z letter the classifier's *own* reading of this frame points at.
+        """The J/Z candidate the classifier's own reading names, or None.
 
-        True J is shown as I and true Z as X by the shipped 24-class model (it
-        has no J or Z to show), so those two readings are the usable signal. A
-        confident X is an X - hence the `p1 < ceiling` clause, which is what
-        turns "displays X" from 86 % Z into 93 % Z. Round 7 made the ceiling
-        per candidate (`DISPLAY_P1_MAX_FOR`): a confident I is exactly what a J
-        looks like, so the J route has no ceiling and rests entirely on the
-        trajectory rule, while Z keeps 0.90 because there the unsure reading
-        really is the evidence.
-
-        Returns None when there is no reading to use, including when `p1` was
-        never supplied, so callers that only know the landmarks keep exactly the
-        old shape-gate behaviour.
+        A confident X is an X, hence the per-candidate ceiling. None when there is
+        no usable reading, so landmark-only callers keep the shape-gate behaviour.
         """
         if top1 is None or p1 is None:
             return None
@@ -683,15 +441,11 @@ class MotionDecider:
         return want if limit is None or p1 < limit else None
 
     def _allowed(self, up: bool, dq) -> tuple[str, ...]:
-        """Which letters the two preconditions currently permit, judged over
-        exactly the window the trajectory rules are about to use.
+        """Letters the preconditions permit over the judged window.
 
-        The shape gate names no letter, so when it holds both stay possible -
-        that is the shipped behaviour and it is not narrowed. The display gate
-        does name one, and it has to be the *majority* reading over the window
-        (`DISPLAY_MIN_SHARE`), because a single flicker to I in the middle of an
-        A would otherwise open a gate and let a hand *travelling between* two
-        letters be judged as a J.
+        The shape gate names no letter, so both stay possible; the display gate
+        needs a majority reading (DISPLAY_MIN_SHARE), so one flicker to I cannot
+        let a hand travelling between letters be judged as a J.
         """
         allowed = set()
         if up:
@@ -704,12 +458,7 @@ class MotionDecider:
 
     @staticmethod
     def _criteria(wx, tx, ty, th: dict) -> dict:
-        """Every rule criterion with the number it saw, as (name, value, need, ok).
-
-        This is the single source of truth for both the firing decision and the
-        "why didn't that fire" message, so the explanation can never describe a
-        rule that is different from the one that ran.
-        """
+        """(name, value, need, ok) per criterion; shared by firing and the hint text."""
         wr = MotionDecider._reversals(wx, th["SEG"])
         tr = MotionDecider._reversals(tx, th["SEG"])
         wnet = abs(wx[-1] - wx[0])
@@ -731,13 +480,7 @@ class MotionDecider:
 
     @classmethod
     def _judge(cls, wx, tx, ty, th: dict) -> tuple[bool, bool]:
-        """The two boolean rules, given matched series and a threshold dict.
-
-        Shared by `update()` (live, on the windowed deques) and by the
-        calibrator (replaying a recorded stroke under a candidate threshold set)
-        so the two can never drift apart - the same trap the extractor and the
-        live ladder used to be.
-        """
+        """The two boolean rules; shared by update() and the calibrator replay."""
         crit = cls._criteria(wx, tx, ty, th)
         return (all(c[3] for c in crit["J"]), all(c[3] for c in crit["Z"]))
 
@@ -745,12 +488,7 @@ class MotionDecider:
         return {k: getattr(self, k) for k in self.DEFAULTS}
 
     def apply_thresholds(self, th: dict, source: str = "") -> dict:
-        """Set this session's J/Z thresholds (in memory only, never on disk).
-
-        Unknown keys and non-numeric values are rejected loudly rather than
-        ignored, because a silently dropped override is the kind of thing that
-        makes a calibrated session look broken.
-        """
+        """Set this session's J/Z thresholds in memory; bad keys raise, never ignored."""
         bad = [k for k in th if k not in self.DEFAULTS]
         if bad:
             raise ValueError(
@@ -775,18 +513,7 @@ class MotionDecider:
                               self.thresholds())
 
     def hint(self, width: int | None = None) -> str:
-        """Say why J/Z have not fired, instead of leaving the static model to vote.
-
-        A held J/Z handshape that produces no trajectory is the exact moment the
-        console app used to go silent: the 24-class MLP does not contain J or Z,
-        so it answers with the closest letter it does have - usually I - and the
-        overlay shows a confident-looking wrong letter with no hint that a motion
-        rule was waiting to fire. This returns the one sentence that names the
-        criterion closest to being met, at the thresholds actually in force.
-
-        Returns "" when there is nothing to explain (no shape held, or a letter
-        has just fired), and `explain`-style detail through `criteria()`.
-        """
+        """One sentence naming the criterion closest to firing, or "" if nothing to say."""
         if not self.holding:
             return ""
         if self.last_now is not None and self.last_now - self.fired_at < self.COOLDOWN:
@@ -805,9 +532,7 @@ class MotionDecider:
         crit = self.criteria()
         if not crit:
             return ""
-        # once the window has spoken, only the letters the preconditions permit
-        # are worth explaining - "Z held but not fired" is noise when the model
-        # has been reading the frame as I
+        # only explain letters the preconditions permit
         letters = self.candidates or ("J", "Z")
         for letter in ("J", "Z"):
             if letter not in letters:
@@ -816,8 +541,7 @@ class MotionDecider:
                 return ""            # a rule is met; the fire needs no apology
 
         def binding(items):
-            """The ratio of the criterion furthest from being met - the one that
-            has to change before this letter can fire."""
+            """Ratio of the criterion furthest from being met."""
             vals = [v / need if need else (1.0 if v > 0 else 0.0)
                     for _n, v, need, ok in items if not ok]
             return min(vals) if vals else 1.0
@@ -835,13 +559,7 @@ class MotionDecider:
 
     def update(self, now: float, lm: np.ndarray, top1: str | None = None,
                p1: float | None = None) -> str | None:
-        """Feed one frame's raw 21x3 landmarks plus, when the caller has it, what
-        the classifier said about the same frame (`top1`, `p1`).
-
-        Returns "J"/"Z" when a precondition held and the trajectory matches,
-        otherwise None. Without `top1`/`p1` this is exactly the shipped
-        shape-gate rule, which is what the logic tests drive.
-        """
+        """Feed one frame; returns "J"/"Z" when a precondition holds and the path matches."""
         c = normalize.canonicalize(lm)
         palm = float(np.linalg.norm(c[config.MIDDLE_MCP_INDEX] - c[config.WRIST_INDEX]))
         if palm <= 1e-6:
@@ -852,8 +570,7 @@ class MotionDecider:
         self.last_top1 = None if top1 is None else str(top1)
         self.last_p1 = 0.0 if p1 is None else float(p1)
         if not up and cand is None:
-            # MediaPipe drops the finger tips for a frame now and then; two
-            # bad frames in a row and the gesture is over.
+            # MediaPipe drops fingertips now and then; two bad frames end the gesture
             self.miss += 1
             if self.miss > 2:
                 self.reset()
@@ -900,8 +617,7 @@ class MotionDecider:
         elif hit_j and "J" in allowed:
             out = "J"
         elif (hit_j or hit_z) and not allowed:
-            # the path matched but no precondition survived the window - worth
-            # saying out loud, because this is the case that used to be invisible
+            # path matched but no precondition survived the window
             self.debug["blocked"] = "path matched, precondition did not hold"
         if out:
             self.last_debug = dict(self.debug)
@@ -911,9 +627,6 @@ class MotionDecider:
         return out
 
 
-# ---------------------------------------------------------------------------
-# J / Z calibration (in memory only)
-# ---------------------------------------------------------------------------
 CALIBRATION_SAFETY = 0.72
 # every stroke measurement a threshold can be derived from
 STROKE_KEYS = ("MIN_HOLD", "SEG", "WINDOW", "J_NET", "J_PATH", "J_TIP_STILL",
@@ -927,35 +640,11 @@ def _stroke_measures(strokes: list[dict], letter: str | None = None) -> list[dic
 
 def derive_thresholds(strokes: list[dict],
                       safety: float = CALIBRATION_SAFETY) -> tuple[dict, dict]:
-    """Turn recorded strokes into a threshold set, and say where each number came from.
+    """Recorded strokes -> (thresholds, notes). Pure, so the logic test can check it.
 
-    Pure function over the dicts `MotionDecider._close_stroke` archives - no
-    camera, no files, so the logic test can feed it scripted strokes and check
-    the arithmetic. Returns `(thresholds, notes)` where `notes[key]` explains
-    the choice in words.
-
-    Rules:
-
-    * a threshold is only ever moved in the permissive direction, and only as
-      far as `MotionDecider.FLOORS[key]` allows. `J_PATH` may come down because
-      your hook is shorter than the synthetic template the defaults were written
-      against; it may never go up, so a session can never become more
-      trigger-happy than shipped;
-    * `safety` (0.72) leaves headroom, so a stroke measured at 0.60 of travel
-      fires at 0.43 rather than exactly at 0.60;
-    * permissive-upper thresholds (`J_TIP_STILL`, `Z_WRIST_MAX`) get the safety
-      factor as a divisor, which widens them instead of narrowing them;
-    * `SEG`, the reversal hysteresis, is searched rather than scaled: the
-      largest value that still counts every recorded stroke's reversals is the
-      most noise-resistant one that keeps YOUR strokes working;
-    * `WINDOW` is raised (never lowered) to the longest stroke recorded, capped
-      at `FLOORS["WINDOW"]`, because a slow hand would otherwise be judged on
-      the tail of its own gesture;
-    * `COOLDOWN` is never derived from three strokes - it protects against
-      double-typing, which no amount of personal style justifies shortening.
-
-    Letters with no strokes keep every one of their thresholds at the default,
-    and the notes say so.
+    Thresholds only ever move in the permissive direction, capped by
+    MotionDecider.FLOORS; `safety` leaves headroom; SEG is searched, WINDOW only
+    raised, COOLDOWN never derived. Letters with no strokes keep the defaults.
     """
     D, F = MotionDecider.DEFAULTS, MotionDecider.FLOORS
     th = dict(D)
@@ -1030,19 +719,13 @@ def derive_thresholds(strokes: list[dict],
 
 
 def _stroke_fires(stroke: dict, th: dict) -> str | None:
-    """Which letter a recorded stroke would produce under `th` (J, Z, both -> Z
-    as the live rule prefers it, or None)."""
+    """Letter a recorded stroke produces under `th` (Z wins a tie, as live)."""
     hit_j, hit_z = MotionDecider._judge(stroke["wx"], stroke["tx"], stroke["ty"], th)
     return "Z" if hit_z else ("J" if hit_j else None)
 
 
 def self_consistency(strokes: list[dict], th: dict) -> dict:
-    """Replay recorded strokes through the real rule under a candidate set.
-
-    This is the only honest way to report a calibration: the numbers are read
-    back through `_judge()`, the same function the live path uses, rather than
-    compared with the thresholds by hand.
-    """
+    """Replay recorded strokes through _judge(), the function the live path uses."""
     out: dict[str, object] = {}
     per = {}
     for letter in ("J", "Z"):
@@ -1087,16 +770,7 @@ def parse_spec(spec: str) -> dict:
 
 
 class JZCalibrator:
-    """Guided "sign J three times, sign Z three times" session, in memory only.
-
-    Both front-ends drive one of these from their own frame loop - the console
-    typer in `src/live.py` and the browser app in `app.py` - so the prompts and
-    the arithmetic live in exactly one place. Nothing is written to disk: the
-    strokes are lists of floats inside `MotionDecider.strokes`, the derived
-    numbers go onto that object's instance attributes, and both disappear when
-    the process ends. Re-calibrating in the same session simply starts a new
-    calibrator.
-    """
+    """Guided J/Z calibration session, in memory only; shared by both front ends."""
 
     LETTERS = ("J", "Z")
     INSTRUCTIONS = {
@@ -1141,24 +815,17 @@ class JZCalibrator:
     # -- per frame ---------------------------------------------------
     def step(self, now: float, lm, top1: str | None = None,
               p1: float | None = None) -> str | None:
-        """Feed one frame. Returns the letter the live rule fired (if any), so
-        typing keeps working while the calibrator watches.
+        """Feed one frame; returns the letter the live rule fired, if any.
 
-        `top1`/`p1` are the classifier's reading of the same frame. They matter
-        here: most of the strokes a user makes as Z never pass the shape gate,
-        so without the display precondition the calibrator would archive too few
-        Z strokes to measure anything - which is exactly the failure that made
-        `--calibrate-jz` look broken from the very first session.
+        `top1`/`p1` matter: most hand-made Z strokes never pass the shape gate, so
+        without the display reading too few Z strokes would be archived.
         """
         if self.done:
             return None
         fired = self.motion.update(now, lm, top1, p1)
         if self.await_release:
-            # A stroke has to be filed under the letter it was asked for. The
-            # third J is often still being held when the Z prompt appears, and
-            # recording that tail as "Z" would teach the thresholds a J shape
-            # with a Z label. So: nothing is recorded until the handshape has
-            # genuinely been let go.
+            # nothing is recorded until the handshape has really been released, or
+            # a held J tail would be filed as a Z stroke
             if not self.motion.holding:
                 self.await_release = False
                 self.motion.intended = self.letter
@@ -1207,16 +874,9 @@ class JZCalibrator:
 
 def calibrate_camera(cap, det, recovery, args, motion: MotionDecider,
                      backend=None, labels=None) -> dict | None:
-    """Run `JZCalibrator` against the webcam until both letters are measured.
+    """Run JZCalibrator against the webcam; ESC skips a letter, Q keeps the defaults.
 
-    Frames are read and discarded; only the small float series inside the
-    MotionDecider survives, and only for this process. ESC skips the rest of the
-    current letter, Q abandons calibration and keeps the shipped defaults.
-
-    `backend`/`labels` are optional: with them every stroke frame also carries
-    the classifier's own reading, so the display precondition is live and a Z
-    that never passes the shape gate is still recorded. Without them this is the
-    old shape-gate-only calibration.
+    Optional backend/labels let each stroke frame carry the classifier reading.
     """
     import cv2
 
@@ -1271,7 +931,7 @@ def calibrate_camera(cap, det, recovery, args, motion: MotionDecider,
 
 
 def report_calibration(res: dict) -> None:
-    """Print a calibration result: measurements, the numbers, and the pasteable spec."""
+    """Print a calibration result: strokes, numbers and the pasteable spec."""
     print("\n  your strokes:")
     for i, s in enumerate(res["strokes"], 1):
         print(f"    {i}. {s['intended']}  held {s['held_full']:.2f}s  "
@@ -1298,8 +958,7 @@ def report_calibration(res: dict) -> None:
         print("\n  your strokes already suit the shipped defaults; nothing changed")
 
 
-# A plausible open right hand in image coordinates (0..1), used by --benchmark
-# and by the motion selftest. Order follows the MediaPipe 21-point layout.
+# Open right hand in image coords, MediaPipe layout; used by the benchmark/selftest.
 SYNTH_HAND = np.array(
     [[0.5, 0.90, 0], [.45, .75, 0], [.43, .68, 0], [.42, .63, 0], [.41, .58, 0],
      [.47, .68, 0], [.46, .58, 0], [.455, .52, 0], [.45, .47, 0],
@@ -1309,12 +968,7 @@ SYNTH_HAND = np.array(
 
 
 def synth_jshape_hand(curl_others: bool = True) -> np.ndarray:
-    """SYNTH_HAND with the index up and (optionally) the other fingers curled.
-
-    The index gets a little longer than the open-hand template because a real
-    pointing index is straight, and the shape gate below measures extension as
-    tip-to-MCP over PIP-to-MCP.
-    """
+    """SYNTH_HAND with the index straight up; other fingers optionally curled."""
     lm = SYNTH_HAND.copy()
     lm[config.FINGERTIPS[1]] = [0.45, 0.41, 0.0]
     if curl_others:
@@ -1323,21 +977,12 @@ def synth_jshape_hand(curl_others: bool = True) -> np.ndarray:
     return lm
 
 
-# ---------------------------------------------------------------------------
-# overlay
-# ---------------------------------------------------------------------------
 def render(frame: np.ndarray, held: str | None, conf: float, committed: str | None,
            text: str, fps: float, hand_present: bool, pending_s: float, hold: float,
            backend_name: str, top3: list[tuple[str, float]] | None = None,
            uncertain: bool = False, margin: float = 0.10,
            need: float | None = None) -> np.ndarray:
-    """Draw the per-frame state.
-
-    `margin` is the gap the frame actually got (top1-top2) and `need` the margin
-    it was required to clear - the two are only different when `PAIR_MARGINS`
-    raised the bar for that pair, and printing both is what makes a refusal
-    explainable on screen instead of looking like a dropout.
-    """
+    """Draw the per-frame state. `margin` is the gap got, `need` the gap required."""
     import cv2
 
     h, w = frame.shape[:2]
@@ -1353,8 +998,7 @@ def render(frame: np.ndarray, held: str | None, conf: float, committed: str | No
     cv2.putText(frame, right, (w - 110, 46), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2,
                 cv2.LINE_AA)
 
-    # top-3 probabilities, best first - the model's actual opinion, not just
-    # the letter that happened to win
+    # top-3 probabilities, best first
     if top3:
         bw = 118
         for i, (lab, p) in enumerate(top3):
@@ -1401,15 +1045,12 @@ def render(frame: np.ndarray, held: str | None, conf: float, committed: str | No
     return frame
 
 
-# ---------------------------------------------------------------------------
-# selftest / benchmark (no camera, nothing read from disk)
-# ---------------------------------------------------------------------------
 def selftest() -> int:
     print("== live.py selftest (smoothing logic, no camera, nothing saved) ==")
     checks = []
 
     def _raises(fn) -> bool:
-        """True when `fn` raises - the shape an argument parser check needs."""
+        """True when `fn` raises."""
         try:
             fn()
         except Exception:
@@ -1472,7 +1113,7 @@ def selftest() -> int:
     checks.append(("SPACE commits immediately, then blocks the repeat",
                    f1 == ["K"] and f2 == []))
 
-    # ---- J / Z trajectory rules -------------------------------------------
+    # J / Z trajectory rules
     def run_motion(lms, dt=0.05):
         """Feed a scripted trajectory; return (letters, fire times, decider)."""
         md = MotionDecider()
@@ -1504,12 +1145,7 @@ def selftest() -> int:
         return [span * i / (n - 1) for i in range(n)]
 
     def seq_zigzag(base, n=22, scale=1.0):
-        """Index tip traces a Z (3 segments) while the hand stays put.
-
-        `scale` shrinks the whole zig-zag, which is how the calibration checks
-        below imitate a signer whose Z is smaller than the template the shipped
-        thresholds were written against.
-        """
+        """Index tip traces a Z while the hand stays put; `scale` shrinks it."""
         way = [(0.0, 0.0), (0.11, 0.0), (-0.11, 0.05), (0.11, 0.10)]
         way = [(x * scale, y * scale) for x, y in way]
         out = []
@@ -1566,7 +1202,7 @@ def selftest() -> int:
                                        + hook_xs(30, 0.22, 0.075)))
     checks.append(("a second hook after the cooldown does fire again", len(m8) == 2))
 
-    # --- top-3 / uncertain gate (Stage F) ---
+    # top-3 / uncertain gate
     L = config.LABELS
     a, b, c = L[0], L[1], L[2]
 
@@ -1612,10 +1248,7 @@ def selftest() -> int:
     checks.append(("a high-confidence 8-point tie still casts no vote",
                    r6["letter"] is None and r6["uncertain"] and not r6["low_conf"]))
 
-    # --- pair-specific refusal margins (round 5, item 3) ---
-    # A/S is in PAIR_MARGINS at 0.50; A/B is not. So a 30-point gap that the flat
-    # 0.10 margin happily waves through must be refused for A/S and allowed for
-    # A/B, and the frame must SAY which rule bound it.
+    # pair-specific refusal margins: A/S is measured, A/B is not
     pcA = probs_of([("A", 0.72), ("S", 0.25), ("B", 0.03)])
     prA = frame_call(pcA, L, 0.7, 0.10)
     checks.append(("a measured pair's 47-pt gap is refused even above --margin",
@@ -1660,14 +1293,7 @@ def selftest() -> int:
             ok = True
         checks.append((f"--pair-margins rejects {bad_spec!r} ({why})", ok))
 
-    # ---- the no-hand frame contract (round 5b regression guard) -----------
-    # The camera loop must draw a frame it got no landmarks from, and it did
-    # that from a hand-written placeholder dict. When `frame_call` grew `need`,
-    # `close`, `collide` and `pair` the placeholder did not, so the FIRST frame
-    # with no hand raised `KeyError: 'need'` out of `main()` and killed the
-    # session - which looks exactly like "the webcam does not work". These three
-    # checks make that impossible to repeat: same keys, no opinion, and the
-    # render call built the way `main` builds it.
+    # no-hand frame contract: blank_call must carry exactly frame_call's keys
     b, r_real = blank_call(), frame_call(pc5, L, 0.7, 0.10)
     checks.append(("blank_call has exactly frame_call's keys - never a subset",
                    set(b) == set(r_real)))
@@ -1695,18 +1321,9 @@ def selftest() -> int:
         drew2 = False
     checks.append(("render() still survives a confident hand frame", drew2))
 
-    # ---- one clock per detector (the `--calibrate-jz` crash) --------------
-    # `--calibrate-jz` was followed by the typing loop on the SAME VIDEO
-    # detector, and each loop computed its timestamp from its own
-    # `time.monotonic()` epoch. The second loop therefore started at 0 ms while
-    # the detector had already seen thousands, and MediaPipe raised
-    # `ValueError: Input timestamp must be monotonically increasing.` on its
-    # first frame - every single time, which is why the feature as shipped could
-    # never actually be used. Two guards: `hb.detect_video` clamps per detector,
-    # and this file is only allowed one epoch subtraction, inside `stamp_ms()`.
+    # one clock per detector: a second loop must not rewind the timestamps
     class StrictDetector:
-        """MediaPipe VIDEO as far as timestamps go: a non-increasing stamp
-        raises, and nothing short of a new detector recovers."""
+        """Non-increasing stamps raise, like the real VIDEO API."""
 
         def __init__(self):
             self.seen = []
@@ -1734,9 +1351,7 @@ def selftest() -> int:
                    sd.seen[:30] == [int(i * 33) for i in range(30)]))
     checks.append(("the clamp counts the calls it had to rescue",
                    getattr(sd, "_hb_ts_rewound", 0) == 30))
-    # AST, not text: a comment - or this check's own source - must not be able
-    # to satisfy or break it. `stamp_ms` is the only place allowed to turn
-    # `monotonic() - epoch` into a timestamp, and the camera loops must call it.
+    # AST, not text, so this check's own source cannot satisfy it.
     import ast
 
     _tree = ast.parse(Path(__file__).read_text(encoding="utf-8"))
@@ -1760,10 +1375,7 @@ def selftest() -> int:
     checks.append((f"every camera loop takes its timestamp from stamp_ms() "
                    f"({callers} call sites)", callers >= 3))
 
-    # --- chirality / handedness labelling (round 4 fix) ---
-    # A `flip_0.3` hit is mapped back into the original frame (x -> 1-x), so its
-    # MediaPipe label has to be mapped back too. The live rung and the offline
-    # ladder must agree, and neither may be presented as anatomy.
+    # chirality labels: a flip_0.3 hit is mapped back (x -> 1-x), so its label must swap too
     checks.append(("the mirror label swap matches the extractor's rule and its "
                    "own inverse",
                    all(hb.swap_label(v) == {"Left": "Right", "Right": "Left"}[v]
@@ -1785,11 +1397,7 @@ def selftest() -> int:
                    and normalize.chirality_family(
                        normalize.canonicalize(flipped)) == "canonical"))
 
-    # ---- J / Z calibration + fail-loud messaging (round 5) ---------------
-    # The shipped thresholds were written against the synthetic templates
-    # above, which is precisely why a real hand with a smaller gesture can hold
-    # the shape forever and type nothing. These checks drive the calibration
-    # with those smaller strokes and assert it fixes them - and nothing else.
+    # calibration: smaller strokes miss at the defaults and must be fixed by it
     def record(lms, letter, reps=3, dt=0.05):
         """Feed a trajectory `reps` times with the calibrator's label set."""
         md = MotionDecider()
@@ -1895,8 +1503,7 @@ def selftest() -> int:
         for lm in (small_j if cal.letter == "J" else small_z):
             tt += 0.05
             guard += 1
-            # what the shipped 24-class model says about these frames: J is
-            # shown as I, Z as X (`reports/jz_trigger.md`)
+            # the shipped model reads J as I and Z as X
             cal.step(tt, lm, "I" if cal.letter == "J" else "X", 0.55)
         for _ in range(10):          # the hand must actually be let go
             tt += 0.05
@@ -1917,10 +1524,7 @@ def selftest() -> int:
                    not any(isinstance(v, (bytes,)) for v in r["thresholds"].values())
                    and all(isinstance(v, float) for v in r["thresholds"].values())))
 
-    # ---- the display precondition (round 6) --------------------------------
-    # The shape gate was measured to open on 0 % of local J frames and 25 % of
-    # local Z frames, so a rule that needs it can never fire however good the
-    # trajectory is. These checks pin the second way in - and its limits.
+    # display precondition: the second way into the rule, and its limits
     def feed(lms, top1=None, p1=None, dt=0.05):
         md = MotionDecider()
         out, t = [], 0.0
@@ -1952,9 +1556,7 @@ def selftest() -> int:
                    feed(zig_open, "X", 0.95)[0] == []
                    and MotionDecider.display_candidate("X", 0.90) is None
                    and MotionDecider.display_candidate("X", 0.89) == "Z"))
-    # Round 7: the ceiling is per candidate, and J has none. What makes that
-    # safe is not the reading - it is that a still I has no reversal, no net
-    # travel and no path, so the trajectory rule refuses it by itself.
+    # J has no ceiling: a still I has no reversal or travel, so the path rule refuses it.
     checks.append(("a confident I is what a J looks like: the same hook fires "
                    "J at p1 0.99",
                    feed(hook_open, "I", 0.99)[0] == ["J"]
@@ -1974,8 +1576,7 @@ def selftest() -> int:
     checks.append(("a reading that names neither I nor X is no candidate",
                    feed(hook_open, "S", 0.55)[0] == []
                    and feed(hook_open, None, None)[0] == []))
-    # Both readings open the gate (I -> J, X -> Z), so the trajectory is the
-    # same one that just fired - only the *share* over the judged window differs.
+    # both readings open the gate; only the share over the window differs
     alt, blocked = MotionDecider(), 0
     tt_alt = 0.0
     for i, lm in enumerate(hook_open):
@@ -1987,7 +1588,7 @@ def selftest() -> int:
                    f"refused)",
                    alt.last is None and blocked > 0))
     def feed_by(lms, readings, dt=0.05):
-        """Same as `feed`, with a per-frame reading (a real model flickers)."""
+        """Like `feed`, with a per-frame reading (a real model flickers)."""
         md = MotionDecider()
         out, t = [], 0.0
         for lm, (top1, p1) in zip(lms, readings):
@@ -1997,9 +1598,7 @@ def selftest() -> int:
                 out.append(r)
         return out
 
-    # 3 of 4 frames read I, 1 reads X: the window majority names J, so this
-    # fires - the share rule only refuses ties, not imperfect readings. (Both
-    # readings open the gate, so the trajectory itself is untouched.)
+    # 3 of 4 frames read I: the window majority names J, so this fires
     three_of_four = [("I", .5) if i % 4 else ("X", .5) for i in range(len(hook_open))]
     checks.append((f"a reading that agrees on three frames in four is a J "
                    f"candidate ({feed_by(hook_open, three_of_four)})",
@@ -2067,14 +1666,9 @@ def _fit_size(img, wh):
 
 
 def _real_frames(n_images: int, wh) -> list:
-    """Pre-load frames from the PUBLIC dataset images already on disk, into RAM.
+    """Frames from public dataset images on disk, so the benchmark is reproducible.
 
-    Deliberately not your webcam: the brief forbids touching your images, and a
-    benchmark has to be reproducible. These are the same photographs the model
-    trained on, so MediaPipe actually finds a hand and the timing covers the
-    real detect -> normalise -> classify path instead of the cheap
-    no-detection path (which is what a drawn stick figure measures, at ~8x the
-    wrong speed).
+    A drawn stick figure finds no hand and measures the cheap no-detection path.
     """
     import cv2
 
@@ -2157,9 +1751,6 @@ def benchmark(n_frames: int, size=(640, 480)) -> float:
     return fps
 
 
-# ---------------------------------------------------------------------------
-# Stage D: guided live self-test -- the camera, your own hand, nothing saved
-# ---------------------------------------------------------------------------
 def _profiles(spec: str | None) -> list[str]:
     """`--profile all,standard` -> ['all', 'standard']; validates each name."""
     names = [x.strip() for x in (spec or "").split(",") if x.strip()]
@@ -2213,14 +1804,10 @@ def drill_overlay(frame, target: str, mode: str, secs_left: float, st: dict,
 def drill_phase(cap, det, recovery, backend, labels, args, target: str, prof: str,
                 idx: int, total: int, mode: str, secs: float,
                 streak: list, st: dict) -> str:
-    """One countdown or capture phase for one letter. Returns quit/skip/redo/done.
+    """One countdown or capture phase; returns quit/skip/redo/done.
 
-    `mode='count'` reads and draws frames but records nothing, so the hand can
-    settle; `mode='hold'` counts every frame's raw top-1 in memory. Counting the
-    raw argmax (not the smoothed letter on screen) is deliberate: the drill asks
-    "does the model recognise this shape from this hand", and the gate, the vote
-    and the hold timer each answer a different question - their effect is
-    reported separately as the gate/uncertain columns.
+    'hold' counts the raw argmax, not the smoothed letter: gate, vote and hold
+    each answer a different question and are reported as separate columns.
     """
     import cv2
     from collections import Counter
@@ -2250,9 +1837,7 @@ def drill_phase(cap, det, recovery, backend, labels, args, target: str, prof: st
                 st["retry"] += 1
             if res.landmarks is not None:
                 st["hand"] += 1
-                # the RAW argmax, not call["letter"]: a frame the gate refused
-                # still has an opinion, and the drill is measuring the opinion.
-                # What the gate did with it is the below-gate/uncertain columns.
+                # raw argmax: the drill measures the opinion, not the gate's verdict
                 st["top1"][labels[int(probs.argmax())]] += 1
                 st["below"] += int(bool(call.get("low_conf")))
                 st["uncertain"] += int(call["uncertain"])
@@ -2420,15 +2005,11 @@ def print_drill_compare(profs: list[str], results: dict, letters: list[str]) -> 
           "default to.")
 
 
-# ---------------------------------------------------------------------------
 def open_camera(index: int, width: int, height: int):
-    """Open a webcam and return a capture that is PROVEN to deliver frames.
+    """Open a webcam proven to deliver frames; tries DirectShow, MSMF, then any.
 
-    On some Windows camera drivers (this machine's USB2.0 HD UVC WebCam among
-    them) the default MSMF backend opens fine but every cap.read() fails with
-    'can't grab frame', so is_opened() alone is not enough. We therefore test
-    one real frame per backend and fall through DirectShow -> MSMF -> any
-    until one actually streams. Nothing is read from or written to disk.
+    Some Windows drivers open fine but never deliver a frame, so is_opened() is
+    not enough - one real read is tested per backend.
     """
     import cv2
 
@@ -2455,7 +2036,6 @@ def open_camera(index: int, width: int, height: int):
         "  - Windows Settings > Privacy & security > Camera > allow desktop apps")
 
 
-# ---------------------------------------------------------------------------
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -2591,7 +2171,7 @@ def main() -> int:
             calibrate_camera(cap, det, recovery, args, motion, backend, labels)
     text = ""
     frames = 0
-    streak = 0            # consecutive frames where no hand was found at all
+    streak = 0            # consecutive frames with no hand at all
     t_start = time.time()
     fpsShown = 0.0
     print("  press Q to quit")
@@ -2623,8 +2203,7 @@ def main() -> int:
             if committed:
                 text += committed
 
-            # J and Z come from the trajectory, not from the classifier - but
-            # the classifier's reading of the frame says which frames to measure
+            # J/Z come from the trajectory; the classifier reading picks the frames
             motion_letter = None
             if not args.no_motion:
                 if res.landmarks is None:
@@ -2680,11 +2259,7 @@ def main() -> int:
                 cv2.putText(frame, f"last motion letter: {motion.last or '-'}", (14, 148),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.42, (0, 200, 255), 1, cv2.LINE_AA)
             if jz_hint:
-                # The old behaviour here was silence: the shape gate was held,
-                # the trajectory did not clear a threshold, the rule returned
-                # nothing, and the 24-class model voted the closest letter it
-                # actually has - usually I - so a missed J looked like a wrong
-                # answer instead of a rule that did not fire.
+                # say why the rule did not fire instead of silently voting I
                 cv2.putText(frame, motion.hint(width=62) + "  [--calibrate-jz]",
                             (14, 166 if args.motion_debug else 126),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.42, (0, 165, 255), 1,

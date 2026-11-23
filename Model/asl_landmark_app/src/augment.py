@@ -1,18 +1,5 @@
-"""Landmark-only augmentation.
-
-Everything operates on the (N, 21, 3) canonicalised / centred / scaled hand, so
-it is cheap, vectorised and completely independent of pixels. That matters here:
-we are not allowed to use any personal photos, so robustness to the user's own
-camera has to come from aggressive geometric augmentation instead.
-
-Ops (each sampled per example):
-  * in-plane rotation        +-15 deg
-  * out-of-plane "tilt"      +-10 deg about the x and y axes
-  * isotropic scale          0.9 - 1.1
-  * gaussian noise           sigma = 0.01 (in hand-scale units)
-  * landmark dropout         1-3 landmarks replaced by the finger-midpoint
-  * horizontal mirror        flips x and swaps the landmark chains
-"""
+"""Landmark-only augmentation of the prepared (N, 21, 3) hand: rotation, tilt,
+scale, noise, landmark dropout and mirroring. No pixels, so it is cheap."""
 from __future__ import annotations
 
 import numpy as np
@@ -81,7 +68,7 @@ def augment_batch(lm: np.ndarray, rng: np.random.Generator,
     out = np.einsum("nij,nkj->nki", rot, lm) * scale
     out += rng.normal(0.0, p["noise_sigma"] * st, size=out.shape)
 
-    # landmark dropout: a missing fingertip is guessed from its own finger chain
+    # a dropped landmark is guessed from its own finger chain
     n_drop = int(round(p["dropout_p"] * st * n))
     if n_drop > 0:
         rows = rng.choice(n, size=n_drop, replace=False)
@@ -95,7 +82,7 @@ def augment_batch(lm: np.ndarray, rng: np.random.Generator,
                     out[row, idx] = out[row, list(chain)].mean(axis=0)
                 out[row, idx] += rng.normal(0, 0.02, size=3)
 
-    # mirror (x negated only - landmark ids are anatomical, see normalize.py)
+    # x negated only: landmark ids are anatomical, see normalize.py
     n_mir = int(round(p["mirror_p"] * n))
     if n_mir > 0:
         mrows = rng.choice(n, size=n_mir, replace=False)

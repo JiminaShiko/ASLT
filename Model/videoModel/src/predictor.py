@@ -1,32 +1,8 @@
-"""
-Stage 6a - the importable API.
+"""Stage 6a - the importable API: `WordPredictor().update(rgb_frame)` -> reading dict.
 
-    from src.predictor import WordPredictor
-    p = WordPredictor()
-    for frame in camera:                     # RGB uint8 [H, W, 3]
-        r = p.update(frame)
-        # r = {"state": "SIGNING", "top3": [("hello", 0.71), ...],
-        #      "committed_word": "", "text": "hello good friend", ...}
-
-What it does, in one pass per call:
-  * keeps a rolling buffer of landmark rows sized by BUFFER_SECONDS,
-  * decides SIGNING vs REST from the hands rising above the shoulder line
-    (the same test src/extract.py used to trim the dataset clips, so the
-    segmentation cannot depend on a different rule in the two paths),
-  * while signing, runs the one shared feature function and the model over the
-    buffer, and reports top-3 with a state of UNCERTAIN when the reading does
-    not clear the confidence and margin bars. The gate is CONFIDENCE_MIN 0.85
-    by default (measured on the test readings: 75% of real words still typed,
-    96% of those right) and both bars are flags, not edits.
-  * commits a word once, at the end of the segment, and hands it to
-    src/phrases.py. REST and OTHER are never typed, and a hedged pair
-    (config.HEDGE_PAIRS, e.g. good/thanks) types neither word - the demo
-    shows the hint instead.
-  * watches the hand share of the buffer and returns it with a framing hint,
-    so "I cannot see your hands" is never displayed as a word.
-
-Everything happens in memory. No frame, no landmark and no text is ever
-written to disk by this module, and it is never fitted to webcam data - the
+Buffers landmarks, splits SIGNING/REST by the same hand-above-shoulder test the
+extractor used, gates readings on confidence/margin, commits one word per
+segment and shows a framing hint when no hand is visible. All in memory; the
 weights come from ASL Citizen only.
 """
 from __future__ import annotations
@@ -43,13 +19,7 @@ from . import config, features, landmarks, model, phrases, vocab
 
 
 def _pair_key(key) -> frozenset:
-    """Normalise a PAIR_MARGINS key to a set of two lowercase words.
-
-    Both shapes are accepted because the table is hand-edited from a CSV:
-    ("please", "sorry") and "please|sorry". Anything else raises - the
-    failure mode of a mistyped key is a refusal margin that quietly does
-    nothing, which is the last thing anyone should discover after training.
-    """
+    """Normalise a pair key (tuple or "a|b") to a frozenset; a mistyped key must raise, not no-op."""
     if isinstance(key, str):
         parts = [p.strip().lower() for p in re.split(r"[|,/]|->", key)
                  if p.strip()]
@@ -63,14 +33,7 @@ def _pair_key(key) -> frozenset:
 
 def required_margin(a: str, b: str, pair_margins=None,
                     floor: float | None = None) -> float:
-    """The top1 minus top2 gap needed to trust this reading.
-
-    config.PAIR_MARGINS overrides the global floor for pairs the trained model
-    actually swaps (filled from reports/confused_pairs.csv). Order does not
-    matter: a pair is a pair. `floor` replaces config.MARGIN_MIN for callers
-    that pass it (the --margin flag), so the demo can be loosened or tightened
-    without editing config.py.
-    """
+    """Top1 - top2 gap needed to trust a reading; PAIR_MARGINS overrides the floor, order-free."""
     pm = config.PAIR_MARGINS if pair_margins is None else pair_margins
     want = frozenset({str(a).lower(), str(b).lower()})
     for key, v in pm.items():
@@ -80,13 +43,7 @@ def required_margin(a: str, b: str, pair_margins=None,
 
 
 def hedge_hint(a: str, b: str, hedge_pairs=None) -> str:
-    """The hint to show when a reading hits a hedged pair, or "".
-
-    config.HEDGE_PAIRS maps a pair to the text the demo shows instead of a
-    commit. decide() refuses the reading no matter how confident it is, so
-    neither word of a hedged pair is ever typed. Order does not matter, and
-    the same key shapes as PAIR_MARGINS raise on a mistyped key.
-    """
+    """Hint for a hedged top-2 pair, or ""; neither word is ever typed."""
     hp = config.HEDGE_PAIRS if hedge_pairs is None else hedge_pairs
     if not hp:
         return ""
@@ -98,11 +55,7 @@ def hedge_hint(a: str, b: str, hedge_pairs=None) -> str:
 
 
 def commitable(r: "Reading | None") -> bool:
-    """The one commit rule: certain, and not a background class.
-
-    Kept apart from update() so the logic test can drive it with made-up
-    readings and still prove REST/OTHER can never reach the phrase buffer.
-    """
+    """The one commit rule: certain, and not a background class (kept pure for tests)."""
     return (r is not None and r.certain
             and r.word not in (config.REST_LABEL, config.OTHER_LABEL))
 
@@ -129,16 +82,11 @@ def decide(probs: np.ndarray, labels: list[str], pair_margins=None,
            hedge_pairs=None,
            min_conf: float | None = None,
            min_margin: float | None = None) -> Reading:
-    """Pure decision function: probability row -> Reading. Nothing else calls
-    the thresholds, so the logic test can drive it with made-up rows.
+    """Pure decision: probability row -> Reading.
 
-    At the shipped floor the margin cannot bite: p1 >= 0.85 forces
-    p1 - p2 >= 2*p1 - 1 = 0.70, which is above any margin a demo would set.
-    The margin is the lever for a lowered --conf, not for the default gate.
-
-    A reading that passes both bars still comes back uncertain when the top
-    two are a hedged pair (config.HEDGE_PAIRS): the model swaps those words
-    confidently, so the demo types neither and shows the hint instead.
+    At the shipped floor the margin cannot bite (p1 >= 0.85 implies a gap of
+    0.70), so it only matters for a lowered --conf. Hedged top-2 pairs stay
+    uncertain even when both bars pass.
     """
     min_conf = config.CONFIDENCE_MIN if min_conf is None else float(min_conf)
     order = np.argsort(-probs)[:3]
@@ -164,12 +112,7 @@ def decide(probs: np.ndarray, labels: list[str], pair_margins=None,
 
 @dataclass
 class Segmenter:
-    """SIGNING / REST state machine over per-frame hand-above-shoulder flags.
-
-    A segment opens after `hold` consecutive signing frames and closes after
-    `rest` consecutive non-signing frames, so one noisy frame cannot start or
-    end a word.
-    """
+    """SIGNING / REST state machine; `hold`/`rest` debounce out single noisy frames."""
     hold: int = 3
     rest: int = 5
     signing: bool = False
@@ -196,8 +139,7 @@ class Segmenter:
 
 
 def reading_due(frame_i: int, stride: int) -> bool:
-    """True on the frames that get a model pass. The geometry test runs on
-    every frame; only the expensive part is strided."""
+    """True on frames that get a model pass; the geometry test runs every frame."""
     return frame_i % max(1, int(stride)) == 0
 
 
@@ -230,8 +172,6 @@ class WordPredictor:
             net, meta = model.load(weights)
         self.net, self.meta = net, dict(meta or {})
         self.weights = Path(weights)
-        # where the weights came from: "in memory" only when a caller injected
-        # a net, so a log line can never claim a file was read that was not
         self.source = "from file" if loaded_from_file else "in memory"
         labels = self.meta.get("labels")
         self.labels: list[str] = list(vocab.load_vocab().labels if labels is None
@@ -244,10 +184,7 @@ class WordPredictor:
             raise ValueError("at least two checkpoint labels are required")
         self.words_only = [i for i, l in enumerate(self.labels)
                            if l not in (config.REST_LABEL, config.OTHER_LABEL)]
-        # which feature layout these weights were trained on: the checkpoint
-        # meta carries feature_version; otherwise the input width identifies
-        # it (170 -> the v2 fair-comparison vector, 200 -> v3). Anything else
-        # is stale and refused below rather than guessed at.
+        # layout from checkpoint meta, else inferred from the input width; never guessed
         fver = self.meta.get("feature_version")
         self.fver = (int(fver) if fver is not None
                      else features.version_for_dim(self.net.arch.in_dim))
@@ -271,9 +208,7 @@ class WordPredictor:
         self.hedge_pairs = hedge_pairs
         self.buf_s = float(buffer_seconds or config.BUFFER_SECONDS)
         self.buffer = features.RingBuffer(maxlen=max(8, int(self.buf_s * self.fps)))
-        # Contiguous accepted rows, bounded independently of segment duration.
-        # A pending rest tail is held separately so closing debounce cannot
-        # evict the final signing frames from a full rolling window.
+        # rest tail kept apart so closing debounce cannot evict the last signing frames
         self.seg_rows: list[np.ndarray] = []
         self._onset_rows: list[np.ndarray] = []
         self._rest_rows: list[np.ndarray] = []
@@ -303,12 +238,10 @@ class WordPredictor:
         if self.stale:
             self.log.warning(self.stale)
 
-    # --- input: either an RGB frame or an already-extracted landmark row ---
     def _row(self, frame_or_landmarks: np.ndarray,
              ts_ms: int | None = None) -> np.ndarray | None:
         a = np.asarray(frame_or_landmarks)
         if a.ndim == 3 and a.shape[-1] in (3, 4) and a.dtype == np.uint8:
-            # a camera frame: run MediaPipe on it, in memory
             if self.tracker is None:
                 self.tracker = landmarks.Tracker()
             ts = time.monotonic() * 1000.0 if ts_ms is None else float(ts_ms)
@@ -329,12 +262,7 @@ class WordPredictor:
         return None if not b or b == "all" else list(b)
 
     def _decision_rows(self) -> list[np.ndarray]:
-        """Contiguous window with one onset/end context frame, as offline.
-
-        Internal inactive dips are backfilled if activity resumes. Only the
-        first frame of an unconfirmed/closing rest tail is end context; the
-        remaining debounce frames never replace useful frames in the window.
-        """
+        """Contiguous window plus one end-context frame; debounce frames are not included."""
         return (self.seg_rows + self._rest_rows[:1])[-self.buffer.maxlen:]
 
     def _append_segment(self, rows: list[np.ndarray]) -> None:
@@ -350,11 +278,7 @@ class WordPredictor:
         self.manual_open = False
 
     def begin_segment(self) -> dict:
-        """Enter manual mode and start an empty, in-memory segment.
-
-        Repeated begin calls do not discard an open manual segment. Switching
-        from auto deliberately discards its partial onset/segment, not text.
-        """
+        """Open a manual segment; repeat calls keep it, switching from auto discards partials."""
         if self.manual_open:
             return self.result()
         self._clear_segment()
@@ -376,7 +300,7 @@ class WordPredictor:
         return self._finish_segment()
 
     def _finish_segment(self) -> dict:
-        self.last = self._reading()   # always read at the cut, never peak-pick
+        self.last = self._reading()  # read at the cut, never peak-pick
         committed = ""
         if commitable(self.last):
             committed = self.last.word
@@ -384,8 +308,6 @@ class WordPredictor:
         rate = self._decision_hand_rate
         self._clear_segment()
         self.state = "REST"
-        # Keep the bounded live buffer for the current overlay. Cut visibility
-        # is measured on the exact decision rows, not that debounce buffer.
         out = self.result()
         out.update(committed_word=committed, segment_cut=True,
                    hand_rate=rate,
@@ -445,7 +367,7 @@ class WordPredictor:
                 self.last = Reading("", 0.0, 0.0, 0.0, [], False,
                                     f"too short: onset has {onset_length} active "
                                     f"frames; needs {self.seg.hold} consecutive")
-            self._onset_rows.clear()  # never carry a failed onset into a word
+            self._onset_rows.clear()
         self._previous_row = row
         if self.seg.signing:
             self._refresh_reading()
@@ -460,8 +382,7 @@ class WordPredictor:
         arr = np.stack(rows) if rows else None
         self._decision_hand_rate = (landmarks.hand_share(arr)
                                     if arr is not None else None)
-        # An accepted three-frame onset is readable even at stream start,
-        # where no preceding context exists. Manual segments use the same min.
+        # an accepted onset is readable even at stream start; manual uses the same min
         if len(rows) < self.seg.hold:
             return Reading("", 0.0, 0.0, 0.0, [], False,
                            f"too short: {len(rows)} frames; needs {self.seg.hold}")
@@ -476,13 +397,7 @@ class WordPredictor:
                       self.min_conf, self.min_margin)
 
     def framing(self) -> tuple[float | None, str]:
-        """(hand share of the live buffer, the framing hint or "").
-
-        A reading built on frames where MediaPipe never saw a hand is not a
-        wrong word, it is no information, so the demo has to say so instead of
-        showing the argmax. Same measurement as hand_rate_seg in the manifest
-        (both wrists, same definition), over the last BUFFER_SECONDS only.
-        """
+        """(hand share of the live buffer, framing hint or ""); no hand = no info, not a guess."""
         arr = self.buffer.array()
         if len(arr) < config.FRAMING_MIN_FRAMES:
             return None, ""
@@ -501,8 +416,6 @@ class WordPredictor:
                 "p1": round(r.p1, 4) if r else 0.0,
                 "margin": round(r.margin, 4) if r else 0.0,
                 "reason": r.reason if r else "",
-                # what the screen shows for the current reading: the word only
-                # when the gate is met, otherwise the honest "uncertain"
                 "display": ((r.word if r.certain else "uncertain")
                             if r is not None else ""),
                 "hand_rate": rate,
@@ -536,12 +449,8 @@ class WordPredictor:
             self.reset()
 
 
-# ---------------------------------------------------------------------------
-# offline demonstration of the API: no camera, nothing written
-# ---------------------------------------------------------------------------
 def demo(n: int = 4, weights: Path | None = None) -> None:
-    """Drive update() with landmark rows taken from the cache, and print the
-    state machine's answers. This is the usage example made runnable."""
+    """Drive update() with cached landmark rows and print the readings (no camera)."""
     from . import extract
     man = extract.read_manifest()
     man = man[man["status"].astype(str) == "ok"]
@@ -563,9 +472,7 @@ def demo(n: int = 4, weights: Path | None = None) -> None:
             seen[out["state"]] = seen.get(out["state"], 0) + 1
             if out["segment_cut"]:
                 closed += 1
-                best = out                                   # reading at the cut
-        # the final REST line proves nothing on its own: what matters is that
-        # the segment actually opened, was read while signing, and was closed.
+                best = out
         print(json.dumps({"video": video, "gloss": gloss, "frames": len(arr),
                           "states_seen": seen, "segments_closed": closed,
                           "at_last_cut": {k: best[k] for k in
