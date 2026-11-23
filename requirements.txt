@@ -88,3 +88,5 @@ tensorflow==2.22.0rc0
 # fastapi / uvicorn: the Overview API is implemented as a Flask blueprint in
 # Backend/admin/overview.py. AI Accuracy & Logs and Sign Materials still need
 # their documented FastAPI endpoints before those pages can load live data.
+
+cloudinary

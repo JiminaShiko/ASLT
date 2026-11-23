@@ -21,6 +21,8 @@ from login_signup_pages.signup_process import ensure_auth_tables, signup_bp
 from login_signup_pages.profile_process import profile_bp
 from agent_mail import agent_mail_bp
 from user.text_to_sign import text_to_sign_bp
+from cursor_effects_process import cursor_bp
+from user_homepage.learning_process import learning_bp
 
 PROJECT_ROOT = BACKEND_DIR.parent
 FRONTEND_DIR = PROJECT_ROOT / "Front-end"
@@ -78,6 +80,8 @@ app.register_blueprint(google_bp)
 app.register_blueprint(profile_bp)
 app.register_blueprint(admin_overview_bp)
 app.register_blueprint(admin_profile_bp)
+app.register_blueprint(cursor_bp)
+app.register_blueprint(learning_bp)
 
 
 LOOPBACK_ADDRESSES = {"127.0.0.1", "::1", "::ffff:127.0.0.1", "localhost"}
@@ -111,7 +115,7 @@ ensure_login_columns()
 
 @app.route("/")
 def index():
-    return redirect("/login")
+    return send_from_directory(HTML_DIR, "Landing_page.html")
 
 
 @app.route("/login")
@@ -169,6 +173,13 @@ def serve_user_homepage_files(filename):
     if not session.get("user_email"):
         return redirect("/login")
     return send_from_directory(FRONTEND_DIR / "user_homepage", filename)
+
+
+@app.route("/text_to_sign_demo/<path:filename>")
+def serve_text_to_sign_demo_media(filename):
+    if not session.get("user_email"):
+        return redirect("/login")
+    return send_from_directory(FRONTEND_DIR / "text_to_sign_demo", filename)
 
 
 @app.route("/api/user/me", methods=["GET"])

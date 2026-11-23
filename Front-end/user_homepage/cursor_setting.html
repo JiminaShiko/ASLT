@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signrest — Cursor Settings</title>
+  <style>
+    .cs-page-root {
+      position: relative;
+      width: 100%;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 6px 12px 28px 12px;
+      font-family: 'Lora', Georgia, serif;
+      color: var(--text-primary, #1c311e);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Top Page Title: `<- Cursor Settings` */
+    .cs-top-heading {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.45rem;
+      font-weight: 600;
+      margin: 0 0 18px 8px;
+      color: var(--text-primary, #1c311e);
+    }
+
+    .cs-back-arrow {
+      background: transparent;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      padding: 4px;
+      border-radius: 50%;
+      transition: transform 0.18s ease;
+    }
+
+    .cs-back-arrow:hover {
+      transform: translateX(-3px);
+    }
+
+    /* =========================================================
+       5-SECOND LOGIN-STYLE NOTIFICATION CARD WITH `green_element_7.png`
+       ========================================================= */
+    .cs-noti-overlay {
+      position: fixed;
+      top: 26px;
+      left: 50%;
+      transform: translate(-50%, -150%);
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.38s cubic-bezier(0.22, 1.15, 0.36, 1), opacity 0.28s ease;
+    }
+
+    .cs-noti-overlay.show {
+      transform: translate(-50%, 0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .cs-noti-card {
+      position: relative;
+      min-width: 390px;
+      max-width: 470px;
+      background: #cddbc7;
+      color: #162217;
+      padding: 24px 44px 18px 58px;
+      border-bottom: 2.5px dashed #1f2b20;
+      box-shadow: 0 14px 32px rgba(12, 24, 14, 0.24);
+      text-align: center;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.98rem;
+      font-weight: 500;
+      line-height: 1.45;
+    }
+
+    body.dark-mode .cs-noti-card {
+      background: #2b3f30;
+      color: #eef4ec;
+      border-bottom-color: #b8ceb8;
+    }
+
+    .cs-noti-star-badge {
+      position: absolute;
+      top: -24px;
+      left: -26px;
+      width: 78px;
+      height: 78px;
+      object-fit: contain;
+      pointer-events: none;
+      filter: drop-shadow(0 6px 10px rgba(15, 28, 16, 0.22));
+      transform: rotate(-8deg);
+    }
+
+    .cs-noti-close-btn {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: none;
+      background: #555941;
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    .cs-noti-close-btn:hover {
+      background: #3e422e;
+      transform: scale(1.08);
+    }
+
+    .cs-noti-countdown {
+      margin-top: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #4f6830;
+      letter-spacing: 0.02em;
+    }
+
+    body.dark-mode .cs-noti-countdown {
+      color: #b7d882;
+    }
+
+    /* =========================================================
+       MAIN STAGE LAYOUT
+       ========================================================= */
+    .cs-stage-wrapper {
+      position: relative;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 22px;
+    }
+
+    .trial-pad-cluster {
+      position: relative;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .trial-pad-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 6px;
+      margin-bottom: -7px;
+      position: relative;
+      z-index: 6;
+      transition: justify-content 0.35s ease;
+    }
+
+    .cs-stage-wrapper.is-on .trial-pad-header {
+      justify-content: flex-start;
+    }
+
+    /* Idle Quote (`We act as your window to World`) shown centered when OFF */
+    .trial-pad-quote {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-size: 1.48rem;
+      font-weight: 600;
+      letter-spacing: 0.015em;
+      color: var(--text-primary, #1c311e);
+      padding-bottom: 10px;
+      white-space: nowrap;
+    }
+
+    /* `trial pad` label shown on the left only when ON */
+    .trial-pad-label {
+      display: none;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 1.08rem;
+      font-weight: 600;
+      color: var(--text-primary, #1c311e);
+      padding-bottom: 11px;
+      letter-spacing: 0.01em;
+    }
+
+    .cs-stage-wrapper.is-on .trial-pad-quote {
+      display: none;
+    }
+
+    .cs-stage-wrapper.is-on .trial-pad-label {
+      display: inline-block;
+    }
+
+    /* Banker's Lamp (`green_element_6.png`) */
+    .lamp-toggle-btn {
+      position: relative;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      width: 58px;
+      height: 58px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease;
+    }
+
+    .lamp-toggle-btn:hover {
+      transform: scale(1.06);
+    }
+
+    .lamp-toggle-btn img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      position: relative;
+      z-index: 2;
+      transition: filter 0.35s ease;
+      -webkit-user-drag: none;
+    }
+
+    .lamp-light-cone {
+      position: absolute;
+      top: 19px;
+      left: 7px;
+      width: 38px;
+      height: 34px;
+      clip-path: polygon(22% 0%, 78% 0%, 100% 100%, 0% 100%);
+      background: linear-gradient(
+        180deg,
+        rgba(255, 246, 189, 0.92) 0%,
+        rgba(255, 226, 122, 0.42) 52%,
+        rgba(255, 226, 122, 0) 100%
+      );
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1;
+      filter: blur(2px);
+      transition: opacity 0.35s ease;
+    }
+
+    body.dark-mode .lamp-light-cone {
+      opacity: 1;
+    }
+
+    body.dark-mode .lamp-toggle-btn img {
+      filter: brightness(1.08) drop-shadow(0 3px 8px rgba(255, 232, 145, 0.45));
+    }
+
+    /* Trial Pad Box */
+    .trial-pad-box {
+      position: relative;
+      width: 100%;
+      height: 295px;
+      border: 1.5px solid #233824;
+      background: rgba(232, 240, 226, 0.55);
+      overflow: hidden;
+      cursor: crosshair;
+      box-shadow: 0 10px 26px rgba(15, 28, 16, 0.12);
+      transition: height 0.45s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.35s ease, border-color 0.35s ease;
+    }
+
+    body.dark-mode .trial-pad-box {
+      border-color: rgba(182, 218, 182, 0.42);
+      background: rgba(24, 39, 29, 0.72);
+    }
+
+    .cs-stage-wrapper.is-on .trial-pad-box {
+      height: 150px;
+      background: rgba(219, 231, 214, 0.68);
+    }
+
+    body.dark-mode .cs-stage-wrapper.is-on .trial-pad-box {
+      background: rgba(27, 44, 33, 0.82);
+    }
+
+    .trial-pad-idle-media {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+
+    .cs-stage-wrapper.is-on .trial-pad-idle-media {
+      opacity: 0;
+    }
+
+    #trialPadCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    .trial-pad-hint {
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      font-size: 0.74rem;
+      opacity: 0;
+      pointer-events: none;
+      color: var(--text-primary, #1c311e);
+      transition: opacity 0.3s ease;
+      z-index: 3;
+    }
+
+    .cs-stage-wrapper.is-on .trial-pad-hint {
+      opacity: 0.68;
+    }
+
+    /* =========================================================
+       PULLABLE HANGING PAPER TAG (`paper_tag_9.png`)
+       ========================================================= */
+    .hanging-tag-anchor {
+      position: fixed;
+      top: 0;
+      right: 7.5%;
+      z-index: 25;
+      width: 210px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .tag-cord-line {
+      position: relative;
+      z-index: 3;
+      width: 2.5px;
+      height: 118px;
+      background: linear-gradient(180deg, #1b241c 0%, #3a4738 100%);
+      border-radius: 0 0 2px 2px;
+      transition: height 0.24s cubic-bezier(0.22, 1.25, 0.36, 1);
+    }
+
+    body.dark-mode .tag-cord-line {
+      background: linear-gradient(180deg, #b8ceb8 0%, #e4f0e4 100%);
+    }
+
+    .paper-tag-draggable {
+      position: relative;
+      z-index: 2;
+      width: 210px;
+      height: 210px;
+      margin-top: -35px;
+      cursor: grab;
+      pointer-events: auto;
+      transform-origin: 50% 35px;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      outline: none;
+      filter: drop-shadow(0 8px 16px rgba(15, 26, 16, 0.22));
+      transition: transform 0.24s cubic-bezier(0.22, 1.25, 0.36, 1);
+    }
+
+    .paper-tag-draggable.is-dragging {
+      transition: none;
+      cursor: grabbing;
+    }
+
+    @keyframes tagWindSway {
+      0%   { transform: rotate(0deg); }
+      22%  { transform: rotate(3.2deg); }
+      48%  { transform: rotate(-2.5deg); }
+      74%  { transform: rotate(2.1deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    .paper-tag-draggable:not(.is-dragging):hover {
+      animation: tagWindSway 3.4s ease-in-out infinite;
+    }
+
+    .paper-tag-draggable img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .paper-tag-copy {
+      position: absolute;
+      top: 30%;
+      left: 31%;
+      right: 31%;
+      bottom: 21%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      text-align: center;
+      pointer-events: none;
+      user-select: none;
+      line-height: 1.22;
+    }
+
+    .tag-status-text {
+      font-size: 0.62rem;
+      font-weight: 600;
+      color: #1c241c;
+    }
+
+    .tag-action-text {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #b48a86;
+    }
+
+    /* =========================================================
+       2 EFFECT OPTION BOXES + GAME-STYLE SAVE BUTTON UNDER THEM
+       ========================================================= */
+    .effect-controls-area {
+      position: relative;
+      width: 100%;
+      max-width: 680px;
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 20px;
+      row-gap: 16px;
+      align-items: stretch;
+      opacity: 0;
+      transform: translateY(18px);
+      pointer-events: none;
+      max-height: 0;
+      overflow: hidden;
+      transition: opacity 0.4s ease, transform 0.4s ease, max-height 0.45s ease;
+    }
+
+    .cs-stage-wrapper.is-on .effect-controls-area {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+      max-height: 360px;
+      padding-bottom: 8px;
+    }
+
+    .effect-panel {
+      border-radius: 6px;
+      padding: 14px 16px 16px 16px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 22px rgba(15, 28, 16, 0.14);
+      transition: opacity 0.25s ease;
+      min-width: 0;
+    }
+
+    .effect-panel.panel-muted {
+      opacity: 0.65;
+    }
+
+    .trail-panel-bg {
+      background: rgba(141, 168, 72, 0.82);
+    }
+
+    .burst-panel-bg {
+      background: rgba(182, 148, 146, 0.78);
+    }
+
+    body.dark-mode .trail-panel-bg {
+      background: rgba(88, 114, 46, 0.86);
+    }
+
+    body.dark-mode .burst-panel-bg {
+      background: rgba(118, 86, 86, 0.84);
+    }
+
+    .panel-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .panel-title {
+      font-size: 0.96rem;
+      font-weight: 600;
+      color: var(--text-primary, #1c311e);
+    }
+
+    .mini-pill-switch {
+      position: relative;
+      width: 44px;
+      height: 22px;
+      border-radius: 9999px;
+      background: #ffffff;
+      border: none;
+      cursor: pointer;
+      padding: 3px;
+      display: inline-flex;
+      align-items: center;
+      transition: background-color 0.22s ease;
+    }
+
+    .mini-pill-knob {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.22s ease;
+    }
+
+    .trail-panel-bg .mini-pill-knob {
+      background: #b08885;
+    }
+
+    .burst-panel-bg .mini-pill-knob {
+      background: #87a346;
+    }
+
+    .mini-pill-switch.is-active .mini-pill-knob {
+      transform: translateX(22px);
+    }
+
+    /* Horizontal Scrollable Sticker Tray */
+    .sticker-scroll-tray {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 4px 2px 10px 2px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.65) transparent;
+    }
+
+    .sticker-scroll-tray::-webkit-scrollbar {
+      height: 5px;
+    }
+
+    .sticker-scroll-tray::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.65);
+      border-radius: 9999px;
+    }
+
+    .sticker-circle-btn {
+      flex: 0 0 42px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 5px;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .sticker-circle-btn:hover {
+      transform: scale(1.09);
+    }
+
+    .sticker-circle-btn.selected {
+      border-color: #1c311e;
+      box-shadow: 0 0 0 2.5px rgba(255, 255, 255, 0.9);
+      transform: scale(1.08);
+    }
+
+    .sticker-circle-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      -webkit-user-drag: none;
+    }
+
+    .sticker-add-btn {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #1c311e;
+    }
+
+    /* Size Slider Bar: `-` on LEFT, `+` on RIGHT */
+    .size-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .size-sign {
+      font-family: 'Inter', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #1c311e;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 2px;
+    }
+
+    body.dark-mode .size-sign {
+      color: #eef4ec;
+    }
+
+    .effect-size-range {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 14px;
+      border-radius: 9999px;
+      background: #ffffff;
+      outline: none;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .trail-panel-bg .effect-size-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #b69492;
+      box-shadow: -200px 0 0 194px #c7a8a6;
+      cursor: pointer;
+    }
+
+    .burst-panel-bg .effect-size-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #88a445;
+      box-shadow: -200px 0 0 194px #9bb55c;
+      cursor: pointer;
+    }
+
+    /* Game-Style Tactile Pop-Up Save Button in the space under the 2 boxes */
+    .cs-save-row {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding-top: 2px;
+    }
+
+    .cs-game-save-btn {
+      position: relative;
+      background: linear-gradient(180deg, #98b552 0%, #83a03f 100%);
+      color: #142215;
+      border: 1.5px solid #4c6420;
+      border-radius: 9999px;
+      padding: 10px 38px;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.98rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow:
+        0 5px 0 #4c6420,
+        0 9px 18px rgba(15, 28, 16, 0.24),
+        inset 0 2px 0 rgba(255, 255, 255, 0.42);
+      transition:
+        transform 0.14s cubic-bezier(0.22, 1.4, 0.36, 1),
+        box-shadow 0.14s cubic-bezier(0.22, 1.4, 0.36, 1),
+        filter 0.15s ease;
+    }
+
+    .cs-game-save-btn:hover {
+      transform: translateY(-2px) scale(1.03);
+      filter: brightness(1.04);
+      box-shadow:
+        0 7px 0 #4c6420,
+        0 12px 22px rgba(15, 28, 16, 0.28),
+        inset 0 2px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    .cs-game-save-btn:active {
+      transform: translateY(4px) scale(0.98);
+      box-shadow:
+        0 1px 0 #4c6420,
+        0 3px 6px rgba(15, 28, 16, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .cs-game-save-btn:disabled {
+      opacity: 0.7;
+      cursor: wait;
+    }
+
+    @media (max-width: 720px) {
+      .effect-controls-area {
+        grid-template-columns: 1fr;
+      }
+      .hanging-tag-anchor {
+        right: 12px;
+      }
+      .cs-noti-card {
+        min-width: 300px;
+        max-width: 90vw;
+        padding: 20px 38px 18px 48px;
+      }
+      .trial-pad-quote {
+        font-size: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div id="cursorSettingRoot" class="cs-page-root">
+  <!-- Hidden File Input for Custom User Sticker Upload -->
+  <input type="file" id="customStickerFileInput" accept="image/png,image/webp,image/gif" style="display:none;" />
+
+  <!-- 5-Second Login-Style Notification Card with Stitched Star (`green_element_7.png`) -->
+  <div id="csNotiOverlay" class="cs-noti-overlay" role="status" aria-live="polite">
+    <div class="cs-noti-card">
+      <img src="../assets/images/green_element_7.png" alt="" class="cs-noti-star-badge" draggable="false" />
+      <button type="button" id="csNotiCloseBtn" class="cs-noti-close-btn" aria-label="Close notification">X</button>
+      <div id="csNotiText">your cursor effects are saved!<br>enjoy your new trail &amp; burst across Signrest</div>
+      <div id="csNotiCountdown" class="cs-noti-countdown">Closing in 5s...</div>
+    </div>
+  </div>
+
+  <!-- Top Header -->
+  <div class="cs-top-heading">
+    <button type="button" id="csBackBtn" class="cs-back-arrow" aria-label="Back to Translation" title="Back">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+    </button>
+    <span>Cursor Settings</span>
+  </div>
+
+  <!-- Pullable Hanging Paper Tag (`paper_tag_9.png`) -->
+  <div class="hanging-tag-anchor">
+    <div id="tagCordLine" class="tag-cord-line"></div>
+    <div id="paperTagDraggable" class="paper-tag-draggable" role="button" tabindex="0" aria-label="Pull paper tag down to edit cursor effects">
+      <img id="paperTagImg" src="../assets/images/paper_tag_9.png" alt="Cursor Toggle Tag" draggable="false" />
+      <div class="paper-tag-copy">
+        <span id="tagStatusText" class="tag-status-text">right now<br>your cursor is off</span>
+        <span id="tagActionText" class="tag-action-text">Pull me to<br>edit</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Stage -->
+  <div id="csStageWrapper" class="cs-stage-wrapper">
+
+    <!-- Trial Pad + Banker's Lamp (`green_element_6.png`) -->
+    <div class="trial-pad-cluster">
+      <div class="trial-pad-header">
+        <span class="trial-pad-quote">We act as your window to World</span>
+        <span class="trial-pad-label">trial pad</span>
+        <button type="button" id="lampThemeToggleBtn" class="lamp-toggle-btn" title="Toggle Light / Dark Mode" aria-label="Toggle Light or Dark Mode">
+          <span class="lamp-light-cone" aria-hidden="true"></span>
+          <img id="bankerLampImg" src="../assets/images/green_element_6.png" alt="Desk Lamp Theme Switch" draggable="false" />
+        </button>
+      </div>
+
+      <div id="trialPadBox" class="trial-pad-box">
+        <video
+          id="trialPadIdleVideo"
+          class="trial-pad-idle-media"
+          src="../assets/images/trial_pad_idle.mp4"
+          autoplay
+          loop
+          muted
+          playsinline
+        ></video>
+        <canvas id="trialPadCanvas"></canvas>
+        <span class="trial-pad-hint">Move or click inside the trial pad to test before saving</span>
+      </div>
+    </div>
+
+    <!-- 2 Effect Panels (Equal width to Trial Pad) + Game-Style Save Button Underneath -->
+    <div class="effect-controls-area">
+
+      <!-- 1. Trail Effect Box -->
+      <div id="trailPanel" class="effect-panel trail-panel-bg">
+        <div class="panel-top-bar">
+          <span class="panel-title">trail effect</span>
+          <button type="button" id="trailSwitchBtn" class="mini-pill-switch is-active" aria-label="Toggle Trail Effect">
+            <span class="mini-pill-knob"></span>
+          </button>
+        </div>
+
+        <div id="trailStickerTray" class="sticker-scroll-tray"></div>
+
+        <div class="size-slider-row">
+          <span class="size-sign" id="trailSizeMinus">-</span>
+          <input type="range" id="trailSizeSlider" class="effect-size-range" min="14" max="54" value="24" />
+          <span class="size-sign" id="trailSizePlus">+</span>
+        </div>
+      </div>
+
+      <!-- 2. Burst Effect Box -->
+      <div id="burstPanel" class="effect-panel burst-panel-bg">
+        <div class="panel-top-bar">
+          <span class="panel-title">burst effect</span>
+          <button type="button" id="burstSwitchBtn" class="mini-pill-switch is-active" aria-label="Toggle Burst Effect">
+            <span class="mini-pill-knob"></span>
+          </button>
+        </div>
+
+        <div id="burstStickerTray" class="sticker-scroll-tray"></div>
+
+        <div class="size-slider-row">
+          <span class="size-sign" id="burstSizeMinus">-</span>
+          <input type="range" id="burstSizeSlider" class="effect-size-range" min="16" max="62" value="26" />
+          <span class="size-sign" id="burstSizePlus">+</span>
+        </div>
+      </div>
+
+      <!-- Centered Game-Style Pop-Up Save Button in the space under the 2 boxes -->
+      <div class="cs-save-row">
+        <button type="button" id="csSaveBtn" class="cs-game-save-btn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function initSignrestCursorSettings() {
+  const stageWrapper = document.getElementById("csStageWrapper");
+  const tagDraggable = document.getElementById("paperTagDraggable");
+  const tagCordLine = document.getElementById("tagCordLine");
+  const tagStatusText = document.getElementById("tagStatusText");
+  const tagActionText = document.getElementById("tagActionText");
+
+  const trailPanel = document.getElementById("trailPanel");
+  const burstPanel = document.getElementById("burstPanel");
+  const trailSwitchBtn = document.getElementById("trailSwitchBtn");
+  const burstSwitchBtn = document.getElementById("burstSwitchBtn");
+  const trailTray = document.getElementById("trailStickerTray");
+  const burstTray = document.getElementById("burstStickerTray");
+
+  const trailSizeSlider = document.getElementById("trailSizeSlider");
+  const burstSizeSlider = document.getElementById("burstSizeSlider");
+  const customFileInput = document.getElementById("customStickerFileInput");
+  const saveBtn = document.getElementById("csSaveBtn");
+
+  const notiOverlay = document.getElementById("csNotiOverlay");
+  const notiText = document.getElementById("csNotiText");
+  const notiCountdown = document.getElementById("csNotiCountdown");
+  const notiCloseBtn = document.getElementById("csNotiCloseBtn");
+  let notiInterval = null;
+
+  const trialPadBox = document.getElementById("trialPadBox");
+  const trialPadIdleVideo = document.getElementById("trialPadIdleVideo");
+  const trialCanvas = document.getElementById("trialPadCanvas");
+  const trialCtx = trialCanvas.getContext("2d");
+
+  function hideNotiBanner() {
+    notiOverlay.classList.remove("show");
+    if (notiInterval) {
+      clearInterval(notiInterval);
+      notiInterval = null;
+    }
+  }
+
+  function showFiveSecondNoti(htmlMessage) {
+    let secondsLeft = 5;
+    notiText.innerHTML = htmlMessage;
+    notiCountdown.textContent = `Closing in ${secondsLeft}s...`;
+    notiOverlay.classList.add("show");
+
+    if (notiInterval) clearInterval(notiInterval);
+    notiInterval = setInterval(() => {
+      secondsLeft -= 1;
+      if (secondsLeft <= 0) {
+        hideNotiBanner();
+      } else {
+        notiCountdown.textContent = `Closing in ${secondsLeft}s...`;
+      }
+    }, 1000);
+  }
+
+  notiCloseBtn.addEventListener("click", hideNotiBanner);
+
+  if (trialPadIdleVideo) {
+    trialPadIdleVideo.play().catch(() => {});
+  }
+
+  document.getElementById("csBackBtn").addEventListener("click", () => {
+    const brandLink = document.querySelector(".brand-link[data-page-link='translation']");
+    if (brandLink) brandLink.click();
+    else window.location.href = "/home?page=translation";
+  });
+
+  document.getElementById("lampThemeToggleBtn").addEventListener("click", () => {
+    const mainThemeBtn = document.getElementById("themeSlotBtn");
+    if (mainThemeBtn) mainThemeBtn.click();
+  });
+
+  let allStickers = [];
+  let masterOn = false;
+  let trailEnabled = true;
+  let burstEnabled = true;
+  let draftTrailId = null;
+  let draftClickId = null;
+  let draftTrailSize = 24;
+  let draftClickSize = 26;
+  let pendingUploadTarget = "both";
+
+  function syncMasterUI() {
+    stageWrapper.classList.toggle("is-on", masterOn);
+    if (masterOn) {
+      tagStatusText.innerHTML = "right now<br>your cursor is on";
+      tagActionText.innerHTML = "Pull me to<br>turn off";
+      if (trialPadIdleVideo) trialPadIdleVideo.pause();
+    } else {
+      tagStatusText.innerHTML = "right now<br>your cursor is off";
+      tagActionText.innerHTML = "Pull me to<br>edit";
+      trialParticles = [];
+      trialCtx.clearRect(0, 0, trialCanvas.width, trialCanvas.height);
+      if (trialPadIdleVideo) trialPadIdleVideo.play().catch(() => {});
+    }
+  }
+
+  function syncSubSwitchesUI() {
+    trailSwitchBtn.classList.toggle("is-active", trailEnabled);
+    burstSwitchBtn.classList.toggle("is-active", burstEnabled);
+    trailPanel.classList.toggle("panel-muted", !trailEnabled);
+    burstPanel.classList.toggle("panel-muted", !burstEnabled);
+  }
+
+  /* =========================================================
+     PULLABLE PAPER TAG
+     ========================================================= */
+  let isDraggingTag = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let hasPulledPastThreshold = false;
+  const BASE_CORD_HEIGHT = 118;
+  const PULL_TRIGGER_PX = 58;
+
+  tagDraggable.addEventListener("dragstart", (e) => e.preventDefault());
+  tagDraggable.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  tagDraggable.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    if (window.getSelection) {
+      window.getSelection().removeAllRanges();
+    }
+    isDraggingTag = true;
+    hasPulledPastThreshold = false;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    tagDraggable.classList.add("is-dragging");
+    tagDraggable.setPointerCapture(e.pointerId);
+  });
+
+  tagDraggable.addEventListener("pointermove", (e) => {
+    if (!isDraggingTag) return;
+    e.preventDefault();
+    const dx = Math.max(-42, Math.min(42, e.clientX - dragStartX));
+    const dy = Math.max(-10, Math.min(115, e.clientY - dragStartY));
+
+    const currentCordLength = BASE_CORD_HEIGHT + dy;
+    const angleRad = Math.atan2(dx * 0.45, currentCordLength);
+    const angleDeg = -(angleRad * (180 / Math.PI));
+
+    tagCordLine.style.height = `${currentCordLength}px`;
+    tagDraggable.style.transform = `rotate(${angleDeg}deg)`;
+
+    if (dy >= PULL_TRIGGER_PX && !hasPulledPastThreshold) {
+      hasPulledPastThreshold = true;
+      masterOn = !masterOn;
+      if (masterOn && !draftTrailId && !draftClickId && allStickers.length > 0) {
+        draftTrailId = allStickers[0].effect_id;
+        draftClickId = allStickers[0].effect_id;
+        renderStickerTrays();
+      }
+      syncMasterUI();
+    }
+  });
+
+  function releasePaperTag(e) {
+    if (!isDraggingTag) return;
+    if (e && e.pointerId !== undefined && tagDraggable.hasPointerCapture(e.pointerId)) {
+      tagDraggable.releasePointerCapture(e.pointerId);
+    }
+    isDraggingTag = false;
+    tagDraggable.classList.remove("is-dragging");
+    tagCordLine.style.height = `${BASE_CORD_HEIGHT}px`;
+    tagDraggable.style.transform = "";
+  }
+
+  tagDraggable.addEventListener("pointerup", releasePaperTag);
+  tagDraggable.addEventListener("pointercancel", releasePaperTag);
+
+  /* =========================================================
+     STICKER TRAYS (`+` CUSTOM UPLOAD AT FRONT + SCROLLABLE LIST)
+     ========================================================= */
+  function buildStickerTray(container, stickers, selectedId, targetType, onSelect) {
+    container.innerHTML = "";
+
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "sticker-circle-btn sticker-add-btn";
+    addBtn.title = "Add your own background-removed sticker";
+    addBtn.textContent = "+";
+    addBtn.addEventListener("click", () => {
+      pendingUploadTarget = targetType;
+      customFileInput.value = "";
+      customFileInput.click();
+    });
+    container.appendChild(addBtn);
+
+    stickers.forEach((st) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "sticker-circle-btn" + (selectedId === st.effect_id ? " selected" : "");
+      btn.title = st.effect_name;
+      btn.innerHTML = `<img src="${st.effect_path}" alt="${st.effect_name}" draggable="false" />`;
+      btn.addEventListener("click", () => {
+        onSelect(st.effect_id);
+        renderStickerTrays();
+      });
+      container.appendChild(btn);
+    });
+  }
+
+  function renderStickerTrays() {
+    const trailChoices = allStickers.filter((s) => s.effect_type === "trail" || s.effect_type === "both");
+    const burstChoices = allStickers.filter((s) => s.effect_type === "click" || s.effect_type === "both");
+
+    buildStickerTray(trailTray, trailChoices, draftTrailId, "trail", (id) => {
+      draftTrailId = id;
+      trailEnabled = true;
+      syncSubSwitchesUI();
+    });
+
+    buildStickerTray(burstTray, burstChoices, draftClickId, "click", (id) => {
+      draftClickId = id;
+      burstEnabled = true;
+      syncSubSwitchesUI();
+    });
+  }
+
+  customFileInput.addEventListener("change", async () => {
+    const file = customFileInput.files && customFileInput.files[0];
+    if (!file) return;
+
+    showFiveSecondNoti("uploading your custom sticker...<br>please wait a moment");
+    const formData = new FormData();
+    formData.append("sticker", file);
+
+    try {
+      const res = await fetch("/api/cursor-effects/upload", {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Sticker upload failed.");
+
+      allStickers.unshift(data.effect);
+      if (pendingUploadTarget === "trail") {
+        draftTrailId = data.effect.effect_id;
+        trailEnabled = true;
+      } else {
+        draftClickId = data.effect.effect_id;
+        burstEnabled = true;
+      }
+      syncSubSwitchesUI();
+      renderStickerTrays();
+      showFiveSecondNoti("your sticker is added!<br>test in trial pad, then click Save");
+    } catch (err) {
+      showFiveSecondNoti(err.message);
+    }
+  });
+
+  trailSwitchBtn.addEventListener("click", () => {
+    trailEnabled = !trailEnabled;
+    syncSubSwitchesUI();
+  });
+
+  burstSwitchBtn.addEventListener("click", () => {
+    burstEnabled = !burstEnabled;
+    syncSubSwitchesUI();
+  });
+
+  trailSizeSlider.addEventListener("input", () => {
+    draftTrailSize = Number(trailSizeSlider.value);
+  });
+  document.getElementById("trailSizeMinus").addEventListener("click", () => {
+    trailSizeSlider.value = Math.max(14, Number(trailSizeSlider.value) - 4);
+    draftTrailSize = Number(trailSizeSlider.value);
+  });
+  document.getElementById("trailSizePlus").addEventListener("click", () => {
+    trailSizeSlider.value = Math.min(54, Number(trailSizeSlider.value) + 4);
+    draftTrailSize = Number(trailSizeSlider.value);
+  });
+
+  burstSizeSlider.addEventListener("input", () => {
+    draftClickSize = Number(burstSizeSlider.value);
+  });
+  document.getElementById("burstSizeMinus").addEventListener("click", () => {
+    burstSizeSlider.value = Math.max(16, Number(burstSizeSlider.value) - 4);
+    draftClickSize = Number(burstSizeSlider.value);
+  });
+  document.getElementById("burstSizePlus").addEventListener("click", () => {
+    burstSizeSlider.value = Math.min(62, Number(burstSizeSlider.value) + 4);
+    draftClickSize = Number(burstSizeSlider.value);
+  });
+
+  /* =========================================================
+     TRIAL-PAD-ONLY PREVIEW ENGINE (SINGLE POP-OUT BURST)
+     ========================================================= */
+  const previewImageCache = {};
+  let trialParticles = [];
+  let trialAnimId = null;
+  let lastTrialTrailTime = 0;
+  let lastTrialX = -9999;
+  let lastTrialY = -9999;
+
+  function syncTrialCanvasResolution() {
+    const w = trialPadBox.clientWidth;
+    const h = trialPadBox.clientHeight;
+    if (w > 0 && h > 0 && (trialCanvas.width !== w || trialCanvas.height !== h)) {
+      trialCanvas.width = w;
+      trialCanvas.height = h;
+    }
+  }
+
+  const trialResizeObserver = new ResizeObserver(syncTrialCanvasResolution);
+  trialResizeObserver.observe(trialPadBox);
+  syncTrialCanvasResolution();
+
+  function getPreviewImg(url) {
+    if (!url) return null;
+    if (!previewImageCache[url]) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = url;
+      previewImageCache[url] = img;
+    }
+    const img = previewImageCache[url];
+    return img.complete && img.naturalWidth > 0 ? img : null;
+  }
+
+  function startTrialLoop() {
+    if (!trialAnimId) trialAnimId = requestAnimationFrame(renderTrialParticles);
+  }
+
+  function renderTrialParticles() {
+    syncTrialCanvasResolution();
+    trialCtx.clearRect(0, 0, trialCanvas.width, trialCanvas.height);
+
+    for (let i = trialParticles.length - 1; i >= 0; i--) {
+      const p = trialParticles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rotation += p.vRot;
+      p.alpha -= p.decay;
+
+      if (p.isPop) {
+        p.progress = Math.min(1, p.progress + 0.065);
+        p.scale = p.progress < 0.45
+          ? 0.35 + (p.progress / 0.45) * 0.9
+          : 1.25 - ((p.progress - 0.45) / 0.55) * 0.2;
+      }
+
+      if (p.alpha <= 0) {
+        trialParticles.splice(i, 1);
+        continue;
+      }
+      const img = getPreviewImg(p.url);
+      if (!img) continue;
+
+      const scale = p.scale || 1;
+      const aspect = img.naturalHeight / img.naturalWidth;
+      const drawW = p.size * scale;
+      const drawH = p.size * aspect * scale;
+
+      trialCtx.save();
+      trialCtx.globalAlpha = Math.max(0, p.alpha);
+      trialCtx.translate(p.x, p.y);
+      trialCtx.rotate(p.rotation);
+      trialCtx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+      trialCtx.restore();
+    }
+
+    if (trialParticles.length > 0) {
+      trialAnimId = requestAnimationFrame(renderTrialParticles);
+    } else {
+      trialAnimId = null;
+    }
+  }
+
+  trialPadBox.addEventListener("mousemove", (e) => {
+    if (!masterOn || !trailEnabled || !draftTrailId) return;
+    const sticker = allStickers.find((s) => s.effect_id === draftTrailId);
+    if (!sticker) return;
+
+    const rect = trialPadBox.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const now = performance.now();
+
+    if (now - lastTrialTrailTime < 115 || Math.hypot(x - lastTrialX, y - lastTrialY) < 26) return;
+    lastTrialTrailTime = now;
+    lastTrialX = x;
+    lastTrialY = y;
+
+    trialParticles.push({
+      url: sticker.effect_path,
+      x,
+      y,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: -0.35 - Math.random() * 0.35,
+      size: draftTrailSize,
+      rotation: (Math.random() - 0.5) * 0.35,
+      vRot: (Math.random() - 0.5) * 0.015,
+      alpha: 0.92,
+      decay: 0.015
+    });
+    startTrialLoop();
+  });
+
+  trialPadBox.addEventListener("mousedown", (e) => {
+    if (!masterOn || !burstEnabled || !draftClickId) return;
+    const sticker = allStickers.find((s) => s.effect_id === draftClickId);
+    if (!sticker) return;
+
+    const rect = trialPadBox.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Single sticker pop-out and fade
+    trialParticles.push({
+      url: sticker.effect_path,
+      x,
+      y,
+      vx: 0,
+      vy: -0.25,
+      size: draftClickSize,
+      isPop: true,
+      progress: 0,
+      scale: 0.35,
+      rotation: (Math.random() - 0.5) * 0.25,
+      vRot: 0,
+      alpha: 1,
+      decay: 0.024
+    });
+    startTrialLoop();
+  });
+
+  /* =========================================================
+     SAVE BUTTON -> 5-SECOND COUNTDOWN NOTI + GLOBAL ACTIVATION
+     ========================================================= */
+  saveBtn.addEventListener("click", async () => {
+    saveBtn.disabled = true;
+
+    const finalTrailId = masterOn && trailEnabled ? draftTrailId : null;
+    const finalClickId = masterOn && burstEnabled ? draftClickId : null;
+
+    try {
+      const res = await fetch("/api/user/cursor-effects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          trail_effect_id: finalTrailId,
+          click_effect_id: finalClickId,
+          trail_effect_size: draftTrailSize,
+          click_effect_size: draftClickSize
+        })
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error || "Could not save cursor preferences.");
+
+      const trailObj = finalTrailId
+        ? { ...allStickers.find((s) => s.effect_id === finalTrailId), size: draftTrailSize }
+        : null;
+      const clickObj = finalClickId
+        ? { ...allStickers.find((s) => s.effect_id === finalClickId), size: draftClickSize }
+        : null;
+
+      if (typeof window.setSignrestCursorEffects === "function") {
+        window.setSignrestCursorEffects(trailObj, clickObj);
+      }
+
+      showFiveSecondNoti("your cursor effects are saved!<br>enjoy your new look across Signrest");
+    } catch (err) {
+      showFiveSecondNoti(err.message);
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+
+  /* =========================================================
+     INITIAL LOAD FROM DATABASE
+     ========================================================= */
+  async function loadInitialState() {
+    try {
+      const res = await fetch("/api/cursor-effects");
+      if (!res.ok) throw new Error("Failed to load cursor effects.");
+      const data = await res.json();
+
+      allStickers = data.effects || [];
+      draftTrailId = data.trail_effect_id ?? null;
+      draftClickId = data.click_effect_id ?? null;
+      draftTrailSize = data.trail_effect_size || 24;
+      draftClickSize = data.click_effect_size || 26;
+
+      trailSizeSlider.value = draftTrailSize;
+      burstSizeSlider.value = draftClickSize;
+
+      masterOn = Boolean(draftTrailId || draftClickId);
+      trailEnabled = Boolean(draftTrailId) || !masterOn;
+      burstEnabled = Boolean(draftClickId) || !masterOn;
+
+      syncMasterUI();
+      syncSubSwitchesUI();
+      renderStickerTrays();
+    } catch (err) {
+      showFiveSecondNoti(err.message);
+    }
+  }
+
+  loadInitialState();
+})();
+</script>
+</body>
+</html>
