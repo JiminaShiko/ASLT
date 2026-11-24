@@ -9,20 +9,25 @@ BACKEND_DIR = Path(__file__).resolve().parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from config.database.db_connection import get_db_connection
-from config.environment import load_environment
-from admin.overview import admin_overview_bp
-from admin.profile import admin_profile_bp
-from login_signup_pages.forgot_password_process import forgot_password_bp
-from login_signup_pages.google_auth import google_bp
-from login_signup_pages.login_process import ensure_login_columns, login_bp
-from login_signup_pages.signup_process import ensure_auth_tables, signup_bp
-from login_signup_pages.profile_process import profile_bp
-from agent_mail import agent_mail_bp
-from user.api import api_bp as translation_api_bp
-from user.text_to_sign import text_to_sign_bp
-from cursor_effects_process import cursor_bp
-from user_homepage.learning_process import learning_bp
+from config.database.db_connection import get_db_connection  # noqa: E402
+from config.environment import load_environment  # noqa: E402
+from admin.overview import admin_overview_bp  # noqa: E402
+from admin.profile import admin_profile_bp  # noqa: E402
+from admin.user_management import (  # noqa: E402
+    admin_users_bp,
+    ensure_user_management_schema,
+    session_guard,
+)
+from login_signup_pages.forgot_password_process import forgot_password_bp  # noqa: E402
+from login_signup_pages.google_auth import google_bp  # noqa: E402
+from login_signup_pages.login_process import ensure_login_columns, login_bp  # noqa: E402
+from login_signup_pages.signup_process import ensure_auth_tables, signup_bp  # noqa: E402
+from login_signup_pages.profile_process import profile_bp  # noqa: E402
+from agent_mail import agent_mail_bp  # noqa: E402
+from user.api import api_bp as translation_api_bp  # noqa: E402
+from user.text_to_sign import text_to_sign_bp  # noqa: E402
+from cursor_effects_process import cursor_bp  # noqa: E402
+from user_homepage.learning_process import learning_bp  # noqa: E402
 
 PROJECT_ROOT = BACKEND_DIR.parent
 FRONTEND_DIR = PROJECT_ROOT / "Front-end"
@@ -60,6 +65,7 @@ app.register_blueprint(google_bp)
 app.register_blueprint(profile_bp)
 app.register_blueprint(admin_overview_bp)
 app.register_blueprint(admin_profile_bp)
+app.register_blueprint(admin_users_bp)
 app.register_blueprint(cursor_bp)
 app.register_blueprint(learning_bp)
 
@@ -73,6 +79,11 @@ def _translation_auth_bypassed() -> bool:
     if flag not in {"1", "true", "yes"}:
         return False
     return request.remote_addr in LOOPBACK_ADDRESSES
+
+
+@app.before_request
+def enforce_server_side_sessions():
+    return session_guard()
 
 
 @app.before_request
@@ -90,6 +101,7 @@ def require_login_for_translation_api():
 # Schema migrations must run before any request touches `users`.
 ensure_auth_tables()
 ensure_login_columns()
+ensure_user_management_schema()
 
 
 @app.route("/")

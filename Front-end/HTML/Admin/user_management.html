@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users &amp; Sessions | Signrest Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Playfair+Display:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/admin-dashboard/css/style.css">
+  <link rel="stylesheet" href="/admin-dashboard/css/sidebar-toggle.css">
+  <script>
+    /* Apply the saved theme before first paint to avoid a flash. */
+    try { document.documentElement.dataset.theme = localStorage.getItem("signrest-admin-theme") === "dark" ? "dark" : "light"; } catch (e) {}
+  </script>
+  <style>
+    /* ------------------------------------------------------------
+       Tokens (same palette as Profile Settings / Sign Materials)
+       ------------------------------------------------------------ */
+    :root {
+      --um-bg: #f0f3e9;
+      --um-surface: #fbfaf5;
+      --um-surface-tint: #eef2e8;
+      --um-text: #2f3d33;
+      --um-label: #3f4d42;
+      --um-muted: #667369;
+      --um-border: #dcdfd2;
+      --um-divider: #e6e8dc;
+      --um-accent: #4a6f53;
+      --um-accent-strong: #365640;
+      --um-accent-soft: color-mix(in oklab, var(--um-accent) 12%, var(--um-surface));
+      --um-field-bg: #fffffb;
+      --um-field-border: #cfd3c4;
+      --um-primary-bg: #4a6f53;
+      --um-primary-hover: #365640;
+      --um-primary-text: #fff;
+      --um-success: #3d6b47;
+      --um-success-bg: #e8f1e7;
+      --um-success-border: #c6dac5;
+      --um-danger: #9a4a3d;
+      --um-danger-bg: #f8ebe7;
+      --um-danger-border: #e6c8c0;
+      --um-warn: #8a6a2a;
+      --um-warn-bg: #f6efdc;
+      --um-warn-border: #e5d7b3;
+      --um-neutral-bg: #efeee6;
+      --um-neutral-fg: #6b6f62;
+      /* profile frame */
+      --um-tile-a: #f0f6e4;
+      --um-tile-b: #e5eed6;
+      --um-disc: #d3e4c3;
+      --um-ring: #4a6f53;
+      --um-leaf: #6a9470;
+      --um-shadow: 0 1px 2px rgba(47,61,51,.05), 0 8px 24px rgba(47,61,51,.07);
+      --um-radius: 12px;
+      --um-radius-sm: 8px;
+      --um-font-ui: var(--font-ui, "Inter", system-ui, sans-serif);
+      --um-font-title: var(--font-title, "Playfair Display", Georgia, serif);
+    }
+
+    :root[data-theme="dark"] {
+      --um-bg: #1d2620;
+      --um-surface: #283229;
+      --um-surface-tint: #2e3a30;
+      --um-text: #ebe9df;
+      --um-label: #d7d9cf;
+      --um-muted: #aeb4a8;
+      --um-border: #424f45;
+      --um-divider: #394539;
+      --um-accent: #a4c4a4;
+      --um-accent-strong: #d5e5d4;
+      --um-field-bg: #1d2620;
+      --um-field-border: #55635a;
+      --um-primary-bg: #a4c4a4;
+      --um-primary-hover: #bad4ba;
+      --um-primary-text: #17211a;
+      --um-success: #a9d3a9;
+      --um-success-bg: #263a2a;
+      --um-success-border: #3f5c44;
+      --um-danger: #eeb0a4;
+      --um-danger-bg: #3d2724;
+      --um-danger-border: #6a4039;
+      --um-warn: #e3c98a;
+      --um-warn-bg: #3a3322;
+      --um-warn-border: #5e5236;
+      --um-neutral-bg: #343f36;
+      --um-neutral-fg: #bfc4b6;
+      --um-tile-a: #2d3b2f;
+      --um-tile-b: #253226;
+      --um-disc: #3a4d3b;
+      --um-ring: #a4c4a4;
+      --um-leaf: #86ad8b;
+      --um-shadow: 0 1px 2px rgba(0,0,0,.25), 0 8px 24px rgba(0,0,0,.2);
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--um-bg); color: var(--um-text); font-family: var(--um-font-ui); line-height: 1.5; }
+    button, input, select, textarea { font: inherit; }
+    [hidden] { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    /* ------------------------------------------------------------
+       Shell
+       ------------------------------------------------------------ */
+    .um-main > header { height: 72px; background: var(--um-bg); }
+    .um-main .header-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    @media (min-width: 801px) and (max-width: 1120px) {
+      .um-main { width: calc(100% - 248px); margin-left: 248px; }
+    }
+
+    .um-page { width: min(1160px, calc(100% - 48px)); margin: 36px auto 64px; }
+
+    .um-heading { margin-bottom: 22px; }
+    .um-title { margin: 0; font-family: var(--um-font-title); font-size: clamp(30px, 4vw, 38px); font-weight: 500; letter-spacing: -.025em; line-height: 1.15; }
+    .um-subtitle { margin: 8px 0 0; color: var(--um-muted); font-size: 14.5px; }
+
+    /* Tabs */
+    .um-tabs { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 26px; background: var(--um-surface); border: 1px solid var(--um-border); border-radius: 12px; }
+    .um-tab { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 8px 16px; border: 0; border-radius: 9px; background: transparent; color: var(--um-muted); font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s; }
+    .um-tab:hover { color: var(--um-text); }
+    .um-tab[aria-selected="true"] { background: var(--um-accent-soft); color: var(--um-accent-strong); }
+    .um-tab svg { width: 17px; height: 17px; }
+
+    svg.um-svg, .um-tab svg, .um-btn svg, .um-icon-btn svg, .um-stat-icon svg, .um-state-icon svg {
+      fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    /* ------------------------------------------------------------
+       Buttons, inputs, badges
+       ------------------------------------------------------------ */
+    .um-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 16px; border: 1px solid transparent; border-radius: var(--um-radius-sm); cursor: pointer; font-size: 13.5px; font-weight: 600; transition: transform .12s, background .15s, border-color .15s; }
+    .um-btn:active { transform: translateY(1px); }
+    .um-btn:disabled { opacity: .65; cursor: progress; }
+    .um-btn svg { width: 16px; height: 16px; }
+    .um-btn-primary { background: var(--um-primary-bg); color: var(--um-primary-text); }
+    .um-btn-primary:hover:not(:disabled) { background: var(--um-primary-hover); }
+    .um-btn-secondary { border-color: var(--um-field-border); background: transparent; color: var(--um-label); }
+    .um-btn-secondary:hover:not(:disabled) { background: var(--um-accent-soft); border-color: var(--um-accent); }
+    .um-btn-danger { background: #a5483a; color: #fff; }
+    .um-btn-danger:hover:not(:disabled) { background: #8d3b2f; }
+    :root[data-theme="dark"] .um-btn-danger { background: #e29d90; color: #2b1511; }
+    :root[data-theme="dark"] .um-btn-danger:hover:not(:disabled) { background: #eeb0a4; }
+
+    .um-icon-btn { display: inline-grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--um-muted); cursor: pointer; transition: background .15s, color .15s; }
+    .um-icon-btn:hover, .um-icon-btn[aria-expanded="true"] { background: color-mix(in oklab, var(--um-accent) 16%, transparent); color: var(--um-text); }
+    .um-icon-btn svg { width: 18px; height: 18px; }
+
+    .um-btn:focus-visible, .um-icon-btn:focus-visible, .um-tab:focus-visible, .um-pill:focus-visible, .um-input:focus-visible, .um-menu button:focus-visible {
+      outline: 2px solid var(--um-accent); outline-offset: 2px;
+    }
+
+    .um-input { width: 100%; min-height: 40px; padding: 8px 13px; border: 1px solid var(--um-field-border); border-radius: var(--um-radius-sm); outline: none; background: var(--um-field-bg); color: var(--um-text); font-size: 14px; transition: border-color .15s, box-shadow .15s; }
+    .um-input:hover { border-color: color-mix(in oklab, var(--um-accent) 55%, var(--um-field-border)); }
+    .um-input:focus { border-color: var(--um-accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--um-accent) 22%, transparent); }
+    select.um-input { appearance: none; padding-right: 34px; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23667369' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 12px; }
+    textarea.um-input { min-height: 84px; resize: vertical; }
+
+    .um-search { position: relative; flex: 1 1 260px; min-width: 0; }
+    .um-search svg { position: absolute; top: 50%; left: 12px; width: 17px; height: 17px; transform: translateY(-50%); color: var(--um-muted); pointer-events: none; }
+    .um-search .um-input { padding-left: 38px; }
+
+    .um-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+    .um-toolbar select.um-input, .um-toolbar input[type="date"].um-input { width: auto; min-width: 150px; }
+
+    .um-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .um-pill { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 6px 14px; border: 1px solid var(--um-border); border-radius: 999px; background: var(--um-surface); color: var(--um-muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+    .um-pill:hover { color: var(--um-text); border-color: var(--um-accent); }
+    .um-pill[aria-pressed="true"] { background: var(--um-primary-bg); border-color: var(--um-primary-bg); color: var(--um-primary-text); }
+    .um-pill small { font-size: 12px; font-weight: 500; opacity: .8; }
+
+    .um-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid transparent; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .um-badge::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
+    .um-badge.is-active { background: var(--um-success-bg); border-color: var(--um-success-border); color: var(--um-success); }
+    .um-badge.is-inactive, .um-badge.is-expired { background: var(--um-warn-bg); border-color: var(--um-warn-border); color: var(--um-warn); }
+    .um-badge.is-banned, .um-badge.is-revoked { background: var(--um-danger-bg); border-color: var(--um-danger-border); color: var(--um-danger); }
+    .um-badge.is-pending, .um-badge.is-signed_out { background: var(--um-neutral-bg); border-color: var(--um-border); color: var(--um-neutral-fg); }
+
+    .um-panel { background: var(--um-surface); border: 1px solid var(--um-border); border-radius: var(--um-radius); box-shadow: var(--um-shadow); }
+    .um-panel-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding: 20px 22px 0; }
+    .um-panel-title { margin: 0; font-family: var(--um-font-title); font-size: 20px; font-weight: 600; }
+    .um-panel-desc { margin: 2px 0 0; color: var(--um-muted); font-size: 13px; }
+    .um-panel-body { padding: 18px 22px 22px; }
+
+    /* ------------------------------------------------------------
+       Profile gallery
+       ------------------------------------------------------------ */
+    .um-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr)); gap: 22px; }
+
+    .um-tile { position: relative; display: flex; flex-direction: column; align-items: center; padding: 28px 16px 22px; border-radius: 28px; background: linear-gradient(165deg, var(--um-tile-a), var(--um-tile-b)); transition: transform .2s, box-shadow .2s; }
+    .um-tile:hover { transform: translateY(-3px); box-shadow: var(--um-shadow); }
+
+    .um-frame { position: relative; width: 168px; height: 168px; flex: none; }
+    .um-frame.is-small { width: 132px; height: 132px; }
+    .um-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; color: var(--um-ring); pointer-events: none; }
+    .um-photo { position: absolute; inset: 19%; display: grid; place-items: center; overflow: hidden; border-radius: 50%; background: var(--um-disc); color: var(--um-accent-strong); font-family: var(--um-font-title); font-size: 34px; font-weight: 600; box-shadow: 0 0 0 3px var(--um-tile-a); }
+    .is-small .um-photo { font-size: 28px; }
+    .um-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .um-tile.is-banned .um-photo img, .um-tile.is-inactive .um-photo img { filter: grayscale(.75); }
+
+    .um-tile-menu { position: absolute; top: 12px; right: 12px; }
+
+    .um-name { max-width: 100%; margin: 14px 0 0; overflow: hidden; font-family: var(--um-font-title); font-size: 19px; font-weight: 600; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+    .um-username { max-width: 100%; margin: 2px 0 0; overflow: hidden; color: var(--um-muted); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+    .um-status { display: inline-flex; align-items: center; gap: 7px; margin: 12px 0 14px; font-size: 12.5px; font-weight: 600; }
+    .um-status::before { width: 8px; height: 8px; border-radius: 50%; background: currentColor; content: ""; }
+    .um-status.is-active { color: var(--um-success); }
+    .um-status.is-inactive { color: var(--um-warn); }
+    .um-status.is-banned { color: var(--um-danger); }
+    .um-status.is-pending { color: var(--um-neutral-fg); }
+    .um-tile .um-btn { min-width: 132px; background: color-mix(in oklab, var(--um-surface) 70%, transparent); }
+
+    .um-skeleton { height: 318px; border-radius: 28px; background: linear-gradient(90deg, var(--um-tile-b), var(--um-tile-a), var(--um-tile-b)); background-size: 200% 100%; animation: um-shimmer 1.4s linear infinite; opacity: .7; }
+    @keyframes um-shimmer { to { background-position: -200% 0; } }
+
+    .um-more { display: flex; justify-content: center; margin-top: 28px; }
+
+    /* States */
+    .um-state { display: grid; justify-items: center; gap: 6px; padding: 56px 24px; text-align: center; }
+    .um-state h2 { margin: 8px 0 0; font-family: var(--um-font-title); font-size: 20px; font-weight: 600; }
+    .um-state p { max-width: 380px; margin: 0; color: var(--um-muted); font-size: 14px; }
+    .um-state .um-btn { margin-top: 14px; }
+    .um-state-icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 14px; background: var(--um-accent-soft); color: var(--um-accent-strong); }
+    .um-state-icon svg { width: 24px; height: 24px; }
+    .um-state.is-error .um-state-icon { background: var(--um-danger-bg); color: var(--um-danger); }
+
+    /* ------------------------------------------------------------
+       Floating action menu
+       ------------------------------------------------------------ */
+    .um-menu { position: fixed; z-index: 70; min-width: 196px; padding: 6px; border: 1px solid var(--um-border); border-radius: 12px; background: var(--um-surface); box-shadow: 0 12px 32px rgba(20, 30, 22, .22); }
+    .um-menu button { display: flex; width: 100%; align-items: center; gap: 10px; padding: 9px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--um-text); font-size: 13.5px; font-weight: 500; text-align: left; cursor: pointer; }
+    .um-menu button:hover { background: var(--um-accent-soft); }
+    .um-menu button.is-danger { color: var(--um-danger); }
+    .um-menu button.is-danger:hover { background: var(--um-danger-bg); }
+    .um-menu svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ------------------------------------------------------------
+       Drawer + confirm dialogs
+       ------------------------------------------------------------ */
+    dialog.um-drawer { width: min(500px, 100%); max-width: 100%; height: 100%; max-height: 100%; margin: 0 0 0 auto; padding: 0; border: 0; border-left: 1px solid var(--um-border); background: var(--um-surface); color: var(--um-text); box-shadow: -16px 0 40px rgba(20, 30, 22, .2); }
+    dialog.um-drawer[open] { display: flex; flex-direction: column; animation: um-slide .24s ease-out; }
+    dialog.um-drawer::backdrop, dialog.um-confirm::backdrop { background: rgb(15 22 17 / 55%); }
+    @keyframes um-slide { from { transform: translateX(28px); opacity: 0; } }
+
+    .um-drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--um-divider); }
+    .um-drawer-head h2 { margin: 0; font-family: var(--um-font-title); font-size: 20px; font-weight: 600; }
+    .um-drawer-body { flex: 1; overflow-y: auto; padding: 22px 24px 32px; }
+
+    .um-overview { display: flex; flex-direction: column; align-items: center; padding: 22px 16px 20px; margin-bottom: 26px; border-radius: 24px; background: linear-gradient(165deg, var(--um-tile-a), var(--um-tile-b)); text-align: center; }
+    .um-overview .um-name { white-space: normal; font-size: 22px; }
+    .um-overview .um-status { margin: 10px 0 0; }
+    .um-chips { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .um-chip { padding: 3px 10px; border: 1px solid var(--um-border); border-radius: 999px; background: color-mix(in oklab, var(--um-surface) 70%, transparent); color: var(--um-label); font-size: 12px; font-weight: 500; }
+
+    .um-section { margin-bottom: 26px; }
+    .um-section h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+    .um-section h3 svg { width: 16px; height: 16px; color: var(--um-accent); }
+    .um-dl { display: grid; margin: 0; border: 1px solid var(--um-divider); border-radius: var(--um-radius-sm); overflow: hidden; }
+    .um-dl > div { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--um-divider); font-size: 13.5px; }
+    .um-dl > div:last-child { border-bottom: 0; }
+    .um-dl dt { color: var(--um-muted); }
+    .um-dl dd { margin: 0; overflow-wrap: anywhere; }
+    .um-dl .is-missing { color: var(--um-muted); font-style: italic; }
+    .um-note { margin: 8px 0 0; color: var(--um-muted); font-size: 12.5px; }
+
+    .um-timeline { position: relative; display: grid; gap: 14px; margin: 0; padding: 0 0 0 4px; list-style: none; }
+    .um-timeline::before { position: absolute; top: 8px; bottom: 8px; left: 17px; width: 1px; background: var(--um-divider); content: ""; }
+    .um-timeline li { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; }
+    .um-dot { z-index: 1; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--um-border); background: var(--um-surface); color: var(--um-accent-strong); }
+    .um-dot svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .um-dot.is-bad { color: var(--um-danger); background: var(--um-danger-bg); border-color: var(--um-danger-border); }
+    .um-dot.is-warn { color: var(--um-warn); background: var(--um-warn-bg); border-color: var(--um-warn-border); }
+    .um-dot.is-good { color: var(--um-success); background: var(--um-success-bg); border-color: var(--um-success-border); }
+    .um-event strong { display: block; font-size: 13.5px; font-weight: 600; }
+    .um-event span { display: block; color: var(--um-muted); font-size: 12.5px; }
+
+    dialog.um-confirm { width: min(440px, calc(100% - 32px)); padding: 0; border: 1px solid var(--um-border); border-radius: var(--um-radius); background: var(--um-surface); color: var(--um-text); box-shadow: 0 24px 60px rgba(0,0,0,.28); }
+    .um-confirm form { margin: 0; padding: 26px; }
+    .um-confirm h2 { margin: 0; font-family: var(--um-font-title); font-size: 22px; font-weight: 600; }
+    .um-confirm p { margin: 8px 0 0; color: var(--um-muted); font-size: 14px; }
+    .um-confirm label { display: block; margin: 18px 0 7px; color: var(--um-label); font-size: 13px; font-weight: 600; }
+    .um-form-error { display: none; margin-top: 16px; padding: 10px 14px; border: 1px solid var(--um-danger-border); border-radius: var(--um-radius-sm); background: var(--um-danger-bg); color: var(--um-danger); font-size: 13px; }
+    .um-form-error.is-visible { display: block; }
+    .um-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--um-divider); }
+
+    /* ------------------------------------------------------------
+       Sessions
+       ------------------------------------------------------------ */
+    .um-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }
+    .um-stat { display: flex; align-items: center; gap: 14px; padding: 18px; background: var(--um-surface); border: 1px solid var(--um-border); border-radius: var(--um-radius); box-shadow: var(--um-shadow); }
+    .um-stat-icon { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 11px; background: var(--um-accent-soft); color: var(--um-accent-strong); }
+    .um-stat-icon svg { width: 20px; height: 20px; }
+    .um-stat-icon.is-warn { background: var(--um-warn-bg); color: var(--um-warn); }
+    .um-stat-icon.is-bad { background: var(--um-danger-bg); color: var(--um-danger); }
+    .um-stat-value { display: block; font-family: var(--um-font-title); font-size: 28px; font-weight: 600; line-height: 1.1; }
+    .um-stat-label { display: block; margin-top: 2px; color: var(--um-muted); font-size: 12.5px; }
+
+    .um-devices { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 28px; }
+    .um-bar { display: flex; height: 12px; overflow: hidden; border-radius: 999px; background: var(--um-surface-tint); }
+    .um-bar span { display: block; min-width: 0; transition: width .4s; }
+    .um-legend { display: grid; gap: 10px; margin: 16px 0 0; padding: 0; list-style: none; }
+    .um-legend li { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
+    .um-legend i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+    .um-legend b { margin-left: auto; font-weight: 600; }
+    .um-browser { display: grid; gap: 6px; margin-bottom: 12px; font-size: 13px; }
+    .um-browser div:first-child { display: flex; justify-content: space-between; }
+    .um-browser .um-bar { height: 8px; }
+    .um-browser .um-bar span { background: var(--um-accent); }
+
+    .um-sessions { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+    .um-session { position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 14px; padding: 16px; border: 1px solid var(--um-divider); border-radius: var(--um-radius); background: var(--um-surface); }
+    .um-session:hover { border-color: var(--um-border); }
+    .um-device { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--um-accent-soft); color: var(--um-accent-strong); }
+    .um-device svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .um-session.is-ended .um-device { background: var(--um-neutral-bg); color: var(--um-neutral-fg); }
+    .um-session-user { display: flex; align-items: center; gap: 8px; min-width: 0; margin-bottom: 6px; }
+    .um-mini { display: grid; place-items: center; flex: none; width: 24px; height: 24px; overflow: hidden; border-radius: 50%; background: var(--um-disc); color: var(--um-accent-strong); font-size: 10px; font-weight: 600; }
+    .um-mini img { width: 100%; height: 100%; object-fit: cover; }
+    .um-session-user strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+    .um-session-user span { overflow: hidden; color: var(--um-muted); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+    .um-meta { display: grid; gap: 2px; margin: 0; color: var(--um-muted); font-size: 12.5px; }
+    .um-session-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+    .um-chip-current { padding: 2px 8px; border-radius: 999px; background: var(--um-accent-soft); color: var(--um-accent-strong); font-size: 11.5px; font-weight: 600; }
+
+    .um-history { display: grid; margin: 0; padding: 0; list-style: none; }
+    .um-history li { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--um-divider); }
+    .um-history li:last-child { border-bottom: 0; }
+    .um-history .um-dot { width: 32px; height: 32px; }
+    .um-history .um-event strong { font-weight: 500; }
+    .um-history time { color: var(--um-muted); font-size: 12.5px; text-align: right; white-space: nowrap; }
+    .um-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 14px; color: var(--um-muted); font-size: 13px; }
+    .um-pager div { display: flex; align-items: center; gap: 10px; }
+
+    .um-toast { position: fixed; right: 24px; bottom: 24px; z-index: 90; max-width: min(380px, calc(100% - 48px)); padding: 12px 16px; border: 1px solid var(--um-success-border); border-radius: var(--um-radius-sm); background: var(--um-success-bg); color: var(--um-success); box-shadow: var(--um-shadow); font-size: 13.5px; font-weight: 500; opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity .2s, transform .2s; }
+    .um-toast.is-visible { opacity: 1; transform: none; }
+    .um-toast.is-error { border-color: var(--um-danger-border); background: var(--um-danger-bg); color: var(--um-danger); }
+
+    /* ------------------------------------------------------------
+       Responsive
+       ------------------------------------------------------------ */
+    @media (max-width: 1000px) {
+      .um-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .um-devices { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 800px) {
+      .um-page { width: calc(100% - 32px); margin: 24px auto 40px; }
+    }
+    @media (max-width: 560px) {
+      .um-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+      .um-tile { padding: 24px 10px 18px; }
+      .um-frame { width: 132px; height: 132px; }
+      .um-photo { font-size: 28px; }
+      .um-tile .um-btn { min-width: 0; width: 100%; padding-inline: 8px; }
+      .um-sessions { grid-template-columns: 1fr; }
+      .um-toolbar select.um-input, .um-toolbar input[type="date"].um-input { flex: 1 1 140px; }
+      .um-dl > div { grid-template-columns: 1fr; gap: 2px; }
+      .um-actions { flex-direction: column-reverse; }
+      .um-actions .um-btn { width: 100%; }
+      .um-toast { right: 16px; bottom: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .um-page *, dialog.um-drawer[open], .um-toast { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <!-- One shared botanical frame: ring arc, leaf sprig and dotted trail around the photo. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="um-frame-art" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="70" style="fill: var(--um-disc)"/>
+      <path d="M150.1 40.2A78 78 0 1 0 155.2 155.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M162.4 43.8A84 84 0 0 1 154 164.3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".85"/>
+      <g style="fill: var(--um-leaf)">
+        <path d="M0 0C3.5-5 11-6 17 0C11 6 3.5 5 0 0Z" transform="translate(166.2 48.3) rotate(-3)"/>
+        <path d="M0 0C3.5-5 11-6 17 0C11 6 3.5 5 0 0Z" transform="translate(176.8 65.8) rotate(-59)"/>
+        <path d="M0 0C3.5-5 11-6 17 0C11 6 3.5 5 0 0Z" transform="translate(182.7 85.4) rotate(25)"/>
+        <path d="M0 0C3.5-5 11-6 17 0C11 6 3.5 5 0 0Z" transform="translate(183.8 105.9) rotate(-31)"/>
+        <path d="M0 0C3.5-5 11-6 17 0C11 6 3.5 5 0 0Z" transform="translate(179.9 126) rotate(53)"/>
+        <path d="M0 0C3.5-5 11-6 17 0C11 6 3.5 5 0 0Z" transform="translate(171.2 144.5) rotate(-3)"/>
+        <path d="M0 0C3.5-5 11-6 17 0C11 6 3.5 5 0 0Z" transform="translate(160.4 158.4) rotate(79)"/>
+      </g>
+      <g fill="currentColor"><circle cx="141.3" cy="166.1" r="1.8"/><circle cx="131.7" cy="171.3" r="1.5"/><circle cx="120.2" cy="175.3" r="1.2"/></g>
+    </symbol>
+  </svg>
+
+  <div class="app" id="app">
+    <div id="adminSidebarHost"></div>
+    <main class="main um-main">
+      <header>
+        <div class="header-start">
+          <button class="collapse mobile-collapse" type="button" onclick="collapseSidebar()" aria-label="Toggle sidebar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg>
+          </button>
+          <div class="header-title">Admin Portal</div>
+        </div>
+        <div class="header-right">
+          <button class="icon-button theme-toggle" id="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Switch to dark mode" title="Switch to dark mode"></button>
+          <label class="search">
+            <span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 5 5"></path></svg></span>
+            <input id="search" type="search" placeholder="Search users..." aria-label="Search users or sessions">
+          </label>
+          <span class="icon-button notification-bell" role="img" aria-label="Notifications" title="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
+          </span>
+          <div class="avatar header-avatar" id="top-initials">A</div>
+        </div>
+      </header>
+
+      <div class="um-page">
+        <div class="um-heading">
+          <h1 class="um-title">Users &amp; sessions</h1>
+          <p class="um-subtitle">Manage learner accounts and keep an eye on who is signed in.</p>
+        </div>
+
+        <div class="um-tabs" role="tablist" aria-label="User management sections">
+          <button class="um-tab" id="tab-accounts" role="tab" aria-selected="true" aria-controls="view-accounts" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>Accounts
+          </button>
+          <button class="um-tab" id="tab-sessions" role="tab" aria-selected="false" aria-controls="view-sessions" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6Z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>Sessions
+          </button>
+        </div>
+
+        <!-- ===================== ACCOUNTS ===================== -->
+        <section id="view-accounts" role="tabpanel" aria-labelledby="tab-accounts">
+          <div class="um-toolbar">
+            <div class="um-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="um-svg"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+              <input class="um-input" id="userSearch" type="search" placeholder="Search by username or email" aria-label="Search users by username or email">
+            </div>
+            <select class="um-input" id="userSort" aria-label="Sort users">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </div>
+          <div class="um-toolbar" id="userPills" role="group" aria-label="Filter by account status"></div>
+
+          <div id="gallery" class="um-gallery" aria-live="polite"></div>
+          <div id="galleryState"></div>
+          <div class="um-more" id="galleryMore" hidden><button class="um-btn um-btn-secondary" id="loadMore" type="button">Load more</button></div>
+        </section>
+
+        <!-- ===================== SESSIONS ===================== -->
+        <section id="view-sessions" role="tabpanel" aria-labelledby="tab-sessions" hidden>
+          <div class="um-stats" id="sessionStats"></div>
+
+          <div class="um-panel" style="margin-bottom:22px">
+            <div class="um-panel-head">
+              <div><h2 class="um-panel-title">Device overview</h2><p class="um-panel-desc">Based on currently active sessions.</p></div>
+            </div>
+            <div class="um-panel-body um-devices" id="deviceOverview"></div>
+          </div>
+
+          <div class="um-panel" style="margin-bottom:22px">
+            <div class="um-panel-head">
+              <div><h2 class="um-panel-title">Session monitor</h2><p class="um-panel-desc" id="sessionCount"></p></div>
+            </div>
+            <div class="um-panel-body">
+              <div class="um-toolbar" style="margin-bottom:18px">
+                <div class="um-search">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="um-svg"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+                  <input class="um-input" id="sessionSearch" type="search" placeholder="Search by username or email" aria-label="Search sessions by username or email">
+                </div>
+                <select class="um-input" id="sessionStatus" aria-label="Filter sessions by status">
+                  <option value="active">Active</option>
+                  <option value="expired">Expired</option>
+                  <option value="revoked">Revoked</option>
+                  <option value="signed_out">Signed out</option>
+                  <option value="all">All sessions</option>
+                </select>
+              </div>
+              <div id="sessionList" class="um-sessions" aria-live="polite"></div>
+              <div id="sessionState"></div>
+              <div class="um-more" id="sessionMore" hidden><button class="um-btn um-btn-secondary" id="sessionLoadMore" type="button">Load more</button></div>
+            </div>
+          </div>
+
+          <div class="um-panel">
+            <div class="um-panel-head">
+              <div><h2 class="um-panel-title">Session history</h2><p class="um-panel-desc">Read-only record of sign-ins, sign-outs and revocations.</p></div>
+            </div>
+            <div class="um-panel-body">
+              <div class="um-toolbar" style="margin-bottom:6px">
+                <div class="um-search">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="um-svg"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+                  <input class="um-input" id="historySearch" type="search" placeholder="Search by username or email" aria-label="Search history by username or email">
+                </div>
+                <select class="um-input" id="historyEvent" aria-label="Filter by event">
+                  <option value="all">All events</option>
+                  <option value="login">Login</option>
+                  <option value="logout">Logout</option>
+                  <option value="expired">Expired</option>
+                  <option value="revoked">Revoked</option>
+                  <option value="failed_login">Failed login</option>
+                </select>
+                <input class="um-input" id="historyFrom" type="date" aria-label="From date">
+                <input class="um-input" id="historyTo" type="date" aria-label="To date">
+              </div>
+              <ul class="um-history" id="historyList" aria-live="polite"></ul>
+              <div id="historyState"></div>
+              <div class="um-pager" id="historyPager" hidden>
+                <span id="historyInfo"></span>
+                <div>
+                  <button class="um-btn um-btn-secondary" id="historyPrev" type="button">Previous</button>
+                  <button class="um-btn um-btn-secondary" id="historyNext" type="button">Next</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Shared dropdown menu (three-dot menus) -->
+  <div class="um-menu" id="menu" role="menu" hidden></div>
+
+  <!-- User details drawer -->
+  <dialog class="um-drawer" id="drawer" aria-labelledby="drawerTitle">
+    <div class="um-drawer-head">
+      <h2 id="drawerTitle">User details</h2>
+      <button class="um-icon-btn" id="drawerClose" type="button" aria-label="Close details">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="um-drawer-body" id="drawerBody"></div>
+  </dialog>
+
+  <!-- Confirmation dialog -->
+  <dialog class="um-confirm" id="confirm" aria-labelledby="confirmTitle">
+    <form id="confirmForm" method="dialog">
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmText"></p>
+      <div id="confirmReasonWrap" hidden>
+        <label for="confirmReason">Reason (optional)</label>
+        <textarea class="um-input" id="confirmReason" maxlength="200" placeholder="Saved with the account’s activity record"></textarea>
+      </div>
+      <div class="um-form-error" id="confirmError" role="alert"></div>
+      <div class="um-actions">
+        <button class="um-btn um-btn-secondary" id="confirmCancel" type="button">Cancel</button>
+        <button class="um-btn um-btn-primary" id="confirmOk" type="submit">Confirm</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="um-toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/admin-dashboard/js/user_management.js" defer></script>
+</body>
+</html>

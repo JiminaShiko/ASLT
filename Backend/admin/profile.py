@@ -48,8 +48,8 @@ def _auth_error():
 def _get_admin(cursor):
     cursor.execute(
         """
-        SELECT user_id, username, email, full_name, profile_photo,
-               password_hash, role, status, created_at, updated_at
+        SELECT user_id, username, email, profile_photo, password_hash,
+               role, status, created_at, updated_at
         FROM users
         WHERE user_id = %s AND email = %s
         LIMIT 1
@@ -73,7 +73,6 @@ def _profile_response(user):
         "user_id": user["user_id"],
         "username": user.get("username"),
         "email": user.get("email"),
-        "full_name": user.get("full_name"),
         "profile_photo": user.get("profile_photo"),
         "role": user.get("role"),
         "status": user.get("status"),
@@ -136,23 +135,15 @@ def update_admin_profile():
 
     data = request.get_json(silent=True) or {}
 
-    full_name = data.get("full_name")
     username = data.get("username")
 
-    if not isinstance(full_name, str) or not isinstance(username, str):
+    if not isinstance(username, str):
         return jsonify({
             "success": False,
-            "message": "Full name and username are required."
+            "message": "Username is required."
         }), 400
 
-    full_name = full_name.strip()
     username = username.strip()
-
-    if not full_name or len(full_name) > 100:
-        return jsonify({
-            "success": False,
-            "message": "Full name must contain 1–100 characters."
-        }), 400
 
     if not username or len(username) > 100:
         return jsonify({
@@ -199,12 +190,11 @@ def update_admin_profile():
         cursor.execute(
             """
             UPDATE users
-            SET full_name = %s,
-                username = %s,
+            SET username = %s,
                 updated_at = %s
             WHERE user_id = %s
             """,
-            (full_name, username, _now_utc(), user["user_id"]),
+            (username, _now_utc(), user["user_id"]),
         )
 
         conn.commit()
@@ -215,7 +205,6 @@ def update_admin_profile():
             "success": True,
             "message": "Profile information updated successfully.",
             "item": {
-                "full_name": full_name,
                 "username": username
             }
         }), 200
