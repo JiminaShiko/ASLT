@@ -1,1 +1,1 @@
-"""User-facing backend: the Text to Sign planner used by the logged-in user page."""
+"""User-facing backend: the ASL model bridge, Text to Sign planner and the Learning Studio progress API."""

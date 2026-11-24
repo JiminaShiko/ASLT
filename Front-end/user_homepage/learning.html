@@ -863,9 +863,199 @@
       font-weight: 700;
     }
 
+    /* =========================================================
+       CAMERA SIGN TEST (PROGRESS IS ONLY SAVED WHEN THE MODEL PASSES)
+       ========================================================= */
+    .tb-test-btn {
+      background: linear-gradient(180deg, #98b552 0%, #83a03f 100%);
+      color: #142215;
+      border: 1.5px solid #4c6420;
+      border-radius: 9999px;
+      padding: 10px 22px;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #4c6420, 0 8px 16px rgba(15, 28, 16, 0.18);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .tb-test-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 #4c6420, 0 12px 20px rgba(15, 28, 16, 0.22);
+    }
+
+    .tb-test-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #4c6420;
+    }
+
+    .learn-test-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 9500;
+      background: rgba(12, 22, 14, 0.56);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .learn-test-backdrop.open {
+      display: flex;
+    }
+
+    .learn-test-card {
+      width: 100%;
+      max-width: 780px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background: #f4f7ef;
+      color: #1c311e;
+      border: 2px solid #597430;
+      border-radius: 22px;
+      padding: 20px 22px;
+      box-shadow: 0 22px 48px rgba(10, 20, 12, 0.34);
+    }
+
+    body.dark-mode .learn-test-card {
+      background: #1a2b20;
+      color: #eef4ec;
+      border-color: #88a445;
+    }
+
+    .lt-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(44, 74, 44, 0.2);
+      margin-bottom: 14px;
+    }
+
+    .lt-header h3 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .lt-body {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .lt-cam-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #0f1a10;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .lt-cam-frame video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+      background: #0f1a10;
+    }
+
+    /* Hand skeleton drawn from the model's landmarks, mirrored like the video */
+    .lt-skeleton {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      transform: scaleX(-1);
+      pointer-events: none;
+      display: none;
+    }
+
+    .lt-cam-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      text-align: center;
+      color: #dbe7d6;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.86rem;
+    }
+
+    .lt-side {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .lt-kicker {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+
+    .lt-target {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .lt-instruction {
+      font-size: 0.86rem;
+      line-height: 1.45;
+      opacity: 0.85;
+    }
+
+    .lt-readout {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: rgba(136, 164, 69, 0.16);
+      border: 1px solid rgba(44, 74, 44, 0.18);
+      border-radius: 10px;
+      padding: 9px 11px;
+      min-height: 40px;
+      line-height: 1.35;
+    }
+
+    .lt-readout.ok {
+      background: rgba(126, 178, 64, 0.32);
+      border-color: #6d892f;
+    }
+
+    .lt-readout.err {
+      background: rgba(161, 40, 40, 0.12);
+      border-color: #a12828;
+      color: #8c1f1f;
+    }
+
+    body.dark-mode .lt-readout.err {
+      color: #f0a9a9;
+    }
+
+    .lt-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
     @media (max-width: 760px) {
       .learn-cards-grid,
       .tb-spread.active {
+        grid-template-columns: 1fr;
+      }
+      .lt-body {
         grid-template-columns: 1fr;
       }
       .quiz-sprout-walker {
@@ -935,7 +1125,7 @@
       <div class="learn-progress-box">
         <div class="progress-label-row">
           <span>ASL Progress</span>
-          <span id="aslProgressText">0 / 26 (0%)</span>
+          <span id="aslProgressText">Loading…</span>
         </div>
         <div class="progress-track">
           <div id="aslProgressFill" class="progress-fill asl-fill"></div>
@@ -965,7 +1155,7 @@
       <div class="learn-progress-box">
         <div class="progress-label-row">
           <span>WLASL Progress</span>
-          <span id="wlaslProgressText">0 / 56 (0%)</span>
+          <span id="wlaslProgressText">Loading…</span>
         </div>
         <div class="progress-track">
           <div id="wlaslProgressFill" class="progress-fill wlasl-fill"></div>
@@ -1003,6 +1193,9 @@
         <div id="tbSignWord" class="tb-sign-word">A</div>
         <p id="tbSignHint" style="font-size:0.9rem; opacity:0.84;">Practice this handshape carefully, then move to the next sign.</p>
 
+        <button type="button" id="tbTestBtn" class="tb-test-btn">Test with camera</button>
+        <p style="font-size:0.78rem; opacity:0.72; margin:0;">Progress is recorded only after the camera model reads the correct sign.</p>
+
         <div class="tb-nav-controls">
           <button type="button" id="tbPrevBtn" class="tb-nav-btn">&larr; Previous</button>
           <button type="button" id="tbNextBtn" class="tb-nav-btn">Next &rarr;</button>
@@ -1032,12 +1225,45 @@
       <div id="qmBody"></div>
     </div>
   </div>
+
+  <!-- =========================================================
+       CAMERA SIGN TEST MODAL (AI MODEL CHECKS THE SIGN)
+       ========================================================= -->
+  <div id="learnTestBackdrop" class="learn-test-backdrop">
+    <div class="learn-test-card">
+      <div class="lt-header">
+        <h3 id="ltTitle">Sign test</h3>
+        <button type="button" id="ltCloseBtn" class="qm-close-btn" aria-label="Close test">X</button>
+      </div>
+      <div class="lt-body">
+        <div class="lt-cam-frame">
+          <video id="ltVideo" autoplay playsinline muted></video>
+          <canvas id="ltSkeleton" class="lt-skeleton" aria-hidden="true"></canvas>
+          <div id="ltCamPlaceholder" class="lt-cam-placeholder">Starting the camera…</div>
+        </div>
+        <div class="lt-side">
+          <div>
+            <div class="lt-kicker">Show this sign</div>
+            <div id="ltTarget" class="lt-target">A</div>
+          </div>
+          <p id="ltInstruction" class="lt-instruction"></p>
+          <div id="ltReadout" class="lt-readout">Waiting for the model…</div>
+          <div class="lt-actions">
+            <button type="button" id="ltRetryBtn" class="tb-nav-btn" hidden>Retry camera</button>
+            <button type="button" id="ltStopBtn" class="tb-chart-return-btn" hidden>Stop camera</button>
+            <button type="button" id="ltNextBtn" class="tb-nav-btn" hidden>Next sign &rarr;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
 (function initSignrestLearning() {
 
   document.getElementById("learnBackBtn").addEventListener("click", () => {
+    closeSignTest();
     const brandLink = document.querySelector(".brand-link[data-page-link='translation']");
     if (brandLink) brandLink.click();
     else window.location.href = "/home?page=translation";
@@ -1058,6 +1284,7 @@
   const tbMediaFrame = document.getElementById("tbMediaFrame");
   const tbSignWord = document.getElementById("tbSignWord");
   const tbSignHint = document.getElementById("tbSignHint");
+  const tbLearnedBadge = document.getElementById("tbLearnedBadge");
   const tbPrevBtn = document.getElementById("tbPrevBtn");
   const tbNextBtn = document.getElementById("tbNextBtn");
   const tbBackToChartBtn = document.getElementById("tbBackToChartBtn");
@@ -1180,19 +1407,14 @@
     }
   }
 
-  async function markItemLearned(category, itemKey) {
-    const isNew = !curriculum[category].completed.includes(itemKey);
-    if (isNew) {
-      curriculum[category].completed.push(itemKey);
+  // Opening a lesson never grants progress. Only the camera test calls this,
+  // after the model has read the correct sign (the server saves the row).
+  function applyLearned(category, itemKey) {
+    const track = curriculum[category];
+    if (!track.completed.includes(itemKey)) {
+      track.completed.push(itemKey);
       updateProgressBars(category);
     }
-    try {
-      await fetch("/api/learning/progress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, item_key: itemKey })
-      });
-    } catch (err) {}
   }
 
   function attachFallbackMediaHandlers(el, item) {
@@ -1289,6 +1511,7 @@
     const track = curriculum[activeCategory];
     const items = track.items || [];
     if (!items.length) return;
+    closeSignTest();
 
     currentIndex = Math.max(0, Math.min(items.length - 1, index));
     const item = items[currentIndex];
@@ -1300,8 +1523,9 @@
     tbCounter.textContent = `${currentIndex + 1} of ${items.length}`;
     tbSignWord.textContent = item.label;
     tbSignHint.textContent = activeCategory === "asl"
-      ? `Fingerspelling letter "${item.label}". Match the handshape shown.`
-      : `Word sign for "${item.label}". Watch the movement and facial expression.`;
+      ? `Fingerspelling letter "${item.label}". Match the handshape shown, then prove it with the camera test.`
+      : `Word sign for "${item.label}". Watch the movement and facial expression, then prove it with the camera test.`;
+    tbLearnedBadge.hidden = !new Set(track.completed).has(item.key);
 
     tbMediaFrame.innerHTML = "";
     if (item.media_type === "video") {
@@ -1324,8 +1548,6 @@
 
     tbPrevBtn.disabled = currentIndex === 0;
     tbNextBtn.disabled = currentIndex === items.length - 1;
-
-    markItemLearned(activeCategory, item.key);
   }
 
   function openDigitalTextbook(category) {
@@ -1340,6 +1562,7 @@
   document.getElementById("openWlaslBookCard").addEventListener("click", () => openDigitalTextbook("wlasl"));
 
   document.getElementById("tbBackToHubBtn").addEventListener("click", () => {
+    closeSignTest();
     bookView.classList.remove("active");
     hubView.style.display = "grid";
     sproutWalker.classList.remove("hidden-in-book");
@@ -1352,16 +1575,346 @@
     openSingleSignLesson(nextUnlearned >= 0 ? nextUnlearned : 0);
   });
 
-  tbBackToChartBtn.addEventListener("click", renderChartView);
+  tbBackToChartBtn.addEventListener("click", () => {
+    closeSignTest();
+    renderChartView();
+  });
 
   tbPrevBtn.addEventListener("click", () => {
     if (currentIndex > 0) openSingleSignLesson(currentIndex - 1);
   });
 
   tbNextBtn.addEventListener("click", () => {
+    closeSignTest();
     if (currentIndex < curriculum[activeCategory].items.length - 1) {
       openSingleSignLesson(currentIndex + 1);
     }
+  });
+
+  /* =========================================================
+     CAMERA SIGN TEST
+     The camera feed goes to the same alphabet / word model the
+     translator uses. Progress is only written when the model reads
+     the exact sign this lesson is teaching.
+     ========================================================= */
+  const testBackdrop = document.getElementById("learnTestBackdrop");
+  const ltTitle = document.getElementById("ltTitle");
+  const ltTarget = document.getElementById("ltTarget");
+  const ltInstruction = document.getElementById("ltInstruction");
+  const ltReadout = document.getElementById("ltReadout");
+  const ltVideo = document.getElementById("ltVideo");
+  const ltSkeleton = document.getElementById("ltSkeleton");
+  const ltSkeletonCtx = ltSkeleton.getContext("2d");
+  const ltPlaceholder = document.getElementById("ltCamPlaceholder");
+  const ltRetryBtn = document.getElementById("ltRetryBtn");
+  const ltStopBtn = document.getElementById("ltStopBtn");
+  const ltNextBtn = document.getElementById("ltNextBtn");
+  const tbTestBtn = document.getElementById("tbTestBtn");
+
+  // Minimum gap between camera frame posts. Words need the model's frame
+  // cadence, so they are paced by the model itself.
+  const TEST_FRAME_MS = { asl: 320, wlasl: 40 };
+  const TEST_MAX_SIDE = 480;
+  const testCanvas = document.createElement("canvas");
+  const testCanvasCtx = testCanvas.getContext("2d");
+  let testStream = null;
+  let testSessionId = null;
+  let testRunId = 0;
+  let testTimer = null;
+  let testCategory = "asl";
+  let testItem = null;
+
+  function testReadout(message, kind) {
+    ltReadout.textContent = message;
+    ltReadout.className = "lt-readout" + (kind ? " " + kind : "");
+  }
+
+  function endTestSession() {
+    if (!testSessionId) return;
+    const sessionId = testSessionId;
+    testSessionId = null;
+    fetch("/api/learning/practice/stop", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId })
+    }).catch(() => {});
+  }
+
+  function stopSignTest() {
+    testRunId += 1;
+    if (testTimer) {
+      clearTimeout(testTimer);
+      testTimer = null;
+    }
+    if (testStream) {
+      testStream.getTracks().forEach((track) => track.stop());
+      testStream = null;
+    }
+    ltVideo.srcObject = null;
+    clearTestSkeleton();
+    ltStopBtn.hidden = true;
+    endTestSession();
+  }
+
+  function closeSignTest() {
+    stopSignTest();
+    testBackdrop.classList.remove("open");
+    ltPlaceholder.hidden = false;
+    ltPlaceholder.textContent = "Starting the camera…";
+  }
+
+  function captureTestFrame() {
+    const width = ltVideo.videoWidth;
+    const height = ltVideo.videoHeight;
+    if (!width || !height) return null;
+    const scale = Math.min(1, TEST_MAX_SIDE / Math.max(width, height));
+    const frameW = Math.max(1, Math.round(width * scale));
+    const frameH = Math.max(1, Math.round(height * scale));
+    if (testCanvas.width !== frameW || testCanvas.height !== frameH) {
+      testCanvas.width = frameW;
+      testCanvas.height = frameH;
+    }
+    testCanvasCtx.drawImage(ltVideo, 0, 0, frameW, frameH);
+    return testCanvas.toDataURL("image/jpeg", 0.72);
+  }
+
+  /* =========================================================
+     HAND SKELETON OVERLAY
+     Every frame answer carries the model's normalised hand
+     landmarks. Drawing them here keeps the upload small instead
+     of shipping an annotated JPEG back on every round trip.
+     ========================================================= */
+  const HAND_BONES = [
+    [0, 1], [1, 2], [2, 3], [3, 4],
+    [0, 5], [5, 6], [6, 7], [7, 8],
+    [5, 9], [9, 10], [10, 11], [11, 12],
+    [9, 13], [13, 14], [14, 15], [15, 16],
+    [13, 17], [17, 18], [18, 19], [19, 20],
+    [0, 17]
+  ];
+  const HAND_TIPS = new Set([4, 8, 12, 16, 20]);
+
+  function clearTestSkeleton() {
+    if (!ltSkeletonCtx) return;
+    ltSkeletonCtx.clearRect(0, 0, ltSkeleton.width, ltSkeleton.height);
+    ltSkeleton.style.display = "none";
+  }
+
+  function drawTestSkeleton(hands) {
+    if (!ltSkeletonCtx) return;
+    if (!Array.isArray(hands) || !hands.length) {
+      clearTestSkeleton();
+      return;
+    }
+    ltSkeleton.style.display = "block";
+    const boxW = ltSkeleton.clientWidth;
+    const boxH = ltSkeleton.clientHeight;
+    if (!boxW || !boxH) return;
+
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const pixelW = Math.round(boxW * dpr);
+    const pixelH = Math.round(boxH * dpr);
+    if (ltSkeleton.width !== pixelW || ltSkeleton.height !== pixelH) {
+      ltSkeleton.width = pixelW;
+      ltSkeleton.height = pixelH;
+    }
+    ltSkeletonCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ltSkeletonCtx.clearRect(0, 0, boxW, boxH);
+
+    // The video is object-fit: cover, so map the frame the same way.
+    const srcW = ltVideo.videoWidth || 4;
+    const srcH = ltVideo.videoHeight || 3;
+    const cover = Math.max(boxW / srcW, boxH / srcH);
+    const offsetX = (boxW - srcW * cover) / 2;
+    const offsetY = (boxH - srcH * cover) / 2;
+    const toPixel = (point) => [
+      offsetX + point[0] * srcW * cover,
+      offsetY + point[1] * srcH * cover
+    ];
+
+    ltSkeletonCtx.lineWidth = 3;
+    ltSkeletonCtx.lineCap = "round";
+    ltSkeletonCtx.strokeStyle = "#4ade80";
+    ltSkeletonCtx.fillStyle = "#f8fafc";
+
+    hands.forEach((hand) => {
+      if (!Array.isArray(hand) || hand.length < 21) return;
+      const pts = hand.map(toPixel);
+      HAND_BONES.forEach(([a, b]) => {
+        ltSkeletonCtx.beginPath();
+        ltSkeletonCtx.moveTo(pts[a][0], pts[a][1]);
+        ltSkeletonCtx.lineTo(pts[b][0], pts[b][1]);
+        ltSkeletonCtx.stroke();
+      });
+      pts.forEach((point, index) => {
+        ltSkeletonCtx.beginPath();
+        ltSkeletonCtx.arc(point[0], point[1], HAND_TIPS.has(index) ? 4 : 2.5, 0, Math.PI * 2);
+        ltSkeletonCtx.fill();
+      });
+    });
+  }
+
+  async function postTestJson(path, payload) {
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "The sign test could not run.");
+    return data;
+  }
+
+  async function runTestFrame(runId) {
+    if (runId !== testRunId || !testSessionId) return;
+    const image = captureTestFrame();
+    if (!image) {
+      testTimer = setTimeout(() => runTestFrame(runId), 200);
+      return;
+    }
+    const startedAt = performance.now();
+    let roundTrip = 0;
+    try {
+      const state = await postTestJson("/api/learning/practice/frame", {
+        session_id: testSessionId,
+        image
+      });
+      roundTrip = performance.now() - startedAt;
+      if (runId !== testRunId) return;
+      drawTestSkeleton(state.hands);
+      if (state.passed) {
+        completeSignTest();
+        return;
+      }
+      if (!state.predicted) {
+        testReadout(state.hint || "No hand detected — move your hand into the frame.", "err");
+      } else {
+        const pct = Math.round((state.confidence || 0) * 100);
+        testReadout(
+          `Model reads \u201c${state.predicted}\u201d (${pct}%). Keep signing \u201c${testItem.label}\u201d.`
+        );
+      }
+    } catch (err) {
+      if (runId !== testRunId) return;
+      testReadout(err.message, "err");
+      stopSignTest();
+      ltRetryBtn.hidden = false;
+      return;
+    }
+    const minGap = TEST_FRAME_MS[testCategory] || 320;
+    // One frame in flight at a time, and never tighter than the machine can
+    // answer, so a slow model cannot build a queue that stutters the preview.
+    const gap = testCategory === "wlasl"
+      ? minGap
+      : Math.max(minGap, Math.round(roundTrip * 0.5));
+    testTimer = setTimeout(() => runTestFrame(runId), gap);
+  }
+
+  function completeSignTest() {
+    stopSignTest();
+    ltRetryBtn.hidden = true;
+    testReadout(
+      `Correct! The model recognised \u201c${testItem.label}\u201d. Saved to your progress.`,
+      "ok"
+    );
+    applyLearned(testCategory, testItem.key);
+    if (testCategory === activeCategory) {
+      tbLearnedBadge.hidden = false;
+      const items = curriculum[activeCategory].items || [];
+      ltNextBtn.hidden = currentIndex >= items.length - 1;
+    } else {
+      ltNextBtn.hidden = true;
+    }
+  }
+
+  async function startSignTest() {
+    stopSignTest();
+    const runId = ++testRunId;
+    ltRetryBtn.hidden = true;
+    ltNextBtn.hidden = true;
+    ltPlaceholder.hidden = false;
+    ltPlaceholder.textContent = "Starting the camera…";
+    testReadout("Starting the camera and loading the sign model…");
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      ltPlaceholder.textContent = "Camera not available in this browser.";
+      testReadout("This browser has no camera access. Open the app on localhost or HTTPS.", "err");
+      ltRetryBtn.hidden = false;
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: { ideal: "user" } },
+        audio: false
+      });
+      if (runId !== testRunId) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      testStream = stream;
+      ltVideo.srcObject = stream;
+      ltPlaceholder.hidden = true;
+
+      const started = await postTestJson("/api/learning/practice/start", {
+        category: testCategory,
+        item_key: testItem.key
+      });
+      if (runId !== testRunId) {
+        fetch("/api/learning/practice/stop", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: started.session_id })
+        }).catch(() => {});
+        return;
+      }
+      testSessionId = started.session_id;
+      ltStopBtn.hidden = false;
+      testReadout(
+        testCategory === "asl"
+          ? `Show the letter \u201c${testItem.label}\u201d to the camera and hold it steady.`
+          : `Sign \u201c${testItem.label}\u201d once, then lower your hands so the word is read.`
+      );
+      runTestFrame(runId);
+    } catch (err) {
+      if (runId !== testRunId) return;
+      stopSignTest();
+      ltPlaceholder.hidden = false;
+      ltPlaceholder.textContent = "Camera is off";
+      testReadout(err.message || "Could not open the camera. Please allow camera permission.", "err");
+      ltRetryBtn.hidden = false;
+    }
+  }
+
+  function openSignTest() {
+    const items = curriculum[activeCategory].items || [];
+    const item = items[currentIndex];
+    if (!item) return;
+    testCategory = activeCategory;
+    testItem = item;
+    ltTarget.textContent = item.label;
+    ltTitle.textContent = testCategory === "asl" ? "Alphabet sign test" : "Word sign test";
+    ltInstruction.textContent = testCategory === "asl"
+      ? `Make the ASL handshape for \u201c${item.label}\u201d. Hold it in the middle of the frame, clearly visible, until the model reads it.`
+      : `Show the sign for \u201c${item.label}\u201d facing the camera. The word model needs the whole movement, so sign it once and then lower your hands.`;
+    testBackdrop.classList.add("open");
+    startSignTest();
+  }
+
+  tbTestBtn.addEventListener("click", openSignTest);
+  document.getElementById("ltCloseBtn").addEventListener("click", closeSignTest);
+  ltRetryBtn.addEventListener("click", startSignTest);
+  ltStopBtn.addEventListener("click", () => {
+    stopSignTest();
+    ltPlaceholder.hidden = false;
+    ltPlaceholder.textContent = "Camera stopped";
+    testReadout("Camera stopped. Press \u201cRetry camera\u201d to test again.");
+    ltRetryBtn.hidden = false;
+  });
+  ltNextBtn.addEventListener("click", () => {
+    const items = curriculum[activeCategory].items || [];
+    closeSignTest();
+    if (currentIndex < items.length - 1) openSingleSignLesson(currentIndex + 1);
   });
 
   /* =========================================================
@@ -1517,10 +2070,14 @@
 
   sproutWalker.addEventListener("click", openQuizSelectionModal);
 
-  async function initCurriculum() {
+  async function initCurriculum(attempt = 0) {
     try {
-      const res = await fetch("/api/learning/curriculum");
-      if (!res.ok) return;
+      // no-store: a saved percentage must never be replaced by a cached copy.
+      const res = await fetch("/api/learning/curriculum", {
+        cache: "no-store",
+        credentials: "same-origin"
+      });
+      if (!res.ok) throw new Error("Progress could not be loaded.");
       const data = await res.json();
       if (data.asl && Array.isArray(data.asl.items) && data.asl.items.length) {
         curriculum.asl = data.asl;
@@ -1550,7 +2107,15 @@
       } else if (wlaslPct > 50) {
         showMilestoneNoti("Over 50% of WLASL Vocabulary completed!<br>Keep going — you're more than halfway!");
       }
-    } catch (err) {}
+    } catch (err) {
+      // One quick retry, then say so rather than showing a false 0%.
+      if (attempt < 1) {
+        setTimeout(() => initCurriculum(attempt + 1), 800);
+        return;
+      }
+      document.getElementById("aslProgressText").textContent = "Progress unavailable";
+      document.getElementById("wlaslProgressText").textContent = "Progress unavailable";
+    }
   }
 
   initCurriculum();

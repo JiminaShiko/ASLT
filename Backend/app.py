@@ -27,7 +27,7 @@ from agent_mail import agent_mail_bp  # noqa: E402
 from user.api import api_bp as translation_api_bp  # noqa: E402
 from user.text_to_sign import text_to_sign_bp  # noqa: E402
 from cursor_effects_process import cursor_bp  # noqa: E402
-from user_homepage.learning_process import learning_bp  # noqa: E402
+from user.learning import learning_bp  # noqa: E402
 
 PROJECT_ROOT = BACKEND_DIR.parent
 FRONTEND_DIR = PROJECT_ROOT / "Front-end"
