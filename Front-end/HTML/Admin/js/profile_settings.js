@@ -1,372 +1,651 @@
-(() => {
-  const profileEndpoint = "/api/admin/profile";
-  const byId = (id) => document.getElementById(id);
-  const app = byId("app");
-  let originalProfile = null;
-  let selectedPhoto = null;
+/**
+ * Signrest Admin Portal - Profile Settings Script
+ * File: js/profile_settings.js
+ * Matches exact IDs, classes, and inline handlers in profile_setting.html
+ */
 
-  function showMessage(elementId, message, type) {
-    const element = byId(elementId);
-    if (!element) return;
+(function () {
+  'use strict';
 
-    element.textContent = message;
-    element.classList.remove("is-success", "is-error");
-    element.classList.add("is-visible", type === "error" ? "is-error" : "is-success");
-  }
+  // Configuration & Constants
+  const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5 MB limit
+  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+  const USERNAME_PATTERN = /^[A-Za-z0-9._-]+$/;
 
-  function initialsFor(name, username) {
-    const value = (name || username || "Administrator").trim();
-    const parts = value.split(/\s+/).filter(Boolean);
-    return parts.length > 1
-      ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-      : value.slice(0, 2).toUpperCase();
-  }
-
-  function safePhotoUrl(value) {
-    if (!value) return null;
-    try {
-      const url = new URL(value, window.location.origin);
-      if (url.protocol === "https:" || url.origin === window.location.origin) {
-        return url.href;
-      }
-    } catch {
-      return null;
-    }
-    return null;
-  }
-
-  function setAvatar(element, initials, photoUrl) {
-    if (!element) return;
-    element.replaceChildren();
-
-    const safeUrl = safePhotoUrl(photoUrl);
-    if (!safeUrl) {
-      element.textContent = initials;
-      return;
-    }
-
-    const image = document.createElement("img");
-    image.src = safeUrl;
-    image.alt = "Administrator profile";
-    image.addEventListener("error", () => {
-      element.textContent = initials;
-    }, { once: true });
-    element.append(image);
-  }
-
-  function renderProfile(profile) {
-    const fullName = profile.full_name || "";
-    const username = profile.username || "";
-    const initials = initialsFor(fullName, username);
-
-    byId("profileSettingsFullName").value = fullName;
-    byId("profileSettingsUsername").value = username;
-    byId("profileSettingsEmail").value = profile.email || "";
-    byId("profileSettingsRole").value = profile.role || "Administrator";
-    byId("profileSettingsSummaryName").textContent = fullName || username || "Administrator";
-    byId("profileSettingsSummaryEmail").textContent = profile.email || "";
-    setAvatar(byId("profileSettingsSummaryAvatar"), initials, profile.profile_photo);
-    setAvatar(byId("profileSettingsEditAvatar"), initials, profile.profile_photo);
-
-    const sidebarName = byId("admin-name");
-    if (sidebarName) sidebarName.textContent = fullName || username || "Administrator";
-    setAvatar(byId("admin-initials"), initials, profile.profile_photo);
-    setAvatar(byId("top-initials"), initials, profile.profile_photo);
-  }
-
-  function applyTheme(theme) {
-    const selected = theme === "dark" ? "dark" : "light";
-    document.documentElement.dataset.theme = selected;
-    const control = byId("theme-toggle");
-    if (!control) return;
-
-    const label = selected === "dark" ? "Switch to light mode" : "Switch to dark mode";
-    control.setAttribute("aria-label", label);
-    control.title = label;
-    const image = selected === "dark" ? "sun_bgremove.png" : "moon_bgremove.png";
-    control.innerHTML = `<img class="theme-icon" src="/assets/images/${image}" alt="" width="20" height="20">`;
-  }
-
-  window.toggleTheme = () => {
-    const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-    applyTheme(theme);
-    try {
-      localStorage.setItem("signrest-admin-theme", theme);
-    } catch {
-    }
+  // SVG Icons for Theme Toggle & Shared Controls
+  const ICONS = {
+    moon: '<svg class="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/></svg>',
+    sun: '<svg class="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg>'
   };
 
-  window.searchProfile = (query) => {
-    const normalizedQuery = query.trim().toLowerCase();
-    document.querySelectorAll(".profile-settings-card").forEach((card) => {
-      card.hidden = normalizedQuery !== "" && !card.textContent.toLowerCase().includes(normalizedQuery);
-    });
+  // Frontend-only snapshot state aligned with users table (username & email)
+  const profileState = {
+    username: '',
+    email: '',
+    avatarUrl: null,
+    pendingAvatarUrl: null
   };
 
-  async function apiRequest(url, options) {
-    const requestOptions = {
-      credentials: "same-origin",
+  async function adminProfileRequest(url, options) {
+    const response = await fetch(url, {
       ...options,
-      headers: { ...(options && options.headers) }
-    };
-
-    if (requestOptions.body && !(requestOptions.body instanceof FormData)) {
-      requestOptions.headers["Content-Type"] = "application/json";
-    }
-
-    const response = await fetch(url, requestOptions);
-    let result;
-    try {
-      result = await response.json();
-    } catch {
-      throw new Error("The server returned an invalid response.");
-    }
-
-    if (response.status === 401) {
-      window.location.assign("/login");
-      throw new Error("Your session has expired. Please sign in again.");
-    }
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json', ...(options.headers || {}) }
+    });
+    const result = await response.json();
     if (!response.ok || result.success === false) {
-      throw new Error(result.message || result.detail || "The request could not be completed.");
+      throw new Error(result.message || 'The profile update could not be completed.');
     }
     return result;
   }
 
-  async function loadProfile() {
-    const result = await apiRequest(profileEndpoint);
-    if (!result.item) throw new Error("The server did not return your profile.");
-
-    originalProfile = { ...result.item };
-    renderProfile(originalProfile);
+  /**
+   * Computes 1-2 uppercase initials from a username.
+   */
+  function getInitials(name) {
+    const cleaned = (name || '').trim();
+    if (!cleaned) return 'A';
+    const parts = cleaned.split(/[\s._-]+/).filter(Boolean);
+    if (parts.length <= 1) {
+      return cleaned.slice(0, 2).toUpperCase();
+    }
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
 
-  async function loadSidebar() {
-    const host = byId("adminSidebarHost");
-    const response = await fetch("/admin-dashboard/admin_sidebar.html", {
-      credentials: "same-origin"
+  /**
+   * Displays status messages inside existing `.profile-settings-message` containers.
+   */
+  function showFormMessage(element, text, type) {
+    if (!element) return;
+    element.textContent = text;
+    element.classList.remove('is-success', 'is-error', 'is-visible');
+    if (text) {
+      element.classList.add(type === 'success' ? 'is-success' : 'is-error', 'is-visible');
+    }
+  }
+
+  /**
+   * Clears any visible message inside a message container.
+   */
+  function clearFormMessage(element) {
+    if (!element) return;
+    element.textContent = '';
+    element.classList.remove('is-success', 'is-error', 'is-visible');
+  }
+
+  /**
+   * Renders either an <img> preview or fallback initials across all avatar targets:
+   * - #profileSettingsSummaryAvatar
+   * - #profileSettingsEditAvatar
+   * - #top-initials (header avatar)
+   */
+  function renderAvatars(imageUrl, name) {
+    const initials = getInitials(name);
+    const avatarTargets = [
+      document.getElementById('profileSettingsSummaryAvatar'),
+      document.getElementById('profileSettingsEditAvatar'),
+      document.getElementById('top-initials')
+    ];
+
+    avatarTargets.forEach((container) => {
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (imageUrl) {
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.alt = (name || 'Administrator') + ' avatar';
+        container.appendChild(img);
+      } else {
+        container.textContent = initials;
+      }
     });
-    if (!response.ok) throw new Error("Admin navigation could not be loaded.");
+  }
 
-    host.innerHTML = await response.text();
-    host.querySelectorAll(".nav-item[href]").forEach((link) => {
-      const active = new URL(link.href, window.location.origin).pathname === window.location.pathname;
-      link.classList.toggle("active", active);
-      if (active) link.setAttribute("aria-current", "page");
-      else link.removeAttribute("aria-current");
+  /**
+   * Updates the left summary card and header initials from current profile state.
+   */
+  function syncProfileSummary(state) {
+    const summaryName = document.getElementById('profileSettingsSummaryName');
+    const summaryEmail = document.getElementById('profileSettingsSummaryEmail');
+
+    const displayName = state.username.trim() || 'Administrator';
+
+    if (summaryName) {
+      summaryName.textContent = displayName;
+    }
+
+    if (summaryEmail) {
+      summaryEmail.textContent = state.email && state.email.trim() ? state.email.trim() : '';
+    }
+
+    renderAvatars(state.avatarUrl, displayName);
+  }
+
+  /**
+   * Initializes Account Information form, file upload validation, and Cancel reset.
+   */
+  function initAccountSection() {
+    const accountForm = document.getElementById('profileSettingsAccountForm');
+    const avatarInput = document.getElementById('profileSettingsAvatarInput');
+    const usernameInput = document.getElementById('profileSettingsUsername');
+    const emailInput = document.getElementById('profileSettingsEmail');
+    const cancelBtn = document.getElementById('profileSettingsCancel');
+    const messageEl = document.getElementById('profileSettingsAccountMessage');
+
+    if (!accountForm) return;
+
+    // Seed initial state from existing DOM values
+    const initialSummaryName = document.getElementById('profileSettingsSummaryName');
+    profileState.username = usernameInput ? usernameInput.value.trim() : '';
+    profileState.email = emailInput ? emailInput.value.trim() : '';
+
+    if (!profileState.username && initialSummaryName && initialSummaryName.textContent.trim() !== 'Administrator') {
+      profileState.username = initialSummaryName.textContent.trim();
+      if (usernameInput) usernameInput.value = profileState.username;
+    }
+
+    syncProfileSummary(profileState);
+
+    // 1. Profile Picture Upload & Validation (JPG, PNG, WEBP up to 5 MB)
+    if (avatarInput) {
+      avatarInput.addEventListener('change', function () {
+        clearFormMessage(messageEl);
+        const file = avatarInput.files && avatarInput.files[0];
+        if (!file) return;
+
+        if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+          avatarInput.value = '';
+          showFormMessage(
+            messageEl,
+            'Invalid file format. Please select a JPG, JPEG, PNG, or WEBP image.',
+            'error'
+          );
+          return;
+        }
+
+        if (file.size > MAX_AVATAR_BYTES) {
+          avatarInput.value = '';
+          showFormMessage(
+            messageEl,
+            'Image exceeds the 5 MB limit. Please choose a smaller file.',
+            'error'
+          );
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const previewUrl = event.target && event.target.result;
+          if (typeof previewUrl === 'string') {
+            profileState.pendingAvatarUrl = previewUrl;
+            const currentName = (usernameInput && usernameInput.value) || profileState.username;
+            renderAvatars(previewUrl, currentName);
+            showFormMessage(
+              messageEl,
+              'Photo preview updated. Click "Save changes" to apply.',
+              'success'
+            );
+          }
+        };
+        reader.onerror = function () {
+          showFormMessage(messageEl, 'Unable to read the selected image file.', 'error');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // 2. Save account changes to the admin profile API
+    accountForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      clearFormMessage(messageEl);
+
+      const username = usernameInput ? usernameInput.value.trim() : '';
+      const email = emailInput ? emailInput.value.trim() : '';
+
+      if (!username) {
+        showFormMessage(messageEl, 'Please enter a username.', 'error');
+        if (usernameInput) usernameInput.focus();
+        return;
+      }
+
+      if (!USERNAME_PATTERN.test(username)) {
+        showFormMessage(
+          messageEl,
+          'Username may only contain letters, numbers, dots, underscores, and hyphens.',
+          'error'
+        );
+        if (usernameInput) usernameInput.focus();
+        return;
+      }
+
+      // Validate email if editable (not readonly) and non-empty
+      if (emailInput && !emailInput.readOnly && email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          showFormMessage(messageEl, 'Please enter a valid email address.', 'error');
+          emailInput.focus();
+          return;
+        }
+      }
+
+      const selectedImage = avatarInput && avatarInput.files ? avatarInput.files[0] : null;
+      const submitBtn = accountForm.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+
+      try {
+        if (username !== profileState.username) {
+          await adminProfileRequest('/api/admin/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+          });
+          profileState.username = username;
+        }
+
+        if (selectedImage) {
+          const formData = new FormData();
+          formData.append('profile_picture', selectedImage);
+          const result = await adminProfileRequest('/api/admin/profile/upload-picture', {
+            method: 'POST',
+            body: formData
+          });
+          profileState.avatarUrl = result.profile_photo;
+          profileState.pendingAvatarUrl = null;
+          avatarInput.value = '';
+        }
+
+        syncProfileSummary(profileState);
+        showFormMessage(messageEl, 'Your account information has been updated.', 'success');
+      } catch (error) {
+        syncProfileSummary(profileState);
+        showFormMessage(
+          messageEl,
+          error.message || 'Unable to save account information. Please try again.',
+          'error'
+        );
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
     });
-    if (originalProfile) renderProfile(originalProfile);
-  }
 
-  window.collapseSidebar = () => {
-    if (!app) return;
-    if (window.matchMedia("(max-width: 800px)").matches) {
-      app.classList.toggle("mobile-open");
-    } else {
-      app.classList.toggle("collapsed");
-    }
-  };
-  window.closeMobile = () => app && app.classList.remove("mobile-open");
-  window.logout = async () => {
-    try {
-      const result = await apiRequest("/api/logout", { method: "POST" });
-      window.location.assign(result.redirect_url || "/login");
-    } catch (error) {
-      showMessage("profileSettingsAccountMessage", error.message, "error");
-    }
-  };
+    // 3. Cancel Button — Restore Original Snapshot Values
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', function () {
+        if (usernameInput) usernameInput.value = profileState.username;
+        if (emailInput && !emailInput.readOnly) emailInput.value = profileState.email;
+        if (avatarInput) avatarInput.value = '';
 
-  function setButtonLoading(button, loading) {
-    if (!button) return;
-    if (loading) {
-      button.dataset.originalText = button.textContent;
-      button.textContent = "Please wait...";
-      button.disabled = true;
-    } else {
-      button.textContent = button.dataset.originalText || button.textContent;
-      button.disabled = false;
+        profileState.pendingAvatarUrl = null;
+        syncProfileSummary(profileState);
+        clearFormMessage(messageEl);
+      });
     }
   }
 
-  function clearPasswordFields() {
-    byId("profileSettingsPasswordForm").reset();
-    updatePasswordStrength();
-  }
-
-  function passwordRules(password) {
+  /**
+   * Evaluates password against the 4 checklist rules in `#profileSettingsRequirements`.
+   */
+  function evaluatePasswordRules(password) {
+    const value = password || '';
     return {
-      length: password.length >= 8,
-      upper: /[A-Z]/.test(password),
-      number: /\d/.test(password),
-      special: /[^A-Za-z0-9]/.test(password)
+      length: value.length >= 8,
+      upper: /[A-Z]/.test(value),
+      number: /[0-9]/.test(value),
+      special: /[^A-Za-z0-9\s]/.test(value)
     };
   }
 
-  function updatePasswordStrength() {
-    const password = byId("profileSettingsNewPassword").value;
-    const rules = passwordRules(password);
-    const strength = Object.values(rules).filter(Boolean).length;
-    for (let index = 1; index <= 4; index += 1) {
-      byId(`profileSettingsStrength${index}`).classList.toggle("is-active", index <= strength);
+  /**
+   * Updates strength bars (#profileSettingsStrength1..4), strength label,
+   * and `.is-met` states on `.profile-settings-requirement` elements.
+   */
+  function updatePasswordStrengthUI(password) {
+    const bars = [
+      document.getElementById('profileSettingsStrength1'),
+      document.getElementById('profileSettingsStrength2'),
+      document.getElementById('profileSettingsStrength3'),
+      document.getElementById('profileSettingsStrength4')
+    ];
+    const strengthText = document.getElementById('profileSettingsStrengthText');
+    const reqContainer = document.getElementById('profileSettingsRequirements');
+
+    const rules = evaluatePasswordRules(password);
+    const metCount = Object.values(rules).filter(Boolean).length;
+
+    // Update checklist items
+    if (reqContainer) {
+      const ruleElements = reqContainer.querySelectorAll('.profile-settings-requirement');
+      ruleElements.forEach((el) => {
+        const ruleKey = el.getAttribute('data-rule');
+        if (ruleKey && Object.prototype.hasOwnProperty.call(rules, ruleKey)) {
+          el.classList.toggle('is-met', Boolean(rules[ruleKey]));
+        }
+      });
     }
 
-    const labels = ["Not entered", "Weak", "Fair", "Good", "Strong"];
-    byId("profileSettingsStrengthText").textContent = `Password strength: ${labels[strength]}`;
-    byId("profileSettingsRequirements").querySelectorAll("[data-rule]").forEach((rule) => {
-      rule.classList.toggle("is-met", Boolean(rules[rule.dataset.rule]));
+    // Update 4 strength bars
+    const activeBars = password ? metCount : 0;
+    bars.forEach((bar, index) => {
+      if (!bar) return;
+      bar.classList.toggle('is-active', index < activeBars);
+    });
+
+    // Update strength text label
+    if (strengthText) {
+      if (!password) {
+        strengthText.textContent = 'Password strength: Not entered';
+      } else if (metCount <= 1) {
+        strengthText.textContent = 'Password strength: Weak';
+      } else if (metCount === 2) {
+        strengthText.textContent = 'Password strength: Fair';
+      } else if (metCount === 3) {
+        strengthText.textContent = 'Password strength: Good';
+      } else {
+        strengthText.textContent = 'Password strength: Strong';
+      }
+    }
+
+    return rules;
+  }
+
+  /**
+   * Initializes Password & Security form, Show/Hide toggles, strength meter,
+   * validation, and backend API hook preparation.
+   */
+  function initPasswordSection() {
+    const passwordForm = document.getElementById('profileSettingsPasswordForm');
+    const currentInput = document.getElementById('profileSettingsCurrentPassword');
+    const newInput = document.getElementById('profileSettingsNewPassword');
+    const confirmInput = document.getElementById('profileSettingsConfirmPassword');
+    const messageEl = document.getElementById('profileSettingsPasswordMessage');
+
+    if (!passwordForm) return;
+
+    // 1. Show / Hide Password Toggle Buttons
+    const toggleButtons = passwordForm.querySelectorAll('[data-toggle-password]');
+    toggleButtons.forEach((btn) => {
+      btn.addEventListener('click', function () {
+        const targetId = btn.getAttribute('data-toggle-password');
+        const targetInput = targetId ? document.getElementById(targetId) : null;
+        if (!targetInput) return;
+
+        const isHidden = targetInput.type === 'password';
+        targetInput.type = isHidden ? 'text' : 'password';
+        btn.textContent = isHidden ? 'Hide' : 'Show';
+        btn.setAttribute('aria-pressed', String(isHidden));
+      });
+    });
+
+    // 2. Live Password Strength & Checklist Listener
+    if (newInput) {
+      newInput.addEventListener('input', function () {
+        updatePasswordStrengthUI(newInput.value);
+      });
+    }
+
+    // 3. Clear Fields (Reset) Handler
+    passwordForm.addEventListener('reset', function () {
+      // Allow native form reset to clear inputs first
+      setTimeout(function () {
+        updatePasswordStrengthUI('');
+        clearFormMessage(messageEl);
+
+        // Reset all password inputs back to masked state
+        toggleButtons.forEach((btn) => {
+          const targetId = btn.getAttribute('data-toggle-password');
+          const targetInput = targetId ? document.getElementById(targetId) : null;
+          if (targetInput) targetInput.type = 'password';
+          btn.textContent = 'Show';
+          btn.setAttribute('aria-pressed', 'false');
+        });
+      }, 0);
+    });
+
+    // 4. Password Form Validation & Backend-Ready Submission Handler
+    passwordForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      clearFormMessage(messageEl);
+
+      const currentPassword = currentInput ? currentInput.value : '';
+      const newPassword = newInput ? newInput.value : '';
+      const confirmPassword = confirmInput ? confirmInput.value : '';
+
+      // Validate all fields are completed
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        showFormMessage(messageEl, 'Please fill in all password fields.', 'error');
+        if (!currentPassword && currentInput) currentInput.focus();
+        else if (!newPassword && newInput) newInput.focus();
+        else if (confirmInput) confirmInput.focus();
+        return;
+      }
+
+      // Validate all 4 password requirements
+      const rules = evaluatePasswordRules(newPassword);
+      const allRulesMet = rules.length && rules.upper && rules.number && rules.special;
+      if (!allRulesMet) {
+        showFormMessage(
+          messageEl,
+          'New password must meet all four security requirements listed below.',
+          'error'
+        );
+        if (newInput) newInput.focus();
+        return;
+      }
+
+      // Ensure new password differs from current password
+      if (currentPassword === newPassword) {
+        showFormMessage(
+          messageEl,
+          'New password must be different from your current password.',
+          'error'
+        );
+        if (newInput) newInput.focus();
+        return;
+      }
+
+      // Confirm new password and confirmation match
+      if (newPassword !== confirmPassword) {
+        showFormMessage(
+          messageEl,
+          'New password and confirmation password do not match.',
+          'error'
+        );
+        if (confirmInput) confirmInput.focus();
+        return;
+      }
+
+      const submitBtn = passwordForm.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+
+      try {
+        await adminProfileRequest('/api/admin/profile/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: newPassword,
+            confirm_password: confirmPassword
+          })
+        });
+        passwordForm.reset();
+        showFormMessage(messageEl, 'Your password has been updated.', 'success');
+      } catch (err) {
+        const errorMsg = (err && err.message) ? err.message : 'Unable to update password. Please try again.';
+        showFormMessage(messageEl, errorMsg, 'error');
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
     });
   }
 
-  function previewPhoto(file) {
-    const reader = new FileReader();
-    reader.addEventListener("load", () => {
-      if (typeof reader.result !== "string") return;
-      [byId("profileSettingsSummaryAvatar"), byId("profileSettingsEditAvatar")].forEach((element) => {
-        element.replaceChildren();
-        const image = document.createElement("img");
-        image.src = reader.result;
-        image.alt = "Selected profile picture preview";
-        element.append(image);
-      });
-    });
-    reader.readAsDataURL(file);
+  /**
+   * Dashboard Shell Controls (matches inline onclick/oninput in profile_setting.html):
+   * - collapseSidebar()
+   * - toggleTheme()
+   * - searchProfile(query)
+   * Only defines global functions if not already provided by another shared script.
+   */
+  function initDashboardControls() {
+    const themeToggleBtn = document.getElementById('theme-toggle');
+
+    function syncThemeButtonIcon() {
+      if (!themeToggleBtn) return;
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      themeToggleBtn.innerHTML = isDark ? ICONS.sun : ICONS.moon;
+      const nextLabel = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+      themeToggleBtn.setAttribute('aria-label', nextLabel);
+      themeToggleBtn.setAttribute('title', nextLabel);
+    }
+
+    if (typeof window.closeMobile !== 'function') {
+      window.closeMobile = function () {
+        const app = document.getElementById('app');
+        if (app) app.classList.remove('mobile-open');
+      };
+    }
+
+    if (typeof window.logout !== 'function') {
+      window.logout = async function () {
+        try {
+          await fetch('/api/logout', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' }
+          });
+        } catch (error) {
+          // Still leave the protected admin page if logout cannot reach the server.
+        }
+        window.location.href = '/login';
+      };
+    }
+
+    // Apply saved theme preference (non-sensitive UI preference only)
+    let savedTheme = 'light';
+    try {
+      savedTheme = localStorage.getItem('signrest-admin-theme') || 'light';
+    } catch (error) {
+      console.warn('Unable to read the saved admin theme preference.', error);
+    }
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+    syncThemeButtonIcon();
+
+    if (typeof window.toggleTheme !== 'function') {
+      window.toggleTheme = function () {
+        const root = document.documentElement;
+        const isDark = root.getAttribute('data-theme') === 'dark';
+        const nextTheme = isDark ? 'light' : 'dark';
+        root.setAttribute('data-theme', nextTheme);
+        try {
+          localStorage.setItem('signrest-admin-theme', nextTheme);
+        } catch (error) {
+          console.warn('Unable to save the admin theme preference.', error);
+        }
+        syncThemeButtonIcon();
+      };
+    }
+
+    if (typeof window.collapseSidebar !== 'function') {
+      window.collapseSidebar = function () {
+        const app = document.getElementById('app');
+        if (!app) return;
+        if (window.innerWidth <= 800) {
+          app.classList.toggle('mobile-open');
+        } else {
+          app.classList.toggle('collapsed');
+        }
+      };
+    }
+
+    if (typeof window.searchProfile !== 'function') {
+      window.searchProfile = function (query) {
+        const term = (query || '').trim().toLowerCase();
+        const cards = document.querySelectorAll('.profile-settings-card');
+        cards.forEach((card) => {
+          if (!term) {
+            card.style.display = '';
+            return;
+          }
+          const text = card.textContent.toLowerCase();
+          card.style.display = text.includes(term) ? '' : 'none';
+        });
+      };
+    }
   }
 
-  byId("profileSettingsAccountForm").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    if (!form.reportValidity()) return;
+  async function initAdminSidebar() {
+    const host = document.getElementById('adminSidebarHost');
+    if (!host) return;
 
-    const fullName = byId("profileSettingsFullName").value.trim();
-    const username = byId("profileSettingsUsername").value.trim();
-    if (!fullName || !username) {
-      showMessage("profileSettingsAccountMessage", "Full name and username are required.", "error");
-      return;
-    }
-    if (!/^[A-Za-z0-9_.-]+$/.test(username)) {
-      showMessage("profileSettingsAccountMessage", "Username can only contain letters, numbers, dots, underscores, and hyphens.", "error");
-      return;
-    }
-
-    const button = form.querySelector('button[type="submit"]');
-    setButtonLoading(button, true);
     try {
-      const result = await apiRequest(profileEndpoint, {
-        method: "PUT",
-        body: JSON.stringify({ full_name: fullName, username })
+      const response = await fetch('admin_sidebar.html', {
+        credentials: 'same-origin',
+        cache: 'no-store'
       });
-      originalProfile = { ...originalProfile, ...(result.item || {}), full_name: fullName, username };
-      renderProfile(originalProfile);
-      showMessage("profileSettingsAccountMessage", result.message || "Profile information saved.", "success");
+      if (!response.ok) {
+        throw new Error('Unable to load the admin sidebar.');
+      }
+
+      const html = await response.text();
+      const template = document.createElement('template');
+      template.innerHTML = html.trim();
+      host.replaceChildren(template.content);
+
+      const profileLink = host.querySelector('a[href="/admin-dashboard/profile.html"], a[href="/admin-dashboard/profile_setting.html"]');
+      if (profileLink) {
+        profileLink.classList.add('active');
+        profileLink.setAttribute('aria-current', 'page');
+      }
+
+      const overviewLink = host.querySelector('a[href="/admin-dashboard/"]');
+      if (overviewLink) overviewLink.classList.remove('active');
+
+      const sidebarInitials = host.querySelector('#admin-initials');
+      const sidebarName = host.querySelector('#admin-name');
+      try {
+        const result = await adminProfileRequest('/api/admin/profile', { cache: 'no-store' });
+        const profile = result.item;
+        const username = typeof profile.username === 'string' ? profile.username.trim() : '';
+        const email = typeof profile.email === 'string' ? profile.email.trim() : '';
+
+        if (username && sidebarName) sidebarName.textContent = username;
+        if (username && sidebarInitials) sidebarInitials.textContent = getInitials(username);
+
+        const usernameInput = document.getElementById('profileSettingsUsername');
+        const emailInput = document.getElementById('profileSettingsEmail');
+        if (username) {
+          profileState.username = username;
+          if (usernameInput) usernameInput.value = username;
+        }
+        if (email) {
+          profileState.email = email;
+          if (emailInput) emailInput.value = email;
+        }
+        profileState.avatarUrl = typeof profile.profile_photo === 'string'
+          ? profile.profile_photo
+          : null;
+        syncProfileSummary(profileState);
+      } catch (error) {
+        console.error('Unable to load the administrator profile.', error);
+        showFormMessage(
+          document.getElementById('profileSettingsAccountMessage'),
+          error.message || 'Unable to load the administrator profile.',
+          'error'
+        );
+      }
     } catch (error) {
-      showMessage("profileSettingsAccountMessage", error.message, "error");
-    } finally {
-      setButtonLoading(button, false);
+      host.textContent = '';
+      console.error(error);
     }
-  });
-
-  byId("profileSettingsCancel").addEventListener("click", () => {
-    if (originalProfile) renderProfile(originalProfile);
-    byId("profileSettingsAvatarInput").value = "";
-    selectedPhoto = null;
-    showMessage("profileSettingsAccountMessage", "Unsaved profile changes were canceled.", "success");
-  });
-
-  byId("profileSettingsAvatarInput").addEventListener("change", async (event) => {
-    const input = event.currentTarget;
-    const file = input.files[0];
-    if (!file) return;
-
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-    if ((file.type && !allowedTypes.includes(file.type)) || file.size > 5 * 1024 * 1024) {
-      input.value = "";
-      showMessage("profileSettingsAccountMessage", "Choose a JPG, PNG, or WEBP image smaller than 5 MB.", "error");
-      return;
-    }
-
-    selectedPhoto = file;
-    previewPhoto(file);
-    const formData = new FormData();
-    formData.append("profile_picture", selectedPhoto);
-    input.disabled = true;
-    try {
-      const result = await apiRequest(`${profileEndpoint}/upload-picture`, {
-        method: "POST",
-        body: formData
-      });
-      originalProfile = { ...originalProfile, profile_photo: result.profile_photo };
-      renderProfile(originalProfile);
-      showMessage("profileSettingsAccountMessage", result.message || "Profile picture updated.", "success");
-    } catch (error) {
-      if (originalProfile) renderProfile(originalProfile);
-      input.value = "";
-      showMessage("profileSettingsAccountMessage", error.message, "error");
-    } finally {
-      selectedPhoto = null;
-      input.disabled = false;
-    }
-  });
-
-  document.querySelectorAll("[data-toggle-password]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const input = byId(button.dataset.togglePassword);
-      if (!input) return;
-      const showing = input.type === "password";
-      input.type = showing ? "text" : "password";
-      button.textContent = showing ? "Hide" : "Show";
-    });
-  });
-
-  byId("profileSettingsNewPassword").addEventListener("input", updatePasswordStrength);
-  byId("profileSettingsPasswordForm").addEventListener("reset", () => {
-    window.setTimeout(updatePasswordStrength, 0);
-  });
-
-  byId("profileSettingsPasswordForm").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    if (!form.reportValidity()) return;
-
-    const currentPassword = byId("profileSettingsCurrentPassword").value;
-    const newPassword = byId("profileSettingsNewPassword").value;
-    const confirmPassword = byId("profileSettingsConfirmPassword").value;
-    const rules = passwordRules(newPassword);
-    if (!Object.values(rules).every(Boolean)) {
-      showMessage("profileSettingsPasswordMessage", "Meet all listed password requirements.", "error");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      showMessage("profileSettingsPasswordMessage", "New password and confirmation do not match.", "error");
-      return;
-    }
-
-    const button = form.querySelector('button[type="submit"]');
-    setButtonLoading(button, true);
-    try {
-      const result = await apiRequest(`${profileEndpoint}/change-password`, {
-        method: "POST",
-        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword, confirm_password: confirmPassword })
-      });
-      clearPasswordFields();
-      showMessage("profileSettingsPasswordMessage", result.message || "Password updated.", "success");
-    } catch (error) {
-      showMessage("profileSettingsPasswordMessage", error.message, "error");
-    } finally {
-      setButtonLoading(button, false);
-    }
-  });
-
-  let savedTheme = "light";
-  try {
-    savedTheme = localStorage.getItem("signrest-admin-theme") || "light";
-  } catch {
-    savedTheme = "light";
   }
-  applyTheme(savedTheme);
 
-  loadSidebar().catch((error) => {
-    showMessage("profileSettingsAccountMessage", error.message, "error");
-  });
-  loadProfile().catch((error) => {
-    showMessage("profileSettingsAccountMessage", error.message, "error");
+  // Initialize everything once DOM is ready
+  document.addEventListener('DOMContentLoaded', function () {
+    initDashboardControls();
+    initAdminSidebar();
+    initAccountSection();
+    initPasswordSection();
   });
 })();

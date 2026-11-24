@@ -1,66 +1,150 @@
 <style>
 #admin-sidebar {
+  --sb-bg: var(--surface, #fbfaf5);
+  --sb-bg-deep: var(--bg, #f0f3e9);
+  --sb-text: var(--text, #2f3d33);
+  --sb-muted: var(--muted, #667369);
+  --sb-border: var(--border, #dcdfd2);
+  --sb-sage: var(--sage, #4a6f53);
+  --sb-active: color-mix(in oklab, var(--sb-sage) 15%, var(--sb-bg));
+  --sb-hover: color-mix(in oklab, var(--sb-sage) 9%, transparent);
+  --sb-action-text: #fff;
+
   position: fixed;
   inset: 0 auto 0 0;
   z-index: 20;
   display: flex;
-  width: 236px;
+  width: 248px;
   flex-direction: column;
-  color: var(--text, #304037);
-  background: var(--surface, #f8f7f1);
-  border-right: 1px solid var(--border, #d9dfd7);
-  transition: width 0.2s, transform 0.2s;
+  overflow: visible;
+  color: var(--sb-text);
+  background:
+    radial-gradient(circle at 12% 4%, color-mix(in oklab, var(--sb-sage) 9%, transparent), transparent 30%),
+    linear-gradient(180deg, var(--sb-bg), var(--sb-bg-deep));
+  border-right: 1px solid var(--sb-border);
+  box-shadow: 12px 0 36px rgb(9 24 17 / 8%);
 }
 
+:root[data-theme="dark"] #admin-sidebar {
+  --sb-action-text: var(--bg, #1d2620);
+}
+
+.app > .main {
+  width: calc(100% - 248px);
+  margin-left: 248px;
+}
+
+/* Brand */
 #admin-sidebar .brand {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 31px 25px 17px;
-  font: 27px "Playfair Display", Georgia, serif;
+  gap: 13px;
+  min-height: 96px;
+  padding: 0 26px 0 22px;
+  border-bottom: 1px solid var(--sb-border);
+  font: 500 25px "Playfair Display", Georgia, serif;
+  letter-spacing: -0.01em;
   white-space: nowrap;
 }
 
-#admin-sidebar #brand-icon,
-#admin-sidebar .brand-mark {
-  display: inline-flex;
-  flex: 0 0 29px;
-  width: 29px;
-  height: 29px;
-}
-
-#admin-sidebar #brand-icon img,
-#admin-sidebar .brand-mark img {
+#admin-sidebar .brand-logo {
   display: block;
-  width: 29px;
-  height: 29px;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
   object-fit: contain;
 }
 
 #admin-sidebar .sidebar-collapse {
-  display: flex;
-  flex: 0 0 28px;
-  align-items: center;
-  justify-content: center;
+  position: absolute;
+  top: 34px;
+  right: -14px;
+  z-index: 2;
+  display: grid;
   width: 28px;
   height: 28px;
-  margin-left: auto;
+  place-items: center;
   padding: 0;
-  color: var(--muted, #718075);
-  background: transparent;
-  border: 0;
-  border-radius: 4px;
+  color: var(--sb-action-text);
+  background: var(--sb-sage);
+  border: 1px solid color-mix(in oklab, var(--sb-sage) 70%, var(--sb-border));
+  border-radius: 50%;
+  box-shadow: 0 3px 10px rgb(4 16 10 / 28%);
   cursor: pointer;
+  transition: background .18s, transform .18s;
 }
 
 #admin-sidebar .sidebar-collapse:hover {
-  background: var(--border, #d9dfd7);
+  filter: brightness(1.08);
+}
+
+#admin-sidebar .sidebar-collapse svg {
+  width: 15px;
+  height: 15px;
+  transition: transform .18s;
+}
+
+.app.collapsed #admin-sidebar {
+  width: 80px;
+}
+
+.app.collapsed #admin-sidebar .brand {
+  justify-content: center;
+  padding: 0;
+}
+
+.app.collapsed #admin-sidebar .brand-logo {
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
+}
+
+.app.collapsed #admin-sidebar .brand-name,
+.app.collapsed #admin-sidebar .nav-label,
+.app.collapsed #admin-sidebar .nav-item span,
+.app.collapsed #admin-sidebar .nav-item .soon,
+.app.collapsed #admin-sidebar .logout span {
+  display: none;
+}
+
+.app.collapsed #admin-sidebar .sidebar-collapse svg {
+  transform: rotate(180deg);
+}
+
+.app.collapsed #admin-sidebar .nav {
+  padding-right: 10px;
+  padding-left: 10px;
+}
+
+.app.collapsed #admin-sidebar .nav-item {
+  justify-content: center;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.app.collapsed #admin-sidebar .nav-item.active {
+  box-shadow: inset 3px 0 0 var(--sb-sage);
+}
+
+.app.collapsed #admin-sidebar .side-bottom {
+  padding-right: 14px;
+  padding-left: 14px;
+}
+
+.app.collapsed #admin-sidebar .logout {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.app.collapsed .main {
+  width: calc(100% - 80px);
+  margin-left: 80px;
 }
 
 #admin-sidebar svg {
-  width: 19px;
-  height: 19px;
+  width: 18px;
+  height: 18px;
   flex: 0 0 auto;
   fill: none;
   stroke: currentColor;
@@ -69,17 +153,22 @@
   stroke-linejoin: round;
 }
 
-#admin-sidebar .nav-label {
-  margin: 10px 0 14px;
-  padding: 0 26px;
-  color: var(--muted, #718075);
-  font: 9px Inter, Arial, sans-serif;
-  letter-spacing: 1.6px;
+/* Navigation */
+#admin-sidebar .nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(130 164 134 / 25%) transparent;
 }
 
-#admin-sidebar .nav {
-  overflow: auto;
-  padding: 0 13px;
+#admin-sidebar .nav-label {
+  margin: 0;
+  padding: 20px 13px 9px;
+  color: var(--sb-muted);
+  font: 600 10px Inter, Arial, sans-serif;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
 }
 
 #admin-sidebar .nav-item {
@@ -89,40 +178,36 @@
   min-height: 43px;
   align-items: center;
   gap: 12px;
-  margin: 0 0 5px;
-  padding: 12px 14px;
-  color: var(--muted, #718075);
+  margin: 0 0 4px;
+  padding: 10px 13px;
+  color: var(--sb-muted);
   background: transparent;
-  border: 0;
-  border-radius: 5px;
-  font: 12px Inter, Arial, sans-serif;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: 500 13px Inter, Arial, sans-serif;
   text-align: left;
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
+  transition: color 0.18s, background 0.18s, border-color 0.18s, transform 0.18s;
 }
 
-#admin-sidebar .nav-item:hover {
-  background: color-mix(in oklab, var(--sage, #759783) 9%, transparent);
+#admin-sidebar .nav-item:not(:disabled):hover {
+  color: var(--sb-text);
+  background: var(--sb-hover);
+  transform: translateX(2px);
 }
 
 #admin-sidebar .nav-item.active {
-  color: var(--text, #304037);
-  background: color-mix(in oklab, var(--sage, #759783) 18%, transparent);
+  color: var(--sb-text);
+  font-weight: 600;
+  background: var(--sb-active);
+  border-color: rgb(130 164 134 / 14%);
+  box-shadow: inset 3px 0 0 var(--sb-sage);
 }
 
-#admin-sidebar .nav-item.active::before {
-  position: absolute;
-  left: -13px;
-  width: 3px;
-  height: 22px;
-  background: var(--sage, #759783);
-  border-radius: 0 3px 3px 0;
-  content: "";
-}
-
-#admin-sidebar .nav-item svg {
-  color: inherit;
+#admin-sidebar .nav-item.active svg {
+  color: var(--sb-sage);
 }
 
 #admin-sidebar .nav-item span {
@@ -130,92 +215,65 @@
   text-overflow: ellipsis;
 }
 
+#admin-sidebar .nav-item:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
 #admin-sidebar .soon {
-  width: 6px;
-  height: 6px;
   margin-left: auto;
-  border: 1px solid currentColor;
-  border-radius: 50%;
+  padding: 2px 7px;
+  color: var(--sb-muted);
+  border: 1px solid var(--sb-border);
+  border-radius: 999px;
+  font: 500 9px Inter, Arial, sans-serif;
+  font-style: normal;
+  line-height: 1.4;
 }
 
-#admin-sidebar .personalize {
-  margin-top: 27px;
-}
-
+/* Logout: no profile/name block */
 #admin-sidebar .side-bottom {
-  margin-top: auto;
-  padding: 22px 21px;
-  border-top: 1px solid var(--border, #d9dfd7);
-}
-
-#admin-sidebar .admin {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-#admin-sidebar .avatar {
-  display: inline-flex;
-  width: 35px;
-  height: 35px;
-  flex: 0 0 35px;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  color: var(--muted, #718075);
-  background: color-mix(in oklab, var(--sage, #759783) 23%, var(--surface, #f8f7f1));
-  border: 1px solid color-mix(in oklab, var(--sage, #759783) 45%, var(--surface, #f8f7f1));
-  border-radius: 50%;
-  font: 11px Inter, Arial, sans-serif;
-}
-
-#admin-sidebar .avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-#admin-sidebar .admin-info {
-  display: grid;
-  min-width: 0;
-  gap: 4px;
-  font: 12px Inter, Arial, sans-serif;
-}
-
-#admin-sidebar .admin-name {
-  overflow: hidden;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#admin-sidebar .admin-info small {
-  color: var(--muted, #718075);
-  font-size: 10px;
+  padding: 18px 20px 22px;
+  border-top: 1px solid var(--sb-border);
 }
 
 #admin-sidebar .logout {
   display: flex;
+  width: 100%;
+  min-height: 43px;
   align-items: center;
-  gap: 10px;
-  margin-top: 21px;
-  padding: 0;
-  color: var(--muted, #718075);
-  background: transparent;
-  border: 0;
-  font: 11px Inter, Arial, sans-serif;
+  justify-content: center;
+  gap: 9px;
+  padding: 10px 16px;
+  color: var(--sb-action-text);
+  background: var(--sb-sage);
+  border: 1px solid color-mix(in oklab, var(--sb-sage) 70%, var(--sb-border));
+  border-radius: 10px;
+  box-shadow: 0 7px 18px rgb(4 16 10 / 16%);
+  font: 600 13px Inter, Arial, sans-serif;
   cursor: pointer;
+  transition: background 0.18s, transform 0.18s, box-shadow 0.18s;
 }
 
 #admin-sidebar .logout:hover {
-  color: var(--text, #304037);
+  filter: brightness(1.08);
+  box-shadow: 0 9px 22px rgb(4 16 10 / 22%);
+  transform: translateY(-1px);
 }
 
-.mobile-overlay {
-  display: none;
+#admin-sidebar .logout svg {
+  width: 16px;
+  height: 16px;
 }
 
+#admin-sidebar a:focus-visible,
+#admin-sidebar button:focus-visible {
+  outline: 2px solid var(--sb-sage);
+  outline-offset: 2px;
+}
+
+/* Helpers used by the admin pages */
+.mobile-overlay,
 .mobile-collapse {
   display: none;
 }
@@ -224,7 +282,6 @@
   display: block;
   width: 20px;
   height: 20px;
-  object-fit: contain;
 }
 
 .notification-bell {
@@ -239,52 +296,68 @@
   height: 18px;
 }
 
-.app.collapsed #admin-sidebar {
-  width: 74px;
-}
-
-.app.collapsed #admin-sidebar .brand {
-  gap: 0;
-  padding-right: 8px;
-  padding-left: 8px;
-}
-
-.app.collapsed #admin-sidebar .brand-name,
-.app.collapsed #admin-sidebar .nav-label,
-.app.collapsed #admin-sidebar .nav-item span,
-.app.collapsed #admin-sidebar .admin-info,
-.app.collapsed #admin-sidebar .logout span {
-  display: none;
-}
-
-.app.collapsed #admin-sidebar .sidebar-collapse {
-  margin-left: 1px;
-}
-
-.app.collapsed #admin-sidebar .nav {
-  padding: 0 10px;
-}
-
-.app.collapsed #admin-sidebar .nav-item {
-  justify-content: center;
-  padding: 13px 14px;
-}
-
-.app.collapsed #admin-sidebar .side-bottom {
-  padding: 22px 19px;
-}
-
-.app.collapsed #admin-sidebar .logout {
-  justify-content: center;
-}
-
+/* Mobile navigation is opened by the page's mobile menu button */
 @media (max-width: 800px) {
   #admin-sidebar {
+    width: min(278px, calc(100vw - 48px));
     transform: translateX(-100%);
+    transition: transform 0.22s ease;
+  }
+
+  .app.collapsed #admin-sidebar {
+    width: min(278px, calc(100vw - 48px));
+  }
+
+  .app.collapsed #admin-sidebar .brand {
+    justify-content: flex-start;
+    padding: 0 26px 0 22px;
+  }
+
+  .app.collapsed #admin-sidebar .brand-logo {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+  }
+
+  .app.collapsed #admin-sidebar .brand-name,
+  .app.collapsed #admin-sidebar .nav-label,
+  .app.collapsed #admin-sidebar .nav-item span,
+  .app.collapsed #admin-sidebar .nav-item .soon,
+  .app.collapsed #admin-sidebar .logout span {
+    display: initial;
+  }
+
+  .app.collapsed #admin-sidebar .nav {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .app.collapsed #admin-sidebar .nav-item {
+    justify-content: flex-start;
+    padding: 10px 13px;
+  }
+
+  .app.collapsed #admin-sidebar .side-bottom {
+    padding: 18px 20px 22px;
+  }
+
+  .app.collapsed #admin-sidebar .logout {
+    padding: 10px 16px;
+  }
+
+  .app.collapsed .main {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .app > .main {
+    width: 100%;
+    margin-left: 0;
   }
 
   .app.mobile-open #admin-sidebar {
     transform: translateX(0);
+    box-shadow: 0 0 44px rgb(0 0 0 / 35%);
   }
 
   .app.mobile-open .mobile-overlay {
@@ -292,16 +365,20 @@
     inset: 0;
     z-index: 19;
     display: block;
-    background: rgb(0 0 0 / 55%);
+    background: rgb(5 15 10 / 58%);
     border: 0;
+    backdrop-filter: blur(2px);
   }
 
   .mobile-collapse {
     display: flex;
   }
+}
 
-  .app.collapsed #admin-sidebar {
-    width: 236px;
+@media (prefers-reduced-motion: reduce) {
+  #admin-sidebar,
+  #admin-sidebar * {
+    transition: none !important;
   }
 }
 </style>
@@ -309,45 +386,53 @@
 <button class="mobile-overlay" type="button" aria-label="Close navigation" onclick="closeMobile()"></button>
 <aside class="sidebar" id="admin-sidebar" aria-label="Admin navigation">
   <div class="brand">
-    <span id="brand-icon"><img src="/assets/images/logo_bgremove.png" alt="" width="29" height="29"></span>
+    <img class="brand-logo" src="/assets/images/logo_bgremove.png" alt="Signrest">
     <span class="brand-name">Signrest</span>
-    <button class="collapse sidebar-collapse" id="collapse" type="button" aria-label="Toggle sidebar" onclick="collapseSidebar()">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg>
+    <button class="sidebar-collapse" type="button" onclick="collapseSidebar()" aria-label="Toggle sidebar" title="Toggle sidebar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
     </button>
   </div>
-  <div class="nav-label">WORKSPACE</div>
+
   <nav class="nav" id="nav" aria-label="Admin pages">
-    <a class="nav-item active" href="/admin-dashboard/" aria-current="page">
+    <div class="nav-label">Workspace</div>
+    <a class="nav-item active" href="/admin-dashboard/" title="Overview" aria-current="page">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>
       <span>Overview</span>
     </a>
-    <a class="nav-item" href="/admin-dashboard/accuracy.html">
+    <a class="nav-item" href="/admin-dashboard/accuracy.html" title="AI Accuracy &amp; Logs">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10 M10 20V4 M16 20v-7 M22 20H2"/></svg>
       <span>AI Accuracy &amp; Logs</span>
     </a>
-    <a class="nav-item" href="/admin-dashboard/materials.html">
+    <a class="nav-item" href="/admin-dashboard/materials.html" title="Sign Materials">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v16 M12 5C8 2 4 3 2 4v15c4-1 7-1 10 2 3-3 6-3 10-2V4c-4-1-7-2-10 1Z"/></svg>
       <span>Sign Materials</span>
     </a>
-    <button class="nav-item" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v4H8z M7 5H4v16h16V5h-3 M8 12l2 2 5-5 M8 18h7"/></svg><span>Quiz Manager</span><i class="soon" aria-hidden="true"></i></button>
-    <button class="nav-item" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2c0-4-12-4-12 0v2 M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M17 4c4 0 4 6 0 6 M20 21v-3c0-2-1-3-3-3"/></svg><span>Users &amp; Sessions</span><i class="soon" aria-hidden="true"></i></button>
-    <button class="nav-item" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4H3v13h4v4l5-4h9z M7 8h10 M7 12h6"/></svg><span>Feedbacks</span><i class="soon" aria-hidden="true"></i></button>
-    <button class="nav-item" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 3 6 18 3-7 7-3Z M14 15l5 6"/></svg><span>Cursor Effects</span><i class="soon" aria-hidden="true"></i></button>
-    <div class="nav-label personalize">PERSONALIZE</div>
-    <a class="nav-item" href="/admin-dashboard/profile.html">
+    <button class="nav-item" type="button" disabled title="Quiz Manager (coming soon)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v4H8z M7 5H4v16h16V5h-3 M8 12l2 2 5-5 M8 18h7"/></svg>
+      <span>Quiz Manager</span><i class="soon">Soon</i>
+    </button>
+    <a class="nav-item" href="/admin-dashboard/user_management.html" title="Users &amp; Sessions">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2c0-4-12-4-12 0v2 M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M17 4c4 0 4 6 0 6 M20 21v-3c0-2-1-3-3-3"/></svg>
+      <span>Users &amp; Sessions</span>
+    </a>
+    <button class="nav-item" type="button" disabled title="Feedbacks (coming soon)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4H3v13h4v4l5-4h9z M7 8h10 M7 12h6"/></svg>
+      <span>Feedbacks</span><i class="soon">Soon</i>
+    </button>
+
+    <div class="nav-label">Personalize</div>
+    <button class="nav-item" type="button" disabled title="Cursor Effects (coming soon)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 3 6 18 3-7 7-3Z M14 15l5 6"/></svg>
+      <span>Cursor Effects</span><i class="soon">Soon</i>
+    </button>
+    <a class="nav-item" href="/admin-dashboard/profile.html" title="Profile Settings">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1Z"/></svg>
       <span>Profile Settings</span>
     </a>
   </nav>
+
   <div class="side-bottom">
-    <div class="admin">
-      <span class="avatar" id="admin-initials">A</span>
-      <div class="admin-info">
-        <span class="admin-name" id="admin-name">Administrator</span>
-        <small>Admin</small>
-      </div>
-    </div>
-    <button class="logout" id="logout" type="button" onclick="logout()">
+    <button class="logout" id="logout" type="button" onclick="logout()" title="Log out">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H4v16h6 M9 12h12m-4-4 4 4-4 4"/></svg>
       <span>Logout</span>
     </button>

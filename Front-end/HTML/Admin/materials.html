@@ -1,20 +1,1359 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Signrest — Sign Materials</title><meta name="description" content="Manage Signrest learning materials, sign images, categories, and explanations."><meta property="og:title" content="Signrest — Sign Materials"><meta property="og:description" content="Manage the Signrest sign language learning library."><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/sidebar-toggle.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Materials | Signrest Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Playfair+Display:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/sidebar-toggle.css">
+  <style>
+    /* ------------------------------------------------------------
+       Tokens (same palette as Profile Settings)
+       ------------------------------------------------------------ */
+    :root {
+      --ms-bg: #f0f3e9;
+      --ms-surface: #fbfaf5;
+      --ms-surface-tint: #eef2e8;
+      --ms-text: #2f3d33;
+      --ms-label: #3f4d42;
+      --ms-muted: #667369;
+      --ms-border: #dcdfd2;
+      --ms-divider: #e6e8dc;
+      --ms-accent: #4a6f53;
+      --ms-accent-strong: #365640;
+      --ms-accent-soft: color-mix(in oklab, var(--ms-accent) 12%, var(--ms-surface));
+      --ms-field-bg: #fffffb;
+      --ms-field-border: #cfd3c4;
+      --ms-primary-bg: #4a6f53;
+      --ms-primary-hover: #365640;
+      --ms-primary-text: #fff;
+      --ms-success: #3d6b47;
+      --ms-success-bg: #e8f1e7;
+      --ms-success-border: #c6dac5;
+      --ms-danger: #9a4a3d;
+      --ms-danger-bg: #f8ebe7;
+      --ms-danger-border: #e6c8c0;
+      --ms-draft-bg: #efeee6;
+      --ms-draft-fg: #6b6f62;
+      --ms-shadow: 0 1px 2px rgba(47,61,51,.05), 0 8px 24px rgba(47,61,51,.05);
+      --ms-radius: 12px;
+      --ms-radius-sm: 8px;
+      --ms-font-ui: var(--font-ui, "Inter", system-ui, sans-serif);
+      --ms-font-title: var(--font-title, "Playfair Display", Georgia, serif);
+    }
+
+    :root[data-theme="dark"] {
+      --ms-bg: #1d2620;
+      --ms-surface: #283229;
+      --ms-surface-tint: #2e3a30;
+      --ms-text: #ebe9df;
+      --ms-label: #d7d9cf;
+      --ms-muted: #aeb4a8;
+      --ms-border: #424f45;
+      --ms-divider: #394539;
+      --ms-accent: #a4c4a4;
+      --ms-accent-strong: #d5e5d4;
+      --ms-field-bg: #1d2620;
+      --ms-field-border: #55635a;
+      --ms-primary-bg: #a4c4a4;
+      --ms-primary-hover: #bad4ba;
+      --ms-primary-text: #17211a;
+      --ms-success: #a9d3a9;
+      --ms-success-bg: #263a2a;
+      --ms-success-border: #3f5c44;
+      --ms-danger: #eeb0a4;
+      --ms-danger-bg: #3d2724;
+      --ms-danger-border: #6a4039;
+      --ms-draft-bg: #343f36;
+      --ms-draft-fg: #bfc4b6;
+      --ms-shadow: 0 1px 2px rgba(0,0,0,.25), 0 8px 24px rgba(0,0,0,.18);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--ms-bg);
+      color: var(--ms-text);
+      font-family: var(--ms-font-ui);
+      line-height: 1.5;
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    /* ------------------------------------------------------------
+       Shell
+       ------------------------------------------------------------ */
+    .materials-main > header {
+      height: 72px;
+      background: var(--ms-bg);
+    }
+
+    .materials-main .header-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    @media (min-width: 801px) and (max-width: 1120px) {
+      .materials-main {
+        width: calc(100% - 248px);
+        margin-left: 248px;
+      }
+    }
+
+    .materials-page {
+      width: min(1120px, calc(100% - 48px));
+      margin: 36px auto 64px;
+    }
+
+    .materials-heading {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .materials-title {
+      margin: 0;
+      font-family: var(--ms-font-title);
+      font-size: clamp(30px, 4vw, 38px);
+      font-weight: 500;
+      letter-spacing: -.025em;
+      line-height: 1.15;
+    }
+
+    .materials-subtitle {
+      margin: 8px 0 0;
+      color: var(--ms-muted);
+      font-size: 14.5px;
+    }
+
+    .ms-category-mode {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 22px 0 16px;
+    }
+
+    .ms-category-caption {
+      color: var(--ms-muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .ms-category-segment {
+      display: inline-flex;
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid var(--ms-border);
+      border-radius: 12px;
+      background: var(--ms-surface-tint);
+    }
+
+    .ms-category-button {
+      display: inline-flex;
+      min-width: 118px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      padding: 9px 14px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ms-muted);
+      text-align: left;
+      transition: background .15s, color .15s, transform .15s;
+    }
+
+    .ms-category-button:hover { transform: translateY(-1px); color: var(--ms-text); }
+    .ms-category-name { font-size: 13.5px; font-weight: 700; line-height: 1.1; }
+    .ms-category-sub { font-size: 9.5px; letter-spacing: .04em; text-transform: uppercase; opacity: .72; }
+    .ms-category-button.active {
+      background: var(--ms-primary-bg);
+      color: var(--ms-primary-text);
+      box-shadow: 0 4px 10px rgba(47, 61, 51, .18);
+    }
+    .ms-category-button.active .ms-category-sub { opacity: .82; }
+
+    /* ------------------------------------------------------------
+       Buttons
+       ------------------------------------------------------------ */
+    .ms-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 9px 18px;
+      border: 1px solid transparent;
+      border-radius: var(--ms-radius-sm);
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 600;
+      transition: transform .12s, background .15s, border-color .15s;
+    }
+
+    .ms-button:active { transform: translateY(1px); }
+    .ms-button:disabled { opacity: .65; cursor: progress; }
+    .ms-button svg { width: 17px; height: 17px; }
+
+    .ms-button-primary { background: var(--ms-primary-bg); color: var(--ms-primary-text); }
+    .ms-button-primary:hover:not(:disabled) { background: var(--ms-primary-hover); }
+
+    .ms-button-secondary {
+      border-color: var(--ms-field-border);
+      background: transparent;
+      color: var(--ms-label);
+    }
+    .ms-button-secondary:hover { background: var(--ms-accent-soft); }
+
+    .ms-button-danger { background: #a5483a; color: #fff; }
+    .ms-button-danger:hover:not(:disabled) { background: #8d3b2f; }
+    :root[data-theme="dark"] .ms-button-danger { background: #e29d90; color: #2b1511; }
+    :root[data-theme="dark"] .ms-button-danger:hover:not(:disabled) { background: #eeb0a4; }
+
+    .ms-icon-button {
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ms-muted);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .ms-icon-button:hover { background: var(--ms-accent-soft); color: var(--ms-text); }
+    .ms-icon-button.is-danger:hover { background: var(--ms-danger-bg); color: var(--ms-danger); }
+    .ms-icon-button svg { width: 17px; height: 17px; }
+
+    svg.ms-svg, .ms-button svg, .ms-icon-button svg {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .ms-button:focus-visible,
+    .ms-icon-button:focus-visible,
+    .ms-input:focus-visible,
+    .ms-page-button:focus-visible {
+      outline: 2px solid var(--ms-accent);
+      outline-offset: 2px;
+    }
+
+    /* ------------------------------------------------------------
+       Panel + toolbar
+       ------------------------------------------------------------ */
+    .ms-panel {
+      background: var(--ms-surface);
+      border: 1px solid var(--ms-border);
+      border-radius: var(--ms-radius);
+      box-shadow: var(--ms-shadow);
+      overflow: hidden;
+    }
+
+    .ms-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--ms-divider);
+    }
+
+    .ms-search {
+      position: relative;
+      flex: 1 1 240px;
+      min-width: 0;
+    }
+
+    .ms-search svg {
+      position: absolute;
+      top: 50%;
+      left: 12px;
+      width: 17px;
+      height: 17px;
+      transform: translateY(-50%);
+      color: var(--ms-muted);
+      pointer-events: none;
+    }
+
+    .ms-search .ms-input { padding-left: 38px; }
+
+    .ms-input {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 13px;
+      border: 1px solid var(--ms-field-border);
+      border-radius: var(--ms-radius-sm);
+      outline: none;
+      background: var(--ms-field-bg);
+      color: var(--ms-text);
+      font-size: 14px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    .ms-input:hover { border-color: color-mix(in oklab, var(--ms-accent) 55%, var(--ms-field-border)); }
+
+    .ms-input:focus {
+      border-color: var(--ms-accent);
+      box-shadow: 0 0 0 3px color-mix(in oklab, var(--ms-accent) 22%, transparent);
+    }
+
+    select.ms-input { appearance: none; padding-right: 34px; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23667369' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 4.5 3 3 3-3'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 12px;
+    }
+
+    .ms-toolbar select.ms-input { width: auto; min-width: 150px; }
+
+    .ms-count {
+      margin-left: auto;
+      color: var(--ms-muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    /* ------------------------------------------------------------
+       Table
+       ------------------------------------------------------------ */
+    .ms-table-wrap { overflow-x: auto; }
+
+    .ms-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .ms-table th {
+      padding: 12px 20px;
+      color: var(--ms-muted);
+      background: var(--ms-surface-tint);
+      border-bottom: 1px solid var(--ms-divider);
+      font-size: 12.5px;
+      font-weight: 600;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .ms-table td {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--ms-divider);
+      vertical-align: middle;
+    }
+
+    .ms-table tbody tr:last-child td { border-bottom: 0; }
+    .ms-table tbody tr:hover { background: color-mix(in oklab, var(--ms-accent) 5%, transparent); }
+
+    .ms-table .col-actions { width: 96px; text-align: right; white-space: nowrap; }
+
+    .ms-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 220px;
+    }
+
+    .ms-thumb {
+      position: relative;
+      display: grid;
+      place-items: center;
+      flex: 0 0 52px;
+      width: 52px;
+      height: 52px;
+      overflow: hidden;
+      border: 1px solid var(--ms-border);
+      border-radius: 10px;
+      background: var(--ms-accent-soft);
+      color: var(--ms-accent-strong);
+      font-family: var(--ms-font-title);
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .ms-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+    .ms-thumb .ms-type-badge {
+      position: absolute;
+      right: 3px;
+      bottom: 3px;
+      display: grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--ms-surface);
+      color: var(--ms-accent-strong);
+      box-shadow: 0 0 0 1px var(--ms-border);
+    }
+
+    .ms-thumb .ms-type-badge svg { width: 10px; height: 10px; fill: currentColor; stroke: none; }
+
+    .ms-item-title { margin: 0; font-weight: 600; line-height: 1.3; }
+
+    .ms-item-desc {
+      display: -webkit-box;
+      max-width: 340px;
+      margin: 2px 0 0;
+      overflow: hidden;
+      color: var(--ms-muted);
+      font-size: 12.5px;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+    }
+
+    .ms-muted { color: var(--ms-muted); white-space: nowrap; }
+
+    .ms-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .ms-badge::before {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      content: "";
+    }
+
+    .ms-badge.is-published { background: var(--ms-success-bg); border-color: var(--ms-success-border); color: var(--ms-success); }
+    .ms-badge.is-draft { background: var(--ms-draft-bg); border-color: var(--ms-border); color: var(--ms-draft-fg); }
+
+    /* ------------------------------------------------------------
+       States
+       ------------------------------------------------------------ */
+    .ms-state {
+      display: grid;
+      justify-items: center;
+      gap: 6px;
+      padding: 56px 24px;
+      text-align: center;
+    }
+
+    .ms-state h2 {
+      margin: 8px 0 0;
+      font-family: var(--ms-font-title);
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .ms-state p { max-width: 380px; margin: 0; color: var(--ms-muted); font-size: 14px; }
+    .ms-state .ms-button { margin-top: 14px; }
+
+    .ms-state-icon {
+      display: grid;
+      place-items: center;
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: var(--ms-accent-soft);
+      color: var(--ms-accent-strong);
+    }
+
+    .ms-state-icon svg { width: 24px; height: 24px; }
+
+    .ms-state.is-error .ms-state-icon { background: var(--ms-danger-bg); color: var(--ms-danger); }
+
+    .ms-skeleton td > div {
+      height: 14px;
+      border-radius: 6px;
+      background: linear-gradient(90deg, var(--ms-divider), var(--ms-surface-tint), var(--ms-divider));
+      background-size: 200% 100%;
+      animation: ms-shimmer 1.4s linear infinite;
+    }
+
+    @keyframes ms-shimmer { to { background-position: -200% 0; } }
+
+    /* ------------------------------------------------------------
+       Pagination
+       ------------------------------------------------------------ */
+    .ms-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 14px 20px;
+      border-top: 1px solid var(--ms-divider);
+      color: var(--ms-muted);
+      font-size: 13px;
+    }
+
+    .ms-pagination[hidden] { display: none; }
+    .ms-pages { display: flex; gap: 6px; }
+
+    .ms-page-button {
+      min-width: 36px;
+      height: 36px;
+      padding: 0 12px;
+      border: 1px solid var(--ms-field-border);
+      border-radius: var(--ms-radius-sm);
+      background: transparent;
+      color: var(--ms-label);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .ms-page-button:hover:not(:disabled) { background: var(--ms-accent-soft); }
+    .ms-page-button:disabled { opacity: .45; cursor: not-allowed; }
+    .ms-page-button.is-current { background: var(--ms-primary-bg); border-color: var(--ms-primary-bg); color: var(--ms-primary-text); }
+
+    /* ------------------------------------------------------------
+       Dialogs
+       ------------------------------------------------------------ */
+    dialog.ms-dialog {
+      width: min(560px, calc(100% - 32px));
+      max-height: calc(100% - 32px);
+      padding: 0;
+      overflow: auto;
+      border: 1px solid var(--ms-border);
+      border-radius: var(--ms-radius);
+      background: var(--ms-surface);
+      color: var(--ms-text);
+      box-shadow: 0 24px 60px rgba(0,0,0,.28);
+    }
+
+    dialog.ms-dialog.is-small { width: min(440px, calc(100% - 32px)); }
+    dialog.ms-dialog::backdrop { background: rgb(15 22 17 / 55%); }
+
+    .ms-dialog form { padding: 26px; margin: 0; }
+
+    .ms-dialog-title {
+      margin: 0;
+      font-family: var(--ms-font-title);
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .ms-dialog-desc { margin: 4px 0 22px; color: var(--ms-muted); font-size: 13.5px; }
+
+    .ms-fields { display: grid; gap: 18px; }
+
+    .ms-label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--ms-label);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    textarea.ms-input { min-height: 92px; resize: vertical; }
+
+    .ms-help { display: block; margin-top: 6px; color: var(--ms-muted); font-size: 12px; }
+
+    .ms-row-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+
+    .ms-upload {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
+      border: 1.5px dashed var(--ms-field-border);
+      border-radius: var(--ms-radius-sm);
+      background: var(--ms-field-bg);
+    }
+
+    .ms-upload:focus-within { border-color: var(--ms-accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ms-accent) 22%, transparent); }
+    .ms-upload .ms-thumb { flex-basis: 56px; width: 56px; height: 56px; }
+    .ms-upload-text { min-width: 0; flex: 1; font-size: 13px; }
+    .ms-upload-name { display: block; overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+
+    .ms-upload input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+    .ms-message {
+      display: none;
+      margin-top: 18px;
+      padding: 11px 14px;
+      border: 1px solid var(--ms-danger-border);
+      border-radius: var(--ms-radius-sm);
+      background: var(--ms-danger-bg);
+      color: var(--ms-danger);
+      font-size: 13px;
+    }
+
+    .ms-message.is-visible { display: block; }
+
+    .ms-dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--ms-divider);
+    }
+
+    /* Toast */
+    .ms-toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 60;
+      max-width: min(380px, calc(100% - 48px));
+      padding: 12px 16px;
+      border: 1px solid var(--ms-success-border);
+      border-radius: var(--ms-radius-sm);
+      background: var(--ms-success-bg);
+      color: var(--ms-success);
+      box-shadow: var(--ms-shadow);
+      font-size: 13.5px;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity .2s, transform .2s;
+    }
+
+    .ms-toast.is-visible { opacity: 1; transform: none; }
+    .ms-toast.is-error { border-color: var(--ms-danger-border); background: var(--ms-danger-bg); color: var(--ms-danger); }
+
+    /* ------------------------------------------------------------
+       Responsive
+       ------------------------------------------------------------ */
+    @media (max-width: 800px) {
+      .materials-page { width: calc(100% - 32px); margin: 24px auto 40px; }
+      .ms-table .col-category, .ms-table .col-updated { display: none; }
+      .ms-table th, .ms-table td { padding-right: 14px; padding-left: 14px; }
+      .ms-category-mode { align-items: flex-start; flex-direction: column; }
+      .ms-category-segment { width: 100%; }
+      .ms-category-button { min-width: 0; flex: 1; }
+    }
+
+    @media (max-width: 560px) {
+      .materials-heading .ms-button { width: 100%; }
+      .ms-toolbar select.ms-input { flex: 1 1 130px; }
+      .ms-count { width: 100%; margin-left: 0; }
+      .ms-row-2 { grid-template-columns: 1fr; }
+      .ms-dialog form { padding: 20px; }
+      .ms-dialog-actions { flex-direction: column-reverse; }
+      .ms-dialog-actions .ms-button { width: 100%; }
+      .ms-toast { right: 16px; bottom: 16px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .materials-page *, .ms-toast { transition: none !important; animation: none !important; }
+    }
+  </style>
 </head>
-<body data-page="materials">
-<div class="app" id="app">
-<div class="mobile-overlay" onclick="closeMobile()"></div>
-<aside class="sidebar"><div class="brand"><span id="brand-icon"></span><span>Signrest</span><button class="collapse sidebar-collapse" onclick="collapseSidebar()" aria-label="Toggle sidebar" id="collapse"></button></div><div class="nav-label">WORKSPACE</div><nav class="nav" id="nav"></nav><div class="side-bottom"><div class="admin"><div class="avatar" id="admin-initials">A</div><div class="admin-info"><div class="admin-name" id="admin-name">Administrator</div><small>Admin</small></div></div><button class="logout" onclick="logout()" id="logout"></button></div></aside>
-<main class="main"><header><div class="header-start"><button class="collapse mobile-collapse" onclick="collapseSidebar()" aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg></button><div><div class="header-title" id="page-title">Admin Portal</div><div class="header-sub" id="page-subtitle" hidden></div></div></div><div class="header-right"><button class="icon-button theme-toggle" id="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Switch to dark mode" title="Switch to dark mode"></button><label class="search"><span id="search-icon"></span><input id="search" placeholder="Search..." aria-label="Search dashboard" oninput="searchView(this.value)"><kbd>⌘ K</kbd></label><span class="icon-button notification-bell" role="img" aria-label="Notifications" title="Notifications"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span><div class="avatar header-avatar" id="top-initials">A</div></div></header><div class="content" id="content"></div></main>
-</div>
-<dialog id="modal"><div class="modal-head"><h2 id="modal-title"></h2><button class="icon-button" id="modal-close" aria-label="Close dialog" onclick="document.getElementById('modal').close()"></button></div><form id="modal-form" onsubmit="saveModal(event)"><div class="form-grid" id="modal-fields"></div><div class="form-actions"><button class="btn outline" type="button" onclick="document.getElementById('modal').close()">Cancel</button><button class="btn" type="submit">Save changes</button></div></form></dialog><div class="toast" id="toast" role="status"></div>
-<script src="js/api.js"></script>
-<script src="js/materials.js"></script>
-<script src="js/app.js"></script>
-</body></html>
+<body>
+  <div class="app" id="app">
+    <div id="adminSidebarHost"></div>
+<template id="fallbackSidebar"><div class="mobile-overlay" onclick="closeMobile()"></div><aside class="sidebar"><div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4c-9-3-16 3-14 10 2 6 12 6 14-10Z M4 21 15 10"/></svg><span>Signrest</span></div><div class="portal">Admin Portal</div><div class="nav-label">WORKSPACE</div><nav class="nav"><button class="nav-item" type="button" onclick="location.href='index.html'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg><span>Overview</span></button><button class="nav-item" type="button" onclick="location.href='accuracy.html'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10 M10 20V4 M16 20v-7 M22 20H2"/></svg><span>AI Accuracy &amp; Logs</span></button><button class="nav-item active" type="button" onclick="location.href='sign_material.html'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v16 M12 5C8 2 4 3 2 4v15c4-1 7-1 10 2 3-3 6-3 10-2V4c-4-1-7-2-10 1Z"/></svg><span>Sign Materials</span></button><button class="nav-item" type="button" title="Coming soon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v4H8z M7 5H4v16h16V5h-3 M8 12l2 2 5-5 M8 18h7"/></svg><span>Quiz Manager</span><span class="soon"></span></button><a class="nav-item" href="/admin-dashboard/user_management.html" title="Users &amp; Sessions"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2c0-4-12-4-12 0v2 M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M17 4c4 0 4 6 0 6 M20 21v-3c0-2-1-3-3-3"/></svg><span>Users &amp; Sessions</span></a><button class="nav-item" type="button" title="Coming soon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4H3v13h4v4l5-4h9z M7 8h10 M7 12h6"/></svg><span>Feedbacks</span><span class="soon"></span></button><div class="nav-label">PERSONALIZE</div><button class="nav-item" type="button" title="Coming soon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 3 6 18 3-7 7-3Z M14 15l5 6"/></svg><span>Cursor Effects</span><span class="soon"></span></button><button class="nav-item" type="button" onclick="location.href='profile.html'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1Z"/></svg><span>Profile Settings</span></button></nav><div class="side-bottom"><div class="admin"><div class="avatar" id="admin-initials">A</div><div class="admin-info"><div class="admin-name" id="admin-name">Administrator</div><small>Admin</small></div></div><button class="logout" type="button" onclick="logout()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H4v16h6 M9 12h12 m-4-4 4 4-4 4"/></svg><span>Logout</span></button></div></aside></template>
+
+    <main class="main materials-main">
+      <header>
+        <div class="header-start">
+          <button class="collapse mobile-collapse" type="button" onclick="collapseSidebar()" aria-label="Toggle sidebar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg>
+          </button>
+          <div class="header-title">Admin Portal</div>
+        </div>
+        <div class="header-right">
+          <button class="icon-button theme-toggle" id="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Switch to dark mode" title="Switch to dark mode"></button>
+          <label class="search">
+            <span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 5 5"></path></svg></span>
+            <input id="search" type="search" placeholder="Search materials..." aria-label="Search sign materials" oninput="searchMaterials(this.value)">
+          </label>
+          <span class="icon-button notification-bell" role="img" aria-label="Notifications" title="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
+          </span>
+          <div class="avatar header-avatar" id="top-initials">A</div>
+        </div>
+      </header>
+
+      <div class="materials-page">
+        <div class="materials-heading">
+          <div>
+            <h1 class="materials-title">Sign materials</h1>
+            <p class="materials-subtitle">Add and manage the sign images and videos learners study.</p>
+          </div>
+          <button class="ms-button ms-button-primary" id="addMaterial" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Add material
+          </button>
+        </div>
+
+        <div class="ms-category-mode">
+          <span class="ms-category-caption">Material category</span>
+          <div class="ms-category-segment" id="categoryModeSegment" role="tablist" aria-label="Material category">
+            <button type="button" role="tab" class="ms-category-button" data-category="Alphabets" aria-selected="false">
+              <span class="ms-category-name">Alphabets</span>
+              <span class="ms-category-sub">A-Z finger spelling</span>
+            </button>
+            <button type="button" role="tab" class="ms-category-button" data-category="Words" aria-selected="false">
+              <span class="ms-category-name">Words</span>
+              <span class="ms-category-sub">Whole sign words</span>
+            </button>
+            <button type="button" role="tab" class="ms-category-button" data-category="Numbers" aria-selected="false">
+              <span class="ms-category-name">Numbers</span>
+              <span class="ms-category-sub">0-9 number signs</span>
+            </button>
+          </div>
+        </div>
+
+        <section class="ms-panel" aria-label="Sign materials list">
+          <div class="ms-toolbar">
+            <div class="ms-search">
+              <svg class="ms-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+              <input class="ms-input" id="filterSearch" type="search" placeholder="Search by title or description" aria-label="Search by title or description">
+            </div>
+            <select class="ms-input" id="filterCategory" aria-label="Filter by category"></select>
+            <select class="ms-input" id="filterStatus" aria-label="Filter by status">
+              <option value="">All statuses</option>
+              <option value="published">Published</option>
+              <option value="draft">Draft</option>
+            </select>
+            <span class="ms-count" id="resultCount" role="status" aria-live="polite"></span>
+          </div>
+
+          <div class="ms-table-wrap">
+            <table class="ms-table">
+              <thead>
+                <tr>
+                  <th scope="col">Material</th>
+                  <th scope="col" class="col-category">Category</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="col-updated">Last updated</th>
+                  <th scope="col" class="col-actions"><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody id="materialsBody"></tbody>
+            </table>
+          </div>
+
+          <div id="materialsState"></div>
+
+          <div class="ms-pagination" id="pagination" hidden>
+            <span id="pageInfo"></span>
+            <div class="ms-pages" id="pageButtons"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add / edit dialog -->
+  <dialog class="ms-dialog" id="materialDialog" aria-labelledby="materialDialogTitle">
+    <form id="materialForm" novalidate>
+      <h2 class="ms-dialog-title" id="materialDialogTitle">Add material</h2>
+      <p class="ms-dialog-desc" id="materialDialogDesc">Upload a sign image or video and choose where it appears.</p>
+
+      <div class="ms-fields">
+        <div>
+          <label class="ms-label" for="materialTitle">Title</label>
+          <input class="ms-input" id="materialTitle" type="text" maxlength="100" required placeholder="e.g. Hello">
+        </div>
+
+        <div class="ms-row-2">
+          <div>
+            <label class="ms-label" for="materialCategory">Category</label>
+            <select class="ms-input" id="materialCategory" required></select>
+          </div>
+          <div>
+            <label class="ms-label" for="materialStatus">Status</label>
+            <select class="ms-input" id="materialStatus">
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="ms-label" for="materialDescription">Description</label>
+          <textarea class="ms-input" id="materialDescription" maxlength="300" placeholder="Hand shape, movement or tips for learners"></textarea>
+        </div>
+
+        <div>
+          <span class="ms-label" id="materialFileLabel">Image or video</span>
+          <div class="ms-upload">
+            <div class="ms-thumb" id="materialPreview" aria-hidden="true">?</div>
+            <div class="ms-upload-text">
+              <span class="ms-upload-name" id="materialFileName">No file chosen</span>
+              <span class="ms-help" id="materialFileHelp">JPG, PNG, WEBP, MP4 or WEBM, up to 25 MB.</span>
+            </div>
+            <label class="ms-button ms-button-secondary" for="materialFile">Choose file</label>
+            <input id="materialFile" type="file" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm" aria-labelledby="materialFileLabel">
+          </div>
+        </div>
+      </div>
+
+      <div class="ms-message" id="materialMessage" role="alert"></div>
+
+      <div class="ms-dialog-actions">
+        <button class="ms-button ms-button-secondary" id="materialCancel" type="button">Cancel</button>
+        <button class="ms-button ms-button-primary" id="materialSave" type="submit">Save material</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Delete dialog -->
+  <dialog class="ms-dialog is-small" id="deleteDialog" aria-labelledby="deleteDialogTitle">
+    <form id="deleteForm" method="dialog">
+      <h2 class="ms-dialog-title" id="deleteDialogTitle">Delete this material?</h2>
+      <p class="ms-dialog-desc" id="deleteDialogDesc" style="margin-bottom:0"></p>
+      <div class="ms-message" id="deleteMessage" role="alert"></div>
+      <div class="ms-dialog-actions">
+        <button class="ms-button ms-button-secondary" id="deleteCancel" type="button">Cancel</button>
+        <button class="ms-button ms-button-danger" id="deleteConfirm" type="submit">Delete material</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="ms-toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+  (() => {
+    "use strict";
+
+    /* ==========================================================
+       CONFIG: change these to match your backend
+       ========================================================== */
+    const DEMO_MODE = true;                       // set to false to use the real API
+    const MATERIALS_ENDPOINT = "/api/admin/materials";
+    const PROFILE_ENDPOINT = "/api/admin/profile";
+    const SIDEBAR_URL = "/admin-dashboard/admin_sidebar.html";
+    const SIDEBAR_ALIASES = ["sign_material.html", "materials.html"]; // pages that highlight "Sign Materials"
+    const CATEGORIES = ["Alphabets", "Words", "Numbers"];
+    const PAGE_SIZE = 8;
+    const MAX_FILE_BYTES = 25 * 1024 * 1024;
+    const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm"];
+    /* Expected item shape:
+       { id, title, category, description, status: "published"|"draft",
+         media_type: "image"|"video", media_url, updated_at (ISO string) }  */
+
+    const byId = (id) => document.getElementById(id);
+    const app = byId("app");
+    const state = { items: [], filters: { q: "", category: "", status: "" }, page: 1, loading: true, error: "", editing: null, deleting: null };
+
+    const ICON = {
+      edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>',
+      trash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+      play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
+      hand: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5m0-6.5a1.5 1.5 0 0 1 3 0V11m0-4.5a1.5 1.5 0 0 1 3 0V13m0-3.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1a7 7 0 0 1-5.6-2.8L3.5 15.5a1.5 1.5 0 0 1 2.3-1.9L8 16"/></svg>',
+      alert: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3ZM12 10v4M12 17.5v.01"/></svg>',
+      search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>'
+    };
+
+    /* ---------------- Demo data ---------------- */
+    const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
+    let demoItems = [
+      ["Letter A", "Alphabets", "Closed fist with the thumb resting against the side of the index finger.", "published", "image", 2],
+      ["Letter B", "Alphabets", "Flat hand, fingers together, thumb folded across the palm.", "published", "image", 3],
+      ["Letter C", "Alphabets", "Curve the hand into a C shape, thumb opposite the fingers.", "draft", "image", 5],
+      ["Number 5", "Numbers", "Open hand, all five fingers spread.", "published", "image", 6],
+      ["Hello", "Words", "Salute-like motion moving away from the forehead.", "published", "video", 7],
+      ["Thank you", "Words", "Flat hand from the chin moving forward and down.", "published", "video", 9]
+    ].map((r, i) => ({ id: i + 1, title: r[0], category: r[1], description: r[2], status: r[3], media_type: r[4], media_url: "", updated_at: daysAgo(r[5]) }));
+    let demoNextId = demoItems.length + 1;
+    const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    /* ---------------- Utilities ---------------- */
+    function esc(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    function safeUrl(value) {
+      if (!value) return null;
+      try {
+        const url = new URL(value, window.location.origin);
+        return url.protocol === "https:" || url.origin === window.location.origin ? url.href : null;
+      } catch { return null; }
+    }
+
+    function formatDate(iso) {
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return "—";
+      return date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+    }
+
+    function initialsFor(name) {
+      const parts = (name || "Administrator").trim().split(/\s+/).filter(Boolean);
+      return parts.length > 1 ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase() : (name || "Administrator").slice(0, 2).toUpperCase();
+    }
+
+    let toastTimer;
+    function toast(message, type) {
+      const el = byId("toast");
+      el.textContent = message;
+      el.classList.toggle("is-error", type === "error");
+      el.classList.add("is-visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove("is-visible"), 3500);
+    }
+
+    function showMessage(id, message) {
+      const el = byId(id);
+      el.textContent = message;
+      el.classList.toggle("is-visible", Boolean(message));
+    }
+
+    async function apiRequest(url, options = {}) {
+      const opts = { credentials: "same-origin", ...options, headers: { ...(options.headers || {}) } };
+      if (opts.body && !(opts.body instanceof FormData)) opts.headers["Content-Type"] = "application/json";
+      const response = await fetch(url, opts);
+      let result;
+      try { result = await response.json(); } catch { throw new Error("The server returned an invalid response."); }
+      if (response.status === 401) {
+        window.location.assign("/login");
+        throw new Error("Your session has expired. Please sign in again.");
+      }
+      if (!response.ok || result.success === false) throw new Error(result.message || result.detail || "The request could not be completed.");
+      return result;
+    }
+
+    /* ---------------- Data layer ---------------- */
+    const data = {
+      async list() {
+        if (DEMO_MODE) { await delay(450); return demoItems.map((i) => ({ ...i })); }
+        const result = await apiRequest(MATERIALS_ENDPOINT);
+        return result.items || [];
+      },
+      async save(payload, file, id) {
+        if (DEMO_MODE) {
+          await delay(500);
+          const previewUrl = file ? URL.createObjectURL(file) : null;
+          const mediaType = file ? (file.type.startsWith("video/") ? "video" : "image") : null;
+          if (id) {
+            const item = demoItems.find((i) => i.id === id);
+            Object.assign(item, payload, { updated_at: new Date().toISOString() });
+            if (file) { item.media_type = mediaType; item.media_url = mediaType === "image" ? previewUrl : ""; }
+          } else {
+            demoItems.push({ id: demoNextId++, ...payload, media_type: mediaType || "image", media_url: mediaType === "image" ? previewUrl : "", updated_at: new Date().toISOString() });
+          }
+          return { message: id ? "Material updated." : "Material added." };
+        }
+        const form = new FormData();
+        Object.entries(payload).forEach(([k, v]) => form.append(k, v));
+        if (file) form.append("media", file);
+        return apiRequest(id ? `${MATERIALS_ENDPOINT}/${id}` : MATERIALS_ENDPOINT, { method: id ? "PUT" : "POST", body: form });
+      },
+      async remove(id) {
+        if (DEMO_MODE) { await delay(400); demoItems = demoItems.filter((i) => i.id !== id); return { message: "Material deleted." }; }
+        return apiRequest(`${MATERIALS_ENDPOINT}/${id}`, { method: "DELETE" });
+      }
+    };
+
+    /* ---------------- Rendering ---------------- */
+    function filtered() {
+      const { q, category, status } = state.filters;
+      const needle = q.trim().toLowerCase();
+      return state.items
+        .filter((i) => (!category || normalizeCategory(i.category) === category) && (!status || i.status === status)
+          && (!needle || `${i.title} ${i.description || ""}`.toLowerCase().includes(needle)))
+        .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    }
+
+    function normalizeCategory(category) {
+      if (category === "Alphabet") return "Alphabets";
+      return CATEGORIES.includes(category) ? category : "";
+    }
+
+    function thumbHtml(item) {
+      const url = item.media_type === "image" ? safeUrl(item.media_url) : null;
+      const badge = item.media_type === "video" ? `<span class="ms-type-badge" title="Video">${ICON.play}</span>` : "";
+      const inner = url ? `<img src="${esc(url)}" alt="" loading="lazy">` : esc((item.title || "?").trim().charAt(0).toUpperCase());
+      return `<div class="ms-thumb" aria-hidden="true">${inner}${badge}</div>`;
+    }
+
+    function rowHtml(item) {
+      const published = item.status === "published";
+      const category = normalizeCategory(item.category);
+      return `<tr data-id="${esc(item.id)}">
+        <td><div class="ms-item">${thumbHtml(item)}<div>
+          <p class="ms-item-title">${esc(item.title)}</p>
+          ${item.description ? `<p class="ms-item-desc">${esc(item.description)}</p>` : ""}
+        </div></div></td>
+        <td class="col-category ms-muted">${esc(category || item.category)}</td>
+        <td><span class="ms-badge ${published ? "is-published" : "is-draft"}">${published ? "Published" : "Draft"}</span></td>
+        <td class="col-updated ms-muted">${esc(formatDate(item.updated_at))}</td>
+        <td class="col-actions">
+          <button class="ms-icon-button" type="button" data-action="edit" aria-label="Edit ${esc(item.title)}" title="Edit">${ICON.edit}</button>
+          <button class="ms-icon-button is-danger" type="button" data-action="delete" aria-label="Delete ${esc(item.title)}" title="Delete">${ICON.trash}</button>
+        </td></tr>`;
+    }
+
+    function stateHtml(kind, title, text, buttonLabel, action) {
+      const icon = kind === "error" ? ICON.alert : kind === "filtered" ? ICON.search : ICON.hand;
+      return `<div class="ms-state ${kind === "error" ? "is-error" : ""}">
+        <div class="ms-state-icon">${icon}</div><h2>${esc(title)}</h2><p>${esc(text)}</p>
+        ${buttonLabel ? `<button class="ms-button ms-button-secondary" type="button" data-state-action="${action}">${esc(buttonLabel)}</button>` : ""}
+      </div>`;
+    }
+
+    function render() {
+      const body = byId("materialsBody");
+      const stateBox = byId("materialsState");
+      const pagination = byId("pagination");
+      const count = byId("resultCount");
+      pagination.hidden = true;
+
+      if (state.loading) {
+        body.innerHTML = Array.from({ length: 5 }, () =>
+          `<tr class="ms-skeleton"><td><div style="width:60%"></div></td><td class="col-category"><div style="width:70%"></div></td><td><div style="width:60px"></div></td><td class="col-updated"><div style="width:80%"></div></td><td></td></tr>`).join("");
+        stateBox.innerHTML = "";
+        count.textContent = "Loading…";
+        return;
+      }
+
+      if (state.error) {
+        body.innerHTML = "";
+        stateBox.innerHTML = stateHtml("error", "Couldn't load materials", state.error, "Try again", "retry");
+        count.textContent = "";
+        return;
+      }
+
+      const rows = filtered();
+      const published = state.items.filter((i) => i.status === "published").length;
+      count.textContent = state.items.length ? `${published} published, ${state.items.length - published} draft` : "";
+
+      if (!rows.length) {
+        body.innerHTML = "";
+        stateBox.innerHTML = state.items.length
+          ? stateHtml("filtered", "No materials match", "Try a different search or clear the filters.", "Clear filters", "clear")
+          : stateHtml("empty", "No materials yet", "Add your first sign image or video so learners can start studying.", "Add material", "add");
+        return;
+      }
+
+      const pages = Math.ceil(rows.length / PAGE_SIZE);
+      state.page = Math.min(state.page, pages);
+      const start = (state.page - 1) * PAGE_SIZE;
+      body.innerHTML = rows.slice(start, start + PAGE_SIZE).map(rowHtml).join("");
+      stateBox.innerHTML = "";
+
+      if (pages > 1) {
+        pagination.hidden = false;
+        byId("pageInfo").textContent = `Showing ${start + 1}–${Math.min(start + PAGE_SIZE, rows.length)} of ${rows.length}`;
+        let buttons = `<button class="ms-page-button" type="button" data-page="${state.page - 1}" ${state.page === 1 ? "disabled" : ""}>Previous</button>`;
+        for (let p = 1; p <= pages; p += 1) {
+          buttons += `<button class="ms-page-button ${p === state.page ? "is-current" : ""}" type="button" data-page="${p}" ${p === state.page ? 'aria-current="page"' : ""}>${p}</button>`;
+        }
+        buttons += `<button class="ms-page-button" type="button" data-page="${state.page + 1}" ${state.page === pages ? "disabled" : ""}>Next</button>`;
+        byId("pageButtons").innerHTML = buttons;
+      }
+    }
+
+    async function loadMaterials() {
+      state.loading = true; state.error = ""; render();
+      try { state.items = await data.list(); }
+      catch (error) { state.error = error.message; }
+      state.loading = false; render();
+    }
+
+    /* ---------------- Filters ---------------- */
+    function setFilter(key, value) { state.filters[key] = value; state.page = 1; render(); }
+
+    window.searchMaterials = (query) => {
+      byId("filterSearch").value = query;
+      setFilter("q", query);
+    };
+
+    function fillCategorySelects() {
+      byId("filterCategory").innerHTML = `<option value="">All categories</option>` + CATEGORIES.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+      byId("materialCategory").innerHTML = `<option value="" disabled selected>Choose a category</option>` + CATEGORIES.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    }
+
+    function syncCategoryMode(category) {
+      document.querySelectorAll(".ms-category-button").forEach((button) => {
+        const active = button.dataset.category === category;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", String(active));
+      });
+    }
+
+    document.querySelectorAll(".ms-category-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const category = button.dataset.category || "";
+        byId("filterCategory").value = category;
+        syncCategoryMode(category);
+        setFilter("category", category);
+      });
+    });
+
+    byId("filterCategory").addEventListener("change", (event) => {
+      syncCategoryMode(event.target.value);
+      setFilter("category", event.target.value);
+    });
+
+    byId("filterSearch").addEventListener("input", (e) => { byId("search").value = e.target.value; setFilter("q", e.target.value); });
+    byId("filterStatus").addEventListener("change", (e) => setFilter("status", e.target.value));
+
+    function clearFilters() {
+      state.filters = { q: "", category: "", status: "" };
+      byId("filterSearch").value = ""; byId("search").value = "";
+      byId("filterCategory").value = ""; byId("filterStatus").value = "";
+      syncCategoryMode("");
+      state.page = 1; render();
+    }
+
+    /* ---------------- Table + state interactions ---------------- */
+    byId("materialsBody").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-action]");
+      if (!button) return;
+      const id = button.closest("tr").dataset.id;
+      const item = state.items.find((i) => String(i.id) === id);
+      if (!item) return;
+      if (button.dataset.action === "edit") openMaterialDialog(item);
+      else openDeleteDialog(item);
+    });
+
+    byId("materialsState").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-state-action]");
+      if (!button) return;
+      const action = button.dataset.stateAction;
+      if (action === "retry") loadMaterials();
+      else if (action === "clear") clearFilters();
+      else if (action === "add") openMaterialDialog(null);
+    });
+
+    byId("pageButtons").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-page]");
+      if (!button || button.disabled) return;
+      state.page = Number(button.dataset.page);
+      render();
+      byId("materialsBody").closest(".ms-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    /* ---------------- Add / edit dialog ---------------- */
+    const materialDialog = byId("materialDialog");
+    const fileInput = byId("materialFile");
+    let chosenFile = null;
+    let previewUrl = null;
+
+    function resetPreview(item) {
+      if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
+      const preview = byId("materialPreview");
+      const url = item && item.media_type === "image" ? safeUrl(item.media_url) : null;
+      preview.innerHTML = url ? `<img src="${esc(url)}" alt="">` : esc(item ? (item.title || "?").charAt(0).toUpperCase() : "?");
+      byId("materialFileName").textContent = item && item.media_url ? "Current file kept" : item ? "Current file kept" : "No file chosen";
+    }
+
+    function openMaterialDialog(item) {
+      state.editing = item;
+      chosenFile = null;
+      fileInput.value = "";
+      showMessage("materialMessage", "");
+      byId("materialDialogTitle").textContent = item ? "Edit material" : "Add material";
+      byId("materialDialogDesc").textContent = item ? "Update the details or replace the file." : "Upload a sign image or video and choose where it appears.";
+      byId("materialSave").textContent = item ? "Save changes" : "Save material";
+      byId("materialTitle").value = item ? item.title : "";
+      byId("materialCategory").value = item ? normalizeCategory(item.category) : "";
+      byId("materialStatus").value = item ? item.status : "draft";
+      byId("materialDescription").value = item ? item.description || "" : "";
+      resetPreview(item);
+      materialDialog.showModal();
+      byId("materialTitle").focus();
+    }
+
+    function closeMaterialDialog() {
+      if (materialDialog.open) materialDialog.close();
+      if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
+    }
+
+    byId("addMaterial").addEventListener("click", () => openMaterialDialog(null));
+    byId("materialCancel").addEventListener("click", closeMaterialDialog);
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      if (!ALLOWED_TYPES.includes(file.type) || file.size > MAX_FILE_BYTES) {
+        fileInput.value = "";
+        showMessage("materialMessage", "Choose a JPG, PNG, WEBP, MP4 or WEBM file smaller than 25 MB.");
+        return;
+      }
+      showMessage("materialMessage", "");
+      chosenFile = file;
+      byId("materialFileName").textContent = file.name;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : null;
+      const preview = byId("materialPreview");
+      preview.innerHTML = previewUrl ? `<img src="${esc(previewUrl)}" alt="">` : ICON.play.replace("<svg", '<svg style="width:22px;height:22px;fill:currentColor;stroke:none"');
+    });
+
+    byId("materialForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const title = byId("materialTitle").value.trim();
+      const category = byId("materialCategory").value;
+      if (!title) return showMessage("materialMessage", "Enter a title for this material.");
+      if (!category) return showMessage("materialMessage", "Choose a category.");
+      if (!state.editing && !chosenFile) return showMessage("materialMessage", "Choose an image or video to upload.");
+
+      const button = byId("materialSave");
+      const label = button.textContent;
+      button.disabled = true; button.textContent = "Saving…";
+      showMessage("materialMessage", "");
+      try {
+        const result = await data.save({
+          title, category,
+          description: byId("materialDescription").value.trim(),
+          status: byId("materialStatus").value
+        }, chosenFile, state.editing ? state.editing.id : null);
+        closeMaterialDialog();
+        toast(result.message || "Material saved.");
+        await loadMaterials();
+      } catch (error) {
+        showMessage("materialMessage", error.message);
+      } finally {
+        button.disabled = false; button.textContent = label;
+      }
+    });
+
+    /* ---------------- Delete dialog ---------------- */
+    const deleteDialog = byId("deleteDialog");
+
+    function openDeleteDialog(item) {
+      state.deleting = item;
+      showMessage("deleteMessage", "");
+      byId("deleteDialogDesc").textContent = `"${item.title}" will be removed for all learners. This can't be undone.`;
+      deleteDialog.showModal();
+      byId("deleteCancel").focus();
+    }
+
+    byId("deleteCancel").addEventListener("click", () => deleteDialog.close());
+
+    byId("deleteForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!state.deleting) return;
+      const button = byId("deleteConfirm");
+      const label = button.textContent;
+      button.disabled = true; button.textContent = "Deleting…";
+      try {
+        const result = await data.remove(state.deleting.id);
+        deleteDialog.close();
+        toast(result.message || "Material deleted.");
+        await loadMaterials();
+      } catch (error) {
+        showMessage("deleteMessage", error.message);
+      } finally {
+        button.disabled = false; button.textContent = label;
+      }
+    });
+
+    // Close dialogs when clicking the backdrop
+    [materialDialog, deleteDialog].forEach((dialog) => {
+      dialog.addEventListener("mousedown", (event) => { if (event.target === dialog) dialog.close(); });
+    });
+
+    const THEME_ICONS = {
+      sun: '<svg class="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg>',
+      moon: '<svg class="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/></svg>'
+    };
+
+    /* ---------------- Shell: theme, sidebar, profile ---------------- */
+    function applyTheme(theme) {
+      const selected = theme === "dark" ? "dark" : "light";
+      document.documentElement.dataset.theme = selected;
+      const control = byId("theme-toggle");
+      if (!control) return;
+      const label = selected === "dark" ? "Switch to light mode" : "Switch to dark mode";
+      control.setAttribute("aria-label", label);
+      control.title = label;
+      control.innerHTML = THEME_ICONS[selected === "dark" ? "sun" : "moon"];
+    }
+
+    window.toggleTheme = () => {
+      const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      applyTheme(theme);
+      try { localStorage.setItem("signrest-admin-theme", theme); } catch { /* storage unavailable */ }
+    };
+
+    window.collapseSidebar = () => {
+      if (window.matchMedia("(max-width: 800px)").matches) app.classList.toggle("mobile-open");
+      else app.classList.toggle("collapsed");
+    };
+    window.closeMobile = () => app.classList.remove("mobile-open");
+    window.logout = async () => {
+      try {
+        const result = await apiRequest("/api/logout", { method: "POST" });
+        window.location.assign(result.redirect_url || "/login");
+      } catch (error) { toast(error.message, "error"); }
+    };
+
+    function setAvatar(element, initials, photoUrl) {
+      if (!element) return;
+      element.replaceChildren();
+      const url = safeUrl(photoUrl);
+      if (!url) { element.textContent = initials; return; }
+      const image = document.createElement("img");
+      image.src = url;
+      image.alt = "Administrator profile";
+      image.addEventListener("error", () => { element.textContent = initials; }, { once: true });
+      element.append(image);
+    }
+
+    let adminProfile = null;
+    function renderAdmin() {
+      if (!adminProfile) return;
+      const name = adminProfile.full_name || adminProfile.username || "Administrator";
+      const initials = initialsFor(name);
+      const nameEl = byId("admin-name");
+      if (nameEl) nameEl.textContent = name;
+      setAvatar(byId("admin-initials"), initials, adminProfile.profile_photo);
+      setAvatar(byId("top-initials"), initials, adminProfile.profile_photo);
+    }
+
+    async function loadSidebar() {
+      const host = byId("adminSidebarHost");
+      let markup = "";
+      try {
+        const response = await fetch(SIDEBAR_URL, { credentials: "same-origin" });
+        if (response.ok) markup = await response.text();
+      } catch { /* use the built-in menu below */ }
+      if (markup) host.innerHTML = markup;
+      else host.replaceChildren(byId("fallbackSidebar").content.cloneNode(true));
+      const currentFile = window.location.pathname.split("/").pop();
+      const onThisPage = SIDEBAR_ALIASES.includes(currentFile);
+      host.querySelectorAll(".nav-item[href]").forEach((link) => {
+        const linkFile = new URL(link.href, window.location.origin).pathname.split("/").pop();
+        const active = onThisPage ? SIDEBAR_ALIASES.includes(linkFile) : new URL(link.href, window.location.origin).pathname === window.location.pathname;
+        link.classList.toggle("active", active);
+        if (active) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
+      });
+      renderAdmin();
+    }
+
+    async function loadAdmin() {
+      try {
+        const result = await apiRequest(PROFILE_ENDPOINT, { cache: "no-store" });
+        adminProfile = result.item || null;
+        renderAdmin();
+      } catch (error) {
+        toast(error.message || "Unable to load the administrator profile.", "error");
+      }
+    }
+
+    /* ---------------- Init ---------------- */
+    let savedTheme = "light";
+    try { savedTheme = localStorage.getItem("signrest-admin-theme") || "light"; } catch { savedTheme = "light"; }
+    applyTheme(savedTheme);
+    fillCategorySelects();
+    loadSidebar().catch((error) => toast(error.message, "error"));
+    loadAdmin();
+    loadMaterials();
+  })();
+  </script>
+</body>
+</html>
