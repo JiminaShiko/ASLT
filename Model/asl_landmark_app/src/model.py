@@ -1,14 +1,6 @@
-"""The landmark MLP.
+"""The landmark MLP: 71 -> 128 -> 64 -> 24 letters, small enough to run on CPU.
 
-The shipped input is 71 numbers, not 63: the default feature blocks are
-`xy,tip_dists,curl,thumb`, i.e. 42 image-plane coordinates + 10 fingertip pair
-distances + 5 curl angles + 14 thumb-relative distances/offsets. The width is
-read from the meta sidecar at load time (`features.dim`), never assumed here -
-this docstring said "63 + 10 + 5 -> 78" for three rounds after the thumb block
-landed, and the only reason nothing broke is that every caller passes in_dim.
-
-71 -> 128 -> 64 -> 24 letters. Small on purpose: it runs at hundreds of FPS on
-a laptop CPU and cannot memorise a dataset the way an image CNN can.
+The input width comes from the meta sidecar at load time, never assumed here.
 """
 from __future__ import annotations
 

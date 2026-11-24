@@ -3,7 +3,7 @@
 README.md is the short guide: what it is, the numbers, the commands, the app.
 This file is everything else — the full measured tables and what each one means,
 the stage-by-stage pipeline with every script flag, the normalisation maths, the
-head-to-head with the photo model, the complete troubleshooting table, the
+head-to-head with the removed photo model, the complete troubleshooting table, the
 verification recipes and the reproducibility notes. Paths like `src/live.py` and
 `reports/live_path.md` are relative to `asl_landmark_app/`, i.e. one level up
 from this file. The round-by-round narrative lives in ../REPORT.md.
@@ -253,7 +253,9 @@ the edited app that logs **no STUN traffic at all**.
 
 ### Head-to-head against the photo model, on data neither model had seen
 
-Both models scored on the **same held-out image lists neither had trained on**,
+The photo model (a MobileNetV2 image classifier) was removed from the repo on
+2026-11-23; the numbers below are kept as historical evidence. Both models scored
+on the **same held-out image lists neither had trained on**,
 with the photo model's own 29-class output renormalised over the 24 letters
 (so nobody wins by predicting "space"/"del"). The landmark fold was trained on
 the two datasets the test set came from — the same leave-one-out protocol used
@@ -293,8 +295,9 @@ from outside this folder.
   anything, and what it remembers is numbers: three J and three Z of wrist/tip
   positions as floats in `MotionDecider.strokes`, capped at 40 strokes, cleared
   when the process ends. It exists so `--calibrate-jz` can print the thresholds it
-  derived, and it has no save path — which is also why the photo model's
-  `calibrate_camera.py` (it photographs your hand onto disk) is not here.
+  derived, and it has no save path — the removed photo model's
+  `calibrate_camera.py` (it photographed your hand onto disk) was deliberately
+  not ported.
 - Training data comes only from the public datasets listed below, which are read
   **in place** from the kagglehub cache.
 - Input images are converted **BGR → RGB and stay colour**. `hand_backend.bgr_to_rgb()`
@@ -795,7 +798,7 @@ never show one model's numbers while running another's.
 
 Two deliberate absences:
 
-- **No `calibrate_camera.py`.** The photo model's app has a calibration tab that
+- **No `calibrate_camera.py`.** The removed photo model had a calibration tab that
   captures images of *your* hand to disk. This project's brief forbids recording
   anything, so it is not ported — there is nothing to calibrate in the model,
   which never sees pixels, only landmark geometry. The one thing that genuinely
@@ -908,9 +911,7 @@ streamlit run app.py
 Apart from the install, only `download_data.py` stands between a clone and
 `streamlit run app.py`: the trained weights are committed, so neither landmark
 extraction nor retraining is required. What the app does need is `hand_landmarker.task`,
-MediaPipe's own file, which `download_data.py` fetches (or the copy in
-`../sign language photo model/`, which `config.LEGACY_HAND_MODEL_CANDIDATES` also
-accepts).
+MediaPipe's own file, which `download_data.py` fetches from Google's storage bucket.
 
 The bulk dataset downloads stay outside this folder (the Kaggle cache under your
 user profile, and the MSL corpus on the drive with the most free space), so

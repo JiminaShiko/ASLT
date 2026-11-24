@@ -46,9 +46,6 @@
       color: var(--typed-text-color);
     }
 
-    /* =========================================================
-       TOP 3-MODE SEGMENTED BAR WITH LIQUID WATER-FLOW SLIDER
-       ========================================================= */
     .mode-switcher-wrap {
       display: flex;
       justify-content: center;
@@ -136,9 +133,82 @@
       }
     }
 
-    /* =========================================================
-       PANEL 1: SIGN TO TEXT (WEBCAM + TYPEWRITER PAPER + TYPED BAR)
-       ========================================================= */
+    .model-mode-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 6px 0 14px;
+    }
+
+    .model-mode-caption {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.72;
+    }
+
+    .model-mode-seg {
+      display: inline-flex;
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid var(--sage-bar-border);
+      border-radius: 12px;
+      background: var(--sage-bar);
+      box-shadow: 0 4px 12px rgba(15, 28, 16, 0.1);
+    }
+
+    .model-mode-btn {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      min-width: 118px;
+      padding: 6px 14px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--typed-text-color);
+      font-family: 'Lora', Georgia, serif;
+      cursor: pointer;
+      transition: background-color 0.2s ease, color 0.2s ease,
+                  transform 0.15s ease, opacity 0.2s ease;
+    }
+
+    .model-mode-btn .model-mode-name {
+      font-size: 0.92rem;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .model-mode-btn .model-mode-sub {
+      font-size: 0.62rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.72;
+    }
+
+    .model-mode-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .model-mode-btn.active {
+      background: linear-gradient(135deg, var(--forest-mid), var(--forest-dark));
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(15, 30, 18, 0.25);
+    }
+
+    .model-mode-btn.active .model-mode-sub {
+      opacity: 0.82;
+    }
+
+    .model-mode-btn:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+    }
+
     .sign-stage-grid {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 330px;
@@ -250,7 +320,6 @@
       100% { box-shadow: 0 0 0 0 rgba(159, 35, 35, 0); }
     }
 
-    /* Vintage Typewriter & Cream Paper (`assets/images/paper_tag_5.png`) */
     .typewriter-tag-wrap {
       position: relative;
       z-index: 4;
@@ -393,7 +462,6 @@
       color: var(--paper-ink);
     }
 
-    /* Bottom Typed Text Bar */
     .typed-text-bar {
       position: relative;
       z-index: 6;
@@ -514,9 +582,6 @@
       font-weight: 500;
     }
 
-    /* =========================================================
-       PANEL 2 (TEXT TO SIGN) & PANEL 3 (UPLOAD MEDIA)
-       ========================================================= */
     .botanical-card {
       background: var(--sub-panel-bg);
       border: 1px solid var(--sage-bar-border);
@@ -697,7 +762,6 @@
 
 <div id="translatePageRoot" class="translate-root">
 
-  <!-- Top Segmented Mode Bar with Liquid Water-Flow Slider -->
   <div class="mode-switcher-wrap">
     <div class="mode-seg" id="modeSegBar" role="tablist" aria-label="Translation mode">
       <span class="mode-water-pill" id="modeWaterPill" aria-hidden="true"></span>
@@ -723,13 +787,25 @@
     </div>
   </div>
 
-  <!-- =========================================================
-       PANEL 1: SIGN TO TEXT (WEBCAM + TYPEWRITER PAPER + TYPED BAR)
-       ========================================================= -->
   <div id="panel-sign" class="flow-panel" role="tabpanel" aria-labelledby="tab-sign">
+    <div class="model-mode-wrap">
+      <span class="model-mode-caption">Recognition model</span>
+      <div class="model-mode-seg" role="tablist" aria-label="Recognition model">
+        <button type="button" role="tab" id="model-letters" class="model-mode-btn active"
+                data-model="letters" aria-selected="true" title="Finger-spelled letters A to Z">
+          <span class="model-mode-name">Letters</span>
+          <span class="model-mode-sub">A–Z finger-spelling</span>
+        </button>
+        <button type="button" role="tab" id="model-words" class="model-mode-btn"
+                data-model="words" aria-selected="false" title="Whole-word signs" disabled>
+          <span class="model-mode-name">Words</span>
+          <span class="model-mode-sub">whole sign words</span>
+        </button>
+      </div>
+    </div>
+
     <div class="sign-stage-grid">
 
-      <!-- Left: Rounded Webcam Card -->
       <div class="cam-card" id="cam-box">
         <video id="cam" autoplay playsinline muted hidden></video>
         <img id="cam-render" alt="Rendered camera frame" hidden />
@@ -739,7 +815,6 @@
           <p style="font-size:0.8rem;">Tap the bottom circle to start camera and live translation.</p>
         </div>
 
-        <!-- Top-right Arrow: Toggle Mirror View -->
         <button type="button" id="mirror-arrow-btn" class="cam-mirror-circle" title="Switch Mirror View" aria-label="Switch Mirror View">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="23 4 23 10 17 10" />
@@ -748,11 +823,9 @@
           </svg>
         </button>
 
-        <!-- Bottom-center Circle: Start / Stop Camera & Live Typer -->
         <button type="button" id="cam-main-circle" class="cam-shutter-btn" title="Start / Stop Camera" aria-label="Start or Stop Camera"></button>
       </div>
 
-      <!-- Right: Vintage Typewriter & Cream Paper (`assets/images/paper_tag_5.png`) -->
       <div class="typewriter-tag-wrap" id="paperTagWrap">
         <div class="tag-result-box" id="sign-result" aria-live="polite">
           <div class="label">Result......</div>
@@ -790,20 +863,19 @@
 
     </div>
 
-    <!-- Bottom Sage-Green Typed Text Bar (Flush beneath Typewriter Base) -->
     <div class="typed-text-bar">
       <div id="live-text" class="typed-readout-line" aria-live="polite"></div>
 
       <div class="typed-bar-footer">
         <div class="typed-helper-links">
-          <button type="button" id="commit-live" class="subtle-tool-btn" disabled>Commit</button>
+          <button type="button" id="commit-live" class="subtle-tool-btn letters-only" disabled>Commit</button>
           <button type="button" id="read-live" class="subtle-tool-btn" disabled>Speak</button>
-          <button type="button" id="calibrate-live" class="subtle-tool-btn" disabled>Calibrate J/Z</button>
-          <button type="button" id="cancel-calibration-live" class="subtle-tool-btn" hidden disabled>Cancel</button>
+          <button type="button" id="calibrate-live" class="subtle-tool-btn letters-only" disabled>Calibrate J/Z</button>
+          <button type="button" id="cancel-calibration-live" class="subtle-tool-btn letters-only" hidden disabled>Cancel</button>
         </div>
 
         <div class="typed-action-pills">
-          <button type="button" id="backspace-live" class="pill-back-btn" disabled>back</button>
+          <button type="button" id="backspace-live" class="pill-back-btn letters-only" disabled>back</button>
           <button type="button" id="clear-live" class="pill-clear-btn" disabled>clear</button>
         </div>
       </div>
@@ -819,11 +891,14 @@
       <p id="calibration-command"></p>
     </details>
 
-    <!-- Collapsible Typer Settings -->
     <details style="margin-top:4px; font-size:0.8rem; opacity:0.86;">
-      <summary style="cursor:pointer;">Typer &amp; Camera Settings</summary>
+      <summary style="cursor:pointer;">Recognition &amp; Camera Settings</summary>
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(165px, 1fr)); gap:8px; margin-top:8px; padding:10px; border-radius:12px; background:var(--sage-bar);">
         <label><input id="mirror-live" type="checkbox" /> Mirror preview</label>
+        <div>Camera: <select id="camera-live"><option value="">Default</option></select></div>
+        <div>Size: <select id="camera-size-live"><option value="640x480">640x480</option><option value="1280x720">1280x720</option></select></div>
+      </div>
+      <div id="letters-settings" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(165px, 1fr)); gap:8px; margin-top:8px; padding:10px; border-radius:12px; background:var(--sage-bar);">
         <label><input id="pairs-live" type="checkbox" checked /> Pair margins</label>
         <label><input id="motion-live" type="checkbox" checked /> J / Z motion</label>
         <label><input id="landmarks-live" type="checkbox" checked /> Draw landmarks</label>
@@ -831,8 +906,6 @@
         <label><input id="recover-flip-live" type="checkbox" checked /> Retry mirrored</label>
         <div>Profile: <select id="profile-live"><option value="all">all</option><option value="standard">standard</option></select></div>
         <div>Backend: <select id="backend-live"><option value="torch">torch</option><option value="onnx">onnx</option></select></div>
-        <div>Camera: <select id="camera-live"><option value="">Default</option></select></div>
-        <div>Size: <select id="camera-size-live"><option value="640x480">640x480</option><option value="1280x720">1280x720</option></select></div>
         <div>Conf: <input id="conf-live" type="number" step="0.05" value="0.7" style="width:60px;" /></div>
         <div>Margin: <input id="margin-live" type="number" step="0.02" value="0.1" style="width:60px;" /></div>
         <div>Vote: <input id="vote-live" type="number" value="7" style="width:50px;" /></div>
@@ -844,12 +917,18 @@
         <div>J/Z overrides: <input id="jz-live" type="text" style="width:85px;" /></div>
         <div>Calib reps: <input id="calibrate-reps-live" type="number" value="3" style="width:48px;" /></div>
       </div>
+      <div id="words-settings" style="display:none; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; margin-top:8px; padding:10px; border-radius:12px; background:var(--sage-bar);">
+        <div>Conf: <input id="word-conf-live" type="number" step="0.05" value="0.85" style="width:60px;" /></div>
+        <div>Margin: <input id="word-margin-live" type="number" step="0.05" value="0.15" style="width:60px;" /></div>
+        <div>Stride: <input id="word-stride-live" type="number" value="1" style="width:50px;" /></div>
+        <p style="grid-column:1 / -1; margin:0; font-size:0.72rem; line-height:1.35; opacity:0.82;">
+          Whole-word signs (hello, thank you, good, help…). Raise both hands, sign one word, then lower them to commit it.
+          Switching modes resets only the selected model; the camera stream stays open.
+        </p>
+      </div>
     </details>
   </div>
 
-  <!-- =========================================================
-       PANEL 2: TEXT TO SIGN
-       ========================================================= -->
   <div id="panel-text" class="flow-panel" role="tabpanel" aria-labelledby="tab-text" hidden>
     <div class="botanical-card">
       <label for="txt" style="font-size:0.92rem; font-weight:600; display:block; margin-bottom:6px;">Type your text</label>
@@ -878,9 +957,6 @@
     </div>
   </div>
 
-  <!-- =========================================================
-       PANEL 3: UPLOAD MEDIA
-       ========================================================= -->
   <div id="panel-upload" class="flow-panel" role="tabpanel" aria-labelledby="tab-upload" hidden>
     <div class="botanical-card">
       <div class="drop-zone" id="drop">
@@ -915,6 +991,21 @@
   const API_CREDENTIALS = API_BASE ? "include" : "same-origin";
   const LIVE_INTERVAL = 55;
   const LIVE_MAX_SIDE = 640;
+  const WORD_FPS = 20;
+  const MODEL_ENDPOINTS = {
+    letters: {
+      start: "/api/live/start",
+      frame: "/api/live/frame",
+      action: "/api/live/action",
+      stop: "/api/live/stop"
+    },
+    words: {
+      start: "/api/words/live/start",
+      frame: "/api/words/live/frame",
+      action: "/api/words/live/action",
+      stop: "/api/words/live/stop"
+    }
+  };
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({
@@ -930,7 +1021,6 @@
     } catch (e) {}
   }
 
-  /* ---------- 1. Liquid Water-Flow Mode Switcher (Camera | T | Upload) ---------- */
   const waterPill = document.getElementById("modeWaterPill");
   const modeTabs = [
     { tab: document.getElementById("tab-sign"),   panel: document.getElementById("panel-sign"),   index: 0 },
@@ -968,7 +1058,6 @@
     item.tab.addEventListener("click", () => activateMode(item));
   });
 
-  /* ---------- 2. Verify `paper_tag_5.png` loads cleanly ---------- */
   const paperTagWrap = document.getElementById("paperTagWrap");
   if (paperTagWrap) {
     const tagProbe = new Image();
@@ -978,7 +1067,6 @@
     tagProbe.src = "../assets/images/paper_tag_5.png";
   }
 
-  /* ---------- 3. Model Request & Settings Helpers ---------- */
   async function modelRequest(path, payload) {
     let response;
     try {
@@ -1053,6 +1141,28 @@
         if (control.type === "checkbox") control.checked = Boolean(value);
         else control.value = value;
       });
+
+      const wordInfo = info.word_model || {};
+      wordModelAvailable = Boolean(wordInfo.available);
+      const wordsButton = document.getElementById("model-words");
+      if (wordsButton) {
+        wordsButton.disabled = !wordModelAvailable;
+        wordsButton.title = wordModelAvailable
+          ? "Whole-word signs (" + (wordInfo.weights || "words model") + ")"
+          : "Word model weights are not installed in Model/videoModel/models.";
+      }
+      const wordDefaults = wordInfo.default_settings || {};
+      [
+        ["conf", "word-conf-live"],
+        ["margin", "word-margin-live"],
+        ["stride", "word-stride-live"]
+      ].forEach(([key, id]) => {
+        const control = document.getElementById(id);
+        if (control && wordDefaults[key] !== undefined && wordDefaults[key] !== null) {
+          control.value = wordDefaults[key];
+        }
+      });
+
       syncMirrorState(mirrorCheckbox.checked);
       return info;
     } catch (err) {
@@ -1085,7 +1195,20 @@
     };
   }
 
-  /* ---------- 4. Mirror Arrow Button & Bottom Circle Camera Toggle ---------- */
+  function wordSettings() {
+    return {
+      fps: WORD_FPS,
+      stride: Math.max(1, Number(document.getElementById("word-stride-live").value) || 1),
+      buffer: 2.5,
+      conf: Number(document.getElementById("word-conf-live").value),
+      margin: Number(document.getElementById("word-margin-live").value)
+    };
+  }
+
+  function activeSettings() {
+    return liveMode === "words" ? wordSettings() : liveSettings();
+  }
+
   const camBox = document.getElementById("cam-box");
   const cam = document.getElementById("cam");
   const camRender = document.getElementById("cam-render");
@@ -1111,6 +1234,56 @@
   let liveActive = false;
   let liveRunId = 0;
   let nextLiveFrameAt = 0;
+  let liveMode = "letters";
+  let wordModelAvailable = false;
+
+  const modelModeButtons = Array.from(document.querySelectorAll(".model-mode-btn"));
+  const lettersSettings = document.getElementById("letters-settings");
+  const wordsSettings = document.getElementById("words-settings");
+  const lettersOnlyControls = Array.from(document.querySelectorAll(".letters-only"));
+
+  function liveEndpoint(kind, mode) {
+    return MODEL_ENDPOINTS[mode || liveMode][kind];
+  }
+
+  function renderIdleResult() {
+    if (liveMode === "words") {
+      renderTagResult("Word", "—", "Raise both hands, sign one word, then lower them to commit it.");
+    } else {
+      renderTagResult("Result......", "—", "Show one hand clearly in view.");
+    }
+  }
+
+  function applyLiveModeUI() {
+    const isWords = liveMode === "words";
+    modelModeButtons.forEach((button) => {
+      const selected = button.dataset.model === liveMode;
+      button.classList.toggle("active", selected);
+      button.setAttribute("aria-selected", selected ? "true" : "false");
+    });
+    lettersSettings.style.display = isWords ? "none" : "grid";
+    wordsSettings.style.display = isWords ? "grid" : "none";
+    lettersOnlyControls.forEach((control) => {
+      control.hidden = isWords || control === cancelCalibrationBtn;
+    });
+    if (camPh) {
+      camPh.innerHTML = isWords
+        ? '<p style="font-weight:600; margin-bottom:4px;">Camera is off</p><p style="font-size:0.8rem;">Tap the bottom circle to start the camera and live word recognition.</p>'
+        : '<p style="font-weight:600; margin-bottom:4px;">Camera is off</p><p style="font-size:0.8rem;">Tap the bottom circle to start camera and live translation.</p>';
+    }
+    if (!liveActive) {
+      renderIdleResult();
+      liveTop.innerHTML = `<li style="opacity:0.78;">${isWords ? "Waiting for a sign..." : "Waiting..."}</li>`;
+      camRender.hidden = true;
+    }
+    calibrateBtn.disabled = true;
+  }
+
+  modelModeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!button.disabled) switchLiveMode(button.dataset.model);
+    });
+  });
 
   function setCamStatus(msg, isError) {
     camStatus.textContent = msg;
@@ -1202,6 +1375,77 @@
     backspaceBtn.disabled = !liveActive;
   }
 
+  function renderWordFrame(frame) {
+    const state = frame.state || "REST";
+    const display = (frame.display || "").toString();
+    const top3 = Array.isArray(frame.top3) ? frame.top3 : [];
+
+    if (frame.segment_cut && frame.committed_word) {
+      renderTagResult(
+        "Committed",
+        frame.committed_word.toUpperCase(),
+        "Word added to the sentence.",
+        frame.p1
+      );
+    } else if (state === "UNCERTAIN") {
+      renderTagResult(
+        "Uncertain",
+        display && display !== "uncertain" ? display.toUpperCase() : "—",
+        frame.reason || "Not confident enough; nothing was typed.",
+        frame.p1
+      );
+    } else if (display) {
+      renderTagResult(
+        state === "SIGNING" ? "Signing" : "Last word",
+        display.toUpperCase(),
+        frame.reason || "",
+        frame.p1
+      );
+    } else {
+      renderTagResult(
+        "Word",
+        "READY",
+        frame.hint || "Raise both hands to sign a word."
+      );
+    }
+
+    liveText.textContent = frame.text || "";
+    readBtn.disabled = !(liveText.textContent || "").trim();
+
+    liveTop.innerHTML = "";
+    top3.slice(0, 3).forEach((item) => {
+      const word = Array.isArray(item) ? item[0] : item.text;
+      const probability = Array.isArray(item) ? item[1] : item.confidence;
+      const li = document.createElement("li");
+      li.textContent = `${String(word).toUpperCase()}: ${(Number(probability) * 100).toFixed(0)}%`;
+      liveTop.appendChild(li);
+    });
+    if (!top3.length) {
+      liveTop.innerHTML = `<li style="opacity:0.75;">${
+        frame.hint || (state === "SIGNING" ? "Reading..." : "Waiting...")
+      }</li>`;
+    }
+
+    document.getElementById("live-fps").textContent = Number(frame.fps || 0).toFixed(1) + " fps";
+    const handRate = typeof frame.hand_rate === "number" ? frame.hand_rate : null;
+    document.getElementById("live-hand-rate").textContent =
+      handRate === null ? "—" : Math.round(handRate * 100) + "%";
+    document.getElementById("live-hand-count").textContent = `${frame.buffer_frames || 0} buffered`;
+    document.getElementById("live-frame-ms").textContent = Number(frame.frame_ms || 0).toFixed(0) + " ms";
+    document.getElementById("live-backend").textContent = frame.backend || "torch";
+    document.getElementById("live-profile").textContent = "words";
+
+    calibrationStatus.textContent = frame.hint || "";
+    calibrationProgress.hidden = true;
+    cancelCalibrationBtn.hidden = true;
+    camRender.hidden = true;
+
+    clearLiveBtn.disabled = !liveActive;
+    commitBtn.disabled = true;
+    backspaceBtn.disabled = true;
+    calibrateBtn.disabled = true;
+  }
+
   function drawLiveFrame() {
     const width = cam.videoWidth;
     const height = cam.videoHeight;
@@ -1218,15 +1462,20 @@
 
   async function captureLiveFrame(runId) {
     if (!liveActive || runId !== liveRunId || !stream) return;
+    const mode = liveMode;
     const image = drawLiveFrame();
     if (!image) {
       setTimeout(() => captureLiveFrame(runId), 100);
       return;
     }
     try {
-      const frame = await modelRequest("/api/live/frame", { session_id: liveSession, image });
-      if (!liveActive || runId !== liveRunId) return;
-      renderLiveFrame(frame);
+      const frame = await modelRequest(liveEndpoint("frame", mode), {
+        session_id: liveSession,
+        image
+      });
+      if (!liveActive || runId !== liveRunId || mode !== liveMode) return;
+      if (mode === "words") renderWordFrame(frame);
+      else renderLiveFrame(frame);
     } catch (err) {
       if (runId === liveRunId) {
         await stopCameraAndLive(true);
@@ -1238,11 +1487,59 @@
     setTimeout(() => captureLiveFrame(runId), Math.max(0, nextLiveFrameAt - Date.now()));
   }
 
+  async function startLiveSession(runId) {
+    const mode = liveMode;
+    setCamStatus(
+      mode === "words"
+        ? "Camera active. Connecting to the live word model..."
+        : "Camera active. Connecting to live ASL model...",
+      false
+    );
+    try {
+      const result = await modelRequest(liveEndpoint("start", mode), {
+        settings: activeSettings()
+      });
+      if (runId !== liveRunId || !stream || mode !== liveMode) {
+        modelRequest(liveEndpoint("stop", mode), { session_id: result.session_id }).catch(() => {});
+        return;
+      }
+      liveSession = result.session_id;
+      liveActive = true;
+      liveText.textContent = "";
+      liveTop.innerHTML = `<li style="opacity:0.75;">${
+        mode === "words" ? "Waiting for a sign..." : "Waiting..."
+      }</li>`;
+      renderIdleResult();
+      clearLiveBtn.disabled = false;
+      readBtn.disabled = true;
+      commitBtn.disabled = mode === "words";
+      backspaceBtn.disabled = mode === "words";
+      calibrateBtn.disabled = mode === "words";
+      setCamStatus(
+        mode === "words"
+          ? "Word mode running. Sign one word, then lower your hands to commit it."
+          : "Live translation running. Hold a sign steady to type.",
+        false
+      );
+      nextLiveFrameAt = Date.now();
+      captureLiveFrame(runId);
+    } catch (apiErr) {
+      liveActive = false;
+      liveSession = null;
+      clearLiveBtn.disabled = true;
+      commitBtn.disabled = true;
+      backspaceBtn.disabled = true;
+      calibrateBtn.disabled = true;
+      setCamStatus(apiErr.message, true);
+    }
+  }
+
   async function startCameraAndLive() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setCamStatus("Camera is not available. Open on localhost or HTTPS.", true);
       return;
     }
+    if (stream) return;
     try {
       const requestedSize = document.getElementById("camera-size-live").value.split("x");
       const videoConstraints = {
@@ -1263,39 +1560,48 @@
       camRender.hidden = true;
       camPh.hidden = true;
       camMainCircle.classList.add("recording");
-      setCamStatus("Camera active. Connecting to live ASL model...", false);
 
       const runId = ++liveRunId;
-      try {
-        const result = await modelRequest("/api/live/start", { settings: liveSettings() });
-        if (runId !== liveRunId || !stream) {
-          modelRequest("/api/live/stop", { session_id: result.session_id }).catch(() => {});
-          return;
-        }
-        liveSession = result.session_id;
-        liveActive = true;
-        clearLiveBtn.disabled = false;
-        commitBtn.disabled = false;
-        backspaceBtn.disabled = false;
-        calibrateBtn.disabled = false;
-        setCamStatus("Live translation running. Hold a sign steady to type.", false);
-        nextLiveFrameAt = Date.now();
-        captureLiveFrame(runId);
-      } catch (apiErr) {
-        await stopCameraAndLive(true);
-        setCamStatus(apiErr.message, true);
-      }
+      await startLiveSession(runId);
     } catch (err) {
       setCamStatus("Could not open camera. Please allow camera permission.", true);
     }
   }
 
-  async function stopCameraAndLive(keepStatus) {
+  async function stopLiveSession(persist, modeOverride) {
     const sessionId = liveSession;
+    const mode = modeOverride || liveMode;
     const prevText = liveText ? liveText.textContent : "";
     liveActive = false;
     liveSession = null;
     liveRunId++;
+
+    clearLiveBtn.disabled = true;
+    commitBtn.disabled = true;
+    backspaceBtn.disabled = true;
+    calibrateBtn.disabled = true;
+    cancelCalibrationBtn.disabled = true;
+
+    if (!sessionId) {
+      readBtn.disabled = !(prevText || "").trim();
+      return prevText;
+    }
+
+    let finalText = prevText;
+    try {
+      const res = await modelRequest(liveEndpoint("stop", mode), { session_id: sessionId });
+      finalText = res.text || "";
+      if (liveText) liveText.textContent = finalText;
+    } catch (e) {}
+    readBtn.disabled = !(finalText || "").trim();
+    if (persist && finalText.trim()) {
+      saveHistory(mode === "words" ? "Sign to Text · Words" : "Sign to Text", finalText.trim());
+    }
+    return finalText;
+  }
+
+  async function stopCameraAndLive(keepStatus) {
+    await stopLiveSession(true);
 
     if (stream) {
       stream.getTracks().forEach((t) => t.stop());
@@ -1313,16 +1619,30 @@
     backspaceBtn.disabled = true;
     calibrateBtn.disabled = true;
 
-    if (sessionId) {
-      try {
-        const res = await modelRequest("/api/live/stop", { session_id: sessionId });
-        if (res.text) liveText.textContent = res.text;
-      } catch (e) {}
-    }
-    if ((liveText.textContent || prevText).trim()) {
-      saveHistory("Sign to Text", (liveText.textContent || prevText).trim());
-    }
     if (!keepStatus) setCamStatus("", false);
+  }
+
+  async function switchLiveMode(nextMode) {
+    if (nextMode === liveMode) return;
+    if (nextMode === "words" && !wordModelAvailable) return;
+    const previousMode = liveMode;
+    const wasLive = liveActive || Boolean(liveSession);
+    liveMode = nextMode;
+    applyLiveModeUI();
+    if (!stream) {
+      setCamStatus(
+        liveMode === "words"
+          ? "Word mode selected. Start the camera to recognise whole signs."
+          : "",
+        false
+      );
+      return;
+    }
+    if (wasLive) {
+      await stopLiveSession(true, previousMode);
+    }
+    const runId = ++liveRunId;
+    await startLiveSession(runId);
   }
 
   camMainCircle.addEventListener("click", () => {
@@ -1335,9 +1655,15 @@
 
   async function sendLiveAction(action) {
     if (!liveSession) return;
+    if (liveMode === "words" && action !== "clear") return;
+    const mode = liveMode;
     try {
-      const result = await modelRequest("/api/live/action", { session_id: liveSession, action });
-      renderLiveFrame(result);
+      const result = await modelRequest(liveEndpoint("action", mode), {
+        session_id: liveSession,
+        action
+      });
+      if (mode === "words") renderWordFrame(result);
+      else renderLiveFrame(result);
     } catch (err) {
       setCamStatus(err.message, true);
     }
@@ -1375,10 +1701,7 @@
     }
   });
 
-  /* ---------- 5. Text to Sign Panel ---------- */
-  /* The backend decides, per word, whether the word model has a sign for it or
-     whether it must be fingerspelled with the alphabet model, and returns a
-     media URL for each item. Speech reuses the existing /api/tts route. */
+  /* The backend decides per word between its word-model sign and fingerspelling. */
   const txtInput = document.getElementById("txt");
   const signsGrid = document.getElementById("signs");
   const textStatus = document.getElementById("text-status");
@@ -1698,7 +2021,6 @@
     });
   }
 
-  /* ---------- 6. Upload Media Panel ---------- */
   const preview = document.getElementById("preview");
   const uploadStatus = document.getElementById("upload-status");
   const translateUploadBtn = document.getElementById("translate-upload");
@@ -1777,6 +2099,7 @@
     }
   });
 
+  applyLiveModeUI();
   loadModelInfo();
 })();
 </script>

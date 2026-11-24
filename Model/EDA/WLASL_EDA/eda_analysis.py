@@ -1,10 +1,4 @@
-# ============================================================
-# WLASL - Exploratory Data Analysis (EDA)
-# ============================================================
-# Dataset: Word-Level American Sign Language (WLASL)
-# Metadata file: WLASL_v0.3.json
-# ============================================================
-
+"""EDA for WLASL metadata (WLASL_v0.3.json): charts + results.json."""
 import os
 import json
 import warnings
@@ -20,9 +14,6 @@ sns.set_theme(style="whitegrid")
 pd.set_option("display.max_columns", 15)
 pd.set_option("display.width", 140)
 
-# ------------------------------------------------------------
-# 1. Paths
-# ------------------------------------------------------------
 JSON_PATH = "WLASL_v0.3.json"
 CHART_DIR = "charts"
 TABLE_DIR = "tables"
@@ -36,9 +27,6 @@ print("=" * 65)
 print("WLASL - WORD-LEVEL AMERICAN SIGN LANGUAGE EDA")
 print("=" * 65)
 
-# ------------------------------------------------------------
-# 2. Load Dataset
-# ------------------------------------------------------------
 print("\n1. LOADING DATASET")
 print("-" * 65)
 
@@ -56,12 +44,10 @@ print(f"Total number of words (glosses): {len(data)}")
 
 results["total_words"] = len(data)
 
-# ------------------------------------------------------------
-# 3. Convert to DataFrame for easier analysis
-# ------------------------------------------------------------
 print("\n2. CONVERTING TO DATAFRAME")
 print("-" * 65)
 
+# Flatten nested instances into one row per video
 rows = []
 for entry in data:
     gloss = entry.get("gloss", "unknown")
@@ -91,9 +77,7 @@ print(df.head())
 results["total_videos"] = len(df)
 results["columns"] = list(df.columns)
 
-# ------------------------------------------------------------
-# 4. Basic Inspection (Task 1)
-# ------------------------------------------------------------
+# Task 1 - basic inspection
 print("\n3. BASIC INSPECTION")
 print("-" * 65)
 
@@ -110,9 +94,7 @@ print(df.describe())
 print("\n--- First 5 rows ---")
 print(df.head())
 
-# ------------------------------------------------------------
-# 5. Features and Target (Task 2)
-# ------------------------------------------------------------
+# Task 2 - features and target
 print("\n4. FEATURES AND TARGET VARIABLE")
 print("-" * 65)
 
@@ -130,9 +112,7 @@ print("  - frame_start/end : Start and end frame of the sign")
 
 results["num_classes"] = int(df["gloss"].nunique())
 
-# ------------------------------------------------------------
-# 6. Data Quality Checks (Task 3)
-# ------------------------------------------------------------
+# Task 3 - data quality
 print("\n5. DATA QUALITY CHECKS")
 print("-" * 65)
 
@@ -143,7 +123,6 @@ print(missing)
 print(f"\nTotal missing values: {missing.sum()}")
 print(f"Duplicate rows: {df.duplicated().sum()}")
 
-# Check split values
 print("\nSplit distribution:")
 print(df["split"].value_counts(dropna=False))
 
@@ -152,9 +131,7 @@ results["duplicate_rows"] = int(df.duplicated().sum())
 
 print("\nConclusion: Metadata is mostly clean. Some missing values may exist in optional fields.")
 
-# ------------------------------------------------------------
-# 7. Descriptive Statistics (Task 4)
-# ------------------------------------------------------------
+# Task 4 - descriptive statistics
 print("\n6. CLASS DISTRIBUTION (Top words)")
 print("-" * 65)
 
@@ -164,7 +141,6 @@ print(f"Least frequent word (in top data): '{word_counts.index[-1]}' with {word_
 print(f"Average videos per word: {word_counts.mean():.1f}")
 print(f"Median videos per word: {word_counts.median():.1f}")
 
-# Top 20 words
 top20 = word_counts.head(20).reset_index()
 top20.columns = ["gloss", "video_count"]
 print("\nTop 20 most frequent words:")
@@ -179,18 +155,14 @@ results["avg_videos_per_word"] = float(word_counts.mean())
 results["median_videos_per_word"] = float(word_counts.median())
 results["top_10_words"] = word_counts.head(10).to_dict()
 
-# Signer statistics
 print("\n--- Signer Statistics ---")
 print(f"Number of unique signers: {df['signer_id'].nunique()}")
 print(df["signer_id"].value_counts().head(10))
 
-# ------------------------------------------------------------
-# 8. Visualizations (Task 5)
-# ------------------------------------------------------------
+# Task 5 - charts
 print("\n7. CREATING CHARTS")
 print("-" * 65)
 
-# Chart 1: Top 20 words
 plt.figure(figsize=(12, 6))
 sns.barplot(x="video_count", y="gloss", data=top20, palette="viridis")
 plt.title("Top 20 Most Frequent ASL Words in WLASL", fontsize=14)
@@ -201,7 +173,6 @@ plt.savefig(os.path.join(CHART_DIR, "01_top20_words.png"), dpi=120)
 plt.close()
 print("Saved: 01_top20_words.png")
 
-# Chart 2: Distribution of videos per word
 plt.figure(figsize=(10, 5))
 sns.histplot(word_counts.values, bins=30, kde=True, color="steelblue")
 plt.title("Distribution of Number of Videos per Word", fontsize=14)
@@ -212,7 +183,6 @@ plt.savefig(os.path.join(CHART_DIR, "02_videos_per_word_distribution.png"), dpi=
 plt.close()
 print("Saved: 02_videos_per_word_distribution.png")
 
-# Chart 3: Split distribution
 plt.figure(figsize=(8, 5))
 split_counts = df["split"].value_counts()
 sns.barplot(x=split_counts.index.astype(str), y=split_counts.values, palette="Set2")
@@ -224,7 +194,6 @@ plt.savefig(os.path.join(CHART_DIR, "03_split_distribution.png"), dpi=120)
 plt.close()
 print("Saved: 03_split_distribution.png")
 
-# Chart 4: Top 15 signers
 top_signers = df["signer_id"].value_counts().head(15)
 plt.figure(figsize=(10, 5))
 sns.barplot(x=top_signers.index.astype(str), y=top_signers.values, palette="magma")
@@ -237,7 +206,6 @@ plt.savefig(os.path.join(CHART_DIR, "04_top_signers.png"), dpi=120)
 plt.close()
 print("Saved: 04_top_signers.png")
 
-# Chart 5: Boxplot of videos per word
 plt.figure(figsize=(8, 5))
 sns.boxplot(x=word_counts.values, color="lightblue")
 plt.title("Boxplot: Videos per Word", fontsize=14)
@@ -249,9 +217,7 @@ print("Saved: 05_boxplot_videos_per_word.png")
 
 print("\nAll charts saved in the 'charts/' folder.")
 
-# ------------------------------------------------------------
-# 9. Key Findings (Task 6)
-# ------------------------------------------------------------
+# Task 6 - key findings
 print("\n8. KEY FINDINGS FROM EDA")
 print("-" * 65)
 
@@ -269,7 +235,7 @@ for f in findings:
 
 results["findings"] = findings
 
-# Suggested words for the project (common + reasonably frequent)
+# Project scope: only common high-frequency words
 suggested = ["hello", "thanks", "yes", "no", "please", "help", "love", "sorry",
              "good", "bad", "eat", "drink", "home", "school", "friend", "family",
              "happy", "sad", "bye", "name", "mother", "father", "book", "water", "go"]
@@ -280,7 +246,6 @@ print(available_suggested)
 
 results["suggested_words_available"] = available_suggested
 
-# Save results
 with open("results.json", "w") as f:
     json.dump(results, f, indent=2)
 

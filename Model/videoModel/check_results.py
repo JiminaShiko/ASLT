@@ -1,20 +1,8 @@
-"""
-Stage 8 - read the compact results and say what to fix.
+"""Stage 8 - read the compact result files and say what to fix.
 
-    cd "D:\\sign language project\\ASTL project\\ASLT\\videoModel"
-    python check_results.py              pasteable summary on screen
-    python check_results.py --write      also write REPORT_WORDS.md
-    python check_results.py --json       machine-readable
-
-It reads ONLY the small files training leaves behind:
-reports/words_summary.json, models/meta.json, reports/per_word.csv,
-reports/confused_pairs.csv, reports/seed_runs.csv, cache/manifest.csv and
-cache/extract_errors.csv. It never loads a video, a landmark or the weights,
-it never re-runs training, and it does not import torch (the sweep table
-comes from the torch-free src/seedreport.py).
-
-The verdict lines at the bottom are the point: they name the single next
-action, based on what the numbers actually show.
+Reads only the small training outputs (summary/meta CSVs, manifest); never
+loads videos or weights, never imports torch. The verdict lines name the next
+action. See README for flags.
 """
 from __future__ import annotations
 
@@ -85,7 +73,7 @@ def gather() -> dict:
     out["pairs"] = _read_csv(config.REPORTS_DIR / "confused_pairs.csv")
     out["per_word_val"] = _read_csv(config.REPORTS_DIR / "per_word_val.csv")
     out["pairs_val"] = _read_csv(config.REPORTS_DIR / "confused_pairs_val.csv")
-    # Never display leftover split CSVs from an older promotion as this run.
+    # an older promotion's leftover split CSVs must not show as this run
     for split, suffix in (("test", ""), ("val", "_val")):
         if split not in ((summary or {}).get("eval") or {}):
             out[f"per_word{suffix}"] = out[f"pairs{suffix}"] = None
@@ -124,8 +112,7 @@ def headline(d: dict) -> dict:
         "test_macro_words": test.get("macro_top1_words"),
         "test_words_only_top1": test.get("top1_words_only"),
         "val_top1": val.get("top1_all"),
-        # the memorisation pair: the released weights on their own training
-        # split vs val, words-only on both (older runs have no train eval)
+        # memorisation pair: released weights on their own train split vs val
         "train_words_only_top1": (train_ev.get("top1_words_only")
                                   or m.get("train_words_top1")),
         "val_words_only_top1": val.get("top1_words_only"),
@@ -134,7 +121,7 @@ def headline(d: dict) -> dict:
         "n_test_signers": test.get("n_signers"),
         "n_train_samples": m.get("train_samples"),
         "n_train_signers": m.get("train_signers"),
-        # the PopSign held-out group (absent when no external data was used)
+        # PopSign held-out group; absent when no external data was used
         "ps_test_top1": ps.get("top1_all"),
         "ps_test_words": ps.get("top1_words_only"),
         "ps_test_n": ps.get("n_samples"),
@@ -176,12 +163,9 @@ def top_pairs(pairs: pd.DataFrame | None, n: int = 8) -> list[str]:
 def hand_rate_per_word(man: pd.DataFrame | None) -> list[tuple[str, float, int, float]]:
     """Mean hand-detection rate per word: signing window first, whole clip second.
 
-    hand_rate_seg is the number that matters. The clip-wide hand_rate counts
-    the pre- and post-roll of a sentence clip, where the hands are legitimately
-    in the speaker's lap, so on its own it reads ~0.44 and looks like a
-    detection ceiling that the measured per-word accuracy contradicts. Old
-    manifests without the segment column fall back to the clip-wide number,
-    and the table says so.
+    The clip-wide rate includes sentence idle and reads ~0.44, which would be a
+    false detection ceiling; old manifests without the segment column fall back
+    to it.
     """
     if man is None or man.empty or "hand_rate" not in man.columns:
         return []

@@ -1,43 +1,9 @@
-"""Step 2 - turn every dataset image into 21x3 hand landmarks, once.
+"""Step 2 - every dataset image -> 21x3 landmarks, cached in cache/landmarks.parquet.
 
-* MediaPipe Hands through the Tasks API (see src/hand_backend.py):
-  RunningMode.IMAGE (== legacy static_image_mode=True), num_hands=1,
-  RGB input (never grayscale).
-* Results are cached in cache/landmarks.parquet, and cache/extract_meta.json
-  records the code version + settings that produced it. The loader refuses a
-  cache that does not match, so a v1 cache can never mix with v2 rows.
-
-DETECTION RECOVERY LADDER (cache v2). Round 1 found a hand in 74.0 % of images
-and threw away 37,540 of them, and the losses were NOT random: grassknoted lost
-1,725 N and 1,397 M frames, massey lost 1,881 W and 1,873 B. That biases both
-training and evaluation on exactly the letters that were already weakest, so
-every image that fails attempt 1 is retried through an escalating ladder until
-one attempt succeeds:
-
-    1. direct, confidence 0.5              (the brief's spec setting, unchanged)
-    2. direct, confidence 0.3              (lower threshold, same frame)
-    3. upscale to min-side >= 480 px + symmetric border padding, conf 0.3
-       (a hand that fills the frame gives the palm detector no context)
-    4. horizontally flipped copy, confidence 0.3
-    5. flipped + upscaled/padded, confidence 0.3
-
-The primary path is still attempt 1 at confidence 0.5, so every row round 1 kept
-is reproduced identically; the lower confidence is only ever a RETRY, never the
-primary setting. Landmarks recovered from a scaled, padded or flipped copy are
-mapped back to the ORIGINAL image's normalised coordinates before they are
-stored, so the cache is in one consistent frame no matter which attempt fired,
-and every row records how it was found in column `how`.
-
-* --max-per-class (default 3000) caps the work and balances the classes.
-  Selection is *strided* over the sorted path list, so for the Massey set -
-  where consecutive filenames are consecutive frames of the same clip - the
-  sample is spread across clips and signers instead of taking 3000 frames of
-  one second of video.
-* Images with no hand even after the ladder are dropped, and the counts are
-  kept per letter and per dataset (they end up in REPORT.md).
-
-Run:  python src/extract_landmarks.py [--max-per-class 3000] [--workers 12]
-                                       [--force] [--no-retry]
+Attempt 1 is the spec setting (direct, conf 0.5); failures escalate through
+conf 0.3, upscale+pad, flip, flip+upscale/pad. Lower confidence is only ever a
+retry. Recovered landmarks are mapped back to the original frame and `how`
+records the attempt. Selection is strided so one clip cannot fill a class.
 """
 from __future__ import annotations
 
@@ -74,9 +40,6 @@ PAD_FRAC = 0.12                                     # symmetric border padding
 LADDER = ["direct_0.5", "direct_0.3", "upscale_pad_0.3", "flip_0.3",
           "flip_upscale_pad_0.3"]
 
-# ---------------------------------------------------------------------------
-# work list
-# ---------------------------------------------------------------------------
 _WL: list[tuple[str, str, str, str]] = []  # (path, dataset, letter, session)
 
 
@@ -126,9 +89,6 @@ def build_worklist(max_per_class: int, datasets: list[str] | None = None) -> tup
     return stats, coverage
 
 
-# ---------------------------------------------------------------------------
-# worker
-# ---------------------------------------------------------------------------
 _DET: dict[float, object] = {}
 _RETRY = True
 
@@ -144,11 +104,7 @@ def _init_worker(retry: bool = True):
 
 
 def _variants(bgr):
-    """Yield (label, image, new_w, new_h, pad, flipped, confidence) per attempt.
-
-    new_w/new_h are the pixel size of the frame BEFORE padding, so the inverse
-    map in _unmap is exact whatever rounding cv2.resize applied.
-    """
+    """Yield (label, image, new_w, new_h, pad, flipped, confidence) per attempt."""
     import cv2
 
     h, w = bgr.shape[:2]
@@ -174,9 +130,7 @@ def _variants(bgr):
 def _unmap(lm, new_w, new_h, pad, flipped) -> np.ndarray:
     """Landmarks from a scaled/padded/flipped copy -> original normalised coords.
 
-    z is left alone: it is a depth relative to the wrist, and mirroring the
-    image does not change which physical finger an anatomical landmark id
-    refers to.
+    z is left alone: it is wrist-relative depth, unaffected by mirroring.
     """
     out = np.array(lm, dtype=np.float32, copy=True)
     w2, h2 = new_w + 2 * pad, new_h + 2 * pad
@@ -243,11 +197,8 @@ def settings(no_retry: bool) -> dict:
 def manifest_ids(datasets: list[str] | None = None) -> list[str]:
     """Dataset ids that are downloaded and would contribute rows.
 
-    The skip-check below compares detector settings, which say nothing about
-    WHICH datasets went into the cache. Without this list, adding a dataset
-    (downloading it, re-running the extractor) would print "cache already
-    present - skipping" and leave the new images out of the cache forever.
-    Recorded in the sidecar as "datasets" so the next run can tell.
+    Recorded in the sidecar so that adding a dataset invalidates the cache
+    instead of printing "cache already present - skipping".
     """
     if not MANIFEST.exists():
         return []
@@ -292,16 +243,8 @@ def _recall_table(n_how: collections.Counter) -> pd.DataFrame:
 def _atomic_write(df: pd.DataFrame, path: Path, retries: int = 4) -> None:
     """Write the cache through a sibling temp file and rename it into place.
 
-    Two reasons. (1) A half-written parquet is worse than no parquet: pandas
-    would still read the rows that survived and training would quietly use a
-    truncated dataset. (2) On Windows, truncating an existing file fails with
-    EINVAL/EPERM if anything still holds a handle on it - an indexer, an
-    antivirus scan, a reader from another shell. Creating a fresh name and
-    renaming is atomic, and if it still fails the OLD cache is left exactly as
-    it was rather than destroyed.
-
-    This is not hypothetical: a 20-minute run died on
-    `OSError: [Errno 22] Invalid argument` at the plain to_parquet call.
+    A half-written parquet would train on truncated data, and on Windows
+    truncating an in-use file fails with EINVAL/EPERM; the old cache survives.
     """
     tmp = path.with_suffix(path.suffix + ".tmp")
     last: Exception | None = None
@@ -380,9 +323,7 @@ def run(max_per_class: int, workers: int, force: bool, datasets,
                   f"v{config.CACHE_VERSION}) - rebuilding it from scratch; no old "
                   "rows are reused.")
     if config.LANDMARKS_PARQUET.exists():
-        # keep the pre-rebuild drop numbers so the before/after table in the
-        # report can still be written. (Round 1's own v1 file was pruned in the
-        # 2026-11-15 cleanup, so the next rebuild starts this slot fresh.)
+        # previous drop numbers, for the report's before/after table
         prev = config.CACHE_DIR / "skipped_stats_v1.csv"
         cur_csv = config.CACHE_DIR / "skipped_stats.csv"
         if cur_csv.exists() and not prev.exists():

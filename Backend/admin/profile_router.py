@@ -1,29 +1,4 @@
-"""Signrest admin Profile Settings endpoints (Flask + existing MySQL users table).
-
-Register the blueprint in your existing Flask application:
-    from .backend.profile_router import profile_bp
-    app.register_blueprint(profile_bp)
-
-Adapt the imports below to your existing application:
-- get_db(): returns an open PyMySQL/DB-API connection with cursor(), commit(),
-  and rollback(). Keep your application's existing connection teardown.
-- require_admin: a Flask decorator that validates the HttpOnly session and the
-  real users.role == 'admin', returns 401 when signed out or 403 for non-admin
-  users, and stores the authenticated admin dictionary in flask.g.admin_user.
-  That dictionary must contain user_id; never accept a browser-supplied ID.
-- verify_password(current_password, stored_hash) and hash_password(new_password):
-  import the exact helpers used by your current login system. Do not replace them
-  with a different hash algorithm, or existing password hashes may stop working.
-
-Writes require JSON or multipart form data and X-Signrest-Request: admin. Origin
-is checked against the same origin plus SIGNREST_ALLOWED_ORIGINS (comma-separated,
-optional). Keep your application's existing CSRF protection as well.
-
-Serve uploaded files through your existing media route, or add an equivalent
-Flask send_from_directory route for /uploads/profile_photos/<filename>. Set
-SIGNREST_PROFILE_UPLOAD_DIR and SIGNREST_PROFILE_UPLOAD_URL when folders differ.
-No schema changes, new tables, or static credentials are required.
-"""
+"""Admin profile settings endpoints; identity comes from g.admin_user, never the browser."""
 import os
 import re
 import uuid
@@ -60,7 +35,7 @@ def admin_id():
 
 
 def iso(value):
-    # Use your application's real timezone when serializing naive MySQL DATETIME.
+    # MySQL DATETIME is naive; timezone is not applied here.
     return value.isoformat() if isinstance(value, (datetime, date)) else None
 
 
@@ -86,7 +61,7 @@ def protect_write():
         }
         if origin.rstrip("/") not in {request.host_url.rstrip("/"), *configured}:
             raise ApiError(403, "This origin is not allowed")
-    # The custom header alone is not authentication or CSRF protection.
+    # The header is not auth or CSRF protection; require_admin still guards.
 
 
 def profile_row(db, user_id):
@@ -104,7 +79,7 @@ def profile_row(db, user_id):
 
 
 def serialized(row):
-    # Never return password_hash, session tokens, OTPs, IPs, or other private data.
+    # Never expose password_hash, tokens, OTPs, or IPs.
     return {
         "user_id": row[0],
         "username": row[1],
@@ -188,7 +163,7 @@ def update_profile():
 
 
 def image_extension(data):
-    # Detect the file signature instead of trusting filename or Content-Type.
+    # Sniff magic bytes rather than trusting filename or Content-Type.
     if data.startswith(b"\xff\xd8\xff"):
         return "jpg"
     if data.startswith(b"\x89PNG\r\n\x1a\n"):
@@ -243,7 +218,7 @@ def upload_photo():
         destination.unlink(missing_ok=True)
         current_app.logger.exception("Could not upload profile photo")
         raise ApiError(500, "Could not upload profile photo")
-    # Do not delete the previous file automatically: another account may share it.
+    # Previous file is kept: another account may share it.
 
 
 @profile_bp.post("/password")

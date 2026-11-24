@@ -1,23 +1,6 @@
-"""
-MediaPipe Holistic wrapper - the only place that talks to MediaPipe.
+"""MediaPipe Holistic wrapper - the only place that talks to MediaPipe.
 
-Training extraction (src/extract.py) and the live demo (src/live.py) both go
-through this module, so the landmarks a model was trained on and the
-landmarks it sees at runtime come from the same code path, the same model
-asset and the same options. RGB in, never grayscale.
-
-Packed per-frame layout (config.P_TOTAL columns, x/y/z float32, NaN when a
-group was not detected):
-
-    [ 0 : 27 )                pose, upper body only (indices 0..26)
-    [ 27 : 27+N_FACE )        face subset: lips, nose, chin/jaw, brows/forehead
-    [ ..  +21 )               left hand, 21 landmarks
-    [ ..  +21 )               right hand, 21 landmarks
-
-Landmark z is stored but deliberately NOT used by src/features.py: MediaPipe
-reports pose z in metres from the hip while hand z is relative to the wrist,
-so mixing them across groups is meaningless. Depth enters the features as the
-2D geometry (hand-to-face/chin/chest) plus the missing-hand mask.
+Packed row: pose, face subset, left hand, right hand; NaN when a group was missing.
 """
 from __future__ import annotations
 
@@ -31,12 +14,9 @@ import numpy as np
 
 from . import config
 
-Missing = type("Missing", (), {})()          # sentinel: this group was absent
+Missing = type("Missing", (), {})()  # sentinel: this group was absent
 
 
-# ---------------------------------------------------------------------------
-# model asset
-# ---------------------------------------------------------------------------
 def model_path() -> Path:
     override = __import__("os").environ.get(config.HOLISTIC_ENV_VAR)
     if override:
@@ -50,7 +30,7 @@ def ensure_model(log=None, quiet: bool = False) -> Path:
     if path.is_file() and path.stat().st_size == config.HOLISTIC_BYTES:
         return path
     if path.is_file():
-        path.unlink()                      # truncated download - start again
+        path.unlink()
     path.parent.mkdir(parents=True, exist_ok=True)
     if not quiet:
         msg = (f"downloading MediaPipe Holistic ({config.HOLISTIC_BYTES/1e6:.1f}"
@@ -91,9 +71,6 @@ def ensure_model(log=None, quiet: bool = False) -> Path:
     return path
 
 
-# ---------------------------------------------------------------------------
-# frame decoding
-# ---------------------------------------------------------------------------
 def bgr_to_rgb(frame: np.ndarray) -> np.ndarray:
     """cv2 gives BGR; MediaPipe wants contiguous RGB uint8. Never grayscale."""
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -137,9 +114,6 @@ def frames_of(path: Path, max_frames: int | None = None,
         cap.release()
 
 
-# ---------------------------------------------------------------------------
-# tracker
-# ---------------------------------------------------------------------------
 def _flat(seq) -> list:
     """Accept both layouts: a flat list of landmarks or one nested per person."""
     out = list(seq or ())
@@ -163,10 +137,7 @@ def _pack_single(group, indices: list[int]) -> np.ndarray:
 def pack_result(result) -> np.ndarray:
     """HolisticLandmarkerResult -> [P_TOTAL, 3] float32 with NaN rows.
 
-    Measured on mediapipe 1.2.2: the Holistic result lists are FLAT
-    (pose_landmarks is a list of 33 NormalizedLandmark, face_landmarks 478,
-    left/right_hand_landmarks 21 or empty) - unlike PoseLandmarker, which
-    nests them per detection. Getting this wrong reads len() of a landmark.
+    On mediapipe 1.2.2 the Holistic result lists are FLAT, unlike PoseLandmarker's nested ones.
     """
     row = np.full((config.P_TOTAL, 3), np.nan, dtype=np.float32)
     pose = _flat(result.pose_landmarks)
@@ -185,16 +156,7 @@ def pack_result(result) -> np.ndarray:
 
 @dataclass
 class Tracker:
-    """VIDEO-mode Holistic landmarker with a monotonic clock it cannot break.
-
-    MediaPipe raises "Input timestamp must be monotonically increasing" if a
-    VIDEO-mode detector is fed a smaller timestamp than before (learned the
-    hard way in the alphabet project). Two guards: a clamp, and an automatic
-    reset when the caller's clock rewinds (new segment, new video, rerun).
-
-    HolisticLandmarkerOptions exposes no num_threads / num_hands: one pose and
-    two hands is fixed, and threading is inside the TFLite delegate.
-    """
+    """VIDEO-mode Holistic landmarker with a monotonic clock (see detect()); one pose + two hands is fixed."""
     min_face_conf: float = 0.30
     min_pose_conf: float = 0.30
     min_landmarks_conf: float = 0.30
@@ -221,16 +183,14 @@ class Tracker:
         )
         self._det = mp_vision.HolisticLandmarker.create_from_options(opts)
 
-    # -- lifecycle ---------------------------------------------------------
     def restart(self) -> None:
-        """Rebuild the detector: the only way to give a VIDEO-mode landmarker a
-        fresh clock. Used between videos and when a webcam stream restarts."""
+        """Rebuild the detector - the only way to reset a VIDEO-mode clock."""
         self.close()
         self.__post_init__()
         self._last_ts = -1
         self.n_resets += 1
 
-    reset = restart                       # explicit name for the same thing
+    reset = restart
 
     def close(self) -> None:
         try:
@@ -238,16 +198,10 @@ class Tracker:
         except Exception:                          # noqa: BLE001
             pass
 
-    # -- one frame ---------------------------------------------------------
     def detect(self, rgb: np.ndarray, ts_ms: int | None = None) -> np.ndarray:
         """rgb uint8 [H,W,3] -> packed [P_TOTAL,3] float32 (NaN rows if absent).
 
-        The timestamp handed to MediaPipe is NEVER allowed to go backwards:
-        the clamp is absolute, so a caller that restarts its own clock (new
-        video, new segment) simply gets a monotonic continuation instead of
-        the "Input timestamp must be monotonically increasing" ValueError
-        that killed the alphabet project's live app. Call restart() when you
-        genuinely want a new stream rather than a continuation.
+        Timestamps are clamped monotonic (MediaPipe raises otherwise); call restart() for a new stream.
         """
         import mediapipe as mp
         ts = int(ts_ms if ts_ms is not None else self.n_frames * 33)
@@ -259,19 +213,12 @@ class Tracker:
         return pack_result(res)
 
 
-# ---------------------------------------------------------------------------
-# geometry helpers shared by extraction and the live segmenter
-# ---------------------------------------------------------------------------
 def _xy(arr: np.ndarray) -> np.ndarray:
     return arr[:, :2]
 
 
 def face_row(original_index: int) -> int:
-    """Row of a face-mesh landmark inside the packed face block.
-
-    The block is FACE_ORDER (a sorted union), not the group order, so the
-    overlay has to go through this map rather than assume a slice.
-    """
+    """Row of a face-mesh landmark in the packed face block (FACE_ORDER, not group order)."""
     return config.COLS_FACE.start + config.FACE_ORDER.index(original_index)
 
 
@@ -306,11 +253,7 @@ def hand_present(arr: np.ndarray) -> tuple[bool, bool]:
 
 
 def hands_above_shoulders(arr: np.ndarray, margin: float = 0.02) -> bool:
-    """True when a detected wrist is at or above the shoulder line.
-
-    Image y grows downwards, so 'above' means a smaller y. Used to tell a
-    resting hand (in the lap / out of frame) from a signing hand.
-    """
+    """True when a detected wrist is at or above the shoulder line (smaller y = up)."""
     sh = shoulder_mid(arr)
     if np.isnan(sh).any():
         return False
@@ -320,7 +263,7 @@ def hands_above_shoulders(arr: np.ndarray, margin: float = 0.02) -> bool:
             return True
     for cols in (config.COLS_LHAND, config.COLS_RHAND):
         block = _xy(arr[cols])
-        if np.isnan(block).all():                  # this hand was not detected
+        if np.isnan(block).all():
             continue
         if np.nanmin(block[:, 1]) <= sh[1] - margin:
             return True
@@ -335,14 +278,7 @@ def hand_detection_rate(arr: np.ndarray) -> float:
 
 
 def hand_share(arr: np.ndarray) -> float:
-    """The same number as hand_detection_rate(), vectorised for the live loop.
-
-    It is called on every webcam frame over the rolling buffer, so it must not
-    loop in Python. Both key on the two wrists, which is what hand_present()
-    keys on, so the live rate and the manifest's hand_rate_seg are the same
-    measurement on different windows - the one number the framing hint can
-    honestly compare against.
-    """
+    """Vectorised hand_detection_rate() for the live loop; same wrists, so the rates compare."""
     a = np.asarray(arr)
     if a.ndim != 3 or len(a) == 0:
         return 0.0
@@ -354,14 +290,7 @@ def hand_share(arr: np.ndarray) -> float:
 def hand_rate_window(arr: np.ndarray, start: float, end: float) -> float:
     """Detection rate over the signing window only - the number that matters.
 
-    hand_detection_rate() counts the whole clip, and a clip is a sentence: the
-    hands drop to the speaker's side between signs, so a clip-wide rate reads
-    low even when the hand is perfectly visible for every frame of the sign
-    itself. Measured on the val/test cache the two numbers differ enough to
-    change conclusions (good reads 0.38 over the clip and 0.92 inside its
-    signing window, and no core word is below 0.69), which is why the manifest
-    carries both and why the clip-wide rate must not be read as a detection
-    ceiling.
+    Hands rest between signs, so the clip-wide rate reads far lower (good: 0.38 clip vs 0.92 in-window).
     """
     T = len(arr)
     if T == 0:
@@ -374,20 +303,16 @@ def hand_rate_window(arr: np.ndarray, start: float, end: float) -> float:
 
 def signing_window(arr: np.ndarray, min_rest: int = 3,
                    hold: int = 2) -> tuple[int, int]:
-    """Trim the idle head/tail of a clip: (sign_start, sign_end), end exclusive.
-
-    The trimmed frames are what feeds the REST class, so the rest of the clip
-    must stay in the array - this only reports indices, it never deletes.
-    """
+    """Idle head/tail trim: (sign_start, sign_end), end exclusive; trimmed frames stay for REST."""
     T = len(arr)
     if T == 0:
         return (0, 0)
     flags = np.array([hands_above_shoulders(f) for f in arr])
     if not flags.any():
-        return (0, T)                              # nothing detected: all REST
+        return (0, T)
     start = int(np.argmax(flags))
     end = int(T - np.argmax(flags[::-1]))
-    # require a stable run, otherwise a single noisy frame would open the window
+    # require a stable run: one noisy frame must not open the window
     for i in range(start, min(end, start + 2 * hold)):
         if flags[i:i + hold].all():
             start = i
@@ -396,27 +321,24 @@ def signing_window(arr: np.ndarray, min_rest: int = 3,
         if flags[max(i - hold, 0):i].all():
             end = i
             break
-    if end - start < 2:                            # degenerate: keep everything
+    if end - start < 2:
         return (0, T)
     if start < min_rest and end > T - min_rest:
-        pass                                       # symmetrical idle on both sides
-    return (max(0, start - 1), min(T, end + 1))    # one frame of context
+        pass
+    return (max(0, start - 1), min(T, end + 1))
 
 
-# ---------------------------------------------------------------------------
-# whole-video convenience (used by extract.py and by the offline verifiers)
-# ---------------------------------------------------------------------------
 @dataclass
 class Extraction:
     video: str
-    landmarks: np.ndarray            # [T, P_TOTAL, 3] float16
+    landmarks: np.ndarray  # [T, P_TOTAL, 3] float16
     fps: float
     stride: int
     window: tuple[int, int]
     hand_rate: float
-    ms: float                        # decode + MediaPipe for this clip
+    ms: float  # decode + MediaPipe for this clip
     n_frames: int
-    restart_ms: float = 0.0          # per-video stream rebuild overhead
+    restart_ms: float = 0.0  # per-video stream rebuild overhead
 
     @property
     def rest_frames(self) -> int:
@@ -426,15 +348,9 @@ class Extraction:
 
 def extract_video(path: Path, tracker: Tracker | None = None,
                   restart: bool = True) -> Extraction:
-    """Run one whole video file through Holistic in VIDEO mode.
+    """Run one video file through Holistic in VIDEO mode.
 
-    Two clock facts, both measured on mediapipe 1.2.2:
-      * frames_of() numbers each clip from 0 (clip-relative time), and
-      * Tracker.detect() clamps to a globally increasing timestamp, so a new
-        clip never raises "Input timestamp must be monotonically increasing".
-    restart=True additionally rebuilds the detector, so clip N+1 is not
-    temporal-smoothed with the tail of clip N. The rebuild cost is timed and
-    stored, because it is real per-video overhead in the ETA.
+    restart=True rebuilds the detector so clip N+1 is not smoothed with the tail of clip N.
     """
     own = tracker is None
     tracker = tracker or Tracker()
@@ -464,17 +380,8 @@ def extract_video(path: Path, tracker: Tracker | None = None,
                       n_frames=len(arr), restart_ms=t_restart)
 
 
-# ---------------------------------------------------------------------------
-# sanity: prove the face subset indices really are lips / nose / jaw / brows
-# ---------------------------------------------------------------------------
 def sanity(path: Path | None = None, n_frames: int = 20) -> dict:
-    """Mean coordinates of every face group on real frames, top-to-bottom.
-
-    The MediaPipe face mesh has 478 points and no readable names, so the
-    subset in config.FACE_GROUPS is only trustworthy if a geometric check
-    says so: eyebrows must sit above the eyes, the nose between them and the
-    lips, the chin below the lips. This prints that ordering.
-    """
+    """Mean y of each face group on real frames; checks brows < eyes < nose < lips < chin."""
     if path is None:
         cands = sorted(config.VIDEOS_DIR.glob("*-HELLO.mp4"))[:1]
         if not cands:
@@ -487,7 +394,7 @@ def sanity(path: Path | None = None, n_frames: int = 20) -> dict:
     tracker.close()
     arr = np.stack(rows).astype(np.float32)
     face = arr[:, config.COLS_FACE, :2]
-    # eyes are NOT in our subset; use the pose eye rows as the reference band
+    # eyes are not in the subset; pose eye rows are the reference band
     eye_y = np.nanmean(arr[:, [config.pose_row(2), config.pose_row(5)], 1])
     groups = {g: [k for k, i in enumerate(config.FACE_ORDER) if i in ids]
               for g, ids in config.FACE_GROUPS.items()}

@@ -1,28 +1,7 @@
 """Stage B - is a letter actually signed the same way in every dataset?
 
-Two independent tools, one script:
-
-  1. CONTACT SHEETS  (`--letters M,N,...`) -> reports/samples/contact_<L>.png
-     One image per letter: a row per dataset, N random images per row, with the
-     MediaPipe skeleton drawn on each thumb and undetected hands greyed out.
-     Sampling comes from the dataset itself (via the same strided worklist as
-     extraction), NOT from the landmark cache, so the pictures are not biased
-     toward the hands MediaPipe happened to like.
-
-  2. SHAKE DIVERGENCE (numeric, all 24 letters)
-     For every letter, compare the MEAN normalised hand shape between datasets,
-     and compare that gap with the same letter's own within-dataset split-half
-     gap. A between/within ratio >> 1 means the datasets do not agree on what
-     that letter looks like - a labelling/annotation-style problem, not a model
-     problem. Units are wrist->middle-MCP bone lengths.
-
-  3. IMAGE PROVENANCE stats per dataset (size, unique colours, border std,
-     pure-black fraction) so claims like "grassknoted is synthetic renders"
-     are checked instead of repeated.
-
-Run:
-    python src/inspect_data.py                       # numeric + provenance only
-    python src/inspect_data.py --per-dataset 12 --seed 7   # + contact sheets
+Contact sheets (drawn from the datasets, not the cache), mean-shape divergence
+vs within-dataset split-half gap, and image provenance stats per dataset.
 """
 from __future__ import annotations
 
@@ -44,9 +23,6 @@ import landmark_store as LS  # noqa: E402
 DATASETS = [d["id"] for d in config.DATASETS]
 
 
-# ---------------------------------------------------------------------------
-# image sampling (from the datasets, not the cache)
-# ---------------------------------------------------------------------------
 def worklist(per_class_cap: int = 400) -> list[tuple[str, str, str, str]]:
     """(path, dataset, letter, session) for up to per_class_cap images per class."""
     import extract_landmarks as EX
@@ -74,9 +50,6 @@ def pick_images(letters: list[str], per_dataset: int, seed: int,
     return buckets
 
 
-# ---------------------------------------------------------------------------
-# contact sheets
-# ---------------------------------------------------------------------------
 def thumb(path: str, detector, size: int, cache: dict,
           highlight_thumb: bool = False) -> tuple[np.ndarray, bool]:
     """RGB thumbnail of one dataset image with the skeleton drawn on it."""
@@ -148,17 +121,11 @@ def contact_sheet(letter: str, picked: dict[str, list[str]], out_png: Path,
     print(f"  wrote {out_png.name}  ({len(rows)} datasets x {cols} images)")
 
 
-# ---------------------------------------------------------------------------
-# numeric: does the mean hand shape agree across datasets?
-# ---------------------------------------------------------------------------
 def shape_stats(sample_cap: int | None = None):
     """(letter, dataset) -> mean normalised xy, plus per-dataset per-letter arrays.
 
-    Also returns the mirror rate: the fraction of RAW detections whose palm
-    cross-product says "the other hand", i.e. that canonicalize() flips. A
-    dataset that mirrors ~100% of its hands was recorded from the opposite side
-    of the signer from one that mirrors ~0%; after canonicalisation both land in
-    the same frame, so this is an imaging property, not a shape disagreement.
+    Also returns the mirror rate (share of raw hands canonicalize() flips):
+    an imaging property, not a shape disagreement.
     """
     df = LS.keep_static_classes(LS.load_raw())
     if sample_cap:
@@ -241,8 +208,7 @@ def divergence_table(means, store, mirror=None) -> pd.DataFrame:
 def divergence_long(means, store) -> pd.DataFrame:
     """Every (letter, dataset_a, dataset_b) shape distance and its within-ratio.
 
-    Written to cache/divergence.csv so that src/train.py can flag or down-weight
-    a specific (letter, dataset) cell without re-running this analysis.
+    Written to cache/divergence.csv for src/train.py's style weighting.
     """
     rng = np.random.default_rng(0)
     rows = []
@@ -261,9 +227,6 @@ def divergence_long(means, store) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-# ---------------------------------------------------------------------------
-# Stage B (round 3): style conflict, or a thumb MediaPipe cannot see?
-# ---------------------------------------------------------------------------
 PALM_QUAD = (0, 5, 9, 17)      # wrist + the four MCP knuckles
 THUMB_CHAIN = (1, 2, 3, 4)     # CMC, MCP, IP, TIP
 
@@ -271,10 +234,7 @@ THUMB_CHAIN = (1, 2, 3, 4)     # CMC, MCP, IP, TIP
 def tip_in_palm(xy: np.ndarray) -> np.ndarray:
     """Per-frame: is the thumb TIP (4) inside the palm quad, in canonical space?
 
-    Convex test: the tip is inside while every edge leaves it on the same side.
-    A fist still gives MediaPipe a plausible palm, so a True here usually means
-    "the thumb is hidden behind fingers and the landmark is a guess", which is
-    the difference between a letter the model can learn and one it cannot.
+    Convex test. True usually means the tucked thumb is a guessed landmark.
     """
     tip = xy[:, 4, :]
     pos = np.zeros(len(tip), bool)
@@ -293,12 +253,7 @@ def thumb_audit(letters: list[str], sample_cap: int = 2000,
                 out_csv: Path | None = None) -> pd.DataFrame:
     """Thumb geometry per (letter, dataset), in palm-length units.
 
-    `prepare()` puts the wrist at the origin and divides by the wrist->middle
-    knuckle distance, so 1.0 = one palm and the numbers compare across image
-    sizes, distances and hand sizes. `jitter` is the mean distance of a thumb tip
-    from that cell's median tip: it separates a letter that is signed
-    consistently but differently by dataset (style) from one where the landmark
-    itself wanders frame to frame (bad detection, unlearnable).
+    `jitter` separates a consistent style from a landmark that wanders.
     """
     df = LS.keep_static_classes(LS.load_raw())
     rows = []
@@ -355,16 +310,8 @@ def nearest_shapes(means: dict, letters: list[str] | None = None,
                    store: dict | None = None) -> pd.DataFrame:
     """For each (dataset, letter): which OTHER letter is its shape closest to?
 
-    The divergence table only compares one letter across datasets, so it can see
-    a style conflict but not a collision - two letters of the SAME signer whose
-    mean hands sit on top of each other. A letter that is nearly 0 away from
-    another letter cannot be separated by any amount of re-weighting, and a
-    near-zero cross-dataset score is not evidence of a style conflict either: it
-    means the model never had two separable shapes to begin with.
-
-    Distances are the same summed-per-joint units as `divergence.csv` (a hand is
-    ~1 palm from wrist to middle knuckle, so 21 joints can move a few units for
-    a genuinely different letter and tens for a different handshape).
+    Finds collisions the cross-dataset divergence table cannot see; a value near
+    0 means no re-weighting can separate the two. Units as divergence.csv.
     """
     rows = []
     for did in DATASETS:
@@ -400,9 +347,6 @@ def print_nearest(tbl: pd.DataFrame, letters: list[str]) -> None:
             print(s[s["letter"].isin(letters)].to_string(index=False))
 
 
-# ---------------------------------------------------------------------------
-# numeric: what kind of images are these really?
-# ---------------------------------------------------------------------------
 def provenance(per_dataset: int, seed: int, cap: int) -> None:
     import cv2
 

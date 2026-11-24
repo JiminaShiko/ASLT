@@ -1,15 +1,6 @@
-"""
-Stage 4b - the word model: standardise -> 1D-CNN -> BiGRU -> classifier.
+"""Stage 4b - word model: standardise -> 1D-CNN -> BiGRU -> classifier.
 
-Small on purpose. The input is [64 frames, ~170 landmark features], not
-pixels, so a few hundred thousand parameters is already more capacity than
-40 vocabulary classes deserve; anything bigger just memorises signers.
-
-The per-feature mean/std is a registered buffer, computed on the TRAIN split
-only and saved inside the checkpoint, so the live path can never drift from
-the training path (src/predictor.py just loads the checkpoint).
-
-    python -m src.model            # prints the architecture and param count
+Mean/std are TRAIN-split buffers stored in the checkpoint, so live cannot drift from training.
 """
 from __future__ import annotations
 
@@ -69,13 +60,7 @@ class WordNet(nn.Module):
         self.fc = nn.Linear(2 * arch.hidden, arch.num_classes)
 
     def _h0(self, h: torch.Tensor) -> torch.Tensor:
-        """Explicit zero hidden state sized from the batch in front of us.
-
-        Needed for the ONNX export: a GRU that infers its initial state
-        bakes the export-time batch size into the graph, so a batch of 9
-        through a graph exported at batch 1 silently returns wrong numbers
-        (measured: 2.8e-02 max probability difference, 6/9 same top-1).
-        """
+        """Explicit zero hidden state; without it ONNX bakes the export batch size in."""
         dirs = 2 if self.gru.bidirectional else 1
         return h.new_zeros(self.gru.num_layers * dirs, h.size(0),
                            self.gru.hidden_size)
@@ -85,12 +70,10 @@ class WordNet(nn.Module):
         h = self.conv(x.transpose(1, 2))             # [B,C,T/2^k]
         h = h.transpose(1, 2)                        # [B,T',C]
         out, _ = self.gru(h, self._h0(h))            # [B,T',2H]
-        # max over time: a sign is identified by the moment it passes through
-        # its target shape, so the strongest frame should not be averaged away
+        # max over time: averaging would blur the frame where the sign peaks
         pooled = out.max(1).values                   # [B,2H]
         return self.fc(self.drop(pooled))
 
-    # --- helpers used by train.py, predictor.py and export_onnx.py ----------
     @torch.no_grad()
     def predict(self, x: np.ndarray) -> np.ndarray:
         """[B,T,D] or [T,D] numpy -> [B,K] probabilities (CPU, no autocast)."""

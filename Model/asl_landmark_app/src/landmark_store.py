@@ -14,14 +14,7 @@ import normalize  # noqa: E402
 
 
 def _check_cache_version(path: Path) -> None:
-    """Refuse to train on a cache built by a different extraction version.
-
-    The detection ladder (Stage C) changes WHICH images get a landmark set and
-    on what geometry, so mixing a v1 cache with a v2 run would silently compare
-    two different datasets. extract_landmarks.py records its settings in
-    cache/extract_meta.json; we re-read them here so the guard cannot be
-    forgotten by any of the callers (train, eval, export, the Streamlit app).
-    """
+    """Refuse a cache built by a different extractor version (settings in extract_meta.json)."""
     if path != config.LANDMARKS_PARQUET:
         return                      # an explicitly supplied cache is the caller's call
     side = config.EXTRACT_META_JSON
@@ -91,28 +84,15 @@ def feature_dim() -> int:
 
 
 def group_id(df: pd.DataFrame) -> np.ndarray:
-    """dataset + session, i.e. one recording session of one signer.
-
-    Used by the block-wise split so that neighbouring frames of the same clip
-    never straddle train and test.
-    """
+    """dataset + session: one recording session, so no clip straddles train/test."""
     return (df["dataset"].astype(str) + "|" + df["session"].astype(str)).to_numpy()
 
 
 def block_id(df: pd.DataFrame, n_blocks: int = 8) -> np.ndarray:
-    """Contiguous rank buckets *inside* each (dataset, session, letter) run.
+    """Contiguous rank buckets inside each (dataset, session, letter) run.
 
-    `group_id` alone is not enough for the photo datasets: there one session
-    folder holds one whole letter, so holding out a session deletes entire
-    classes and the split scores 0% for the wrong reason. Bucketing by the
-    position of the image inside its own class run keeps every class present
-    on both sides while still never splitting a contiguous block - which is
-    what guards against near-duplicate frames leaking between train and test.
-
-    Images are ordered by their path. Massey frame names are zero padded
-    (color_0_0007.png), so lexicographic order is the real temporal order;
-    for the photo sets there is no temporal order to preserve and the blocks
-    simply form a fixed, non-random subset of each class.
+    group_id alone would hold out whole classes in the photo sets. Images are
+    ordered by path; Massey frame names are zero padded, so that is temporal order.
     """
     ds = pd.Series(df["dataset"].astype(str).to_numpy())
     ss = pd.Series(df["session"].astype(str).to_numpy())

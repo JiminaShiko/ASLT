@@ -1,8 +1,5 @@
 
 document.addEventListener("DOMContentLoaded", () => {
-    // ==========================================
-    // CONFIGURATION
-    // ==========================================
 
     const API = {
         profile: "/api/admin/profile",
@@ -16,9 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let selectedImage = null;
     let originalPhotoUrl = "";
 
-    // ==========================================
-    // ELEMENTS
-    // ==========================================
 
     const fullNameInput = document.getElementById("fullName");
     const usernameInput = document.getElementById("username");
@@ -36,9 +30,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const updatePasswordButton = document.getElementById("updatePassword");
     const clearPasswordButton = document.getElementById("clearPasswordFields");
 
-    // ==========================================
-    // HELPERS
-    // ==========================================
 
     async function apiRequest(url, options = {}) {
         const response = await fetch(url, {
@@ -128,9 +119,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ==========================================
-    // LOAD ADMIN PROFILE
-    // ==========================================
 
     async function loadAdminProfile() {
         try {
@@ -171,9 +159,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ==========================================
-    // UPDATE PROFILE SUMMARY
-    // ==========================================
 
     function updateProfileSummary(fullName, username, email, photoUrl) {
         const nameElements = [
@@ -205,9 +190,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ==========================================
-    // LIVE PROFILE SUMMARY
-    // ==========================================
 
     function updateLiveSummary() {
         const fullName = fullNameInput?.value.trim() || "";
@@ -234,9 +216,6 @@ document.addEventListener("DOMContentLoaded", () => {
         usernameInput.addEventListener("input", updateLiveSummary);
     }
 
-    // ==========================================
-    // SAVE PROFILE INFORMATION
-    // ==========================================
 
     if (saveProfileButton) {
         saveProfileButton.addEventListener("click", async event => {
@@ -292,9 +271,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ==========================================
-    // CANCEL PROFILE CHANGES
-    // ==========================================
 
     if (cancelButton) {
         cancelButton.addEventListener("click", event => {
@@ -323,9 +299,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ==========================================
-    // PROFILE PICTURE PREVIEW
-    // ==========================================
 
     if (profileImageInput) {
         profileImageInput.addEventListener("change", event => {
@@ -377,9 +350,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ==========================================
-    // UPLOAD PROFILE PICTURE
-    // ==========================================
 
     async function uploadProfilePicture() {
         if (!selectedImage) return;
@@ -431,9 +401,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ==========================================
-    // SHOW / HIDE PASSWORD
-    // ==========================================
 
     document.querySelectorAll(".toggle-password").forEach(button => {
         button.addEventListener("click", () => {
@@ -456,9 +423,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // ==========================================
-    // PASSWORD STRENGTH
-    // ==========================================
 
     if (newPasswordInput) {
         newPasswordInput.addEventListener("input", () => {
@@ -519,9 +483,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ==========================================
-    // CLEAR PASSWORD FIELDS
-    // ==========================================
 
     function clearPasswordFields() {
         if (currentPasswordInput) currentPasswordInput.value = "";
@@ -540,9 +501,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ==========================================
-    // CHANGE PASSWORD
-    // ==========================================
 
     if (updatePasswordButton) {
         updatePasswordButton.addEventListener("click", async event => {
@@ -628,9 +586,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ==========================================
-    // INITIALIZE
-    // ==========================================
 
     loadAdminProfile();
 });

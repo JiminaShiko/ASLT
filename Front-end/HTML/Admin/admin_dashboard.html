@@ -16,7 +16,6 @@
 
 .count{background:color-mix(in oklab,var(--tan) 26%,var(--surface));color:oklch(0.37 0.06 72)}
 .welcome{box-shadow:inset 0 0 0 1px oklch(1 0 0 / .35)}
-/* Theme tokens: light is the default; dark restores the original forest palette. */
 :root { color-scheme: light; }
 :root[data-theme="dark"] {
  color-scheme: dark;
@@ -36,7 +35,6 @@
 @media(max-width:600px){.evaluation-grid{grid-template-columns:1fr}.evaluation-meta{flex-wrap:wrap}.log-pagination{flex-wrap:wrap}.logs-heading .badge{white-space:normal}.header-title{max-width:135px;line-height:1.4}.log-controls{flex-wrap:wrap}}
 @media(max-width:430px){header{padding:0 14px;gap:8px}.header-right{gap:8px}.search{width:112px}.theme-toggle{width:34px;height:34px}.toast{left:14px;right:14px;bottom:18px}}
 
-/* ===== Overview: forest parchment theme ===== */
 :root{--parchment:oklch(0.93 0.035 85);--parchment-deep:oklch(0.84 0.055 75);--parchment-edge:oklch(0.62 0.07 60);--ink:oklch(0.33 0.04 55);--ink-soft:oklch(0.44 0.05 55);--roller:oklch(0.66 0.08 62);--roller-dark:oklch(0.48 0.07 55);--paper-shadow:0 14px 28px oklch(0.3 0.04 60 / .18)}
 :root[data-theme="dark"]{--parchment:oklch(0.8 0.045 80);--parchment-deep:oklch(0.7 0.06 70);--parchment-edge:oklch(0.48 0.06 55);--ink:oklch(0.27 0.035 55);--ink-soft:oklch(0.34 0.045 55);--roller:oklch(0.55 0.07 60);--roller-dark:oklch(0.38 0.05 55);--paper-shadow:0 16px 34px oklch(0.08 0.02 160 / .55)}
 :root[data-theme="dark"] .leaf-card{filter:drop-shadow(0 12px 18px oklch(0.08 0.02 160 / .55)) drop-shadow(0 0 2px oklch(0.25 0.03 55 / .85))}

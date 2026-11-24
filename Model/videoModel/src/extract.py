@@ -1,27 +1,6 @@
-"""
-Stage 2 - landmark extraction.
+"""Stage 2 - resumable MediaPipe Holistic landmark extraction into cache/manifest.csv.
 
-    python -m src.extract --splits train,val,test --workers 4
-
-Runs MediaPipe Holistic (VIDEO mode, RGB) over exactly the videos the
-vocabulary needs, writes one packed .npy per video plus a manifest, and is
-resumable: rerun it after a crash or a power cut and it picks up where it
-stopped. It never writes inside ASL Citizen/.
-
-Manifest columns (cache/manifest.csv):
-
-    video, split, gloss, word, participant, frames, fps, stride,
-    hand_rate, hand_rate_seg, sign_start, sign_end, rest_frames, ms,
-    restart_ms, bytes, landmark_version, status, error
-
-hand_rate is over the whole clip; hand_rate_seg is over the signing window
-only and is the one to read (see landmarks.hand_rate_window). Filling it for
-videos already in the cache needs no MediaPipe and no video decoding:
-
-    python -m src.extract --rates
-
-status is 'ok' or 'error'; failing videos are recorded in
-cache/extract_errors.csv and the run continues.
+Read hand_rate_seg (signing window), not hand_rate (whole clip). Never writes inside ASL Citizen/.
 """
 from __future__ import annotations
 
@@ -42,13 +21,12 @@ MANIFEST_COLUMNS = [
     "status", "error",
 ]
 
-_TRACKER: landmarks.Tracker | None = None      # one per worker process
+_TRACKER: landmarks.Tracker | None = None
 _OPTS: dict = {}
 
 
 def landmark_file(video: str) -> Path:
-    """The .npy for one video. External (ps:) ids get a ps- prefix on the
-    stem, so a PopSign file name can never collide with an ASL Citizen one."""
+    """The .npy for one video; ps: ids get a ps- prefix so stems cannot collide."""
     stem = config.safe_stem(video)
     if video.startswith("ps:"):
         stem = f"ps-{stem}"
@@ -77,9 +55,7 @@ def _work(job: tuple) -> dict:
         if arr.shape != (ex.n_frames, config.P_TOTAL, 3):
             raise RuntimeError(f"unexpected packed shape {arr.shape}")
         out = landmark_file(video)
-        # np.save appends ".npy" when the name does not already end with it,
-        # so the temporary file has to keep that suffix (measured: a
-        # ".npy.part" name silently became ".npy.part.npy").
+        # np.save appends ".npy" unless the name already ends with it
         tmp = out.with_name(f".{out.stem}.{os.getpid()}.part.npy")
         np.save(tmp, arr)
         tmp.replace(out)
@@ -94,15 +70,12 @@ def _work(job: tuple) -> dict:
                    bytes=int(out.stat().st_size), status="ok", error="")
     except Exception as exc:                          # noqa: BLE001
         if _TRACKER is not None:
-            _TRACKER.restart()          # never let one bad clip poison the next
+            _TRACKER.restart()
         row.update(status="error", frames=0,
                    error=f"{type(exc).__name__}: {exc}"[:400])
     return row
 
 
-# ---------------------------------------------------------------------------
-# manifest handling
-# ---------------------------------------------------------------------------
 def read_manifest() -> pd.DataFrame:
     if config.MANIFEST_CSV.is_file():
         df = pd.read_csv(config.MANIFEST_CSV, dtype={"video": str,
@@ -139,14 +112,7 @@ def pending(df: pd.DataFrame, todo: pd.DataFrame, force: bool = False) -> pd.Dat
 
 
 def recompute_rates(log=None) -> dict:
-    """Fill hand_rate_seg from the landmark cache - no MediaPipe, no videos.
-
-    The signing window is already in the manifest, so this is one numpy slice
-    per video: a few minutes of disk for the whole cache, and it can be rerun
-    at any time. Run it once on a cache extracted before the column existed,
-    otherwise old rows keep hand_rate_seg empty and check_results.py falls
-    back to the clip-wide number.
-    """
+    """Fill hand_rate_seg from the cache (for caches extracted before the column existed)."""
     log = log or config.logger_for("rates", config.LOGS_DIR
                                    / f"rates_{config.timestamp()}.log")
     df = read_manifest()
@@ -240,7 +206,7 @@ def run(splits=("train",), workers: int = 1, limit: int | None = None,
                      i, len(jobs), rate, left / 60,
                      ms_total / max(frames, 1), n_err)
             if i % (log_every * 10) == 0:
-                append_manifest(rows)       # dedup keeps it idempotent
+                append_manifest(rows)
 
     if workers > 1:
         import multiprocessing as mp

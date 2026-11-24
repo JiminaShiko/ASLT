@@ -1,4 +1,3 @@
-import importlib.util
 import os
 from pathlib import Path
 import sys
@@ -33,8 +32,7 @@ load_environment()
 
 app = Flask(__name__)
 
-# Lets the front-end opened from a local static server (VS Code Live Server and
-# friends) call the API with the shared session cookie during development.
+# Shared session cookie from a local static server (e.g. Live Server) needs these origins.
 CORS(
     app,
     supports_credentials=True,
@@ -45,34 +43,15 @@ CORS(
     ],
 )
 
-# Register the landmark translator routes on the main website app. This keeps
-# the model API and the authenticated UI on the same origin and port.
-translation_api_path = PROJECT_ROOT / "Model" / "sign language photo model" / "api.py"
-translation_api_spec = importlib.util.spec_from_file_location(
-    "aslt_translation_api", translation_api_path
-)
-if translation_api_spec is None or translation_api_spec.loader is None:
-    raise RuntimeError(f"Could not load translation API from {translation_api_path}")
-translation_api = importlib.util.module_from_spec(translation_api_spec)
-sys.modules[translation_api_spec.name] = translation_api
-translation_api_spec.loader.exec_module(translation_api)
-app.register_blueprint(translation_api.api_bp)
-
-# Text to Sign: word signs from the word model's vocabulary plus alphabet
-# fingerspelling, served from the same origin as the page.
+app.register_blueprint(translation_api_bp)
 app.register_blueprint(text_to_sign_bp)
-
-# AgentMail: the backend agent's own inbox, outbound mail and the signed webhook
-# that answers replies.
 app.register_blueprint(agent_mail_bp)
 
-# Reads SECRET_KEY strictly from .env (localhost) or Render Environment Variables
 app.secret_key = os.getenv("SECRET_KEY", "dev-fallback-secret-key")
 
-# Ensures HTTPS & session cookies work properly behind Render's reverse proxy
+# Required behind Render's reverse proxy so HTTPS and cookies resolve correctly.
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
-# Register signup, login, forgot password, and Google OAuth blueprints
 app.register_blueprint(signup_bp)
 app.register_blueprint(login_bp)
 app.register_blueprint(forgot_password_bp)
@@ -88,8 +67,7 @@ LOOPBACK_ADDRESSES = {"127.0.0.1", "::1", "::ffff:127.0.0.1", "localhost"}
 
 
 def _translation_auth_bypassed() -> bool:
-    """ASLT_TRANSLATION_NO_AUTH=1 lets local requests use the model without
-    login, so the page can be tested from Live Server with no database."""
+    """Dev escape hatch: ASLT_TRANSLATION_NO_AUTH=1 skips login for loopback only."""
     flag = os.getenv("ASLT_TRANSLATION_NO_AUTH", "").strip().lower()
     if flag not in {"1", "true", "yes"}:
         return False
@@ -98,7 +76,7 @@ def _translation_auth_bypassed() -> bool:
 
 @app.before_request
 def require_login_for_translation_api():
-    # Browsers send CORS preflights without cookies, so they must pass here.
+    # CORS preflights carry no cookies; they must pass.
     if request.method == "OPTIONS":
         return None
     if (request.blueprint in {"asl_translation_api", "text_to_sign_api"}
@@ -108,7 +86,7 @@ def require_login_for_translation_api():
         return jsonify({"error": "Authentication required."}), 401
 
 
-# Ensure `users` columns (`username` nullable, `failed_login_attempts`, `locked_until`) exist
+# Schema migrations must run before any request touches `users`.
 ensure_auth_tables()
 ensure_login_columns()
 
@@ -269,7 +247,6 @@ def admin_profile():
     return jsonify({"name": display_name, "email": email})
 
 
-# Serves relative files inside Front-end/login_signup_pages/ (e.g., auth_style.css)
 @app.route("/<path:filename>")
 def serve_login_page_assets(filename):
     target = LOGIN_PAGES_DIR / filename
@@ -278,7 +255,7 @@ def serve_login_page_assets(filename):
     return "Not Found", 404
 
 
-# Serves Front-end/assets/images/... cleanly for both localhost and Render
+# Falls back across .jpg/.png variants and the logo alias because assets differ per deploy.
 @app.route("/assets/<path:filename>")
 def serve_global_assets(filename):
     assets_dir = FRONTEND_DIR / "assets"

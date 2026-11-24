@@ -1,21 +1,8 @@
-"""
-The seed-sweep table, kept free of torch on purpose.
+"""Seed-sweep tables, kept free of torch so reading results never pulls it in.
 
-train.py writes reports/seed_runs.csv (one row per seed per config) and this
-module turns it into the two human files:
-
-  reports/seed_runs.md   every run, mean +- spread per metric
-  compare_table()        the baseline-vs-new block for REPORT_WORDS.md
-
-check_results.py imports this instead of src.train, so reading the results
-never pulls in torch, the model or the dataset. That is the whole reason it is
-a separate file.
-
-Spread is the half-range over the seeds of one config. It is printed next to
-every mean because it is the only way to read them: a gain smaller than the
-baseline's own spread is not a gain. Configs are compared on the VAL columns;
-the TEST columns appear because they are what gets reported, not because they
-choose anything.
+Spread is the half-range over seeds of one config: a gain smaller than the
+baseline's own spread is not a gain. Configs are decided on VAL; TEST columns
+are reported, never used to choose.
 """
 from __future__ import annotations
 
@@ -49,7 +36,7 @@ def candidate_name() -> str | None:
 
 
 def comparable(a: pd.DataFrame, b: pd.DataFrame) -> bool:
-    """Only explicit, uniform class AND evaluation identities are comparable."""
+    """Comparable only with explicit, uniform label-set AND evaluation ids."""
     for key in ("label_set_id", "evaluation_id"):
         if key not in a or key not in b or a.empty or b.empty:
             return False
@@ -61,9 +48,6 @@ def comparable(a: pd.DataFrame, b: pd.DataFrame) -> bool:
             return False
     return True
 
-# The columns worth reading. seed_runs.csv keeps everything (including the n
-# behind each number); the table shows only these, because a 40-row table is
-# how a report stops being read.
 SWEEP_METRICS = ["val_words_top1", "val_top1", "val_typed_share",
                  "val_typed_precision", "val_other_slip", "val_rest_slip",
                  "test_words_top1", "test_words_top5", "test_top1",
@@ -73,7 +57,6 @@ SWEEP_METRICS = ["val_words_top1", "val_top1", "val_typed_share",
                  "ps_test_words_top1", "ps_test_top1", "ps_test_typed_share",
                  "ps_test_typed_precision_words"]
 
-# the fair-comparison table: exactly the columns the plan asked for
 FAIR_COLUMNS = [
     ("val_top1", "val top-1 (DECIDES)"),
     ("test_words_top1", "words-only test top-1"),
@@ -123,7 +106,7 @@ def append_seed_rows(rows: list[dict], reports_dir: Path | None = None) -> pd.Da
 
 
 def mean_spread(df: pd.DataFrame, cols: list[str]) -> list[str]:
-    """'0.583 +-0.021 (0.571..0.601)' per column: mean, half-range, extremes."""
+    """'mean +-half-range (min..max) n=..' per column."""
     lines = []
     for c in cols:
         if c not in df.columns:
@@ -163,7 +146,7 @@ def write_seed_table(df: pd.DataFrame, reports_dir: Path | None = None) -> Path:
 
 
 def compare_table(path: Path | None = None) -> str:
-    """The baseline-vs-new block for REPORT_WORDS.md, from seed_runs.csv."""
+    """Baseline-vs-new block for REPORT_WORDS.md, from seed_runs.csv."""
     p = path or seed_row_path()
     if not p.is_file():
         return ("(no seed runs measured yet - `python -m src.train --seeds 3 "
@@ -227,9 +210,6 @@ def compare_table(path: Path | None = None) -> str:
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------------------
-# --fair: feature v3 vs the old v2 vector, same seeds, decided on VAL
-# ---------------------------------------------------------------------------
 def _stat(g: pd.DataFrame, col: str) -> tuple[str, str]:
     """'mean' and 'spread' strings for one column of one run."""
     if col not in g.columns:
@@ -242,13 +222,7 @@ def _stat(g: pd.DataFrame, col: str) -> tuple[str, str]:
 
 
 def fair_decision(df: pd.DataFrame, tag3: str, tag2: str) -> dict:
-    """The VAL verdict: adopt v3 only above the pooled seed spread.
-
-    The spread is the half-range over the POOLED val top-1 of both runs'
-    seeds - the same seeds run twice, so together they are the most
-    conservative estimate of run-to-run noise this comparison has. A diff
-    inside it keeps the simpler v2 vector, per the plan.
-    """
+    """VAL verdict: adopt v3 only above the pooled (both runs) seed spread."""
     g3, g2 = df[df["run_tag"] == tag3], df[df["run_tag"] == tag2]
     v3 = pd.to_numeric(g3["val_top1"], errors="coerce").dropna()
     v2 = pd.to_numeric(g2["val_top1"], errors="coerce").dropna()
@@ -265,7 +239,7 @@ def fair_decision(df: pd.DataFrame, tag3: str, tag2: str) -> dict:
 
 
 def fair_table(tag3: str, tag2: str, path: Path | None = None) -> str:
-    """The side-by-side the plan asked for, plus the VAL verdict line."""
+    """Side-by-side table plus the VAL verdict line."""
     p = path or seed_row_path()
     if not p.is_file():
         return "(no seed runs measured yet)"
@@ -294,7 +268,7 @@ def fair_table(tag3: str, tag2: str, path: Path | None = None) -> str:
 
 
 def latest_fair_tags(path: Path | None = None) -> tuple[str, str] | None:
-    """The most recent (v3_tag, v2_tag) pair, or None if none was run."""
+    """Most recent (v3_tag, v2_tag) pair, or None."""
     p = path or seed_row_path()
     if not p.is_file():
         return None

@@ -1,9 +1,4 @@
-"""In-memory live camera diagnostic for Holistic vs Hands + Pose.
-
-Run from videoModel with ``python live_debug.py``. Frames are never written.
-Both trackers receive each captured frame; Tab changes which tracker's
-landmarks are drawn. Press q or Esc to quit and print the comparison table.
-"""
+"""In-memory live camera diagnostic for Holistic vs Hands + Pose (no frames written)."""
 from __future__ import annotations
 
 import argparse
@@ -129,10 +124,8 @@ class HandsPoseTracker:
         if hs.multi_hand_landmarks:
             handed = hs.multi_handedness or []
             for i, hand in enumerate(hs.multi_hand_landmarks):
-                # Legacy Hands labels are from the unmirrored input image.
                 label = handed[i].classification[0].label.lower() if i < len(handed) else "right"
-                # Solutions labels assume mirrored selfie input; restore the
-                # physical side because this diagnostic feeds the raw frame.
+                # Solutions labels assume mirrored selfie input; flip back to the physical side.
                 side = "right" if label == "left" else "left"
                 start = config.COLS_LHAND.start if side == "left" else config.COLS_RHAND.start
                 out[start:start + config.N_HAND] = [(q.x, q.y, q.z) for q in hand.landmark]
@@ -236,15 +229,12 @@ def main():
                     if args.redetect_after and s["missing"] >= args.redetect_after:
                         tracker.reset(); s["missing"] = 0
 
-            # The word network was trained on Holistic landmarks. Keep feeding
-            # it that layout even if the debug display is switched to another
-            # tracker; no Hands+Pose landmarks enter the classifier.
+            # The classifier only sees Holistic landmarks, whatever tracker is displayed.
             word_result = word_model.update(rows["Holistic"])
             row = rows[selected]
             h, w = bgr.shape[:2]
             display = cv2.flip(bgr, 1) if not args.no_mirror else bgr.copy()
-            # Coordinates stay normalized on the captured frame; the same
-            # horizontal flip is applied to the image and every landmark.
+            # Same horizontal flip for the image and every landmark.
             for hand, color in (("left", (0, 220, 255)), ("right", (0, 255, 0))):
                 start = config.COLS_LHAND.start if hand == "left" else config.COLS_RHAND.start
                 points = row[start:start + 21, :2]

@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var LIVE_INTERVAL = 55;
   var LIVE_MAX_SIDE = 640;
 
-  /* ---------- Shared helpers ---------- */
   async function modelRequest(path, payload) {
     var response;
     try {
@@ -126,7 +125,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return canvas.toDataURL('image/jpeg', 0.88);
   }
 
-  /* Single-shot prediction (used by Upload Media) */
   window.predictSign = async function (source) {
     var dataUrl = sourceToDataURL(source, 1280);
     var result = await modelRequest('/api/predict-photo', {
@@ -158,7 +156,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  /* ---------- Result box ---------- */
   function renderResult(el, state, text, note, conf) {
     var ico = { idle: 'eye', ok: 'check', warn: 'alert' }[state] || 'eye';
     el.className = 'result' + (state === 'ok' || state === 'warn' ? ' ' + state : '');
@@ -194,7 +191,6 @@ document.addEventListener('DOMContentLoaded', function () {
   renderResult(signResult, 'idle', 'Your text will appear here');
   renderResult(uploadResult, 'idle', 'Your text will appear here');
 
-  /* ---------- Tabs ---------- */
   var tabs = [
     { tab: document.getElementById('tab-sign'), panel: document.getElementById('panel-sign') },
     { tab: document.getElementById('tab-text'), panel: document.getElementById('panel-text') },
@@ -211,7 +207,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  /* ---------- Sign to Text (camera + live) ---------- */
   var camBox = document.getElementById('cam-box');
   var cam = document.getElementById('cam');
   var camRender = document.getElementById('cam-render');
@@ -658,7 +653,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  /* ---------- Text to Sign ---------- */
   var txt = document.getElementById('txt');
   var signs = document.getElementById('signs');
   var textStatus = document.getElementById('text-status');
@@ -703,7 +697,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (e.key === 'Enter') { showSigns(); }
   });
 
-  // Voice input
   var voiceBtn = document.getElementById('voice');
   var voiceLabel = document.getElementById('voice-label');
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -733,7 +726,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  /* ---------- Upload Media ---------- */
   var preview = document.getElementById('preview');
   var uploadStatus = document.getElementById('upload-status');
   var translateBtn = document.getElementById('translate-upload');

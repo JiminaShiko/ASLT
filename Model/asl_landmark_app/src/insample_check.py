@@ -1,27 +1,7 @@
-"""In-sample per-letter check for a shipped model.
+"""In-sample per-letter check (and `--preds` confusion analysis) for a model.
 
-Answers one narrow question: when the deployed final model is run back over the
-exact landmark vectors it was trained on, can it separate the letters that
-collapse in the cross-dataset table? Nothing here is an accuracy claim - the
-headline is the leave-one-dataset-out number in the profile's report. This
-exists because "the model cannot do N" and "the model cannot do N on hands it
-has never seen" are different failures with different fixes, and round 1 quoted
-the first one from a check that could not be re-run.
-
-Reads the cache and one profile's .pt/.meta.json. Writes nothing, opens no camera.
-
-    python src/insample_check.py
-    python src/insample_check.py --letters NMTP --csv
-    python src/insample_check.py --profile standard --letters NMTP
-    python src/insample_check.py --confuse T,N,M --by-path
-    python src/insample_check.py --preds reports/oof_all.csv --confuse T,N,M
-
-`--preds` reads a leave-one-dataset-out prediction dump from
-`src/train.py --dump-preds`, which is the honest evaluation, and runs the same
-confusion analysis on it. Without it everything below is in-sample. (The two
-22 MB dumps that used to sit in `reports/` were pruned in the 2026-11-15 folder
-cleanup; `python src/train.py --profile all --dump-preds reports/oof_all.csv`
-rebuilds one, and it exits with that command if the file is missing.)
+In-sample only separates "the features cannot express this letter" from "only
+for these hands"; the honest accuracy is the leave-one-dataset-out report.
 """
 from __future__ import annotations
 
@@ -43,13 +23,7 @@ import train as T
 
 def confusion_rows(df: pd.DataFrame, letters: list[str], ycol: str,
                    pcol: str, by: str) -> None:
-    """For each true letter, what the model answers, split by one column.
-
-    `by` is `dataset` (which signer) or `how` (which detection rung produced the
-    landmarks). A letter that fails the same way everywhere is a feature problem;
-    one that only fails on the ladder-rescued frames is a detection problem, and
-    one that only fails for one dataset is a style conflict.
-    """
+    """What each true letter is answered as, split by `dataset` or `how`."""
     for lab in letters:
         sub = df[df[ycol] == lab]
         if not len(sub):

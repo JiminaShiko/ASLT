@@ -4,8 +4,8 @@
 #   python -m pip install -r requirements.txt
 #
 # This is the single dependency file for every subproject in the repo:
-#   Backend, Model/asl_landmark_app, Model/sign language photo model,
-#   Model/videoModel, and the EDA scripts under Model/EDA/.
+#   Backend, Model/asl_landmark_app, Model/videoModel, and the EDA scripts
+#   under Model/EDA/.
 # There are no per-folder requirements files; install this one from the
 # repository root.
 #
@@ -36,7 +36,7 @@ svix==2.10.0
 
 # ---------------------------------------------------------------------------
 # Landmark runtime imported by Backend at startup
-# (Model/asl_landmark_app via Model/sign language photo model/api.py)
+# (Model/asl_landmark_app via Backend/user/api.py)
 # ---------------------------------------------------------------------------
 mediapipe==1.2.2
 opencv-python==5.0.0.93
@@ -59,27 +59,16 @@ kagglehub==1.0.2
 certifi>=2026.7.22
 
 # ---------------------------------------------------------------------------
-# Standalone Streamlit demos
-# (Model/asl_landmark_app/app.py, Model/sign language photo model/app.py)
+# Standalone Streamlit demo (Model/asl_landmark_app/app.py)
 # ---------------------------------------------------------------------------
 streamlit==1.64.0
 streamlit-webrtc==0.79.0
 av==17.1.0
 
 # ---------------------------------------------------------------------------
-# Photo-sign model (Model/sign language photo model)
-# Only needed for the Streamlit app / train_model.py / calibrate_camera.py;
-# the Flask web app itself does not import TensorFlow.
-# ---------------------------------------------------------------------------
-tensorflow==2.22.0rc0
-
-# ---------------------------------------------------------------------------
-# EDA scripts (Model/EDA/*)
-# pandas, numpy, matplotlib, seaborn, Pillow, kagglehub are already pinned above.
-# Model/EDA/asl citizens/requirements.txt also lists opencv-python-headless;
-# on this repo opencv-python (above) provides the same cv2 module, so installing
-# both is redundant and can conflict. On a headless server, replace the
-# opencv-python line with: opencv-python-headless==5.0.0.93
+# EDA scripts (Model/EDA/*): pandas, numpy, matplotlib, seaborn, Pillow and
+# kagglehub are pinned above. On a headless server, replace opencv-python with
+# opencv-python-headless==5.0.0.93.
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------

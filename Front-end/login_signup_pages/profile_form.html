@@ -29,7 +29,6 @@
       --env-flap-left: #284531;
       --env-flap-right: #243f2d;
       --env-flap-bottom: #1f3827;
-      /* Paper stays bright handmade ivory in dark mode too */
       --letter-text: #1c2e1e;
       --letter-muted: #3d5440;
       --twinkle-base: rgba(31, 51, 33, 0.45);
@@ -39,7 +38,6 @@
       --skip-letter-color: #365239;
     }
 
-    /* Soft light-green botanical blur over background photo */
     .bg-green-tint {
       position: fixed;
       inset: 0;
@@ -53,9 +51,6 @@
       background: radial-gradient(circle at 50% 45%, rgba(20, 44, 30, 0.65), rgba(10, 20, 15, 0.82));
     }
 
-    /* =========================================================
-       SMOOTH BORDERLESS ENVELOPE WITH SOFT DEPTH SHADOWS
-       ========================================================= */
     .envelope-stage {
       position: relative;
       width: min(780px, 95vw);
@@ -86,7 +81,6 @@
       z-index: 2;
     }
 
-    /* Torn Handmade Paper ONLY (No rectangular box background behind it) */
     .letter-card {
       position: relative;
       z-index: 5;
@@ -101,7 +95,7 @@
       color: var(--letter-text);
     }
 
-    /* Front Envelope Pocket Flaps (Covers bottom stems of flowers & paper) */
+    /* Front pocket must sit above stems and paper to hide their cut edges */
     .envelope-front-pocket {
       position: absolute;
       left: 0;
@@ -115,8 +109,7 @@
       overflow: hidden;
     }
 
-    /* White Tulip Bouquet: blooms above pocket, lower stems tucked INSIDE envelope pocket */
-    /* Bigger White Tulip Bouquet tucked inside front envelope pocket, clear of text */
+    /* Tulip stems tuck into the envelope pocket so blooms stay above it */
     .tulip-bouquet {
       position: absolute;
       right: -3.5%;
@@ -134,7 +127,7 @@
       50%      { transform: rotate(-9.5deg) translateY(-3px); }
     }
 
-    /* Circular Profile Photo Picker with Soft Ring Border & Elevation Shadow */
+    /* Outer ring uses outline (not border) so it never clips the photo */
     .avatar-circle-btn {
       position: relative;
       width: 106px;
@@ -176,7 +169,7 @@
       background: rgba(18, 34, 20, 0.44);
     }
 
-    /* Cursive "Dear," + Slow Twinkling Username Line */
+    /* Twinkling username animation */
     .dear-script {
       font-family: 'Great Vibes', 'Cormorant Garamond', cursive;
       font-size: 2.65rem;
@@ -234,7 +227,6 @@
       100% { left: 105%; opacity: 0.25; }
     }
 
-    /* Compact Confirm Pill Button */
     .btn-confirm-pill {
       min-width: 138px;
       height: 35px;
@@ -267,7 +259,6 @@
       filter: brightness(1.08);
     }
 
-    /* Smaller "skip for now" link inside the paper letter */
     .skip-inside-btn {
       display: inline-block;
       margin-top: 8px;
@@ -298,17 +289,14 @@
 </head>
 <body>
 
-  <!-- 1. Blurred Forest Background with Soft Light-Green Botanical Tint -->
   <div id="bgPhotoLayer" class="bg-photo-layer"></div>
   <div class="bg-green-tint"></div>
 
-  <!-- 2. Brand Logo (Exact same header & font as Login/OTP pages) -->
   <header class="brand-header">
     <img id="brandLogoImg" class="brand-logo-img" alt="Signrest Logo" />
     <span class="brand-title">Signrest</span>
   </header>
 
-  <!-- 3. Light / Dark Mode Switch -->
   <button
     type="button"
     id="themeToggleBtn"
@@ -319,11 +307,9 @@
     <img id="themeIconImg" alt="Theme Toggle Icon" />
   </button>
 
-  <!-- 4. Centered Envelope Setup Stage -->
   <main class="relative z-10 min-h-screen flex items-center justify-center px-4 py-10">
     <div class="envelope-stage">
 
-      <!-- Smooth Top Open Envelope Flap -->
       <svg class="envelope-top-flap" viewBox="0 0 780 245" preserveAspectRatio="none" aria-hidden="true">
         <defs>
           <linearGradient id="topFlapGrad" x1="0" y1="0" x2="0" y2="1">
@@ -337,17 +323,13 @@
         />
       </svg>
 
-      <!-- Envelope Back Body -->
       <div class="envelope-back-body" aria-hidden="true"></div>
 
-      <!-- White Tulip Bouquet (Lower stems tucked inside envelope pocket, clear of text) -->
       <img id="tulipBouquetImg" class="tulip-bouquet" alt="" />
 
-      <!-- Handmade Torn Paper Letter Card (No solid box behind it) -->
       <div id="letterCard" class="letter-card">
         <input type="file" id="photoFileInput" accept="image/*" class="hidden" />
 
-        <!-- Top Row: Circular Profile Photo + "Dear, [your username]" -->
         <div class="flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-6">
           <button
             type="button"
@@ -370,7 +352,6 @@
             </svg>
             <img id="croppedAvatarPreview" class="hidden w-full h-full object-cover" alt="Profile Avatar" />
 
-            <!-- Camera Icon Only -->
             <div class="avatar-camera-overlay">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
@@ -406,7 +387,6 @@
           <p id="formFeedbackMsg" class="mt-1.5 text-[0.78rem] font-medium text-red-700 min-h-[1rem]"></p>
         </div>
 
-        <!-- Compact Confirm Button + Small Skip for Now Inside the Paper Letter -->
         <div class="flex flex-col items-center">
           <button type="button" id="confirmProfileBtn" class="btn-confirm-pill" disabled>
             Confirm
@@ -417,7 +397,6 @@
         </div>
       </div>
 
-      <!-- Smooth Borderless Front Envelope Pocket Flaps -->
       <svg class="envelope-front-pocket" viewBox="0 0 780 195" preserveAspectRatio="none" aria-hidden="true">
         <defs>
           <filter id="flapShadow" x="-10%" y="-15%" width="120%" height="130%">
@@ -444,7 +423,6 @@
     </div>
   </main>
 
-  <!-- 5. Interactive Circular Image Cropper Modal -->
   <div
     id="cropModal"
     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 backdrop-blur-sm px-4"

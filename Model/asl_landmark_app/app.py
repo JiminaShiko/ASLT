@@ -1,24 +1,8 @@
-# --------------------------------------------------
-# Streamlit frontend for the ASL LANDMARK recogniser.
-#
-# Same three ways of using it as the photo model's app (photo / snapshot /
-# live webcam), but the model behind it is the landmark pipeline:
-#
-#   frame (BGR) -> RGB -> MediaPipe Hands 21 landmarks
-#       -> src/normalize.py (the exact function training used)
-#       -> feature vector (71 dims by default) -> MLP -> Smoother -> letter
-#
-# It imports the live app's own classes (live.Smoother, live.MotionDecider,
-# live.build_backend) instead of duplicating them, so the browser version and
-# `python src/live.py` can never disagree.
-#
-# PRIVACY: this page never writes anything. No frame, photo, landmark or text is
-# saved to disk, and nothing you sign can reach the training set. There is no
-# calibration tab on purpose - the photo model's calibrate_camera.py is NOT part
-# of this project.
-#
-# Run:  streamlit run app.py
-# --------------------------------------------------
+"""Streamlit frontend for the ASL landmark recogniser (photo / snapshot / live webcam).
+
+Reuses live.Smoother, live.MotionDecider and live.build_backend so this page and the
+console app cannot disagree. PRIVACY: nothing is ever written to disk.
+"""
 from __future__ import annotations
 
 import json
@@ -53,70 +37,27 @@ import hand_backend as hb      # noqa: E402
 import normalize               # noqa: E402
 import live                    # noqa: E402  (Smoother, MotionDecider, build_backend)
 
-# --------------------------------------------------
-# Settings
-# --------------------------------------------------
 MIN_CONFIDENCE = 0.70      # frames below this cast no vote
-UNCERTAIN_MARGIN = 0.10    # frames whose top1-top2 gap is below this are shown
-                           # as UNCERTAIN and cast no vote (Stage F)
+UNCERTAIN_MARGIN = 0.10    # top1-top2 gap below this -> UNCERTAIN, no vote
 VOTE_FRAMES = 7            # majority vote window
 HOLD_SECONDS = 0.5         # how long a letter must be held before it is typed
 MAX_SIDE = 640             # frames wider/taller than this are shrunk first
-STRIDE_DEFAULT = 2         # the app's cheap mode; see "Work every Nth frame".
-                           # Measured here: one processed frame costs ~50 ms
-                           # (MediaPipe VIDEO 45-52 ms whatever the resolution,
-                           # features + MLP 1.4 ms, overlay + re-encode 1.2 ms
-                           # at 640x480), so a 30 fps camera feeds 33 ms of
-                           # budget with 50 ms of work. Every second frame is
-                           # 26 ms, which fits. The cost is temporal resolution:
-                           # the J/Z rule sees 12 hand positions a second
-                           # instead of 24, and its binding criterion on real
-                           # movement is the reversal count - so if J or Z
-                           # stops firing, drop this back to 1 (or calibrate).
+STRIDE_DEFAULT = 2         # a processed frame costs ~50 ms here; 2 fits 24 fps.
+                           # Halves the J/Z rule's temporal resolution, so drop
+                           # to 1 if J or Z stops firing.
 MEANINGS = {
     "J": "J - moving letter: drawn by the sideways hook rule, not by the MLP",
     "Z": "Z - moving letter: drawn by the fingertip zig-zag rule, not by the MLP",
 }
 
-# Every MediaPipe VIDEO timestamp is measured against `_ts_clock()` below, NOT
-# against a module global here. The Tasks API rejects any timestamp that is not
-# strictly greater than the one its graph last saw, and the landmarker is cached
-# for the life of the server - so an epoch that a rerun re-assigned rewound the
-# clock underneath a detector that remembered a larger timestamp, the very next
-# frame raised, and streamlit-webrtc closed the camera over it.
+# Timestamps are measured against the cached `_ts_clock()`, never a module global:
+# MediaPipe rejects any timestamp not strictly greater than its last, and a rerun
+# that re-created the epoch would rewind the clock and kill the camera.
 
-# ------------------------------------------------- the WebRTC connection
-# This app had pointed both ends of the peer connection at
-# `stun:stun.l.google.com:19302`. STUN only matters when the two ends are on
-# different networks: it asks a public server "what address do you see me
-# from?". Here the browser and the server are the same machine, so the local
-# (host) candidates ICE already gathers are enough - and the external query
-# was worse than useless on the network this app is used on. Measured, from
-# the app's own log after one press of START:
-#
-#   20:57:29.5  create a new worker          (the click)
-#   20:57:30.9  setRemoteDescription(offer)  (the camera arrived fine)
-#   20:57:36.1 / 37.2 / 38.6  STUN BINDING -> 74.125.250.129:19302, retransmitted,
-#                              never answered
-#   20:57:39.8  Stopping WebRTC worker       (10.3 s after the click)
-#
-# The unanswered STUN query stalls ICE gathering, so the SDP answer is never
-# finished; `streamlit_webrtc` calls `process_offer(..., timeout=10)`, and at
-# ten seconds it stops the worker - releasing the camera and flipping STOP back
-# to START - and raises `SignallingTimeoutError`, which is the error on the
-# page and the half-drawn white screen behind it.
-#
-# An empty list is honoured rather than replaced, on both sides. The library
-# only fills in Google's server when the field is *absent* (`None`), so the
-# browser has to be told as well as aiortc - hence `rtc_pair`. Reproduced
-# in-process without a browser, two aiortc peers in one script:
-#
-#   iceServers []                      gathering 5 ms,  SDP answer 9 ms
-#   iceServers [Google]  (the old app) gathering 5 009 ms, SDP answer 10 035 ms
-#
-# 10 035 ms is over the 10 000 ms budget, which is the whole bug in two lines:
-# aioice waits five seconds per host candidate for a STUN reply that this
-# network never sends.
+# ICE servers default to empty: an unanswered STUN query stalls ICE gathering past
+# streamlit_webrtc's 10 s offer timeout, which closes the camera. The library only
+# fills in Google's server when the field is absent (None), so browser and aiortc
+# must both be told - hence rtc_pair().
 GOOGLE_STUN = "stun:stun.l.google.com:19302"
 RTC_CONFIGURATION = RTCConfiguration({"iceServers": []})
 FRONTEND_RTC_CONFIGURATION: dict = {"iceServers": []}
@@ -127,23 +68,13 @@ FRONTEND_RTC_CONFIGURATION_STUN: dict = {"iceServers": [{"urls": [GOOGLE_STUN]}]
 
 
 def rtc_pair(use_stun: bool):
-    """(server, browser) ICE configs that agree with each other.
-
-    They have to be swapped together. A browser told to use STUN while the
-    server is not, or the other way round, gives up on the candidate pair and
-    the stream never starts - which is exactly the failure this section is
-    about, so it is not left to whoever edits one of the two constants.
-    """
+    """(server, browser) ICE configs; they must be swapped together or the stream never starts."""
     if use_stun:
         return RTC_CONFIGURATION_STUN, FRONTEND_RTC_CONFIGURATION_STUN
     return RTC_CONFIGURATION, FRONTEND_RTC_CONFIGURATION
 
 
-# A 30 fps camera asks for 33 ms a frame; one processed frame measures ~50 ms
-# here (see STRIDE_DEFAULT). Asking the browser for 24 fps does not make the
-# model faster, it stops the pipeline being handed frames it will throw away
-# before MediaPipe ever sees them - the decode and re-encode of a dropped
-# frame is pure lost time, and lost time is what the page shows as lag.
+# Ask for 24 fps so the browser does not send frames we would only drop.
 VIDEO_CONSTRAINTS = {
     "video": {"width": {"ideal": 640}, "height": {"ideal": 480},
               "frameRate": {"ideal": 24}},
@@ -154,9 +85,7 @@ st.set_page_config(page_title="ASL Landmark Recogniser", page_icon="🤟",
                    layout="centered")
 
 
-# --------------------------------------------------
-# Cached model / detectors (loaded once per server, not per rerun)
-# --------------------------------------------------
+# Cached once per server, not per rerun.
 @st.cache_resource
 def get_backend(name: str, prof: str):
     """(backend, labels) exactly as src/live.py builds them for the webcam."""
@@ -170,23 +99,12 @@ def get_detector(static: bool):
 
 @st.cache_resource
 def _ts_clock() -> float:
-    """The one epoch for every VIDEO timestamp, alive as long as the detector is.
-
-    Two lifetimes have to match. `get_detector(False)` is cached, so a rerun -
-    a button press, a slider, a resized window, a reconnecting browser - hands
-    the *same* MediaPipe graph another frame, and that graph refuses a
-    timestamp it has already passed (`ValueError: Input timestamp must be
-    monotonically increasing.`, measured). A module-level `time.monotonic()`
-    restarts on every rerun, so the longer the camera had been running the
-    sooner the next rerun poisoned it. `recv()` adds a per-processor guard on
-    top of this, so even a cleared cache cannot make a timestamp go backwards.
-    """
+    """The one epoch for every VIDEO timestamp; cached for the detector's lifetime."""
     return time.monotonic()
 
 
 def trained_profiles() -> list[str]:
-    """Profiles with weights on disk, so the selector can never offer a model
-    that has not been trained yet."""
+    """Profiles whose weights exist on disk."""
     return [p for p in sorted(config.PROFILES) if config.model_path(p).is_file()]
 
 
@@ -200,13 +118,7 @@ def require_model(prof: str):
 
 
 def onnx_staleness(prof: str) -> str | None:
-    """A sentence when the exported copy is older than the weights it mirrors.
-
-    `src/train.py` writes the .pt and nothing else, so after a retrain the ONNX
-    quietly becomes the previous model - and this page offers a Runtime switch
-    whose entire promise is that the two agree. Cheaper to say so than to be
-    wrong silently.
-    """
+    """A warning when the exported ONNX is older than the .pt it mirrors."""
     on, pt = config.onnx_path(prof), config.model_path(prof)
     if not (on.is_file() and pt.is_file()) or on.stat().st_mtime + 1.0 >= pt.stat().st_mtime:
         return None
@@ -218,9 +130,6 @@ def onnx_staleness(prof: str) -> str | None:
             f"`python src/export.py --profile {prof}`.")
 
 
-# --------------------------------------------------
-# Small drawing helpers (in memory only)
-# --------------------------------------------------
 def fit_square(points, size=240, pad=0.12):
     """Map normalized (x, y) points into a square image, aspect preserved."""
     p = np.asarray(points, dtype=np.float64)[:, :2]
@@ -233,13 +142,7 @@ def fit_square(points, size=240, pad=0.12):
 
 
 def feature_view(lm: np.ndarray) -> np.ndarray:
-    """What the MLP actually sees: canonicalised, wrist-centred, palm-scaled.
-
-    The photo model's app shows a 96x96 gray silhouette. This pipeline has no
-    pixels at all, so the honest equivalent is the normalised skeleton: it
-    already includes the left/right mirroring, which is where the model's
-    mistakes come from.
-    """
+    """What the MLP actually sees: the canonicalised, mirrored skeleton."""
     prepared = normalize.prepare(lm)
     q, size = fit_square(prepared[:, :2])
     canvas = np.zeros((size, size, 3), np.uint8)
@@ -263,9 +166,6 @@ def downscale(bgr: np.ndarray) -> np.ndarray:
     return cv2.resize(bgr, (int(w * k), int(h * k)), interpolation=cv2.INTER_AREA)
 
 
-# --------------------------------------------------
-# One still image -> everything the UI shows
-# --------------------------------------------------
 def analyse_rgb(rgb: np.ndarray, backend_name: str, conf_min: float,
                 prof: str) -> dict:
     """Colour array -> prediction dict. Nothing is stored anywhere."""
@@ -300,7 +200,7 @@ def analyse_rgb(rgb: np.ndarray, backend_name: str, conf_min: float,
 
 
 def show_prediction(res: dict, key: str, show_feats: bool):
-    """The photo tabs' result block, in the same shape as the photo app's."""
+    """The result block for the photo / snapshot tabs."""
     if not res["hand"]:
         st.warning("MediaPipe found no hand in this image, so there is no "
                    "prediction. Use good light and keep the whole hand in view.")
@@ -361,12 +261,8 @@ def show_prediction(res: dict, key: str, show_feats: bool):
                 "value": np.round(res["feats"], 4)}), height=320)
 
 
-# --------------------------------------------------
-# Live webcam processor: detection + MLP + smoothing, all in the browser tab
-# --------------------------------------------------
 class LandmarkProcessor(VideoProcessorBase):
-    """One instance per START. recv() runs on the webrtc thread only, so the
-    VIDEO-mode detector it uses is never touched by two threads at once."""
+    """One instance per START; recv() runs on the webrtc thread only."""
 
     def __init__(self):
         self.backend = None
@@ -376,18 +272,14 @@ class LandmarkProcessor(VideoProcessorBase):
         self.smoother = live.Smoother(conf=MIN_CONFIDENCE, vote=VOTE_FRAMES,
                                       hold=HOLD_SECONDS)
         self.motion = live.MotionDecider()
-        # settings pushed from the page
         self.conf_min = MIN_CONFIDENCE
         self.margin = UNCERTAIN_MARGIN
-        # the measured per-pair refusal margins from src/live.py; the sidebar
-        # checkbox can drop them back to the flat margin above
         self.pairs = dict(live.PAIR_MARGINS)
         self.mirror = True
         self.overlay = True
         self.motion_on = True
         self.stride = int(STRIDE_DEFAULT)
         self.force_next = False
-        # results
         self.text = ""
         self.held = None
         self.held_conf = 0.0
@@ -398,26 +290,22 @@ class LandmarkProcessor(VideoProcessorBase):
         self.uncertain = False
         self.low_conf = False
         self.margin_now = 0.0
-        self.need_now = 0.0     # the gap this frame had to clear, pair rule included
-        self.collide = ""       # pair key when PAIR_MARGINS was the binding rule
+        self.need_now = 0.0     # the gap this frame had to clear
+        self.collide = ""       # pair key when PAIR_MARGINS was binding
         self.progress = 0.0
         self.lm = None
         self.motion_debug = {}
         self.last_motion = None
-        self.motion_hint = ""      # why J/Z did not fire, when that is the case
-        self.cal = None            # a live.JZCalibrator while one is running
-        self.cal_result = None     # its finished report, kept for the page
+        self.motion_hint = ""      # why J/Z did not fire
+        self.cal = None            # a live.JZCalibrator while running
+        self.cal_result = None
         self.commits = []
-        # stats
         self.n_frames = 0
         self.n_hands = 0
         self.fps = 0.0
         self.ms = 0.0
         self._last_tick = None
         self._t0 = time.monotonic()
-        # frame-failure bookkeeping: nothing that happens inside a frame is
-        # allowed to reach streamlit-webrtc (see recv()), but it must not be
-        # invisible either.
         self.n_frame_errors = 0
         self.consec_errors = 0
         self.frame_error = ""
@@ -425,18 +313,8 @@ class LandmarkProcessor(VideoProcessorBase):
         self.det_private = None            # a healed detector, see _heal
         self._healed_at = 0.0
 
-    # -- per frame -----------------------------------------------------
     def recv(self, frame):
-        """The one thing that keeps the camera open.
-
-        This runs on streamlit-webrtc's worker thread, and `process.py` wraps
-        that thread in a try/except which stores whatever escapes and re-raises
-        it from the track's own `recv()`. The track then ends, the library calls
-        `stop()`, and the browser closes the video element - so a single raise
-        here is indistinguishable from "the camera switched itself off". No
-        frame failure may leave this method: it is counted, named in the
-        read-out panel, and the untouched frame is passed on instead.
-        """
+        """No exception may escape: anything raised here closes the camera."""
         try:
             out = self._recv(frame)
             self.consec_errors = 0
@@ -451,20 +329,11 @@ class LandmarkProcessor(VideoProcessorBase):
             return frame
 
     def _heal(self, now: float) -> None:
-        """Swap in a private landmarker when every frame has failed for a second.
-
-        A VIDEO graph that has been handed a timestamp it will not accept stays
-        unfixed for the rest of its life, and the epoch guard makes that nearly
-        impossible - but a corrupted graph would otherwise mean a page that
-        shows the camera and nothing else. `live_panel` re-points `self.detector`
-        at the cached one every 0.2 s, so the replacement has to live in its own
-        field; it is closed on the way out so the old graph is not left running.
-        """
+        """Swap in a fresh landmarker after ~1 s of consecutive frame failures."""
         self._healed_at = now
         self.consec_errors = 0
         if not config.HAND_MODEL_PATH.is_file():
-            # never let a frame handler start a model download; the stream
-            # shows the red box and waits for STOP/START instead
+            # a frame handler must never trigger a model download
             return
         old, self.det_private = (self.det_private,
                                  hb.create_detector(static=False,
@@ -481,7 +350,6 @@ class LandmarkProcessor(VideoProcessorBase):
         self.n_frames += 1
 
         if self.stride > 1 and self.n_frames % self.stride != 1:
-            # cheap mode for slow machines: keep the last result, redraw it
             return self._emit(img, started)
 
         detector = self.det_private or self.detector
@@ -490,8 +358,7 @@ class LandmarkProcessor(VideoProcessorBase):
 
         ts_ms = int((time.monotonic() - _ts_clock()) * 1000)
         if self._last_ts is not None and ts_ms <= self._last_ts:
-            # cannot happen while `_ts_clock` outruns the detector it belongs
-            # to; kept because MediaPipe rejects a repeat as hard as a rewind
+            # MediaPipe rejects a repeat as hard as a rewind
             ts_ms = self._last_ts + 1
         self._last_ts = ts_ms
         res = hb.detect_video(detector, downscale(img), ts_ms)
@@ -513,8 +380,6 @@ class LandmarkProcessor(VideoProcessorBase):
                 self.n_hands += 1
                 feats = normalize.features(res.landmarks)
                 probs = self.backend(feats)
-                # the SAME decision function src/live.py uses, so the browser
-                # app cannot disagree with the console app about a frame
                 call = live.frame_call(probs, self.labels, self.conf_min,
                                        self.margin, pairs=self.pairs)
                 self.raw_letter = call["top3"][0][0]
@@ -528,15 +393,10 @@ class LandmarkProcessor(VideoProcessorBase):
                 call_letter = call["letter"]
                 if self.motion_on:
                     cal = self.cal
-                    # the raw top-1 of this same frame, NOT the smoothed letter:
-                    # the J/Z precondition is about what the model sees right now
-                    # (true J reads as I, true Z reads as X), and the smoother is
-                    # one decision behind by construction
+                    # raw top-1, not the smoothed letter: the J/Z precondition is
+                    # about this frame, and the smoother lags by construction
                     shown, shown_p = self.raw_letter, self.raw_conf
                     if cal is not None and not cal.done:
-                        # the guided calibration watches the same frames the
-                        # typer uses; nothing is stored except the float
-                        # series inside p.motion
                         fired = cal.step(now, res.landmarks, shown, shown_p)
                         if cal.done:
                             self.cal_result = cal.result
@@ -564,7 +424,6 @@ class LandmarkProcessor(VideoProcessorBase):
             self.fps = self.n_frames / el if el > 0 else 0.0
         return self._emit(img, started)
 
-    # -- drawing the frame the user actually sees ----------------------
     def _emit(self, img, started):
         with self.lock:
             lm = self.lm
@@ -597,7 +456,6 @@ class LandmarkProcessor(VideoProcessorBase):
         cv2.putText(disp, tag, (25, 12 + th + 16), cv2.FONT_HERSHEY_SIMPLEX,
                     1.1, colour, 2, cv2.LINE_AA)
 
-        # top-3 with probabilities, so a near miss is visible instead of silent
         if top3:
             bx = 24
             by = 12 + th + 40
@@ -618,7 +476,6 @@ class LandmarkProcessor(VideoProcessorBase):
                        f"{top3[1][0]}" if uncertain else
                        f"under the {self.conf_min:.2f} gate")
                 if collide and uncertain:
-                    # name the rule, or a measured refusal looks like a dropout
                     why += (f" - {collide[0]}/{collide[1]} needs "
                             f"{need * 100:.0f}")
                 cv2.putText(disp, f"no vote: {why}", (bx, by + 3 * 24 + 14),
@@ -627,9 +484,6 @@ class LandmarkProcessor(VideoProcessorBase):
 
         cal = self.cal
         if self.motion_on and self.motion_hint:
-            # J and Z are not classes, so a missed stroke used to leave the page
-            # showing the MLP's nearest neighbour (usually I) with no hint that
-            # a motion rule had been holding and not firing.
             cv2.putText(disp, self.motion_hint[:80], (12, h - 48),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 165, 255), 1,
                         cv2.LINE_AA)
@@ -654,9 +508,6 @@ class LandmarkProcessor(VideoProcessorBase):
         return av.VideoFrame.from_ndarray(disp, format="bgr24")
 
 
-# --------------------------------------------------
-# Report parsing for the Model tab (read-only)
-# --------------------------------------------------
 def md_table(md: str, heading: str) -> pd.DataFrame | None:
     """Grab the first markdown table under a '## heading' section."""
     try:
@@ -674,9 +525,6 @@ def md_table(md: str, heading: str) -> pd.DataFrame | None:
     return pd.DataFrame(body, columns=header)
 
 
-# --------------------------------------------------
-# Page
-# --------------------------------------------------
 PROFILES = trained_profiles()
 if not PROFILES:
     st.error("No trained model found. Run this first:\n\n"
@@ -802,9 +650,7 @@ backend, labels = get_backend(backend_name, prof)
 tab_live, tab_photo, tab_snap, tab_model = st.tabs(
     ["Live Webcam", "Upload Photo", "Camera Snapshot", "Model & Results"])
 
-# --------------------------------------------------
 # Tab 1 - Live Webcam
-# --------------------------------------------------
 with tab_live:
     st.write(
         "Press **START**. Hold the sign still for about half a second and the "
@@ -872,14 +718,9 @@ with tab_live:
     def live_panel():
         """Refresh the read-out while the stream runs."""
         p = live_stream.video_processor
-        # A heartbeat measured between panel runs, independent of both
-        # `p.fps` (which averages over the processor's whole life) and
-        # `live_stream.state.playing` (which is a flag the browser component
-        # sends us, and is the first thing to go stale when that component
-        # reloads). It is the only number here that answers "are frames still
-        # reaching Python", which is the question "is the webcam working"
-        # actually asks - the picture in the box proves the camera is open, not
-        # that the model is being fed.
+        # A heartbeat measured between panel runs: unlike p.fps (lifetime average)
+        # and state.playing (a browser flag that goes stale), it proves frames are
+        # still reaching Python.
         now = time.monotonic()
         prev_n, prev_t = st.session_state.get("_hb", (None, None))
         in_fps = None
@@ -899,17 +740,13 @@ with tab_live:
             st.info("The webcam is not running. Press START above.")
             return
         if not live_stream.state.playing:
-            # the flag is wrong but the pipeline is not: keep rendering, and
-            # say which of the two broke, because "webcam is not working" and
-            # "the page lost track of the webcam" look identical from here
             st.warning(f"The page thinks the stream is stopped, but "
                        f"**{in_fps:.0f} frames/s are still arriving** - the "
                        "browser component lost its state flag, not the camera. "
                        "Press STOP then START to make the two agree.")
         p.backend, p.labels = backend, labels
         if p.det_private is None:
-            # a healed detector (_heal) stays in front until STOP/START;
-            # re-pointing it at the cached one here would undo the repair
+            # re-pointing a healed detector here would undo the repair
             p.detector = get_detector(False)
         p.conf_min, p.motion_on = conf_min, motion_on
         p.margin = float(margin_min)
@@ -942,8 +779,6 @@ with tab_live:
                         commits=list(p.commits[-8:]))
 
         if snap["err"]:
-            # The stream is still up - say so, and say what broke, instead of
-            # letting a skipped frame look like a dead model or a closed camera.
             st.error(
                 f"**The webcam is still running.** {snap['n_err']} frames have "
                 f"failed and been skipped; the last one raised "
@@ -957,9 +792,8 @@ with tab_live:
             if snap["held"]:
                 st.success(f"**{snap['held']}**  ({snap['conf'] * 100:.0f} %)")
             elif snap["uncertain"]:
-                # `need`, not the slider value: a measured pair rule can be the
-                # reason this frame is silent, and saying "needs 10" while
-                # refusing a 47-point gap would be a lie the user cannot debug.
+                # use `need`, not the slider value: a raised pair rule may be the
+                # reason this frame is silent
                 pair = (f" - {snap['collide'][0]}/{snap['collide'][1]} is one of "
                         f"the pairs this model cannot separate"
                         if snap["collide"] else "")
@@ -1056,9 +890,7 @@ with tab_live:
                        "press **Calibrate J / Z** above.")
         if motion_on and snap["motion"]:
             m = snap["motion"]
-            # which of the two preconditions is holding this frame up - saying
-            # "needs >= 1.6" while the display gate is what opened the watch
-            # would describe a rule that is not the one running
+            # report the gate that actually opened the watch
             why = (f"shape gate: index extension {m.get('idx_ext', 0):.2f} "
                    f"(needs >= 1.6)" if m.get("gate") == "shape" else
                    f"display gate: the model reads this frame as "
@@ -1080,14 +912,11 @@ with tab_live:
             st.dataframe(pd.DataFrame(rows), hide_index=True)
 
     if hasattr(st, "fragment"):
-        # A timed fragment refreshes only this panel, so the sliders and
-        # buttons above stay responsive while the webcam runs.
+        # a timed fragment keeps the sliders and buttons responsive
         live_panel = st.fragment(run_every=0.2)(live_panel)
     live_panel()
 
-# --------------------------------------------------
 # Tab 2 - Upload a photo
-# --------------------------------------------------
 with tab_photo:
     st.write("Any hand-sign photo. It is decoded, measured and forgotten - "
              "never written back to disk, never added to training data.")
@@ -1100,9 +929,7 @@ with tab_photo:
         show_prediction(analyse_rgb(np.asarray(img), backend_name, conf_min, prof),
                         "upload", show_feats)
 
-# --------------------------------------------------
 # Tab 3 - Camera snapshot
-# --------------------------------------------------
 with tab_snap:
     st.write("Take one still and predict it. Useful for checking a single "
              "handshape without the smoother in the way.")
@@ -1118,14 +945,12 @@ with tab_snap:
         show_prediction(analyse_rgb(np.asarray(img), backend_name, conf_min, prof),
                         "snap", show_feats)
 
-# --------------------------------------------------
 # Tab 4 - Model & results
-# --------------------------------------------------
 with tab_model:
     md = ""
     rp = config.profile_report(prof)
     if not rp.is_file():
-        rp = config.REPORT_MD          # profile not trained yet: show the summary
+        rp = config.REPORT_MD          # not trained yet: show the summary
     if rp.is_file():
         md = rp.read_text(encoding="utf-8")
         st.caption(f"results read from `{rp.name}`")

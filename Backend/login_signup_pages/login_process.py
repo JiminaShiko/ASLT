@@ -32,10 +32,7 @@ def _record_login_history(cursor, user_id: int, login_status: str, login_time: d
 
 
 def ensure_login_columns() -> None:
-    """
-    Safely adds `failed_login_attempts` and `locked_until` columns to `users`
-    if they do not already exist.
-    """
+    """Add `failed_login_attempts` / `locked_until` to `users` if missing."""
     conn = None
     try:
         conn = get_db_connection()
@@ -66,15 +63,7 @@ def ensure_login_columns() -> None:
 
 @login_bp.route("/api/login", methods=["POST"])
 def process_login():
-    """
-    Step 1 of Login:
-    1. If email does not exist OR status == 'pending' -> "Invalid Email!"
-    2. If status == 'banned' -> Banned community notification
-    3. If locked_until > now -> 24-hour lockout notification
-    4. Checks password_hash (max 3 attempts before 24-hour lock -> "Invalid Password")
-    5. On valid password: resets attempts, sends 6-digit Login OTP (`purpose='login'`),
-       and redirects to `/verify-otp?email=...&purpose=login`.
-    """
+    """Step 1 of login: password check (3 attempts, then 24h lock), then email a login OTP."""
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
@@ -106,7 +95,7 @@ def process_login():
                 conn.commit()
             return jsonify({"success": False, "message": "Invalid Password"}), 400
 
-        # 1. Non-existent or 'pending' account -> treat as Invalid Email!
+        # Unknown and 'pending' accounts both read as "Invalid Email!" to avoid enumeration.
         if not user or (user["status"] or "").lower() == "pending":
             if user:
                 _record_login_history(cursor, user["user_id"], "login_fail", now_utc)
@@ -115,7 +104,6 @@ def process_login():
 
         status = (user["status"] or "").lower()
 
-        # 2. Banned account check
         if status == "banned":
             _record_login_history(cursor, user["user_id"], "login_fail", now_utc)
             conn.commit()
@@ -129,7 +117,6 @@ def process_login():
         locked_until = user.get("locked_until")
         attempts = int(user.get("failed_login_attempts") or 0)
 
-        # 3. Check active 24-hour lockout
         if locked_until:
             if now_utc < locked_until:
                 _record_login_history(cursor, user["user_id"], "login_fail", now_utc)
@@ -150,7 +137,6 @@ def process_login():
                 )
                 conn.commit()
 
-        # 4. Verify password
         if not check_password_hash(user["password_hash"], password):
             attempts += 1
             _record_login_history(cursor, user["user_id"], "login_fail", now_utc)
@@ -184,7 +170,6 @@ def process_login():
                 conn.commit()
                 return jsonify({"success": False, "message": "Invalid Password"}), 401
 
-        # 5. Password matched -> reset failed attempts & generate 6-digit Login OTP
         user_id = user["user_id"]
         otp_code = _generate_otp(6)
         expires_at = now_utc + timedelta(seconds=LOGIN_OTP_EXPIRY_SECONDS)
@@ -258,12 +243,7 @@ def process_login():
 
 @login_bp.route("/api/login/verify-otp", methods=["POST"])
 def verify_login_otp():
-    """
-    Step 2 of Login:
-    Verifies the 6-digit Login OTP in `otp`, removes the used row,
-    records `login_history`, establishes the user/admin session,
-    and routes to `/admin-dashboard` or `/home`.
-    """
+    """Step 2 of login: consume the OTP, record history, open the session, route by role."""
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or session.get("pending_login_email") or "").strip().lower()
     otp_input = (data.get("otp") or "").strip()
@@ -334,7 +314,6 @@ def verify_login_otp():
 
         user_id = record["user_id"]
 
-        # Remove used login OTP
         cursor.execute(
             "DELETE FROM otp WHERE user_id = %s AND purpose = 'login'",
             (user_id,),

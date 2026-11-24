@@ -1,38 +1,7 @@
 """Measure the J/Z preconditions, letter by letter, on data already on disk.
 
-J and Z are not in the 24-class model, so they are typed by `live.MotionDecider`
-instead. That rule only judges a frame once a *precondition* says the frame is
-worth judging, and round 6 measured that the shipped precondition - an index-up
-shape with the other fingers curled - opens on 0 % of local J frames and 25 % of
-local Z frames, which is why J and Z never appeared no matter how the hand moved.
-This script is the measurement behind that sentence and behind the second
-precondition that replaced it (the classifier's own reading of the same frame).
-Round 7 added the `refused by the OLD flat ceiling` column: round 6 required an
-*unsure* reading on both routes, and on the cached photographs that cost the J
-route most of its real frames, because a J frame is a confident I.
-The percentages in the per-letter roll-up are frame-weighted; before that fix
-they were a mean of per-dataset means, which overstated the J gate.
-
-Two corpora, because they answer two different questions:
-
-  * **local ASL photographs** (`cache/landmarks.parquet`), read through the same
-    `normalize.features` + shipped weights the app uses. Consecutive cached
-    images of one letter are *different hands*, so the "trajectory" here is
-    photo-to-photo difference, not a stroke. That makes it a bound, not a
-    simulation: it can show that a precondition is unreachable or that a rule
-    fires on letters it should not, and it cannot show how the rule behaves on a
-    real continuous sign. Nothing here comes from a camera.
-  * **MSL dynamic clips** (`cache/msl_landmarks/*.npz`, Mexican Sign Language,
-    Zenodo 14689869 - see `reports/msl_motion.md`), which *are* real movement.
-    They are kept for the precondition comparison only: the corpus is another
-    language, so an MSL fire rate is not an ASL fire rate.
-
-Privacy: reads public dataset files, writes one markdown report. Never touches
-a camera, never saves an image, never trains.
-
-    python src/verify_jz_trigger.py
-    python src/verify_jz_trigger.py --per 600 --profile all
-    python src/verify_jz_trigger.py --no-msl
+Local photographs bound the rule (photo-to-photo, not a stroke); MSL clips are
+real movement but another language. Reads public files, writes one report.
 """
 from __future__ import annotations
 
@@ -51,10 +20,7 @@ import landmark_store as LS  # noqa: E402
 import live  # noqa: E402
 import normalize  # noqa: E402
 
-DT = 0.05          # 20 FPS, the same cadence `verify_livepath.py` pretends
-# Every letter, not just the suspects: the point of the per-letter table is to
-# show what the gate does to the *other* 24, so leaving O/P/Q/R/T/W/Y out would
-# hide exactly the false-fire evidence that matters.
+DT = 0.05          # 20 FPS, as verify_livepath.py; every letter so false fires stay visible
 WATCH = [chr(c) for c in range(ord("A"), ord("Z") + 1)]
 
 
@@ -73,8 +39,7 @@ def drive(lms: np.ndarray, top1=None, p1=None, th: dict | None = None,
           intended: str | None = None) -> dict:
     """Feed one stream through the shipped decider and count what happened.
 
-    `top1`/`p1` are per-frame arrays; pass None for both to measure the shipped
-    shape-gate-only behaviour, which is what the app did until round 6.
+    Pass top1=p1=None for shape-gate-only behaviour (the pre-round-6 app).
     """
     md = live.MotionDecider()
     if th:
@@ -91,17 +56,12 @@ def drive(lms: np.ndarray, top1=None, p1=None, th: dict | None = None,
         b = None if p1 is None else float(p1[k])
         r = md.update(t, lm, a, b)
         out["n"] += 1
-        # counted from the frame itself, never from what the decider remembered:
-        # a run with no readings has no `last_top1` at all, and a first version
-        # of this script therefore "measured" the shape gate at 0.0 % for every
-        # letter while still firing J on massey G - the contradiction is what
-        # gave the bug away.
+        # measured from the frame itself, never from decider memory (`last_top1`
+        # is absent in a run with no readings)
         up_shape = md.handshape(normalize.canonicalize(lm))[0]
         up_disp = md.display_candidate(a, b) is not None
-        # ... and this one is deliberately *not* read off the decider: round 7
-        # removed the confidence ceiling from the I -> J route, so asking
-        # `display_candidate` what it refuses would report 0 % and hide the
-        # measurement that justified the change. Judge the flat ceiling here.
+        # the flat ceiling is judged here, not via `display_candidate`: the
+        # decider no longer applies it to I, so asking it would always say 0 %
         named = live.MotionDecider.DISPLAY_FOR.get(a)
         out["ceil_refused"] += int(named is not None and b is not None
                                    and b >= live.MotionDecider.DISPLAY_P1_MAX)
@@ -156,10 +116,7 @@ def msl_table(backend, labels, per_clips: int, seed: int,
               clips_dir: Path | None = None) -> pd.DataFrame:
     """Per-letter fire rates on real clips.
 
-    `clips_dir` defaults to the MSL shards the project shipped with; point it at
-    `cache/jz_landmarks` (built by `src/extract_jz_landmarks.py`) to measure a
-    corpus you downloaded yourself. The shard schema is identical, so the same
-    live rule is replayed either way and no second code path exists.
+    `clips_dir` can point at cache/jz_landmarks: identical shard schema.
     """
     base = Path(clips_dir) if clips_dir else config.CACHE_DIR / "msl_landmarks"
     shards = sorted(base.glob("*.npz"))
@@ -222,8 +179,7 @@ def drive_msl(lms, dt: float, rd: pd.DataFrame | None = None) -> dict:
         out["blocked"] += int(bool(md.debug.get("blocked")))
         out["shape"] += int(md.handshape(normalize.canonicalize(lm))[0])
         out["disp"] += int(md.display_candidate(a, b) is not None)
-        # the flat round-6 ceiling, judged here for the same reason as in
-        # `drive`: the shipped decider no longer applies it to I.
+        # flat ceiling judged directly, as in `drive`
         out["ceil_refused"] += int(live.MotionDecider.DISPLAY_FOR.get(a) is not None
                                    and b is not None
                                    and b >= live.MotionDecider.DISPLAY_P1_MAX)
@@ -256,8 +212,7 @@ def main() -> int:
           f"profile={prof}  labels={''.join(labels)}")
 
     df = LS.load_raw()
-    # NOT landmark_store.keep_static_classes: that drops exactly the two letters
-    # this file is about. Single A-Z letters with enough rows to make a block.
+    # not keep_static_classes: that drops J and Z; keep letters with >= 50 rows
     df = df[df["letter"].str.fullmatch(r"[A-Z]") & df["letter"].isin(WATCH)]
     df = df[df.groupby("letter")["letter"].transform("size") >= 50]
     loc = local_table(df, backend, labels, args.per, args.seed)
@@ -271,11 +226,7 @@ def main() -> int:
     false_msl_old = int((oth_msl["j_old"] + oth_msl["z_old"]).sum()) if oth_msl is not None else 0
     false_msl_new = int((oth_msl["j_new"] + oth_msl["z_new"]).sum()) if oth_msl is not None else 0
 
-    # Frame-weighted, never a mean of means. The old roll-up averaged the
-    # per-dataset percentages, so danrasband's 30 cached J frames counted as
-    # much as grassknoted's 300 and reported the display gate on local J as
-    # 47.3 % when the frames themselves say 24 %. The counts below are the
-    # ones the round-7 decision was made on, so they have to be honest.
+    # frame-weighted roll-up, never a mean of per-dataset means
     PCT_COLS = ["shape_pct", "disp_pct", "allow_j_pct", "allow_z_pct",
                 "shown_I_pct", "shown_X_pct", "ceil_refused_pct"]
     SUM_COLS = ["j_old", "z_old", "j_new", "z_new", "blocked"]
@@ -297,9 +248,7 @@ def main() -> int:
         sub = agg[agg["letter"] == letter]
         return float(sub[col].iloc[0]) if len(sub) else float("nan")
 
-    # Which non-J/Z letters gained or lost fires, said out loud instead of
-    # assumed away: opening the I route can only be honest if the report is
-    # willing to name the letters it made talk.
+    # name the non-J/Z letters the I exemption made fire
     fr = agg[~agg["letter"].isin(["J", "Z"])].copy()
     fr["delta"] = (fr["j_new"] + fr["z_new"]) - (fr["j_old"] + fr["z_old"])
     gained = fr[fr["delta"] > 0].sort_values("delta", ascending=False)
@@ -480,7 +429,7 @@ def main() -> int:
            "`update()` called without a reading is byte-for-byte the old rule, "
            "which is what `live.py --logic-test` drives.\n"]
 
-    # The honest remainder: what the change did NOT fix.
+    # what the change did not fix
     ztot = tot["z_new"]
     j_msl = z_msl = n_msl_j = 0
     z_disp_msl = float("nan")
