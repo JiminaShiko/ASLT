@@ -19,6 +19,7 @@ from login_signup_pages.login_process import ensure_login_columns, login_bp
 from login_signup_pages.signup_process import ensure_auth_tables, signup_bp
 from login_signup_pages.profile_process import profile_bp
 from agent_mail import agent_mail_bp
+from user.api import api_bp as translation_api_bp
 from user.text_to_sign import text_to_sign_bp
 from cursor_effects_process import cursor_bp
 from user_homepage.learning_process import learning_bp
