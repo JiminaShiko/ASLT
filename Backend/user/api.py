@@ -2,7 +2,8 @@
 Flask bridge from the HTML translator to the ASL landmark console pipeline.
 
 Shares the detector, backend, frame gate, smoother, motion rules, and overlay
-renderer with asl_landmark_app/src/live.py. Run from this folder: python api.py
+renderer with asl_landmark_app/src/live.py. Registered on the main app in
+Backend/app.py.
 """
 
 import base64
@@ -26,8 +27,7 @@ os.environ.setdefault("ABSL_PROPAGATE_CXX_STD", "1")
 
 import cv2
 import numpy as np
-from flask import Blueprint, Flask, jsonify, request, send_file
-from flask_cors import CORS
+from flask import Blueprint, jsonify, request, send_file
 from PIL import Image
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -41,7 +41,6 @@ from asl_landmark_app.src import hand_backend, live as landmark_live  # noqa: E4
 from asl_landmark_app.src import normalize  # noqa: E402
 from videoModel.src import config as words_config  # noqa: E402
 
-PORT = 5000
 MAX_SIDE = 640
 TTS_MAX_CHARS = 500
 TTS_CHUNK_CHARS = 200
@@ -75,12 +74,6 @@ WORD_DEFAULT_SETTINGS = {
 }
 
 api_bp = Blueprint("asl_translation_api", __name__)
-
-app = Flask(__name__)
-CORS(app, origins=[
-    "http://127.0.0.1:8000", "http://localhost:8000",
-    "http://127.0.0.1:5500", "http://localhost:5500", "null",
-])
 
 SESSIONS = {}
 SESSIONS_LOCK = threading.Lock()
@@ -815,13 +808,3 @@ def words_live_stop():
     text = session.last_result.get("text", "")
     session.close()
     return jsonify({"text": text})
-
-
-app.register_blueprint(api_bp)
-
-
-if __name__ == "__main__":
-    print(f"\nASL landmark API running on http://127.0.0.1:{PORT}")
-    print("Serving the same live.py frame gate, smoother, J/Z rules, and overlay.")
-    print("Keep this terminal open while using the website.\n")
-    app.run(host="0.0.0.0", port=PORT, debug=False, threaded=True)

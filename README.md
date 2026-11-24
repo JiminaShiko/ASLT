@@ -33,7 +33,7 @@ python app.py            # http://127.0.0.1:5000/home
 ```
 
 `Backend/app.py` registers the translation API itself, so there is one server and
-one origin. Do not also start `user/api.py` (it uses the same port).
+one origin. `user/api.py` only defines the blueprint and has no standalone server.
 
 Front-end pages can also be opened from a static server (e.g. VS Code Live Server)
 while the backend runs on port 5000. To test translation without logging in, start
