@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signrest — Learning</title>
+  <style>
+    .learn-page-root {
+      position: relative;
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 6px 18px 24px 18px;
+      font-family: 'Lora', Georgia, serif;
+      color: var(--text-primary, #1c311e);
+      box-sizing: border-box;
+    }
+
+    .learn-top-heading {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin: 0 0 16px 0;
+      padding: 0 4px;
+    }
+
+    .learn-top-heading h2 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1.15;
+    }
+
+    .learn-back-arrow {
+      background: transparent;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 4px;
+      margin-top: 2px;
+      border-radius: 50%;
+      transition: transform 0.18s ease;
+      flex-shrink: 0;
+    }
+
+    .learn-back-arrow:hover {
+      transform: translateX(-3px);
+    }
+
+    .learn-top-heading p {
+      font-size: 0.88rem;
+      opacity: 0.85;
+      margin-top: 3px;
+    }
+
+    /* =========================================================
+       TOP-RIGHT MILESTONE NOTIFICATION (`learning_noti.png` + 5 BARS)
+       Appears for >=50% and 100% completion with 5s bar countdown
+       ========================================================= */
+    .learn-noti-overlay {
+      position: fixed;
+      top: 76px;
+      right: 26px;
+      z-index: 10000;
+      transform: translateX(130%);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.42s cubic-bezier(0.22, 1.15, 0.36, 1), opacity 0.3s ease;
+    }
+
+    .learn-noti-overlay.show {
+      transform: translateX(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .learn-noti-card {
+      position: relative;
+      width: 410px;
+      max-width: calc(100vw - 44px);
+      background: #cddbc7;
+      color: #162217;
+      padding: 22px 44px 16px 86px;
+      box-shadow: 0 14px 32px rgba(12, 24, 14, 0.24);
+      text-align: center;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.94rem;
+      font-weight: 500;
+      line-height: 1.42;
+    }
+
+    .learn-noti-mascot {
+      position: absolute;
+      top: -36px;
+      left: -38px;
+      width: 124px;
+      height: 124px;
+      object-fit: contain;
+      pointer-events: none;
+      filter: drop-shadow(0 8px 14px rgba(15, 28, 16, 0.26));
+      transform: rotate(-4deg);
+    }
+
+    body.dark-mode .learn-noti-card {
+      background: #2b3f30;
+      color: #eef4ec;
+    }
+
+    /* Overlapping Graduation Sprout (`learning_noti.png`) on Top-Left */
+    .learn-noti-mascot {
+      position: absolute;
+      top: -22px;
+      left: -24px;
+      width: 84px;
+      height: 84px;
+      object-fit: contain;
+      pointer-events: none;
+      filter: drop-shadow(0 6px 10px rgba(15, 28, 16, 0.22));
+    }
+
+    .learn-noti-close-btn {
+      position: absolute;
+      top: 9px;
+      right: 10px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: none;
+      background: #555941;
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.76rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .learn-noti-close-btn:hover {
+      background: #3e422e;
+    }
+
+    /* 5-Segment Countdown Bar at Bottom of Notification Card */
+    .learn-noti-bars {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -5px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      padding: 0 4px;
+    }
+
+    .learn-noti-seg {
+      height: 3px;
+      background: #1f2b20;
+      border-radius: 2px;
+      transition: opacity 0.28s ease, transform 0.28s ease;
+    }
+
+    body.dark-mode .learn-noti-seg {
+      background: #b8ceb8;
+    }
+
+    .learn-noti-seg.spent {
+      opacity: 0.16;
+      transform: scaleX(0.85);
+    }
+
+    /* =========================================================
+       2 FULL-COLOR LEARNING CARDS (WHITEBOARD ASL + MATCHA WLASL)
+       ========================================================= */
+    .learn-cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      margin-top: 8px;
+    }
+
+    .learn-track-col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .learn-board-card {
+      position: relative;
+      border-radius: 18px;
+      padding: 28px 26px 26px 26px;
+      min-height: 235px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      box-shadow: 0 14px 30px rgba(15, 28, 16, 0.16);
+      transition: transform 0.25s cubic-bezier(0.22, 1.3, 0.36, 1), box-shadow 0.25s ease;
+      overflow: hidden;
+    }
+
+    .learn-board-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 38px rgba(15, 28, 16, 0.22);
+    }
+
+    .asl-whiteboard-card {
+      background: #ffffff;
+      color: #1c311e;
+      border: 2px solid #d5e0d0;
+    }
+
+    .wlasl-matcha-card {
+      background: #88a445;
+      color: #ffffff;
+      border: 2px solid #6e8932;
+    }
+
+    body.dark-mode .wlasl-matcha-card {
+      background: #5b752b;
+      border-color: #799640;
+    }
+
+    .board-badge {
+      display: inline-block;
+      align-self: flex-start;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .asl-whiteboard-card .board-badge {
+      background: #eef4e8;
+      color: #3a5a38;
+    }
+
+    .wlasl-matcha-card .board-badge {
+      background: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+    }
+
+    .board-main-info h3 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.78rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .board-main-info p {
+      font-size: 0.9rem;
+      line-height: 1.45;
+      opacity: 0.88;
+      max-width: 85%;
+    }
+
+    .board-footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+    }
+
+    .board-count-tag {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      opacity: 0.85;
+    }
+
+    .board-arrow-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+    }
+
+    .asl-whiteboard-card .board-arrow-btn {
+      background: #1c311e;
+      color: #ffffff;
+    }
+
+    .wlasl-matcha-card .board-arrow-btn {
+      background: #ffffff;
+      color: #4f6820;
+    }
+
+    .learn-board-card:hover .board-arrow-btn {
+      transform: translateX(4px) scale(1.06);
+    }
+
+    /* Progress Bar Under Each Card */
+    .learn-progress-box {
+      background: rgba(242, 246, 236, 0.86);
+      border: 1px solid rgba(44, 74, 44, 0.2);
+      border-radius: 14px;
+      padding: 12px 16px;
+      backdrop-filter: blur(8px);
+    }
+
+    body.dark-mode .learn-progress-box {
+      background: rgba(24, 39, 29, 0.86);
+      border-color: rgba(175, 212, 175, 0.22);
+    }
+
+    .progress-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin-bottom: 7px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      border-radius: 9999px;
+      background: rgba(44, 74, 44, 0.14);
+      overflow: hidden;
+    }
+
+    body.dark-mode .progress-track {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 9999px;
+      transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .asl-fill {
+      background: linear-gradient(90deg, #4b7447 0%, #28462c 100%);
+    }
+
+    .wlasl-fill {
+      background: linear-gradient(90deg, #9ec04e 0%, #6d892f 100%);
+    }
+
+    /* =========================================================
+       DIGITAL TEXTBOOK VIEW (FITS CLEANLY WITHIN SCREEN HEIGHT)
+       ========================================================= */
+    .textbook-view {
+      display: none;
+      background: rgba(247, 250, 243, 0.94);
+      border: 1.5px solid rgba(44, 74, 44, 0.24);
+      border-radius: 20px;
+      padding: 16px 20px 18px 20px;
+      box-shadow: 0 16px 38px rgba(15, 28, 16, 0.18);
+      backdrop-filter: blur(12px);
+    }
+
+    body.dark-mode .textbook-view {
+      background: rgba(22, 36, 27, 0.94);
+      border-color: rgba(175, 212, 175, 0.25);
+    }
+
+    .textbook-view.active {
+      display: block;
+    }
+
+    .tb-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(44, 74, 44, 0.18);
+      margin-bottom: 12px;
+    }
+
+    .tb-back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #28462c;
+      color: #ffffff;
+      border: none;
+      border-radius: 9999px;
+      padding: 6px 15px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .tb-title-group h3 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.45rem;
+      font-weight: 700;
+    }
+
+    .tb-page-counter {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      background: rgba(136, 164, 69, 0.22);
+    }
+
+    .tb-chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      gap: 10px;
+      max-height: calc(100vh - 325px);
+      min-height: 210px;
+      overflow-y: auto;
+      padding: 4px 4px 8px 4px;
+    }
+
+    .tb-chart-card {
+      position: relative;
+      background: #ffffff;
+      border: 1.5px solid #d5e0d0;
+      border-radius: 12px;
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      text-align: center;
+      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    body.dark-mode .tb-chart-card {
+      background: rgba(16, 27, 20, 0.88);
+      border-color: rgba(175, 212, 175, 0.22);
+    }
+
+    .tb-chart-card:hover {
+      transform: translateY(-2px);
+      border-color: #88a445;
+      box-shadow: 0 6px 14px rgba(15, 28, 16, 0.14);
+    }
+
+    .tb-chart-card.learned {
+      border-color: #799937;
+      background: rgba(235, 245, 223, 0.92);
+    }
+
+    body.dark-mode .tb-chart-card.learned {
+      background: rgba(45, 72, 42, 0.65);
+    }
+
+    .tb-chart-thumb,
+    .tb-chart-video-thumb {
+      width: 68px;
+      height: 62px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #f5f8f1;
+      display: block;
+    }
+
+    body.dark-mode .tb-chart-thumb,
+    body.dark-mode .tb-chart-video-thumb {
+      background: #142218;
+    }
+
+    .tb-chart-label {
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .tb-chart-check {
+      position: absolute;
+      top: 5px;
+      right: 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #5b7c22;
+    }
+
+    .tb-chart-footer {
+      display: flex;
+      justify-content: center;
+      margin-top: 12px;
+      padding-top: 4px;
+    }
+
+    .tb-one-by-one-btn {
+      background: linear-gradient(180deg, #98b552 0%, #83a03f 100%);
+      color: #142215;
+      border: 1.5px solid #4c6420;
+      border-radius: 9999px;
+      padding: 10px 30px;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #4c6420, 0 8px 18px rgba(15, 28, 16, 0.2);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .tb-one-by-one-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 #4c6420, 0 12px 22px rgba(15, 28, 16, 0.24);
+    }
+
+    .tb-one-by-one-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #4c6420;
+    }
+
+    .tb-spread {
+      display: none;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 24px;
+      align-items: center;
+      background: #ffffff;
+      border: 1.5px solid #d5e0d0;
+      border-radius: 16px;
+      padding: 18px;
+      min-height: 290px;
+    }
+
+    .tb-spread.active {
+      display: grid;
+    }
+
+    body.dark-mode .tb-spread {
+      background: rgba(16, 27, 20, 0.88);
+      border-color: rgba(175, 212, 175, 0.22);
+    }
+
+    .tb-media-frame {
+      width: 100%;
+      height: 255px;
+      border-radius: 12px;
+      background: #f3f7ee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    body.dark-mode .tb-media-frame {
+      background: #122017;
+    }
+
+    .tb-media-frame img,
+    .tb-media-frame video {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 10px;
+    }
+
+    .tb-lesson-side {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .tb-sign-word {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .tb-learned-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 9999px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.76rem;
+      font-weight: 600;
+      background: rgba(136, 164, 69, 0.22);
+      color: #3d5a1c;
+    }
+
+    body.dark-mode .tb-learned-pill {
+      color: #bce079;
+    }
+
+    .tb-nav-controls {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .tb-nav-btn {
+      background: #88a445;
+      color: #142215;
+      border: none;
+      border-radius: 9999px;
+      padding: 9px 18px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    .tb-nav-btn:hover:not(:disabled) {
+      background: #779338;
+      transform: translateY(-1px);
+    }
+
+    .tb-nav-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .tb-chart-return-btn {
+      background: rgba(40, 70, 44, 0.14);
+      color: var(--text-primary, #1c311e);
+      border: 1px solid rgba(40, 70, 44, 0.25);
+      border-radius: 9999px;
+      padding: 8px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* =========================================================
+       WALKING SPROUT MASCOT (`green_element_5`) — SHOWN ONLY ON START PAGE
+       ========================================================= */
+    .quiz-sprout-walker {
+      position: fixed;
+      bottom: 24px;
+      left: 34px;
+      z-index: 35;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      animation: sproutPatrol 14s ease-in-out infinite;
+    }
+
+    .quiz-sprout-walker.hidden-in-book {
+      display: none;
+    }
+
+    @keyframes sproutPatrol {
+      0%, 100% { transform: translateX(0px); }
+      50%      { transform: translateX(95px); }
+    }
+
+    .quiz-sprout-walker:hover {
+      animation-play-state: paused;
+    }
+
+    .sprout-speech-bubble {
+      position: relative;
+      background: #ffffff;
+      color: #1c311e;
+      border: 1.5px solid #4c6420;
+      border-radius: 16px;
+      padding: 7px 14px;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      white-space: nowrap;
+      box-shadow: 0 6px 16px rgba(15, 28, 16, 0.18);
+      margin-bottom: 6px;
+      transition: transform 0.2s ease;
+    }
+
+    .sprout-speech-bubble::after {
+      content: "";
+      position: absolute;
+      bottom: -7px;
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+      width: 11px;
+      height: 11px;
+      background: #ffffff;
+      border-right: 1.5px solid #4c6420;
+      border-bottom: 1.5px solid #4c6420;
+    }
+
+    .quiz-sprout-walker:hover .sprout-speech-bubble {
+      transform: scale(1.06);
+    }
+
+    @keyframes sproutWaddle {
+      0%, 100% { transform: translateY(0px) rotate(-5deg); }
+      25%      { transform: translateY(-6px) rotate(0deg); }
+      50%      { transform: translateY(0px) rotate(5deg); }
+      75%      { transform: translateY(-6px) rotate(0deg); }
+    }
+
+    .sprout-character-img {
+      width: 82px;
+      height: 82px;
+      object-fit: contain;
+      animation: sproutWaddle 1.1s ease-in-out infinite;
+      filter: drop-shadow(0 8px 14px rgba(15, 28, 16, 0.24));
+    }
+
+    /* =========================================================
+       QUIZ SELECTION & QUIZ PLAYER MODALS
+       ========================================================= */
+    .quiz-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      background: rgba(12, 22, 14, 0.52);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .quiz-modal-backdrop.open {
+      display: flex;
+    }
+
+    .quiz-modal-card {
+      width: 100%;
+      max-width: 620px;
+      max-height: 86vh;
+      overflow-y: auto;
+      background: #f4f7ef;
+      color: #1c311e;
+      border: 2px solid #597430;
+      border-radius: 22px;
+      padding: 24px 26px;
+      box-shadow: 0 22px 48px rgba(10, 20, 12, 0.34);
+    }
+
+    body.dark-mode .quiz-modal-card {
+      background: #1a2b20;
+      color: #eef4ec;
+      border-color: #88a445;
+    }
+
+    .qm-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(44, 74, 44, 0.2);
+      margin-bottom: 16px;
+    }
+
+    .qm-header h3 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.65rem;
+      font-weight: 700;
+    }
+
+    .qm-close-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: none;
+      background: #28462c;
+      color: #ffffff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .quiz-list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      background: #ffffff;
+      border: 1.5px solid #d5e0d0;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease;
+    }
+
+    body.dark-mode .quiz-list-item {
+      background: #23382b;
+      border-color: rgba(175, 212, 175, 0.22);
+    }
+
+    .quiz-list-item:hover {
+      transform: translateY(-2px);
+      border-color: #88a445;
+    }
+
+    .quiz-start-pill {
+      background: #88a445;
+      color: #142215;
+      border: none;
+      border-radius: 9999px;
+      padding: 7px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .qp-question-media {
+      max-width: 240px;
+      max-height: 190px;
+      border-radius: 12px;
+      margin: 10px auto 14px auto;
+      display: block;
+      object-fit: contain;
+      background: #ffffff;
+      padding: 6px;
+    }
+
+    .qp-options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 14px 0 18px 0;
+    }
+
+    .qp-option-btn {
+      text-align: left;
+      padding: 11px 16px;
+      border-radius: 12px;
+      border: 1.5px solid rgba(44, 74, 44, 0.28);
+      background: #ffffff;
+      color: #1c311e;
+      font-family: 'Lora', Georgia, serif;
+      font-size: 0.94rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    body.dark-mode .qp-option-btn {
+      background: #253b2d;
+      color: #eef4ec;
+      border-color: rgba(175, 212, 175, 0.25);
+    }
+
+    .qp-option-btn.selected {
+      background: #88a445;
+      color: #142215;
+      border-color: #4c6420;
+      font-weight: 700;
+    }
+
+    @media (max-width: 760px) {
+      .learn-cards-grid,
+      .tb-spread.active {
+        grid-template-columns: 1fr;
+      }
+      .quiz-sprout-walker {
+        left: 14px;
+        bottom: 54px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div id="learningPageRoot" class="learn-page-root">
+
+  <!-- Top-Right Milestone Notification (`learning_noti.png` + 5 Timer Bars) -->
+  <div id="learnNotiOverlay" class="learn-noti-overlay" role="status" aria-live="polite">
+    <div class="learn-noti-card">
+      <img src="../assets/images/learning_noti.png" alt="" class="learn-noti-mascot" draggable="false" />
+      <button type="button" id="learnNotiCloseBtn" class="learn-noti-close-btn" aria-label="Close notification">X</button>
+      <div id="learnNotiText"></div>
+      <div class="learn-noti-bars" id="learnNotiBars">
+        <span class="learn-noti-seg"></span>
+        <span class="learn-noti-seg"></span>
+        <span class="learn-noti-seg"></span>
+        <span class="learn-noti-seg"></span>
+        <span class="learn-noti-seg"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="learn-top-heading">
+    <button type="button" id="learnBackBtn" class="learn-back-arrow" aria-label="Back to Translation" title="Back">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+    </button>
+    <div>
+      <h2>Signrest Learning Studio</h2>
+      <p>Explore interactive sign charts, learn step by step, and test your skills with quizzes.</p>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       HUB VIEW: 2 FULL-COLOR BOARD CARDS + PROGRESS BARS
+       ========================================================= -->
+  <div id="learnHubView" class="learn-cards-grid">
+
+    <!-- 1. Whiteboard Card: ASL Alphabet -->
+    <div class="learn-track-col">
+      <div id="openAslBookCard" class="learn-board-card asl-whiteboard-card" role="button" tabindex="0">
+        <span class="board-badge">Alphabet Textbook</span>
+        <div class="board-main-info">
+          <h3>ASL Fingerspelling</h3>
+          <p>Master all 26 capital letters (A – Z) with clear handshape illustrations and videos.</p>
+        </div>
+        <div class="board-footer-row">
+          <span class="board-count-tag">26 Letters</span>
+          <button type="button" class="board-arrow-btn" aria-label="Open ASL Digital Textbook">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="learn-progress-box">
+        <div class="progress-label-row">
+          <span>ASL Progress</span>
+          <span id="aslProgressText">0 / 26 (0%)</span>
+        </div>
+        <div class="progress-track">
+          <div id="aslProgressFill" class="progress-fill asl-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Matcha Green Card: WLASL Words -->
+    <div class="learn-track-col">
+      <div id="openWlaslBookCard" class="learn-board-card wlasl-matcha-card" role="button" tabindex="0">
+        <span class="board-badge">Word-Level Textbook</span>
+        <div class="board-main-info">
+          <h3>WLASL Vocabulary</h3>
+          <p>Watch real video demonstrations for 56 essential everyday ASL words.</p>
+        </div>
+        <div class="board-footer-row">
+          <span class="board-count-tag">56 Words</span>
+          <button type="button" class="board-arrow-btn" aria-label="Open WLASL Digital Textbook">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="learn-progress-box">
+        <div class="progress-label-row">
+          <span>WLASL Progress</span>
+          <span id="wlaslProgressText">0 / 56 (0%)</span>
+        </div>
+        <div class="progress-track">
+          <div id="wlaslProgressFill" class="progress-fill wlasl-fill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       DIGITAL TEXTBOOK VIEW (STARTS AS CHART + ONE-BY-ONE MODE)
+       ========================================================= -->
+  <div id="digitalTextbookView" class="textbook-view">
+    <div class="tb-topbar">
+      <button type="button" id="tbBackToHubBtn" class="tb-back-btn">&larr; Back to Books</button>
+      <div class="tb-title-group">
+        <h3 id="tbBookTitle">ASL Alphabet Chart</h3>
+      </div>
+      <span id="tbPageCounter" class="tb-page-counter">26 Signs</span>
+    </div>
+
+    <div id="tbChartModeWrapper">
+      <div id="tbChartGrid" class="tb-chart-grid"></div>
+      <div class="tb-chart-footer">
+        <button type="button" id="tbStartOneByOneBtn" class="tb-one-by-one-btn">
+          Start Learning One by One &rarr;
+        </button>
+      </div>
+    </div>
+
+    <div id="tbSpreadView" class="tb-spread">
+      <div id="tbMediaFrame" class="tb-media-frame"></div>
+
+      <div class="tb-lesson-side">
+        <span id="tbLearnedBadge" class="tb-learned-pill">&#10003; Recorded in your progress</span>
+        <div id="tbSignWord" class="tb-sign-word">A</div>
+        <p id="tbSignHint" style="font-size:0.9rem; opacity:0.84;">Practice this handshape carefully, then move to the next sign.</p>
+
+        <div class="tb-nav-controls">
+          <button type="button" id="tbPrevBtn" class="tb-nav-btn">&larr; Previous</button>
+          <button type="button" id="tbNextBtn" class="tb-nav-btn">Next &rarr;</button>
+          <button type="button" id="tbBackToChartBtn" class="tb-chart-return-btn">View Full Chart</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       WALKING SPROUT MASCOT (`green_element_5`) — SHOWN ONLY ON START PAGE
+       ========================================================= -->
+  <div id="quizSproutWalker" class="quiz-sprout-walker" role="button" tabindex="0" aria-label="Open Quizzes">
+    <div class="sprout-speech-bubble">Here is quizzes for ya!</div>
+    <img id="sproutMascotImg" src="../assets/images/green_element_5.png" alt="Quiz Sprout Mascot" class="sprout-character-img" draggable="false" />
+  </div>
+
+  <!-- =========================================================
+       QUIZ SELECTION & QUIZ PLAYER MODAL
+       ========================================================= -->
+  <div id="quizModalBackdrop" class="quiz-modal-backdrop">
+    <div class="quiz-modal-card">
+      <div class="qm-header">
+        <h3 id="qmModalTitle">Available Quizzes</h3>
+        <button type="button" id="qmCloseBtn" class="qm-close-btn" aria-label="Close">X</button>
+      </div>
+      <div id="qmBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function initSignrestLearning() {
+
+  document.getElementById("learnBackBtn").addEventListener("click", () => {
+    const brandLink = document.querySelector(".brand-link[data-page-link='translation']");
+    if (brandLink) brandLink.click();
+    else window.location.href = "/home?page=translation";
+  });
+  
+  const hubView = document.getElementById("learnHubView");
+  const bookView = document.getElementById("digitalTextbookView");
+  const sproutWalker = document.getElementById("quizSproutWalker");
+
+  const tbTitle = document.getElementById("tbBookTitle");
+  const tbCounter = document.getElementById("tbPageCounter");
+
+  const tbChartModeWrapper = document.getElementById("tbChartModeWrapper");
+  const tbChartGrid = document.getElementById("tbChartGrid");
+  const tbStartOneByOneBtn = document.getElementById("tbStartOneByOneBtn");
+
+  const tbSpreadView = document.getElementById("tbSpreadView");
+  const tbMediaFrame = document.getElementById("tbMediaFrame");
+  const tbSignWord = document.getElementById("tbSignWord");
+  const tbSignHint = document.getElementById("tbSignHint");
+  const tbPrevBtn = document.getElementById("tbPrevBtn");
+  const tbNextBtn = document.getElementById("tbNextBtn");
+  const tbBackToChartBtn = document.getElementById("tbBackToChartBtn");
+
+  const notiOverlay = document.getElementById("learnNotiOverlay");
+  const notiText = document.getElementById("learnNotiText");
+  const notiCloseBtn = document.getElementById("learnNotiCloseBtn");
+  const notiSegs = Array.from(document.querySelectorAll("#learnNotiBars .learn-noti-seg"));
+  let notiInterval = null;
+
+  function hideMilestoneNoti() {
+    notiOverlay.classList.remove("show");
+    if (notiInterval) {
+      clearInterval(notiInterval);
+      notiInterval = null;
+    }
+  }
+
+  function showMilestoneNoti(htmlMessage) {
+    let remainingBars = 5;
+    notiText.innerHTML = htmlMessage;
+    notiSegs.forEach((seg) => seg.classList.remove("spent"));
+    notiOverlay.classList.add("show");
+
+    if (notiInterval) clearInterval(notiInterval);
+    notiInterval = setInterval(() => {
+      remainingBars -= 1;
+      if (remainingBars >= 0 && notiSegs[remainingBars]) {
+        notiSegs[remainingBars].classList.add("spent");
+      }
+      if (remainingBars <= 0) {
+        hideMilestoneNoti();
+      }
+    }, 1000);
+  }
+
+  notiCloseBtn.addEventListener("click", hideMilestoneNoti);
+
+  const sproutImg = document.getElementById("sproutMascotImg");
+  sproutImg.onerror = () => {
+    sproutImg.onerror = null;
+    sproutImg.src = "../assets/images/green_element_5.jpg";
+  };
+
+  // J and Z are .mp4 under `alphabet/`; all other letters are .png under `alphabet/`
+  const VIDEO_LETTERS = new Set(["J", "Z"]);
+  const DEFAULT_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((ch) => {
+    const isVid = VIDEO_LETTERS.has(ch);
+    return {
+      key: ch,
+      label: ch,
+      media_url: `/text_to_sign_demo/alphabet/${ch}.${isVid ? "mp4" : "png"}`,
+      media_type: isVid ? "video" : "image"
+    };
+  });
+
+  // Word videos are under `text_to_sign_demo/word/<word>.mp4`
+  const DEFAULT_WORDS = [
+    "eat", "family", "friend", "good", "hello", "help", "name", "sad",
+    "school", "drink", "thanks", "love", "bye", "sorry", "yes", "no",
+    "happy", "please", "bad", "home", "me", "my", "you", "your",
+    "what", "where", "who", "want", "need", "like", "go", "come",
+    "stop", "more", "water", "understand", "now", "today", "work", "wait",
+    "finish", "sleep", "bathroom", "hungry", "thirsty", "when", "why", "how",
+    "apple", "bread", "chicken", "tomorrow", "sick", "hurt", "doctor", "medicine"
+  ].map((w) => ({
+    key: w,
+    label: w.charAt(0).toUpperCase() + w.slice(1),
+    media_url: `/text_to_sign_demo/word/${w}.mp4`,
+    media_type: "video"
+  }));
+
+  let curriculum = {
+    asl: { total: 26, completed: [], items: DEFAULT_LETTERS },
+    wlasl: { total: 56, completed: [], items: DEFAULT_WORDS }
+  };
+
+  // Tracks whether the 50% or 100% milestone toast was already shown this session
+  const announcedMilestones = {
+    asl_50: false,
+    asl_100: false,
+    wlasl_50: false,
+    wlasl_100: false
+  };
+
+  let activeCategory = "asl";
+  let currentIndex = 0;
+
+  function updateProgressBars(checkMilestoneForCategory = null) {
+    const aslDone = new Set(curriculum.asl.completed).size;
+    const aslTotal = curriculum.asl.total || 26;
+    const aslPct = Math.round((aslDone / aslTotal) * 100);
+    document.getElementById("aslProgressText").textContent = `${aslDone} / ${aslTotal} (${aslPct}%)`;
+    document.getElementById("aslProgressFill").style.width = `${aslPct}%`;
+
+    const wlaslDone = new Set(curriculum.wlasl.completed).size;
+    const wlaslTotal = curriculum.wlasl.total || 56;
+    const wlaslPct = Math.round((wlaslDone / wlaslTotal) * 100);
+    document.getElementById("wlaslProgressText").textContent = `${wlaslDone} / ${wlaslTotal} (${wlaslPct}%)`;
+    document.getElementById("wlaslProgressFill").style.width = `${wlaslPct}%`;
+
+    if (checkMilestoneForCategory === "asl") {
+      if (aslPct >= 100 && !announcedMilestones.asl_100) {
+        announcedMilestones.asl_100 = true;
+        announcedMilestones.asl_50 = true;
+        showMilestoneNoti("100% of ASL Fingerspelling is completed!<br>Congratulations on mastering all 26 letters!");
+      } else if (aslPct >= 50 && aslPct < 100 && !announcedMilestones.asl_50) {
+        announcedMilestones.asl_50 = true;
+        showMilestoneNoti("Over 50% of ASL Fingerspelling completed!<br>Keep going — you're more than halfway!");
+      }
+    } else if (checkMilestoneForCategory === "wlasl") {
+      if (wlaslPct >= 100 && !announcedMilestones.wlasl_100) {
+        announcedMilestones.wlasl_100 = true;
+        announcedMilestones.wlasl_50 = true;
+        showMilestoneNoti("100% of WLASL Vocabulary is completed!<br>Congratulations on mastering all 56 words!");
+      } else if (wlaslPct >= 50 && wlaslPct < 100 && !announcedMilestones.wlasl_50) {
+        announcedMilestones.wlasl_50 = true;
+        showMilestoneNoti("Over 50% of WLASL Vocabulary completed!<br>Keep going — you're more than halfway!");
+      }
+    }
+  }
+
+  async function markItemLearned(category, itemKey) {
+    const isNew = !curriculum[category].completed.includes(itemKey);
+    if (isNew) {
+      curriculum[category].completed.push(itemKey);
+      updateProgressBars(category);
+    }
+    try {
+      await fetch("/api/learning/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, item_key: itemKey })
+      });
+    } catch (err) {}
+  }
+
+  function attachFallbackMediaHandlers(el, item) {
+    if (item.media_type === "image") {
+      const exts = [".png", ".jpg", ".jpeg", ".webp"];
+      let idx = 0;
+      el.onerror = () => {
+        idx += 1;
+        if (idx < exts.length) {
+          el.src = `/text_to_sign_demo/alphabet/${item.key}${exts[idx]}`;
+        } else {
+          el.onerror = null;
+        }
+      };
+    } else {
+      const candidates = [
+        `/text_to_sign_demo/word/${item.key}.mp4`,
+        `/text_to_sign_demo/alphabet/${item.key}.mp4`
+      ];
+      let idx = 0;
+      el.onerror = () => {
+        idx += 1;
+        if (idx < candidates.length) {
+          el.src = candidates[idx];
+        } else {
+          el.onerror = null;
+        }
+      };
+    }
+  }
+
+  function renderChartView() {
+    const track = curriculum[activeCategory];
+    const items = track.items || [];
+    const learnedSet = new Set(track.completed);
+
+    tbChartModeWrapper.style.display = "block";
+    tbSpreadView.classList.remove("active");
+
+    tbTitle.textContent = activeCategory === "asl" ? "ASL Alphabet Chart (A – Z)" : "WLASL Vocabulary Chart (56 Words)";
+    tbCounter.textContent = `${learnedSet.size} / ${items.length} Learned`;
+
+    tbChartGrid.innerHTML = "";
+    items.forEach((item, idx) => {
+      const isLearned = learnedSet.has(item.key);
+      const card = document.createElement("div");
+      card.className = "tb-chart-card" + (isLearned ? " learned" : "");
+
+      if (isLearned) {
+        const chk = document.createElement("span");
+        chk.className = "tb-chart-check";
+        chk.innerHTML = "&#10003;";
+        card.appendChild(chk);
+      }
+
+      if (item.media_type === "image") {
+        const img = document.createElement("img");
+        img.className = "tb-chart-thumb";
+        img.src = item.media_url;
+        img.alt = item.label;
+        attachFallbackMediaHandlers(img, item);
+        card.appendChild(img);
+      } else {
+        const vid = document.createElement("video");
+        vid.className = "tb-chart-video-thumb";
+        vid.src = item.media_url;
+        vid.muted = true;
+        vid.loop = true;
+        vid.playsInline = true;
+        vid.preload = "metadata";
+        attachFallbackMediaHandlers(vid, item);
+        card.addEventListener("mouseenter", () => vid.play().catch(() => {}));
+        card.addEventListener("mouseleave", () => {
+          vid.pause();
+          vid.currentTime = 0;
+        });
+        card.appendChild(vid);
+      }
+
+      const lbl = document.createElement("div");
+      lbl.className = "tb-chart-label";
+      lbl.textContent = item.label;
+      card.appendChild(lbl);
+
+      card.addEventListener("click", () => {
+        openSingleSignLesson(idx);
+      });
+
+      tbChartGrid.appendChild(card);
+    });
+  }
+
+  function openSingleSignLesson(index) {
+    const track = curriculum[activeCategory];
+    const items = track.items || [];
+    if (!items.length) return;
+
+    currentIndex = Math.max(0, Math.min(items.length - 1, index));
+    const item = items[currentIndex];
+
+    tbChartModeWrapper.style.display = "none";
+    tbSpreadView.classList.add("active");
+
+    tbTitle.textContent = activeCategory === "asl" ? "ASL Fingerspelling Lesson" : "WLASL Word Lesson";
+    tbCounter.textContent = `${currentIndex + 1} of ${items.length}`;
+    tbSignWord.textContent = item.label;
+    tbSignHint.textContent = activeCategory === "asl"
+      ? `Fingerspelling letter "${item.label}". Match the handshape shown.`
+      : `Word sign for "${item.label}". Watch the movement and facial expression.`;
+
+    tbMediaFrame.innerHTML = "";
+    if (item.media_type === "video") {
+      const vid = document.createElement("video");
+      vid.src = item.media_url;
+      vid.controls = true;
+      vid.autoplay = true;
+      vid.loop = true;
+      vid.muted = true;
+      vid.playsInline = true;
+      attachFallbackMediaHandlers(vid, item);
+      tbMediaFrame.appendChild(vid);
+    } else {
+      const img = document.createElement("img");
+      img.src = item.media_url;
+      img.alt = `ASL sign for ${item.label}`;
+      attachFallbackMediaHandlers(img, item);
+      tbMediaFrame.appendChild(img);
+    }
+
+    tbPrevBtn.disabled = currentIndex === 0;
+    tbNextBtn.disabled = currentIndex === items.length - 1;
+
+    markItemLearned(activeCategory, item.key);
+  }
+
+  function openDigitalTextbook(category) {
+    activeCategory = category;
+    hubView.style.display = "none";
+    bookView.classList.add("active");
+    sproutWalker.classList.add("hidden-in-book");
+    renderChartView();
+  }
+
+  document.getElementById("openAslBookCard").addEventListener("click", () => openDigitalTextbook("asl"));
+  document.getElementById("openWlaslBookCard").addEventListener("click", () => openDigitalTextbook("wlasl"));
+
+  document.getElementById("tbBackToHubBtn").addEventListener("click", () => {
+    bookView.classList.remove("active");
+    hubView.style.display = "grid";
+    sproutWalker.classList.remove("hidden-in-book");
+  });
+
+  tbStartOneByOneBtn.addEventListener("click", () => {
+    const track = curriculum[activeCategory];
+    const learnedSet = new Set(track.completed);
+    const nextUnlearned = track.items.findIndex((it) => !learnedSet.has(it.key));
+    openSingleSignLesson(nextUnlearned >= 0 ? nextUnlearned : 0);
+  });
+
+  tbBackToChartBtn.addEventListener("click", renderChartView);
+
+  tbPrevBtn.addEventListener("click", () => {
+    if (currentIndex > 0) openSingleSignLesson(currentIndex - 1);
+  });
+
+  tbNextBtn.addEventListener("click", () => {
+    if (currentIndex < curriculum[activeCategory].items.length - 1) {
+      openSingleSignLesson(currentIndex + 1);
+    }
+  });
+
+  /* =========================================================
+     QUIZ SELECTION MODAL & QUIZ PLAYER (ADMIN-CREATED QUIZZES)
+     ========================================================= */
+  const quizModalBackdrop = document.getElementById("quizModalBackdrop");
+  const qmModalTitle = document.getElementById("qmModalTitle");
+  const qmBody = document.getElementById("qmBody");
+
+  document.getElementById("qmCloseBtn").addEventListener("click", () => {
+    quizModalBackdrop.classList.remove("open");
+  });
+
+  async function openQuizSelectionModal() {
+    qmModalTitle.textContent = "Choose a Quiz";
+    qmBody.innerHTML = `<p style="padding:14px 0;">Loading available quizzes...</p>`;
+    quizModalBackdrop.classList.add("open");
+
+    try {
+      const res = await fetch("/api/quizzes");
+      if (!res.ok) throw new Error("Could not load quizzes.");
+      const data = await res.json();
+      const quizzes = data.quizzes || [];
+
+      if (quizzes.length === 0) {
+        qmBody.innerHTML = `<p style="padding:14px 0;">No quizzes are published yet. Check back soon after your instructor creates one!</p>`;
+        return;
+      }
+
+      qmBody.innerHTML = "";
+      quizzes.forEach((q) => {
+        const card = document.createElement("div");
+        card.className = "quiz-list-item";
+        const bestText = q.best_result
+          ? `Best: ${q.best_result.best_score}/${q.best_result.total_questions}`
+          : `${q.question_count} Questions`;
+        card.innerHTML = `
+          <div>
+            <div style="font-weight:700; font-size:1.02rem;">${q.title}</div>
+            <div style="font-size:0.84rem; opacity:0.8; margin-top:2px;">${q.description || "Test your ASL knowledge"}</div>
+            <div style="font-family:'Inter',sans-serif; font-size:0.75rem; font-weight:600; margin-top:5px; color:#557229;">${bestText}</div>
+          </div>
+          <button type="button" class="quiz-start-pill">Start</button>
+        `;
+        card.addEventListener("click", () => startQuizPlayer(q.quiz_id));
+        qmBody.appendChild(card);
+      });
+    } catch (err) {
+      qmBody.innerHTML = `<p style="color:#a12828;">${err.message}</p>`;
+    }
+  }
+
+  async function startQuizPlayer(quizId) {
+    qmBody.innerHTML = `<p style="padding:14px 0;">Loading quiz questions...</p>`;
+    try {
+      const res = await fetch(`/api/quizzes/${quizId}`);
+      if (!res.ok) throw new Error("Could not load quiz details.");
+      const quiz = await res.json();
+      const questions = quiz.questions || [];
+
+      if (questions.length === 0) {
+        qmBody.innerHTML = `<p>This quiz doesn't have any questions yet.</p>`;
+        return;
+      }
+
+      qmModalTitle.textContent = quiz.title;
+      const userAnswers = {};
+      let qIdx = 0;
+
+      function renderQuestion() {
+        const q = questions[qIdx];
+        const chosen = userAnswers[q.question_id] || "";
+        const isLast = qIdx === questions.length - 1;
+
+        qmBody.innerHTML = `
+          <div style="font-family:'Inter',sans-serif; font-size:0.8rem; font-weight:600; opacity:0.78;">
+            Question ${qIdx + 1} of ${questions.length}
+          </div>
+          <div style="font-size:1.08rem; font-weight:600; margin-top:6px;">${q.question_text}</div>
+          ${q.image_path ? `<img src="${q.image_path}" alt="Quiz sign" class="qp-question-media" />` : ""}
+          <div class="qp-options-list" id="qpOptionsContainer"></div>
+          <div style="display:flex; justify-content:space-between; gap:10px;">
+            <button type="button" id="qpPrevBtn" class="tb-nav-btn" ${qIdx === 0 ? "disabled" : ""}>&larr; Prev</button>
+            <button type="button" id="qpNextOrSubmitBtn" class="tb-nav-btn">${isLast ? "Submit Quiz" : "Next \u2192"}</button>
+          </div>
+        `;
+
+        const optsContainer = document.getElementById("qpOptionsContainer");
+        (q.options || []).forEach((optText) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "qp-option-btn" + (chosen === optText ? " selected" : "");
+          btn.textContent = optText;
+          btn.addEventListener("click", () => {
+            userAnswers[q.question_id] = optText;
+            renderQuestion();
+          });
+          optsContainer.appendChild(btn);
+        });
+
+        document.getElementById("qpPrevBtn").addEventListener("click", () => {
+          if (qIdx > 0) {
+            qIdx -= 1;
+            renderQuestion();
+          }
+        });
+
+        document.getElementById("qpNextOrSubmitBtn").addEventListener("click", async () => {
+          if (!isLast) {
+            qIdx += 1;
+            renderQuestion();
+            return;
+          }
+
+          qmBody.innerHTML = `<p style="padding:18px 0;">Grading your quiz...</p>`;
+          const submitRes = await fetch(`/api/quizzes/${quizId}/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ answers: userAnswers })
+          });
+          const result = await submitRes.json();
+          if (!submitRes.ok) {
+            qmBody.innerHTML = `<p style="color:#a12828;">${result.error || "Submission failed."}</p>`;
+            return;
+          }
+
+          const pct = Math.round((result.score / result.total_questions) * 100);
+          qmModalTitle.textContent = "Quiz Completed!";
+          qmBody.innerHTML = `
+            <div style="text-align:center; padding:12px 0 18px 0;">
+              <div style="font-family:'Cormorant Garamond',serif; font-size:2.4rem; font-weight:700;">
+                ${result.score} / ${result.total_questions} (${pct}%)
+              </div>
+              <p style="margin-top:4px; opacity:0.85;">Your score has been saved to your profile.</p>
+              <div style="margin-top:18px; display:flex; justify-content:center; gap:10px;">
+                <button type="button" id="qpBackToQuizzesBtn" class="tb-nav-btn">All Quizzes</button>
+                <button type="button" id="qpDoneBtn" class="tb-nav-btn">Done</button>
+              </div>
+            </div>
+          `;
+          document.getElementById("qpBackToQuizzesBtn").addEventListener("click", openQuizSelectionModal);
+          document.getElementById("qpDoneBtn").addEventListener("click", () => {
+            quizModalBackdrop.classList.remove("open");
+          });
+        });
+      }
+
+      renderQuestion();
+    } catch (err) {
+      qmBody.innerHTML = `<p style="color:#a12828;">${err.message}</p>`;
+    }
+  }
+
+  sproutWalker.addEventListener("click", openQuizSelectionModal);
+
+  async function initCurriculum() {
+    try {
+      const res = await fetch("/api/learning/curriculum");
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.asl && Array.isArray(data.asl.items) && data.asl.items.length) {
+        curriculum.asl = data.asl;
+      }
+      if (data.wlasl && Array.isArray(data.wlasl.items) && data.wlasl.items.length) {
+        curriculum.wlasl = data.wlasl;
+      }
+
+      // Mark milestones already achieved in DB so they don't re-fire unnecessarily
+      const aslPct = Math.round((new Set(curriculum.asl.completed).size / (curriculum.asl.total || 26)) * 100);
+      if (aslPct >= 50) announcedMilestones.asl_50 = true;
+      if (aslPct >= 100) announcedMilestones.asl_100 = true;
+
+      const wlaslPct = Math.round((new Set(curriculum.wlasl.completed).size / (curriculum.wlasl.total || 56)) * 100);
+      if (wlaslPct >= 50) announcedMilestones.wlasl_50 = true;
+      if (wlaslPct >= 100) announcedMilestones.wlasl_100 = true;
+
+      updateProgressBars();
+
+      // If user opens the Learning page already over 50% or at 100%, show the milestone noti
+      if (aslPct === 100) {
+        showMilestoneNoti("100% of ASL Fingerspelling is completed!<br>Congratulations on mastering all 26 letters!");
+      } else if (wlaslPct === 100) {
+        showMilestoneNoti("100% of WLASL Vocabulary is completed!<br>Congratulations on mastering all 56 words!");
+      } else if (aslPct > 50) {
+        showMilestoneNoti("Over 50% of ASL Fingerspelling completed!<br>Keep going — you're more than halfway!");
+      } else if (wlaslPct > 50) {
+        showMilestoneNoti("Over 50% of WLASL Vocabulary completed!<br>Keep going — you're more than halfway!");
+      }
+    } catch (err) {}
+  }
+
+  initCurriculum();
+})();
+</script>
+</body>
+</html>

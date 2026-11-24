@@ -67,6 +67,15 @@
       transition: background 0.35s ease;
     }
 
+    #cursorEffectCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
     .main-dashboard {
       position: relative;
       z-index: 5;
@@ -135,7 +144,6 @@
       object-fit: cover;
     }
 
-    /* Dock width mirrors the 245px profile drawer so the circles stay aligned */
     .right-floating-dock {
       position: fixed;
       bottom: 8px;
@@ -493,6 +501,8 @@
   <div id="bgPhotoLayer" class="bg-photo-layer"></div>
   <div class="bg-veil"></div>
 
+  <canvas id="cursorEffectCanvas" aria-hidden="true"></canvas>
+
   <div class="main-dashboard" id="mainDashboard">
 
     <header class="dashboard-topbar">
@@ -684,6 +694,158 @@
       } catch (err) {}
     }
 
+    /* =========================================================
+       CLOUDINARY CURSOR EFFECT ENGINE (TRAIL + SINGLE POP BURST)
+       ========================================================= */
+    const cursorCanvas = document.getElementById("cursorEffectCanvas");
+    const cursorCtx = cursorCanvas.getContext("2d");
+    const loadedEffectImages = {};
+    let activeTrailEffect = null;
+    let activeClickEffect = null;
+    let cursorParticles = [];
+    let cursorAnimId = null;
+    let lastTrailTime = 0;
+    let lastTrailX = -9999;
+    let lastTrailY = -9999;
+
+    function resizeCursorCanvas() {
+      cursorCanvas.width = window.innerWidth;
+      cursorCanvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCursorCanvas);
+    resizeCursorCanvas();
+
+    function getCachedEffectImage(url) {
+      if (!url) return null;
+      if (!loadedEffectImages[url]) {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = url;
+        loadedEffectImages[url] = img;
+      }
+      const cached = loadedEffectImages[url];
+      return cached.complete && cached.naturalWidth > 0 ? cached : null;
+    }
+
+    window.setSignrestCursorEffects = function (trailObj, clickObj) {
+      activeTrailEffect = trailObj && trailObj.effect_path ? trailObj : null;
+      activeClickEffect = clickObj && clickObj.effect_path ? clickObj : null;
+      if (activeTrailEffect) getCachedEffectImage(activeTrailEffect.effect_path);
+      if (activeClickEffect) getCachedEffectImage(activeClickEffect.effect_path);
+    };
+
+    async function loadUserCursorEffects() {
+      try {
+        const res = await fetch("/api/cursor-effects");
+        if (!res.ok) return;
+        const data = await res.json();
+        window.setSignrestCursorEffects(data.trail_effect, data.click_effect);
+      } catch (err) {}
+    }
+
+    function startCursorLoop() {
+      if (!cursorAnimId) {
+        cursorAnimId = requestAnimationFrame(renderCursorParticles);
+      }
+    }
+
+    function renderCursorParticles() {
+      cursorCtx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+
+      for (let i = cursorParticles.length - 1; i >= 0; i--) {
+        const p = cursorParticles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rotation += p.vRot;
+        p.alpha -= p.decay;
+
+        if (p.isPop) {
+          p.progress = Math.min(1, p.progress + 0.065);
+          p.scale = p.progress < 0.45
+            ? 0.35 + (p.progress / 0.45) * 0.9
+            : 1.25 - ((p.progress - 0.45) / 0.55) * 0.2;
+        }
+
+        if (p.alpha <= 0) {
+          cursorParticles.splice(i, 1);
+          continue;
+        }
+
+        const img = getCachedEffectImage(p.url);
+        if (!img) continue;
+
+        const scale = p.scale || 1;
+        const aspect = img.naturalHeight / img.naturalWidth;
+        const drawW = p.size * scale;
+        const drawH = p.size * aspect * scale;
+
+        cursorCtx.save();
+        cursorCtx.globalAlpha = Math.max(0, p.alpha);
+        cursorCtx.translate(p.x, p.y);
+        cursorCtx.rotate(p.rotation);
+        cursorCtx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+        cursorCtx.restore();
+      }
+
+      if (cursorParticles.length > 0) {
+        cursorAnimId = requestAnimationFrame(renderCursorParticles);
+      } else {
+        cursorAnimId = null;
+      }
+    }
+
+    window.addEventListener("mousemove", (e) => {
+      if (!activeTrailEffect) return;
+      if (document.getElementById("cursorSettingRoot")) return;
+
+      const now = performance.now();
+      const dist = Math.hypot(e.clientX - lastTrailX, e.clientY - lastTrailY);
+      if (now - lastTrailTime < 115 || dist < 26) return;
+
+      lastTrailTime = now;
+      lastTrailX = e.clientX;
+      lastTrailY = e.clientY;
+
+      cursorParticles.push({
+        url: activeTrailEffect.effect_path,
+        x: e.clientX,
+        y: e.clientY,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: -0.35 - Math.random() * 0.35,
+        size: activeTrailEffect.size || 24,
+        rotation: (Math.random() - 0.5) * 0.35,
+        vRot: (Math.random() - 0.5) * 0.015,
+        alpha: 0.9,
+        decay: 0.015
+      });
+      startCursorLoop();
+    });
+
+    window.addEventListener("mousedown", (e) => {
+      if (!activeClickEffect) return;
+      if (document.getElementById("cursorSettingRoot")) return;
+
+      cursorParticles.push({
+        url: activeClickEffect.effect_path,
+        x: e.clientX,
+        y: e.clientY,
+        vx: 0,
+        vy: -0.25,
+        size: activeClickEffect.size || 26,
+        isPop: true,
+        progress: 0,
+        scale: 0.35,
+        rotation: (Math.random() - 0.5) * 0.25,
+        vRot: 0,
+        alpha: 1,
+        decay: 0.024
+      });
+      startCursorLoop();
+    });
+
+    /* =========================================================
+       DRAWER & PAGE NAVIGATION
+       ========================================================= */
     function openProfileDrawer() {
       const drawer = document.getElementById("profileDrawer");
       if (!drawer) return;
@@ -796,7 +958,11 @@
             pagesContainer.appendChild(styleTag.cloneNode(true));
           });
 
-          const pageRoot = parsed.getElementById("translatePageRoot") || parsed.body;
+          const pageRoot =
+            parsed.getElementById("translatePageRoot") ||
+            parsed.getElementById("cursorSettingRoot") ||
+            parsed.getElementById("learningPageRoot") ||
+            parsed.body;
           Array.from(pageRoot.children).forEach((child) => {
             if (child.tagName !== "SCRIPT") {
               pagesContainer.appendChild(child.cloneNode(true));
@@ -822,8 +988,20 @@
 
         if (triggerArrowExpand) {
           pagesContainer.classList.remove("arrow-expanding");
+          pagesContainer.style.clipPath = "";
           void pagesContainer.offsetWidth;
           pagesContainer.classList.add("arrow-expanding");
+          pagesContainer.addEventListener(
+            "animationend",
+            () => {
+              pagesContainer.classList.remove("arrow-expanding");
+              pagesContainer.style.clipPath = "none";
+            },
+            { once: true }
+          );
+        } else {
+          pagesContainer.classList.remove("arrow-expanding");
+          pagesContainer.style.clipPath = "none";
         }
       } catch (err) {
         pagesContainer.innerHTML = `<p>Error loading ${pageKey} page.</p>`;
@@ -837,6 +1015,7 @@
     (async function initDashboard() {
       applyDashboardTheme();
       await loadUserFromDatabase();
+      await loadUserCursorEffects();
       await loadProfileDrawer();
       await loadPage(getCurrentPageKey(), false);
     })();

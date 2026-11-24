@@ -148,7 +148,7 @@ def google_callback():
 
         cursor.execute(
             """
-            SELECT user_id, username, full_name, email, profile_photo, role, status
+            SELECT user_id, username, email, profile_photo, role, status
             FROM users
             WHERE email = %s
             LIMIT 1

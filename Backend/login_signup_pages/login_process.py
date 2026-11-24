@@ -78,7 +78,7 @@ def process_login():
 
         cursor.execute(
             """
-            SELECT user_id, username, full_name, email, password_hash, profile_photo,
+            SELECT user_id, username, email, password_hash, profile_photo,
                    role, status, failed_login_attempts, locked_until
             FROM users
             WHERE email = %s
