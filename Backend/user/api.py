@@ -81,6 +81,9 @@ WORD_SESSIONS = {}
 WORD_SESSIONS_LOCK = threading.Lock()
 STATIC_DETECTOR_LOCK = threading.Lock()
 STATIC_DETECTOR = None
+STATIC_RECOVERY = None
+
+HAND_POINT_COUNT = 21
 
 
 @lru_cache(maxsize=8)
@@ -433,6 +436,49 @@ class LiveSession:
                 self.recovery.close()
 
 
+def _static_recovery():
+    """One shared retry detector.
+
+    Building a Recovery per photo loaded a whole MediaPipe model for every
+    frame without a hand; that is what made the camera pages lag and heat.
+    """
+    global STATIC_RECOVERY
+    if STATIC_RECOVERY is None:
+        STATIC_RECOVERY = hand_backend.Recovery(after=1, every=1)
+    return STATIC_RECOVERY
+
+
+def hand_points(landmarks):
+    """Normalised (x, y) hand landmarks for the browser skeleton overlay."""
+    if landmarks is None:
+        return []
+    points = np.asarray(landmarks)[:, :2]
+    return [[round(float(x), 4), round(float(y), 4)] for x, y in points]
+
+
+def word_hand_points(row):
+    """Both hands out of one packed videoModel landmark row (NaN = not seen)."""
+    if row is None:
+        return []
+    from videoModel.src import landmarks as word_landmarks
+
+    try:
+        present = word_landmarks.hand_present(row)
+    except Exception:
+        return []
+    hands = []
+    for is_present, hand in zip(present, ("left", "right")):
+        if not is_present:
+            continue
+        rows = [word_landmarks.hand_row(hand, index)
+                for index in range(HAND_POINT_COUNT)]
+        points = np.asarray(row)[rows, :2]
+        if np.isnan(points).any():
+            continue
+        hands.append([[round(float(x), 4), round(float(y), 4)] for x, y in points])
+    return hands
+
+
 def predict_photo(image, settings):
     global STATIC_DETECTOR
     image = reduce_image(image)
@@ -442,11 +488,7 @@ def predict_photo(image, settings):
             STATIC_DETECTOR = hand_backend.create_detector(static=True)
         hand = hand_backend.detect_image(STATIC_DETECTOR, frame)
         if hand.landmarks is None:
-            recovery = hand_backend.Recovery(after=1, every=1)
-            try:
-                hand, _ = recovery.attempt(frame)
-            finally:
-                recovery.close()
+            hand, _ = _static_recovery().attempt(frame)
     if hand.landmarks is None:
         return {
             "text": "nothing", "confidence": 1.0, "hand_found": False,
@@ -562,6 +604,15 @@ class WordLiveSession:
             self.last_activity = time.monotonic()
             self.last_result = self.predictor.result()
             return self.response()
+
+    def latest_row(self):
+        """Packed pose+hand landmarks of the last frame, for the skeleton overlay."""
+        with self.lock:
+            try:
+                rows = self.predictor.buffer.array()
+            except Exception:
+                return None
+            return rows[-1] if len(rows) else None
 
     def close(self):
         with self.lock:

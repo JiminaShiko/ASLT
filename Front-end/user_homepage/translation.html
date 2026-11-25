@@ -1446,18 +1446,24 @@
     calibrateBtn.disabled = true;
   }
 
+  // One canvas for the whole session: allocating a new one per frame churned
+  // the garbage collector and showed up as dropped frames in the preview.
+  const liveFrameCanvas = document.createElement("canvas");
+  const liveFrameCtx = liveFrameCanvas.getContext("2d");
+
   function drawLiveFrame() {
     const width = cam.videoWidth;
     const height = cam.videoHeight;
-    if (!width || !height) return null;
+    if (!width || !height || !liveFrameCtx) return null;
     const scale = Math.min(1, LIVE_MAX_SIDE / Math.max(width, height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(width * scale));
-    canvas.height = Math.max(1, Math.round(height * scale));
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-    ctx.drawImage(cam, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/jpeg", 0.85);
+    const frameW = Math.max(1, Math.round(width * scale));
+    const frameH = Math.max(1, Math.round(height * scale));
+    if (liveFrameCanvas.width !== frameW || liveFrameCanvas.height !== frameH) {
+      liveFrameCanvas.width = frameW;
+      liveFrameCanvas.height = frameH;
+    }
+    liveFrameCtx.drawImage(cam, 0, 0, frameW, frameH);
+    return liveFrameCanvas.toDataURL("image/jpeg", 0.8);
   }
 
   async function captureLiveFrame(runId) {
