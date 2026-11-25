@@ -534,6 +534,10 @@ class RingBuffer:
             return np.zeros((0, config.P_TOTAL, 3), np.float32)
         return np.stack(self._rows)
 
+    def last(self) -> np.ndarray | None:
+        """Newest row without stacking the whole buffer (overlay path)."""
+        return self._rows[-1] if self._rows else None
+
     def __len__(self) -> int:
         return len(self._rows)
 

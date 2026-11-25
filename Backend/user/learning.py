@@ -13,10 +13,11 @@ from .api import (
     get_backend,
     hand_points,
     image_to_bgr,
+    image_to_rgb,
     reduce_image,
     validate_settings,
-    word_hand_points,
 )
+from .tracking import PoseOverlay  # noqa: E402
 
 # api.py puts Model/ on sys.path; this is the same pipeline live.py runs.
 from asl_landmark_app.src import hand_backend, live as landmark_live  # noqa: E402
@@ -409,6 +410,8 @@ class LetterPractice:
         )
         self.smoother = landmark_live.Smoother(
             conf=LETTER_VOTE_CONF, vote=LETTER_VOTE_FRAMES, hold=0.0)
+        # Body/face trace for the overlay only; the letter reading is unchanged.
+        self.pose = PoseOverlay()
         self.started_at = time.monotonic()
         self.streak = 0
         self.frames = 0
@@ -419,6 +422,8 @@ class LetterPractice:
         self.frames += 1
         image = reduce_image(image)
         bgr = image_to_bgr(image)
+        overlay = {"hands": [], "head": {"lines": [], "dots": []}, "body": []}
+        overlay.update(self.pose.update(image_to_rgb(image)))
         timestamp_ms = int((time.monotonic() - self.started_at) * 1000)
         result, _how = hand_backend.detect_frame(
             self.detector, bgr, timestamp_ms, self.recovery,
@@ -436,6 +441,8 @@ class LetterPractice:
                 "confidence": 0.0,
                 "held": "",
                 "hands": [],
+                "head": overlay["head"],
+                "body": overlay["body"],
                 "frame_ms": self.last_frame_ms,
                 "hint": "No hand detected. Move your hand into the camera view.",
             }
@@ -459,7 +466,9 @@ class LetterPractice:
             "predicted": held or top1,
             "confidence": confidence,
             "held": held or "",
-            "hands": hand_points(result.landmarks),
+            "hands": [hand_points(result.landmarks)],
+            "head": overlay["head"],
+            "body": overlay["body"],
             "frame_ms": self.last_frame_ms,
             "hint": "" if held else "Hold the sign steady in the middle of the frame.",
         }
@@ -468,6 +477,7 @@ class LetterPractice:
         try:
             self.detector.close()
         finally:
+            self.pose.close()
             if self.recovery is not None:
                 self.recovery.close()
 
@@ -487,11 +497,14 @@ class WordPractice:
             (top3[0][0], float(top3[0][1] or 0.0)) if top3 else ("", 0.0)
         )
         hands = state.get("hand_in_frame") or (False, False)
+        overlay = state.get("overlay") or {}
         return {
             "matched": self.target in said,
             "predicted": predicted,
             "confidence": confidence,
-            "hands": word_hand_points(self.session.latest_row()),
+            "hands": overlay.get("hands") or [],
+            "head": overlay.get("head") or {"lines": [], "dots": []},
+            "body": overlay.get("body") or [],
             "frame_ms": float(state.get("frame_ms") or 0.0),
             "hint": "" if any(hands) else "No hand detected. Sign the word facing the camera.",
         }

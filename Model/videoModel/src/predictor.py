@@ -423,9 +423,13 @@ class WordPredictor:
                 "buffer_frames": len(self.buffer),
                 "decision_frames": self._decision_frames,
                 "segment_frames": self.seg.frames,
-                "hand_in_frame": (landmarks.hand_present(
-                    self.buffer.array()[-1])
-                    if len(self.buffer) else (False, False))}
+                "hand_in_frame": (landmarks.hand_present(row)
+                                  if (row := self.buffer.last()) is not None
+                                  else (False, False))}
+
+    def latest_row(self) -> np.ndarray | None:
+        """Newest packed landmark row, for the browser skeleton overlay."""
+        return self.buffer.last()
 
     def reset(self) -> None:
         self.buffer.clear()
