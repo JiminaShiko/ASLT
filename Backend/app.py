@@ -235,11 +235,128 @@ def admin_dashboard_placeholder():
     return redirect("/admin-dashboard/")
 
 
-@app.route("/admin-dashboard/", defaults={"filename": "admin_dashboard.html"})
+ADMIN_SIDEBAR_SLOT = '<div id="adminSidebarHost"></div>'
+ADMIN_SHELL_FILE = "admin_shell.html"
+# Runs while the page is parsed, so a collapsed sidebar stays collapsed instead
+# of flashing open on every admin page change.
+ADMIN_SIDEBAR_BOOT = (
+    "<script>try{if(localStorage.getItem('signrest-admin-sidebar')==='collapsed')"
+    "document.getElementById('app').classList.add('collapsed')}catch(e){}</script>"
+)
+
+# The shell mounts one sidebar and loads only the page inside its frame. Embedded
+# pages therefore drop the sidebar slot and the sidebar layout offset.
+ADMIN_EMBED_STYLE = """<style id="admin-embed-style">
+.app > .main,.main{margin-left:0 !important;width:100% !important}
+.app{min-height:100vh}
+.mobile-overlay{display:none !important}
+.mobile-collapse{display:none}
+@media (max-width:800px){.mobile-collapse{display:flex}}
+</style>"""
+
+ADMIN_EMBED_SCRIPT = """<script id="admin-embed-script">
+(function () {
+  if (window.parent === window) return;
+  var origin = location.origin;
+  var files = {overview: 'admin_dashboard', logs: 'accuracy', materials: 'materials', users: 'user_management', profile: 'profile'};
+  function post(message) { try { parent.postMessage(message, origin); } catch (error) {} }
+  function navigateInside(href) {
+    var url;
+    try { url = new URL(href, location.href); } catch (error) { return false; }
+    if (url.origin !== origin || url.pathname.indexOf('/admin-dashboard/') !== 0) return false;
+    post({type: 'signrest-admin-page', path: url.pathname + url.search});
+    return true;
+  }
+  document.addEventListener('click', function (event) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+    if (!link) return;
+    if (navigateInside(link.getAttribute('href'))) event.preventDefault();
+  }, true);
+  function syncShellControls() {
+    window.collapseSidebar = function () { post({type: 'signrest-admin-sidebar', action: 'toggle'}); };
+    window.closeMobile = function () { post({type: 'signrest-admin-sidebar', action: 'close'}); };
+    if (typeof window.navigate === 'function' && !window.navigate.signrestShell) {
+      var original = window.navigate;
+      var wrapped = function (page, filter) {
+        if (document.body.dataset.page === page || !files[page]) return original.apply(this, arguments);
+        post({type: 'signrest-admin-page', path: '/admin-dashboard/' + files[page] + '.html' + (filter ? '?filter=' + filter : '')});
+      };
+      wrapped.signrestShell = true;
+      window.navigate = wrapped;
+    }
+  }
+  window.addEventListener('DOMContentLoaded', syncShellControls);
+  window.addEventListener('load', syncShellControls);
+})();
+</script>"""
+
+
+def _render_admin_embed(html: str) -> str:
+    """Render a page for the shell frame: no sidebar, no sidebar layout offset."""
+    html = html.replace(ADMIN_SIDEBAR_SLOT, "", 1)
+    if "admin-embed-style" not in html:
+        html = html.replace("</head>", ADMIN_EMBED_STYLE + "\n</head>", 1)
+    if "admin-embed-script" not in html:
+        html = html.replace("</body>", ADMIN_EMBED_SCRIPT + "\n</body>", 1)
+    return html
+
+
+def _render_admin_page(page: Path, embed: bool = False) -> str:
+    """Inline the shared sidebar so it is part of the first paint.
+
+    Every admin page is wrapped by the shell, so the sidebar is inlined once
+    into that shell document instead of into each page.
+    """
+    html = page.read_text(encoding="utf-8")
+    if embed:
+        return _render_admin_embed(html)
+    if ADMIN_SIDEBAR_SLOT not in html:
+        return html
+    sidebar_file = ADMIN_DIR / "admin_sidebar.html"
+    if not sidebar_file.is_file():
+        return html
+    sidebar = sidebar_file.read_text(encoding="utf-8")
+    html = html.replace(
+        ADMIN_SIDEBAR_SLOT,
+        '<div id="adminSidebarHost">' + sidebar + "</div>",
+        1,
+    )
+    return html.replace(
+        '<div class="app" id="app">',
+        '<div class="app" id="app">' + ADMIN_SIDEBAR_BOOT,
+        1,
+    )
+
+
+@app.route("/admin-dashboard/")
+def serve_admin_root():
+    return serve_admin_dashboard("admin_dashboard.html")
+
+
 @app.route("/admin-dashboard/<path:filename>")
 def serve_admin_dashboard(filename):
     if not session.get("user_email") or session.get("user_role") != "admin":
         return redirect("/login")
+
+    try:
+        page = (ADMIN_DIR / filename).resolve()
+        page.relative_to(ADMIN_DIR.resolve())
+    except (OSError, ValueError):
+        return "Not Found", 404
+
+    if page.is_file() and page.suffix.lower() == ".html":
+        headers = {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+        }
+        if request.args.get("embed"):
+            return _render_admin_page(page, embed=True), 200, headers
+        if filename == "admin_sidebar.html":
+            return send_from_directory(ADMIN_DIR, filename)
+        # Every admin page is opened inside the one shell, so the sidebar is
+        # never re-rendered as part of a page load (including refresh).
+        return _render_admin_page(ADMIN_DIR / ADMIN_SHELL_FILE), 200, headers
     return send_from_directory(ADMIN_DIR, filename)
 
 

@@ -938,8 +938,12 @@
   };
   window.collapseSidebar = () => {
     const app = $("app");
-    if (window.matchMedia("(max-width: 800px)").matches) app.classList.toggle("mobile-open");
-    else app.classList.toggle("collapsed");
+    if (window.matchMedia("(max-width: 800px)").matches) {
+      app.classList.toggle("mobile-open");
+      return;
+    }
+    const collapsed = app.classList.toggle("collapsed");
+    try { localStorage.setItem("signrest-admin-sidebar", collapsed ? "collapsed" : "expanded"); } catch { /* storage unavailable */ }
   };
   window.closeMobile = () => $("app").classList.remove("mobile-open");
   window.logout = async () => {
@@ -967,12 +971,17 @@
   }
 
   async function loadSidebar() {
-    const response = await fetch(SIDEBAR_URL, { credentials: "same-origin" });
-    if (!response.ok) throw new Error("Admin navigation could not be loaded.");
-    const template = document.createElement("template");
-    template.innerHTML = (await response.text()).trim();
-    $("adminSidebarHost").replaceChildren(template.content);
-    $("adminSidebarHost").querySelectorAll(".nav-item[href]").forEach((link) => {
+    const host = $("adminSidebarHost");
+    if (!host) return;
+    // The server puts the sidebar in the page itself; only fetch when it is missing.
+    if (!host.querySelector("#admin-sidebar")) {
+      const response = await fetch(SIDEBAR_URL, { credentials: "same-origin" });
+      if (!response.ok) throw new Error("Admin navigation could not be loaded.");
+      const template = document.createElement("template");
+      template.innerHTML = (await response.text()).trim();
+      host.replaceChildren(template.content);
+    }
+    host.querySelectorAll(".nav-item[href]").forEach((link) => {
       const active = new URL(link.href, location.origin).pathname === location.pathname;
       link.classList.toggle("active", active);
       if (active) link.setAttribute("aria-current", "page");

@@ -16,7 +16,9 @@ class FakeCursor:
 
     def execute(self, query, params=None):
         self.calls.append((query, params))
-        if "COUNT(*) FROM users" in query:
+        if "AS total_users" in query:
+            self.result = (4, 8, 2, 1)
+        elif "COUNT(*) FROM users" in query:
             self.result = (4,)
         elif "COUNT(*) FROM translations" in query:
             self.result = (8,)

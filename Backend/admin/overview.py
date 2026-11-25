@@ -45,20 +45,20 @@ def admin_overview():
         connection = get_db_connection()
         cursor = connection.cursor()
 
-        cursor.execute("SELECT COUNT(*) FROM users")
-        users = cursor.fetchone()[0]
-        cursor.execute("SELECT COUNT(*) FROM translations")
-        translations = cursor.fetchone()[0]
+        # One round trip for all four totals: each statement to the hosted
+        # database costs ~80 ms, so four separate COUNTs added a quarter second.
         cursor.execute(
-            "SELECT COUNT(*) FROM user_sessions "
-            "WHERE revoked_at IS NULL AND expires_at > NOW()"
-        )
-        active_sessions = cursor.fetchone()[0]
-        cursor.execute(
-            "SELECT COUNT(*) FROM feedbacks WHERE status IN (%s, %s)",
+            """
+            SELECT
+                (SELECT COUNT(*) FROM users) AS total_users,
+                (SELECT COUNT(*) FROM translations) AS total_translations,
+                (SELECT COUNT(*) FROM user_sessions
+                  WHERE revoked_at IS NULL AND expires_at > NOW()) AS active_sessions,
+                (SELECT COUNT(*) FROM feedbacks WHERE status IN (%s, %s)) AS pending_feedback
+            """,
             PENDING_FEEDBACK,
         )
-        pending_feedback = cursor.fetchone()[0]
+        users, translations, active_sessions, pending_feedback = cursor.fetchone()
 
         cursor.execute(
             """
@@ -110,7 +110,7 @@ def admin_overview():
 
         cursor.execute(
             """
-            SELECT t.translation_id, COALESCE(u.full_name, u.username), t.mode,
+            SELECT t.translation_id, u.username, t.mode,
                    t.input_type, t.predicted_text, t.confidence_score, t.created_at
             FROM translations t
             LEFT JOIN users u ON u.user_id = t.user_id
@@ -134,7 +134,7 @@ def admin_overview():
 
         cursor.execute(
             """
-            SELECT f.feedback_id, COALESCE(u.full_name, u.username), f.rating_score,
+            SELECT f.feedback_id, u.username, f.rating_score,
                    f.message, f.status, f.created_at
             FROM feedbacks f
             LEFT JOIN users u ON u.user_id = f.user_id

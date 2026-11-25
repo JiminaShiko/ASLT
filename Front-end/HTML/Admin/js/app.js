@@ -25,7 +25,7 @@ function nav(){
 const ready=['overview','logs','materials','users'];const files={'overview':'admin_dashboard','logs':'accuracy','materials':'materials','quiz':'quiz','users':'user_management','feedback':'feedback','effects':'effects','profile':'profile'};function navigate(page,filter){if(page!==state.page){if(!ready.includes(page)){toast('This page is coming soon.');return}saveState();location.href=files[page]+'.html'+(filter?'?filter='+filter:'');return}state.page=page;state.filter='all';state.query='';document.getElementById('search').value='';closeMobile();render();window.scrollTo(0,0)}
 ready.push('profile');
 function closeMobile(){document.getElementById('app').classList.remove('mobile-open')}
-function collapseSidebar(){let app=document.getElementById('app');if(innerWidth<=800)app.classList.toggle('mobile-open');else app.classList.toggle('collapsed')}
+function collapseSidebar(){let app=document.getElementById('app');if(innerWidth<=800){app.classList.toggle('mobile-open');return}const collapsed=app.classList.toggle('collapsed');try{localStorage.setItem('signrest-admin-sidebar',collapsed?'collapsed':'expanded')}catch(e){}}
 function searchView(q){state.query=q;logPage=1;if(state.page==='materials'){materialSearch();return}if(state.page==='logs'){clearTimeout(searchTimer);searchTimer=setTimeout(loadTranslations,300)}else renderContent()}
 function setFilter(f){state.filter=f;logPage=1;if(state.page==='logs')loadTranslations();else renderContent()}
 function pills(items){return '<div class="pills">'+items.map(([id,label])=>'<button class="pill '+(state.filter===id?'active':'')+'" onclick="setFilter(\''+id+'\')">'+label+'</button>').join('')+'</div>'}
@@ -62,11 +62,15 @@ function updateProfile(){
 }
 async function loadSidebar(){
  const host=document.getElementById('adminSidebarHost');
- const response=await fetch('/admin-dashboard/admin_sidebar.html',{credentials:'same-origin',cache:'no-store'});
- if(!response.ok)throw new Error('Unable to load the admin sidebar.');
- const template=document.createElement('template');
- template.innerHTML=(await response.text()).trim();
- host.replaceChildren(template.content);
+ if(!host)return;
+ // The server puts the sidebar in the page itself; only fetch when it is missing.
+ if(!host.querySelector('#admin-sidebar')){
+  const response=await fetch('/admin-dashboard/admin_sidebar.html',{credentials:'same-origin',cache:'no-store'});
+  if(!response.ok)throw new Error('Unable to load the admin sidebar.');
+  const template=document.createElement('template');
+  template.innerHTML=(await response.text()).trim();
+  host.replaceChildren(template.content);
+ }
  nav();
  updateProfile();
 }

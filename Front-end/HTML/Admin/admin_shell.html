@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signrest — Admin Portal</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('signrest-admin-theme')==='dark'?'dark':'light'}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/admin-dashboard/css/style.css">
+<link rel="stylesheet" href="/admin-dashboard/css/sidebar-toggle.css">
+<style>
+  html, body { height: 100%; }
+  body { margin: 0; overflow: hidden; background: var(--bg); }
+  /* The sidebar is mounted once by this shell; only the page in the frame changes. */
+  .app { height: 100vh; height: 100dvh; min-height: 0; }
+  .app > .main { height: 100%; overflow: hidden; }
+  #adminPageFrame { display: block; width: 100%; height: 100%; border: 0; background: var(--bg); }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+<div id="adminSidebarHost"></div>
+<main class="main">
+  <iframe id="adminPageFrame" title="Admin page"></iframe>
+</main>
+</div>
+<script>
+(function () {
+  "use strict";
+
+  var frame = document.getElementById("adminPageFrame");
+  var app = document.getElementById("app");
+  var FILES = {
+    overview: "admin_dashboard",
+    logs: "accuracy",
+    materials: "materials",
+    users: "user_management",
+    profile: "profile"
+  };
+  var PAGES = {
+    "/admin-dashboard/": "overview",
+    "/admin-dashboard/admin_dashboard.html": "overview",
+    "/admin-dashboard/accuracy.html": "logs",
+    "/admin-dashboard/materials.html": "materials",
+    "/admin-dashboard/user_management.html": "users",
+    "/admin-dashboard/profile.html": "profile"
+  };
+  var current = PAGES[location.pathname] || "overview";
+  var currentSearch = location.search || "";
+
+  function shellPath(page) {
+    return page === "overview" ? "/admin-dashboard/" : "/admin-dashboard/" + FILES[page] + ".html";
+  }
+
+  function frameUrl(page, search) {
+    var name = page === "overview" ? "admin_dashboard.html" : FILES[page] + ".html";
+    var params = new URLSearchParams(search || "");
+    params.set("embed", "1");
+    return "/admin-dashboard/" + name + "?" + params.toString();
+  }
+
+  function markActive() {
+    var links = document.querySelectorAll("#admin-sidebar .nav-item[href]");
+    for (var i = 0; i < links.length; i++) {
+      var link = links[i];
+      var path;
+      try { path = new URL(link.href, location.origin).pathname; } catch (error) { continue; }
+      var active = PAGES[path] === current;
+      link.classList.toggle("active", active);
+      if (active) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
+    }
+  }
+
+  function loadFrame(url) {
+    // replace() instead of src so page changes do not add iframe history
+    // entries; Back/Forward must walk the shell's own pushState entries.
+    try { frame.contentWindow.location.replace(url); }
+    catch (error) { frame.src = url; }
+  }
+
+  function showPage(page, search, remember) {
+    if (!FILES[page]) return;
+    search = search || "";
+    if (page === current && search === currentSearch) { closeMobile(); return; }
+    if (remember) history.pushState({ signrestAdminPage: page, signrestAdminSearch: search }, "", shellPath(page) + search);
+    current = page;
+    currentSearch = search;
+    loadFrame(frameUrl(page, search));
+    markActive();
+    closeMobile();
+  }
+
+  function collapseSidebar() {
+    if (window.innerWidth <= 800) { app.classList.toggle("mobile-open"); return; }
+    var collapsed = app.classList.toggle("collapsed");
+    try { localStorage.setItem("signrest-admin-sidebar", collapsed ? "collapsed" : "expanded"); } catch (error) {}
+  }
+
+  function closeMobile() {
+    app.classList.remove("mobile-open");
+  }
+
+  function logout() {
+    fetch("/api/logout", { method: "POST", credentials: "same-origin" })
+      .catch(function () {})
+      .then(function () { window.location.assign("/login"); });
+  }
+
+  document.addEventListener("click", function (event) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    var link = event.target && event.target.closest ? event.target.closest("#admin-sidebar a[href]") : null;
+    if (!link) return;
+    var url;
+    try { url = new URL(link.href, location.origin); } catch (error) { return; }
+    var page = PAGES[url.pathname];
+    if (!page) return;
+    event.preventDefault();
+    showPage(page, url.search, true);
+  });
+
+  frame.addEventListener("load", function () {
+    var win = frame.contentWindow;
+    if (!win) return;
+    var href, pathname;
+    try { href = win.location.href; pathname = win.location.pathname; } catch (error) { return; }
+    if (!href || href === "about:blank") return;
+    if (pathname.indexOf("/admin-dashboard/") !== 0) {
+      window.location.assign(href);
+      return;
+    }
+    var page = PAGES[pathname];
+    if (page) { current = page; markActive(); }
+    try { if (win.document.title) document.title = win.document.title; } catch (error) {}
+  });
+
+  window.addEventListener("popstate", function (event) {
+    var state = event.state || {};
+    var page = state.signrestAdminPage || PAGES[location.pathname];
+    if (!page) page = "overview";
+    showPage(page, state.signrestAdminSearch || "", false);
+  });
+
+  window.addEventListener("message", function (event) {
+    if (event.origin !== location.origin || event.source !== frame.contentWindow) return;
+    var data = event.data || {};
+    if (data.type === "signrest-admin-page" && typeof data.path === "string") {
+      var url;
+      try { url = new URL(data.path, location.origin); } catch (error) { return; }
+      var page = PAGES[url.pathname];
+      if (page) showPage(page, url.search, true);
+      return;
+    }
+    if (data.type === "signrest-admin-sidebar") {
+      if (data.action === "toggle") collapseSidebar();
+      else closeMobile();
+    }
+  });
+
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
+  }
+
+  window.addEventListener("storage", function (event) {
+    if (event.key === "signrest-admin-theme") applyTheme(event.newValue || "light");
+    if (event.key === "signrest-admin-sidebar") app.classList.toggle("collapsed", event.newValue === "collapsed");
+  });
+
+  // The sidebar markup uses inline handlers, so these must be global.
+  window.collapseSidebar = collapseSidebar;
+  window.closeMobile = closeMobile;
+  window.logout = logout;
+
+  try { applyTheme(localStorage.getItem("signrest-admin-theme") || "light"); } catch (error) {}
+  markActive();
+  loadFrame(frameUrl(current, currentSearch));
+})();
+</script>
+</body>
+</html>

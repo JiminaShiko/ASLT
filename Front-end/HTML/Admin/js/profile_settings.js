@@ -553,8 +553,13 @@
         if (!app) return;
         if (window.innerWidth <= 800) {
           app.classList.toggle('mobile-open');
-        } else {
-          app.classList.toggle('collapsed');
+          return;
+        }
+        const collapsed = app.classList.toggle('collapsed');
+        try {
+          localStorage.setItem('signrest-admin-sidebar', collapsed ? 'collapsed' : 'expanded');
+        } catch (error) {
+          console.warn('Unable to save the sidebar preference.', error);
         }
       };
     }
@@ -580,18 +585,21 @@
     if (!host) return;
 
     try {
-      const response = await fetch('admin_sidebar.html', {
-        credentials: 'same-origin',
-        cache: 'no-store'
-      });
-      if (!response.ok) {
-        throw new Error('Unable to load the admin sidebar.');
-      }
+      // The server puts the sidebar in the page itself; only fetch when it is missing.
+      if (!host.querySelector('#admin-sidebar')) {
+        const response = await fetch('admin_sidebar.html', {
+          credentials: 'same-origin',
+          cache: 'no-store'
+        });
+        if (!response.ok) {
+          throw new Error('Unable to load the admin sidebar.');
+        }
 
-      const html = await response.text();
-      const template = document.createElement('template');
-      template.innerHTML = html.trim();
-      host.replaceChildren(template.content);
+        const html = await response.text();
+        const template = document.createElement('template');
+        template.innerHTML = html.trim();
+        host.replaceChildren(template.content);
+      }
 
       const profileLink = host.querySelector('a[href="/admin-dashboard/profile.html"], a[href="/admin-dashboard/profile_setting.html"]');
       if (profileLink) {
