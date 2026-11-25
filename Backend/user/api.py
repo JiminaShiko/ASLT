@@ -175,74 +175,37 @@ def image_to_bgr(image):
                         cv2.COLOR_RGB2BGR)
 
 
-def render_frame(frame, session, call, held, held_conf, committed, now, fps, how):
-    display = frame.copy()
-    if session.settings["landmarks"] and session.landmarks is not None:
-        hand_backend.draw_landmarks(display, session.landmarks[:, :2])
-    if session.settings["mirror"]:
-        display = cv2.flip(display, 1)
-    pending = session.smoother.hold_progress(now)
-    landmark_live.render(
-        display, held, held_conf or call["conf"], committed, session.text,
-        fps, session.landmarks is not None, pending, session.settings["hold"],
-        getattr(session.backend, "name", session.settings["backend"]),
-        top3=call["top3"], uncertain=call["uncertain"],
-        margin=call["margin"], need=call["need"],
-    )
-    if call["top3"] and (call["low_conf"] or call["close"]):
-        label, probability = call["top3"][0]
-        reason = (
-            f"below the {session.settings['conf']:.2f} confidence gate"
-            if call["low_conf"] else
-            f"only {call['margin'] * 100:.0f} pts ahead of "
-            f"{call['top3'][1][0]}" +
-            (f", {call['pair'][0]}/{call['pair'][1]} needs "
-             f"{call['need'] * 100:.0f}" if call["collide"] else "")
-        )
-        cv2.putText(display, f"no vote: {label} {probability * 100:.0f}%, {reason}",
-                    (14, 108), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                    (0, 200, 255), 1, cv2.LINE_AA)
-    if how in ("direct_0.3", "flip_0.3"):
-        cv2.putText(display, f"hand recovered ({how})", (14, 90),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (120, 220, 120), 1,
-                    cv2.LINE_AA)
-    if session.settings["motion"]:
-        if session.settings["motion_debug"]:
-            debug = session.motion.debug or {}
-            line = (
-                f"J/Z held={debug.get('held', 0):.2f}s gate={debug.get('gate', '?')} "
-                f"model={debug.get('top1') or '-'} {debug.get('p1', 0):.2f} "
-                f"idx={debug.get('idx_ext', 0):.2f} "
-                f"wrist(path={debug.get('wrist_path', 0):.2f} "
-                f"rev={debug.get('wrist_rev', 0)}) "
-                f"tip(path={debug.get('tip_path', 0):.2f} "
-                f"rev={debug.get('tip_rev', 0)})"
-            ) if debug else (
-                "J/Z: neither gate met (index-up shape, or a reading that was "
-                "not I / not an unsure X)"
-            )
-            cv2.putText(display, line, (14, 130), cv2.FONT_HERSHEY_SIMPLEX,
-                        0.42, (0, 200, 255), 1, cv2.LINE_AA)
-            cv2.putText(display, f"last motion letter: {session.motion.last or '-'}",
-                        (14, 148), cv2.FONT_HERSHEY_SIMPLEX, 0.42,
-                        (0, 200, 255), 1, cv2.LINE_AA)
-        hint = session.motion.hint()
-        if hint:
-            y = 166 if session.settings["motion_debug"] else 126
-            cv2.putText(display, session.motion.hint(width=62) + "  [--calibrate-jz]", (14, y),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.42,
-                        (0, 165, 255), 1, cv2.LINE_AA)
-    if session.cal is not None and not session.cal.done:
-        height, width = display.shape[:2]
-        cv2.rectangle(display, (0, height - 124), (width, height - 92),
-                      (0, 0, 0), -1)
-        cv2.putText(display, session.cal.prompt()[:104], (12, height - 102),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.52, (0, 220, 255), 2,
-                    cv2.LINE_AA)
+def encode_frame(display):
     ok, encoded = cv2.imencode(".jpg", display, [cv2.IMWRITE_JPEG_QUALITY, 82])
     if not ok:
         raise RuntimeError("Could not encode the rendered camera frame.")
     return "data:image/jpeg;base64," + base64.b64encode(encoded).decode("ascii")
+
+
+def render_frame(frame, session):
+    """Camera image for the page: hand-tracking lines only; all readings live in the page panels."""
+    display = frame.copy()
+    if session.settings["landmarks"] and session.landmarks is not None:
+        hand_backend.draw_landmarks(display, session.landmarks[:, :2])
+    return encode_frame(display)
+
+
+def draw_hand_landmarks(bgr, row):
+    """Draw both hand skeletons from a packed Holistic row (normalised coords)."""
+    if row is None:
+        return bgr
+    height, width = bgr.shape[:2]
+    for cols in (words_config.COLS_LHAND, words_config.COLS_RHAND):
+        points = row[cols, :2]
+        if np.isnan(points).any():
+            continue
+        pixels = [(int(x * width), int(y * height)) for x, y in points]
+        for start, end in hand_backend.HAND_CONNECTIONS:
+            cv2.line(bgr, pixels[start], pixels[end], (0, 255, 0), 2, cv2.LINE_AA)
+        for index, point in enumerate(pixels):
+            tip_color = (0, 128, 255) if index in (4, 8, 12, 16, 20) else (255, 255, 255)
+            cv2.circle(bgr, point, 4, tip_color, -1, cv2.LINE_AA)
+    return bgr
 
 
 class LiveSession:
@@ -308,7 +271,6 @@ class LiveSession:
             self.landmarks = result.landmarks
             call = landmark_live.blank_call()
             now = time.time()
-            committed = None
             if result.landmarks is not None:
                 self.hands += 1
                 probabilities = self.backend(normalize.features(result.landmarks))
@@ -332,7 +294,6 @@ class LiveSession:
                             now, result.landmarks, shown, call["conf"])
                     if motion_letter:
                         self.text += motion_letter
-                        committed = motion_letter
                         self.motion_letter = motion_letter
                         self.recent_commits.append(motion_letter)
             force, self.force_next = self.force_next, False
@@ -342,7 +303,6 @@ class LiveSession:
             )
             if typed:
                 self.text += typed
-                committed = typed
                 self.recent_commits.append(typed)
             self.held = held
             self.held_conf = held_conf or call["conf"]
@@ -351,10 +311,7 @@ class LiveSession:
             self.fps = self.frames / elapsed if elapsed > 0 else 0.0
             self.last_frame_ms = (time.perf_counter() - started) * 1000.0
             self.recent_commits = self.recent_commits[-8:]
-            self.frame_image = render_frame(
-                frame, self, call, held, self.held_conf, committed, now,
-                self.fps, how,
-            )
+            self.frame_image = render_frame(frame, self)
             return self.response()
 
     def response(self):
@@ -568,6 +525,7 @@ class WordLiveSession:
         self.hands = 0
         self.last_frame_ms = 0.0
         self.last_result = self.predictor.result()
+        self.frame_image = None
 
     def process_frame(self, image):
         with self.lock:
@@ -580,6 +538,11 @@ class WordLiveSession:
                 self.hands += 1
             self.last_frame_ms = (time.perf_counter() - started) * 1000.0
             self.last_result = result
+            buffered = self.predictor.buffer.array()
+            row = buffered[-1] if len(buffered) else None
+            self.frame_image = encode_frame(
+                draw_hand_landmarks(cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR), row)
+            )
             return self.response()
 
     def response(self):
@@ -593,6 +556,7 @@ class WordLiveSession:
             "hands": self.hands,
             "backend": "torch",
             "model_profile": "words",
+            "frame_image": self.frame_image,
         })
         return out
 

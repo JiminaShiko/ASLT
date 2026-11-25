@@ -242,7 +242,7 @@
     }
 
     #cam { z-index: 1; }
-    #cam-render { z-index: 2; object-fit: contain; background: #0f1812; }
+    #cam-render { z-index: 2; object-fit: cover; }
     #cam-box.mirrored video,
     #cam-box.mirrored #cam-render {
       transform: scaleX(-1);
@@ -1438,7 +1438,11 @@
     calibrationStatus.textContent = frame.hint || "";
     calibrationProgress.hidden = true;
     cancelCalibrationBtn.hidden = true;
-    camRender.hidden = true;
+
+    if (frame.frame_image) {
+      camRender.src = frame.frame_image;
+      camRender.hidden = false;
+    }
 
     clearLiveBtn.disabled = !liveActive;
     commitBtn.disabled = true;
