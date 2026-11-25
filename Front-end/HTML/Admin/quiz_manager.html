@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Manager | Signrest Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/sidebar-toggle.css">
+<style>
+:root{--q-bg:#f0f3e9;--q-surface:#fbfaf5;--q-tint:#eef2e8;--q-text:#2f3d33;--q-muted:#667369;--q-border:#dcdfd2;--q-accent:#4a6f53;--q-accent-2:#365640;--q-on:#fff;--q-tan:#b89a6a;--q-danger:#9a4a3d;--q-danger-bg:#f8ebe7;--q-ok-bg:#e8f1e7;--q-shadow:0 1px 2px rgba(47,61,51,.05),0 8px 24px rgba(47,61,51,.06)}
+:root[data-theme="dark"]{--q-bg:#1d2620;--q-surface:#283229;--q-tint:#2e3a30;--q-text:#ebe9df;--q-muted:#aeb4a8;--q-border:#424f45;--q-accent:#a4c4a4;--q-accent-2:#d5e5d4;--q-on:#17211a;--q-tan:#d8bf8f;--q-danger:#eeb0a4;--q-danger-bg:#3d2a26;--q-ok-bg:#263a2a}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--q-bg);color:var(--q-text);font-family:Inter,system-ui,sans-serif}
+.q-main{padding:0;min-height:100vh}
+.q-main>.q-header{height:72px;background:var(--q-bg)}
+.q-main .header-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.q-content{padding:28px 32px 48px}
+.q-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.q-top h1{font-family:"Playfair Display",Georgia,serif;font-weight:600;font-size:30px;margin:0}
+.q-top p{margin:4px 0 0;color:var(--q-muted);font-size:14px}
+.q-actions{display:flex;gap:8px;align-items:center}
+.mobile-collapse{display:none}
+.q-btn{border:0;border-radius:999px;padding:10px 18px;font:600 14px Inter,sans-serif;cursor:pointer;background:var(--q-accent);color:var(--q-on)}
+.q-btn:hover{background:var(--q-accent-2)}
+.q-btn.ghost{background:transparent;color:var(--q-text);border:1px solid var(--q-border)}
+.q-btn.danger{background:var(--q-danger);color:#fff}
+.q-icon{background:transparent;border:1px solid var(--q-border);color:var(--q-text);border-radius:8px;width:34px;height:34px;cursor:pointer}
+.q-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.q-stat{background:var(--q-surface);border:1px solid var(--q-border);border-radius:14px;padding:16px;box-shadow:var(--q-shadow)}
+.q-stat span{color:var(--q-muted);font-size:13px}.q-stat b{display:block;font-size:26px;margin-top:4px}
+.q-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.q-filters input,.q-filters select,.q-field input,.q-field select,.q-field textarea{background:var(--q-surface);color:var(--q-text);border:1px solid var(--q-border);border-radius:10px;padding:10px 12px;font:14px Inter,sans-serif}
+.q-filters input{flex:1;min-width:200px}
+.q-list{display:grid;gap:12px}
+.q-card{background:var(--q-surface);border:1px solid var(--q-border);border-radius:14px;padding:16px;display:grid;grid-template-columns:96px 1fr auto;gap:16px;align-items:center;box-shadow:var(--q-shadow)}
+.q-thumb{width:96px;height:72px;border-radius:10px;background:var(--q-tint);display:grid;place-items:center;overflow:hidden;font-weight:600;color:var(--q-accent);text-align:center;font-size:13px;padding:4px}
+.q-thumb img,.q-thumb video{width:100%;height:100%;object-fit:cover}
+.q-card h3{margin:6px 0 4px;font-size:16px}.q-card p{margin:0;color:var(--q-muted);font-size:13px}
+.q-badges{display:flex;gap:6px;flex-wrap:wrap}
+.q-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--q-tint);color:var(--q-text)}
+.q-badge.type{background:var(--q-accent);color:var(--q-on)}
+.q-badge.draft{background:transparent;border:1px dashed var(--q-border);color:var(--q-muted)}
+.q-badge.low{background:var(--q-danger-bg);color:var(--q-danger)}.q-badge.high{background:var(--q-ok-bg);color:var(--q-accent)}
+.q-row-actions{display:flex;gap:6px}
+.q-empty{text-align:center;padding:48px;color:var(--q-muted);background:var(--q-surface);border:1px dashed var(--q-border);border-radius:14px}
+dialog{border:0;border-radius:18px;padding:0;width:min(720px,94vw);background:var(--q-surface);color:var(--q-text);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(20,30,24,.55)}
+.q-dlg-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--q-border)}
+.q-dlg-head h2{margin:0;font-family:"Playfair Display",serif;font-weight:600}
+.q-dlg-body{padding:18px 22px;display:grid;gap:14px;max-height:70vh;overflow:auto}
+.q-dlg-foot{display:flex;justify-content:flex-end;gap:8px;padding:14px 22px;border-top:1px solid var(--q-border)}
+.q-field{display:grid;gap:6px;font-size:13px;font-weight:600}
+.q-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.q-seg{display:inline-flex;justify-self:start;border:1px solid var(--q-border);border-radius:999px;padding:3px}
+.q-seg button{border:0;background:transparent;color:var(--q-text);padding:8px 14px;border-radius:999px;cursor:pointer;font:600 13px Inter}
+.q-seg button.on{background:var(--q-accent);color:var(--q-on)}
+.q-opts{display:grid;gap:8px}
+.q-opt{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--q-border);border-radius:10px}
+.q-opt.correct{border-color:var(--q-accent);background:var(--q-ok-bg)}
+.q-opt select{width:100%}
+.q-model{background:var(--q-tint);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--q-muted)}
+.q-model b{color:var(--q-text)}
+.q-error{color:var(--q-danger);font-size:13px;margin:0}
+.q-toast{position:fixed;right:20px;bottom:20px;background:var(--q-accent);color:var(--q-on);padding:12px 18px;border-radius:12px;font-weight:600;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
+.q-toast.show{opacity:1;transform:none}
+@media(max-width:1000px){.q-stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:820px){.q-main{margin-left:0}.q-content{padding:18px}.mobile-collapse{display:flex}}
+@media(max-width:600px){.q-card{grid-template-columns:72px 1fr}.q-thumb{width:72px;height:60px}.q-row-actions{grid-column:1/-1;justify-content:flex-end}.q-two{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-page="quiz">
+<div id="adminSidebarHost"></div>
+
+<main class="q-main">
+  <header class="header q-header">
+    <div class="header-start">
+      <button class="collapse mobile-collapse" type="button" onclick="collapseSidebar()" aria-label="Toggle sidebar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg>
+      </button>
+      <div class="header-title">Admin Portal</div>
+    </div>
+    <div class="header-right">
+      <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"></button>
+      <label class="search">
+        <span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 5 5"></path></svg></span>
+        <input id="search" type="search" placeholder="Search questions..." aria-label="Search quiz questions">
+      </label>
+      <span class="icon-button notification-bell" role="img" aria-label="Notifications" title="Notifications">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
+      </span>
+      <div class="avatar header-avatar" id="top-initials">A</div>
+    </div>
+  </header>
+
+  <div class="q-content">
+   <div class="q-top">
+    <div><h1>Quiz Manager</h1><p>Create multiple‑choice questions from your sign dataset.</p></div>
+    <div class="q-actions">
+      <button class="q-btn" id="addBtn">+ Add question</button>
+    </div>
+  </div>
+
+  <section class="q-stats">
+    <div class="q-stat"><span>Total questions</span><b id="stTotal">0</b></div>
+    <div class="q-stat"><span>Sign → Text</span><b id="stS2T">0</b></div>
+    <div class="q-stat"><span>Text → Sign</span><b id="stT2S">0</b></div>
+    <div class="q-stat"><span>Low model confidence</span><b id="stLow">0</b></div>
+  </section>
+
+  <div class="q-filters">
+    <select id="fType"><option value="">All types</option><option value="sign_to_text">Sign → Text</option><option value="text_to_sign">Text → Sign</option></select>
+    <select id="fCat"><option value="">All categories</option></select>
+    <select id="fStatus"><option value="">All status</option><option value="active">Active</option><option value="draft">Draft</option></select>
+  </div>
+
+  <div id="list" class="q-list"></div>
+  </div>
+</main>
+
+<dialog id="qDialog">
+  <form id="qForm" method="dialog">
+    <div class="q-dlg-head"><h2 id="dlgTitle">Add question</h2><button type="button" class="q-icon" id="dlgClose" aria-label="Close">✕</button></div>
+    <div class="q-dlg-body">
+      <div class="q-field">Question type
+        <div class="q-seg" id="typeSeg">
+          <button type="button" data-type="sign_to_text" class="on">Sign → Text</button>
+          <button type="button" data-type="text_to_sign">Text → Sign</button>
+        </div>
+      </div>
+      <label class="q-field" id="promptSignWrap">Sign shown to learner (from dataset)<select id="promptSign"></select></label>
+      <label class="q-field" id="promptTextWrap" hidden>Text shown to learner<input id="promptText" maxlength="120" placeholder="e.g. Thank you"></label>
+      <div class="q-two">
+        <label class="q-field">Category<select id="qCat"></select></label>
+        <label class="q-field">Status<select id="qStatus"><option value="active">Active</option><option value="draft">Draft</option></select></label>
+      </div>
+      <div class="q-field">Answer options <span style="font-weight:400;color:var(--q-muted)">— pick the correct one with the radio</span>
+        <div class="q-opts" id="opts"></div>
+        <button type="button" class="q-btn ghost" id="suggestBtn" style="justify-self:start">✨ Suggest distractors from model</button>
+      </div>
+      <div class="q-model" id="modelBox">Model check: choose a sign to see the model confidence.</div>
+      <p class="q-error" id="formError" hidden></p>
+    </div>
+    <div class="q-dlg-foot"><button type="button" class="q-btn ghost" id="cancelBtn">Cancel</button><button type="submit" class="q-btn" id="saveBtn">Save question</button></div>
+  </form>
+</dialog>
+
+<dialog id="delDialog">
+  <div class="q-dlg-head"><h2>Delete question?</h2></div>
+  <div class="q-dlg-body"><p id="delText" style="margin:0"></p></div>
+  <div class="q-dlg-foot"><button class="q-btn ghost" id="delCancel">Cancel</button><button class="q-btn danger" id="delOk">Delete</button></div>
+</dialog>
+
+<div class="q-toast" id="toast" role="status"></div>
+<script src="js/quiz_manager.js"></script>
+</body>
+</html>

@@ -18,6 +18,7 @@ from admin.user_management import (  # noqa: E402
     ensure_user_management_schema,
     session_guard,
 )
+from admin.quiz_router import admin_quiz_bp, ensure_admin_quiz_schema  # noqa: E402
 from login_signup_pages.forgot_password_process import forgot_password_bp  # noqa: E402
 from login_signup_pages.google_auth import google_bp  # noqa: E402
 from login_signup_pages.login_process import ensure_login_columns, login_bp  # noqa: E402
@@ -66,6 +67,7 @@ app.register_blueprint(profile_bp)
 app.register_blueprint(admin_overview_bp)
 app.register_blueprint(admin_profile_bp)
 app.register_blueprint(admin_users_bp)
+app.register_blueprint(admin_quiz_bp)
 app.register_blueprint(cursor_bp)
 app.register_blueprint(learning_bp)
 
@@ -102,6 +104,7 @@ def require_login_for_translation_api():
 ensure_auth_tables()
 ensure_login_columns()
 ensure_user_management_schema()
+ensure_admin_quiz_schema()
 
 
 @app.route("/")
@@ -258,7 +261,7 @@ ADMIN_EMBED_SCRIPT = """<script id="admin-embed-script">
 (function () {
   if (window.parent === window) return;
   var origin = location.origin;
-  var files = {overview: 'admin_dashboard', logs: 'accuracy', materials: 'materials', users: 'user_management', profile: 'profile'};
+  var files = {overview: 'admin_dashboard', logs: 'accuracy', materials: 'materials', quiz: 'quiz_manager', users: 'user_management', profile: 'profile'};
   function post(message) { try { parent.postMessage(message, origin); } catch (error) {} }
   function navigateInside(href) {
     var url;
