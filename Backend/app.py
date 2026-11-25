@@ -14,7 +14,9 @@ from config.environment import load_environment  # noqa: E402
 from admin.overview import admin_overview_bp  # noqa: E402
 from admin.profile import admin_profile_bp  # noqa: E402
 from admin.user_management import (  # noqa: E402
+    REMEMBER_SESSION_LIFETIME,
     admin_users_bp,
+    end_current_session,
     ensure_user_management_schema,
     session_guard,
 )
@@ -55,6 +57,8 @@ app.register_blueprint(text_to_sign_bp)
 app.register_blueprint(agent_mail_bp)
 
 app.secret_key = os.getenv("SECRET_KEY", "dev-fallback-secret-key")
+# Lifetime of the cookie written for a "Remember me" login (server-side row matches it).
+app.permanent_session_lifetime = REMEMBER_SESSION_LIFETIME
 
 # Required behind Render's reverse proxy so HTTPS and cookies resolve correctly.
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
@@ -114,6 +118,14 @@ def index():
 
 @app.route("/login")
 def login_signup_view():
+    # A "remember me" session should take the user straight in instead of showing the
+    # form again. ?switch=1 opts out (log in as someone else).
+    if session.get("user_id") and not request.args.get("switch"):
+        if (session.get("user_role") or "").lower() == "admin":
+            return redirect("/admin-dashboard")
+        if not session.get("profile_completed"):
+            return redirect("/profile-setup")
+        return redirect("/home")
     return send_from_directory(LOGIN_PAGES_DIR, "login_page.html")
 
 
@@ -132,6 +144,22 @@ def reset_password_view():
     if not session.get("password_reset_verified_email"):
         return redirect("/forgot-password")
     return send_from_directory(LOGIN_PAGES_DIR, "password_reset.html")
+
+
+@app.route("/signup")
+def signup_view():
+    # "switch" means: this visitor is signing up as someone new, so end any remembered
+    # session first instead of sending them back to their own dashboard.
+    if request.args.get("switch"):
+        end_current_session("logout")
+        session.clear()
+    elif session.get("user_id"):
+        if (session.get("user_role") or "").lower() == "admin":
+            return redirect("/admin-dashboard")
+        if not session.get("profile_completed"):
+            return redirect("/profile-setup")
+        return redirect("/home")
+    return send_from_directory(LOGIN_PAGES_DIR, "login_page.html")
 
 
 @app.route("/api/auth/oauth-flash", methods=["GET"])

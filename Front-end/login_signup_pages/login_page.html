@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Signrest — Login &amp; Sign-up</title>
-  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="auth_style.css" />
+  <link rel="stylesheet" href="tailwind.css" />
 </head>
 <body>
 
@@ -118,7 +118,11 @@
           <p id="confirmPasswordErrorMsg" class="field-error-msg" aria-live="polite"></p>
         </div>
 
-        <div id="forgotPswRow" class="hidden justify-end mb-4">
+        <div id="forgotPswRow" class="hidden items-center justify-between mb-4">
+          <label for="rememberMeInput" class="remember-me-label">
+            <input type="checkbox" id="rememberMeInput" name="remember_me" class="remember-me-checkbox" checked />
+            <span>Remember me</span>
+          </label>
           <a href="/forgot-password" id="forgotPswLink" class="sub-link">forgot password?</a>
         </div>
 
@@ -205,8 +209,10 @@
     };
 
     const savedTheme = localStorage.getItem("signrest_theme");
+    const urlMode = new URLSearchParams(location.search).get("mode");
+    const isSignupPath = /^\/signup\/?$/.test(location.pathname);
     const state = {
-      mode: "signup",
+      mode: (urlMode === "signup" || (urlMode !== "login" && isSignupPath)) ? "signup" : "login",
       theme: savedTheme === "dark" ? "dark" : "light",
       isSubmitting: false
     };
@@ -239,6 +245,7 @@
     const emailErrorMsg = document.getElementById("emailErrorMsg");
     const passwordErrorMsg = document.getElementById("passwordErrorMsg");
     const confirmPasswordErrorMsg = document.getElementById("confirmPasswordErrorMsg");
+    const rememberMeInput = document.getElementById("rememberMeInput");
 
     const forgotPswRow = document.getElementById("forgotPswRow");
     const signupSpacer = document.getElementById("signupSpacer");
@@ -497,6 +504,11 @@
       validateFormState(false);
     });
 
+    rememberMeInput.checked = localStorage.getItem("signrest_remember_me") !== "0";
+    rememberMeInput.addEventListener("change", () => {
+      localStorage.setItem("signrest_remember_me", rememberMeInput.checked ? "1" : "0");
+    });
+
     function toggleTheme() {
       state.theme = state.theme === "light" ? "dark" : "light";
       renderTheme();
@@ -507,6 +519,7 @@
 
     switchModeBtn.addEventListener("click", () => {
       state.mode = state.mode === "signup" ? "login" : "signup";
+      try { history.replaceState(null, "", state.mode === "signup" ? "/signup" : "/login"); } catch (e) {}
       renderAuthMode();
     });
 
@@ -517,7 +530,7 @@
       primarySubmitBtn.disabled = true;
 
       setTimeout(() => {
-        window.location.href = `${API_ENDPOINTS.googleAuth}?mode=${state.mode}`;
+        window.location.href = `${API_ENDPOINTS.googleAuth}?mode=${state.mode}&remember=${rememberMeInput.checked ? "1" : "0"}`;
       }, 350);
     });
 
@@ -544,7 +557,8 @@
           body: JSON.stringify({
             email,
             password,
-            platform: "web"
+            platform: "web",
+            remember_me: rememberMeInput.checked
           })
         });
 

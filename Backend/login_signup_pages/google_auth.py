@@ -74,6 +74,7 @@ def google_login_start():
     state_token = secrets.token_urlsafe(24)
     session["google_oauth_state"] = state_token
     session["google_oauth_mode"] = mode
+    session["google_oauth_remember"] = (request.args.get("remember") or "").strip().lower() in {"1", "true", "yes"}
 
     params = {
         "client_id": client_id,
@@ -96,6 +97,7 @@ def google_callback():
     """
     mode = session.pop("google_oauth_mode", "login")
     expected_state = session.pop("google_oauth_state", None)
+    remember_me = bool(session.pop("google_oauth_remember", False))
     returned_state = request.args.get("state")
 
     if request.args.get("error"):
@@ -255,6 +257,8 @@ def google_callback():
         )
         session["profile_photo"] = profile_photo
         session["profile_completed"] = has_complete_profile
+        session["remember_me"] = remember_me
+        session.permanent = remember_me
         # Routing rules
         if role == "admin":
             return redirect("/admin-dashboard")

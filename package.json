@@ -1,0 +1,13 @@
+{
+  "name": "aslt-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tailwind CSS build for the Signrest auth pages (no CDN in production)",
+  "scripts": {
+    "build:css": "tailwindcss -i ./Front-end/css/tailwind.input.css -o ./Front-end/login_signup_pages/tailwind.css --minify",
+    "watch:css": "tailwindcss -i ./Front-end/css/tailwind.input.css -o ./Front-end/login_signup_pages/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
+}

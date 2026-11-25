@@ -42,8 +42,9 @@ admin_users_bp = Blueprint("admin_users", __name__)
 # --------------------------------------------------------------------------------------
 # Settings
 # --------------------------------------------------------------------------------------
-SESSION_LIFETIME = timedelta(hours=24)   # how long a web login stays valid server-side
-LAST_SEEN_WRITE_SECONDS = 60             # write last_seen_at at most once a minute per session
+SESSION_LIFETIME = timedelta(hours=24)        # how long a web login stays valid server-side
+REMEMBER_SESSION_LIFETIME = timedelta(days=30)  # "Remember me" logins
+LAST_SEEN_WRITE_SECONDS = 60                   # write last_seen_at at most once a minute per session
 STATIC_PREFIXES = ("/css/", "/js/", "/assets/")
 
 STATUS_FILTERS = {"all", "active", "inactive", "banned", "pending"}
@@ -285,12 +286,20 @@ def ensure_user_management_schema() -> None:
 # --------------------------------------------------------------------------------------
 # Server-side web sessions (used by the login flows and app.py)
 # --------------------------------------------------------------------------------------
-def start_user_session(user_id: int) -> None:
+def start_user_session(user_id: int, remember: bool | None = None) -> None:
     """
     Create a `user_sessions` row for this login and remember its id + a secret token in the
     Flask cookie. Call right after the login code has filled flask.session.
+    `remember` ("Remember me") keeps the row valid for REMEMBER_SESSION_LIFETIME and makes
+    the Flask cookie persistent, so reopening the browser stays signed in. When omitted it
+    is taken from session["remember_me"], which the login flow sets at the OTP step.
     Raises on database problems so the caller's existing error handling reports it.
     """
+    if remember is None:
+        remember = bool(session.get("remember_me"))
+    remember = bool(remember)
+    lifetime = REMEMBER_SESSION_LIFETIME if remember else SESSION_LIFETIME
+
     token = secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
     browser, os_name, device_type = parse_user_agent(request.headers.get("User-Agent"))
@@ -306,7 +315,7 @@ def start_user_session(user_id: int) -> None:
             """,
             (
                 user_id, token_hash, browser, os_name, device_type,
-                (request.remote_addr or "")[:45], now, now + SESSION_LIFETIME, now,
+                (request.remote_addr or "")[:45], now, now + lifetime, now,
             ),
         )
         session_id = cursor.lastrowid
@@ -317,6 +326,9 @@ def start_user_session(user_id: int) -> None:
     session["session_id"] = int(session_id)
     session["session_token"] = token
     session["session_seen_at"] = int(time.time())
+    session["remember_me"] = remember
+    # A non-permanent cookie is deleted when the browser closes.
+    session.permanent = remember
 
 
 def end_current_session(reason: str = "logout") -> None:
@@ -413,6 +425,13 @@ def session_guard():
             }), 503
         reason = _validate_server_session()
     if reason is None:
+        # Keep the cookie's persistence in step with the remembered choice. Flask only
+        # keeps a cookie alive after the browser closes while _permanent survives in it,
+        # so a handler that rebuilds the session must not silently downgrade it.
+        if session.get("user_id"):
+            remember = bool(session.get("remember_me"))
+            if session.permanent != remember:
+                session.permanent = remember
         return None
     if reason == "unavailable":
         return jsonify({"success": False, "message": "Service temporarily unavailable."}), 503

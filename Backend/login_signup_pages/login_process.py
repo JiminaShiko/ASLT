@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request, session
 from werkzeug.security import check_password_hash
 
+from admin.user_management import end_current_session
 from config.database import get_db_connection
 from config.mailer import send_otp_email
 
@@ -78,6 +79,7 @@ def process_login():
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
+    remember_me = bool(data.get("remember_me"))
 
     if not email or "@" not in email or "." not in email.split("@")[-1]:
         return jsonify({"success": False, "message": "Invalid Email!"}), 400
@@ -235,6 +237,8 @@ def process_login():
         session.pop("user_email", None)
         session["pending_login_user_id"] = user_id
         session["pending_login_email"] = email
+        # Carried over to the OTP step, which opens the real session.
+        session["pending_remember_me"] = remember_me
 
         return jsonify(
             {
@@ -267,6 +271,7 @@ def verify_login_otp():
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or session.get("pending_login_email") or "").strip().lower()
     otp_input = (data.get("otp") or "").strip()
+    remember_me = bool(data.get("remember_me", session.get("pending_remember_me", False)))
 
     if not email:
         return jsonify({"success": False, "message": "Email and 6-digit OTP are required."}), 400
@@ -355,6 +360,10 @@ def verify_login_otp():
         session["username"] = record.get("username")
         session["profile_photo"] = record.get("profile_photo")
         session["profile_completed"] = has_complete_profile
+        session["remember_me"] = remember_me
+        # Permanent cookie = still signed in after the browser is reopened; the
+        # server-side row gets REMEMBER_SESSION_LIFETIME when the guard creates it.
+        session.permanent = remember_me
 
         if role == "admin":
             redirect_url = "/admin-dashboard"
@@ -445,5 +454,6 @@ def resend_login_otp():
 
 @login_bp.route("/api/logout", methods=["POST", "GET"])
 def logout_user():
+    end_current_session("logout")
     session.clear()
     return jsonify({"success": True, "redirect_url": "/login"}), 200
