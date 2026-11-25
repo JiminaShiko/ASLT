@@ -8,12 +8,14 @@ does not provide its API endpoint.
 - admin_dashboard.html — dashboard shell and Overview entry point
 - accuracy.html — AI Accuracy & Logs, read-only model evaluations and predictions
 - materials.html — Sign Materials, API-backed library with search, categories, details, add/edit/delete
+- quiz_manager.html — Quiz Manager for questions built from the sign materials library
 - profile.html — Profile Settings and account details
 - css/style.css — shared styles and light/dark theme tokens
 - css/profile.css — Profile Settings styles
 - js/app.js — shared page controls, live Overview, and theme preference
 - js/api.js — FastAPI connection adapter used by accuracy.html and materials.html
 - js/materials.js — material library and editing controls (load before js/app.js on materials.html)
+- js/quiz_manager.js — API-backed quiz question management
 - js/profile.js — Profile Settings loading and form controls
 - assets/images/mist.jpg — light mode cover photo
 - assets/images/forest.jpg — dark mode cover photo
@@ -27,10 +29,9 @@ redrawing them. Each file is a 24x24 stroke icon using `currentColor`, matching
 the on-screen rendering.
 
 ## Scope
-This is the foundation setup, not the complete eight-module dashboard.
-Overview is connected to the Flask API. AI Accuracy & Logs and Sign Materials
-have API-backed frontends but need their documented endpoints; the other four
-navigation entries show a coming-soon message.
+Overview and Quiz Manager are connected to the Flask API. AI Accuracy & Logs and
+Sign Materials have API-backed frontends but need their documented endpoints;
+Feedbacks and Cursor Effects still show a coming-soon message.
 Light mode uses sage and parchment; dark mode uses the original deep forest palette.
 Theme choice is saved only in this browser's localStorage. Overview data comes
 from the Flask `/api/admin/overview` endpoint and the configured MySQL database.
@@ -41,6 +42,7 @@ Profile Settings is reachable and loads the signed-in administrator's profile
 from Flask. Profile edits, photo upload, and password changes still need
 backend endpoints.
 Sign Materials also contains no demo or cached records. It uses the existing sign_materials fields, including image_path (a public HTTP image path/URL, not a local disk path). No video or status columns are assumed. Changes are confirmed only after successful API responses. Images must be served by your existing app; file uploads are not included.
+Quiz Manager uses the existing sign_materials library and creates the admin-only admin_quiz_questions and admin_quiz_options tables during Flask startup. It does not read or modify the learner quiz tables or endpoints.
 Fonts use Google Fonts when online, with local serif/sans-serif fallbacks.
 Existing Overview charts are vanilla JavaScript; Chart.js can be added during the analytics page step.
 Future pages should reuse the shared styles and script, with a separate HTML page per module.
