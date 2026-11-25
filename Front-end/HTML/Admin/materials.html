@@ -1281,8 +1281,12 @@
     };
 
     window.collapseSidebar = () => {
-      if (window.matchMedia("(max-width: 800px)").matches) app.classList.toggle("mobile-open");
-      else app.classList.toggle("collapsed");
+      if (window.matchMedia("(max-width: 800px)").matches) {
+        app.classList.toggle("mobile-open");
+        return;
+      }
+      const collapsed = app.classList.toggle("collapsed");
+      try { localStorage.setItem("signrest-admin-sidebar", collapsed ? "collapsed" : "expanded"); } catch { /* storage unavailable */ }
     };
     window.closeMobile = () => app.classList.remove("mobile-open");
     window.logout = async () => {
@@ -1317,13 +1321,17 @@
 
     async function loadSidebar() {
       const host = byId("adminSidebarHost");
-      let markup = "";
-      try {
-        const response = await fetch(SIDEBAR_URL, { credentials: "same-origin" });
-        if (response.ok) markup = await response.text();
-      } catch { /* use the built-in menu below */ }
-      if (markup) host.innerHTML = markup;
-      else host.replaceChildren(byId("fallbackSidebar").content.cloneNode(true));
+      if (!host) return;
+      // The server puts the sidebar in the page itself; only fetch when it is missing.
+      if (!host.querySelector("#admin-sidebar")) {
+        let markup = "";
+        try {
+          const response = await fetch(SIDEBAR_URL, { credentials: "same-origin" });
+          if (response.ok) markup = await response.text();
+        } catch { /* use the built-in menu below */ }
+        if (markup) host.innerHTML = markup;
+        else host.replaceChildren(byId("fallbackSidebar").content.cloneNode(true));
+      }
       const currentFile = window.location.pathname.split("/").pop();
       const onThisPage = SIDEBAR_ALIASES.includes(currentFile);
       host.querySelectorAll(".nav-item[href]").forEach((link) => {

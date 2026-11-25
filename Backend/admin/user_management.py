@@ -33,7 +33,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
-from flask import Blueprint, current_app, jsonify, redirect, request, session
+from flask import Blueprint, current_app, g, jsonify, redirect, request, session
 
 from config.database import get_db_connection
 
@@ -353,7 +353,7 @@ def _validate_server_session():
         with _db() as (conn, cursor):
             cursor.execute(
                 """
-                SELECT s.refresh_token_hash, s.revoked_at, s.expires_at, u.status
+                SELECT s.refresh_token_hash, s.revoked_at, s.expires_at, u.role, u.status
                 FROM user_sessions s
                 JOIN users u ON u.user_id = s.user_id
                 WHERE s.session_id = %s AND s.user_id = %s
@@ -372,6 +372,12 @@ def _validate_server_session():
             now = _now()
             if row["expires_at"] is None or row["expires_at"] <= now:
                 return "expired"
+            # admin_required() runs right after this guard in the same request;
+            # hand it the freshly read role/status so it needn't query again.
+            g.signrest_account = {
+                "role": (row["role"] or "").lower(),
+                "status": (row["status"] or "").lower(),
+            }
             if (row["status"] or "").lower() not in {"active", "pending"}:
                 return "account_disabled"
 
@@ -431,20 +437,26 @@ def admin_required(view):
             return _err("Authentication required.", 401)
         if (session.get("user_role") or "").lower() != "admin":
             return _err("Administrator access required.", 403)
-        try:
-            with _db() as (_conn, cursor):
-                cursor.execute(
-                    "SELECT role, status FROM users WHERE user_id = %s", (session["user_id"],)
-                )
-                row = cursor.fetchone()
-        except Exception:  # noqa: BLE001
-            current_app.logger.exception("Could not verify administrator")
-            return _err("Could not verify administrator access.", 500)
-        if (
-            not row
-            or (row["role"] or "").lower() != "admin"
-            or (row["status"] or "").lower() != "active"
-        ):
+        # session_guard() already read this account in the same request.
+        account = g.get("signrest_account")
+        if account is None:
+            try:
+                with _db() as (_conn, cursor):
+                    cursor.execute(
+                        "SELECT role, status FROM users WHERE user_id = %s",
+                        (session["user_id"],),
+                    )
+                    row = cursor.fetchone()
+            except Exception:  # noqa: BLE001
+                current_app.logger.exception("Could not verify administrator")
+                return _err("Could not verify administrator access.", 500)
+            if not row:
+                return _err("Administrator access required.", 403)
+            account = {
+                "role": (row["role"] or "").lower(),
+                "status": (row["status"] or "").lower(),
+            }
+        if account["role"] != "admin" or account["status"] != "active":
             return _err("Administrator access required.", 403)
         if request.method not in ("GET", "HEAD") and request.headers.get("X-Signrest-Request") != "admin":
             return _err("Missing or invalid request header.", 403)

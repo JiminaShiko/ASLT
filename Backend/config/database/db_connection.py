@@ -1,4 +1,6 @@
 import os
+import threading
+import time
 from pathlib import Path
 import mysql.connector
 from mysql.connector import Error
@@ -10,8 +12,22 @@ CURRENT_DIR = Path(__file__).resolve().parent
 
 load_environment()
 
+# A fresh connection to the hosted database costs roughly 600 ms (TCP + TLS +
+# auth), and every admin request opened two or three of them, so pages spent
+# seconds just connecting. Closed connections are kept here and handed out
+# again instead: the public get_db_connection()/close() contract is unchanged,
+# close() simply returns the session to this pool.
+MAX_IDLE_CONNECTIONS = max(1, int(os.getenv("DB_POOL_SIZE", "4")))
+# A session parked longer than this must prove it can still run a query before
+# it is handed out: the hosted TiDB drops idle sockets and ping() alone did not
+# always notice, which surfaced as a one-off 503 on the next page load.
+IDLE_REVALIDATE_SECONDS = 30
 
-def _resolve_ssl_ca_path() -> str | None:
+_idle_connections = []
+_idle_lock = threading.Lock()
+
+
+def _resolve_ssl_ca_path():
     """Find DB_SSL_CA across localhost and Render Secret Files locations."""
     ssl_ca = os.getenv("DB_SSL_CA", "").strip()
     if not ssl_ca:
@@ -32,8 +48,7 @@ def _resolve_ssl_ca_path() -> str | None:
     return None
 
 
-def get_db_connection():
-    """Open a new MySQL/TiDB connection from environment variables."""
+def _connection_config():
     db_host = os.getenv("DB_HOST")
     db_port = int(os.getenv("DB_PORT", "4000"))
     db_user = os.getenv("DB_USER")
@@ -64,15 +79,126 @@ def get_db_connection():
         conn_config["ssl_verify_cert"] = verify_ssl
         conn_config["ssl_verify_identity"] = False
 
+    return conn_config
+
+
+def _connect():
     try:
-        connection = mysql.connector.connect(**conn_config)
-        return connection
+        return mysql.connector.connect(**_connection_config())
     except Error as err:
         print(f"[Database Connection Error]: {err}")
         raise
 
 
-def test_db_connection() -> bool:
+def _discard(connection):
+    try:
+        connection.close()
+    except Exception:  # noqa: BLE001 - already gone
+        pass
+
+
+def _acquire():
+    with _idle_lock:
+        idle_for = 0.0
+        connection = None
+        if _idle_connections:
+            connection, released_at = _idle_connections.pop()
+            idle_for = time.monotonic() - released_at
+    if connection is None:
+        return _connect()
+
+    # is_connected() is a round trip on this connector, so liveness is proven
+    # by the ROLLBACK below (and by a ping only for long-idle sessions) instead
+    # of on every checkout.
+    try:
+        if getattr(connection, "in_transaction", False):
+            connection.rollback()
+        if idle_for > IDLE_REVALIDATE_SECONDS:
+            connection.ping(reconnect=True, attempts=1, delay=0)
+            probe = connection.cursor()
+            try:
+                probe.execute("SELECT 1")
+                probe.fetchall()
+            finally:
+                probe.close()
+        return connection
+    except Exception:  # noqa: BLE001 - the session died while it was idle
+        _discard(connection)
+        return _connect()
+
+
+def _release(connection):
+    # Never park a session with a transaction, its snapshot or its locks open;
+    # ROLLBACK doubles as the liveness check (success proves the session works).
+    try:
+        connection.rollback()
+    except Exception:  # noqa: BLE001 - broken session, never reuse it
+        _discard(connection)
+        return
+
+    with _idle_lock:
+        if len(_idle_connections) < MAX_IDLE_CONNECTIONS:
+            _idle_connections.append((connection, time.monotonic()))
+            return
+    _discard(connection)
+
+
+class ReusableConnection:
+    """Proxy that behaves like the raw connection, except close() recycles it."""
+
+    __slots__ = ("_connection",)
+
+    def __init__(self, connection):
+        object.__setattr__(self, "_connection", connection)
+
+    def __getattr__(self, name):
+        connection = object.__getattribute__(self, "_connection")
+        if connection is None:
+            raise AttributeError(name)
+        return getattr(connection, name)
+
+    def __setattr__(self, name, value):
+        setattr(object.__getattribute__(self, "_connection"), name, value)
+
+    def cursor(self, *args, **kwargs):
+        connection = object.__getattribute__(self, "_connection")
+        if connection is None:
+            raise Error("Connection is closed")
+        return connection.cursor(*args, **kwargs)
+
+    def commit(self):
+        connection = object.__getattribute__(self, "_connection")
+        if connection is not None:
+            connection.commit()
+
+    def rollback(self):
+        connection = object.__getattribute__(self, "_connection")
+        if connection is not None:
+            connection.rollback()
+
+    def is_connected(self):
+        connection = object.__getattribute__(self, "_connection")
+        if connection is None:
+            return False
+        try:
+            return connection.is_connected()
+        except Exception:  # noqa: BLE001 - pending result set on a live socket
+            return True
+
+    def close(self):
+        connection = object.__getattribute__(self, "_connection")
+        if connection is None:
+            return
+        object.__setattr__(self, "_connection", None)
+        _release(connection)
+
+
+def get_db_connection():
+    """Check out a MySQL/TiDB connection; close() returns it for reuse."""
+    return ReusableConnection(_acquire())
+
+
+def test_db_connection():
     """Verify database connectivity."""
     conn = None
     try:
@@ -85,7 +211,7 @@ def test_db_connection() -> bool:
         print(f"[Database]: Connection check failed -> {e}")
         return False
     finally:
-        if conn and conn.is_connected():
+        if conn:
             conn.close()
 
 
