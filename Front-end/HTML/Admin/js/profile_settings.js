@@ -15,7 +15,9 @@
   // SVG Icons for Theme Toggle & Shared Controls
   const ICONS = {
     moon: '<svg class="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/></svg>',
-    sun: '<svg class="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg>'
+    sun: '<svg class="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg>',
+    eye: '<svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
+    eyeOff: '<svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.6 5.1A9.9 9.9 0 0 1 12 5c6.4 0 10 7 10 7a18.4 18.4 0 0 1-2.6 3.6"/><path d="M6.9 6.9A18.4 18.4 0 0 0 2 12s3.6 7 10 7a9.9 9.9 0 0 0 4.1-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M2 2l20 20"/></svg>'
   };
 
   // Frontend-only snapshot state aligned with users table (username & email)
@@ -372,7 +374,9 @@
 
         const isHidden = targetInput.type === 'password';
         targetInput.type = isHidden ? 'text' : 'password';
-        btn.textContent = isHidden ? 'Hide' : 'Show';
+        btn.innerHTML = isHidden ? ICONS.eyeOff : ICONS.eye;
+        btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+        btn.setAttribute('title', isHidden ? 'Hide password' : 'Show password');
         btn.setAttribute('aria-pressed', String(isHidden));
       });
     });
@@ -396,7 +400,9 @@
           const targetId = btn.getAttribute('data-toggle-password');
           const targetInput = targetId ? document.getElementById(targetId) : null;
           if (targetInput) targetInput.type = 'password';
-          btn.textContent = 'Show';
+          btn.innerHTML = ICONS.eye;
+          btn.setAttribute('aria-label', 'Show password');
+          btn.setAttribute('title', 'Show password');
           btn.setAttribute('aria-pressed', 'false');
         });
       }, 0);
@@ -469,7 +475,10 @@
           })
         });
         passwordForm.reset();
-        showFormMessage(messageEl, 'Your password has been updated.', 'success');
+        // The reset handler clears the message area on a 0ms timer, so confirm after it runs.
+        setTimeout(function () {
+          showFormMessage(messageEl, 'Your password has been updated.', 'success');
+        }, 0);
       } catch (err) {
         const errorMsg = (err && err.message) ? err.message : 'Unable to update password. Please try again.';
         showFormMessage(messageEl, errorMsg, 'error');
@@ -580,6 +589,44 @@
     }
   }
 
+  /**
+   * Loads the signed-in administrator's record and fills the summary card,
+   * the account form and the sidebar identity. Runs even when the page is
+   * embedded in the shell frame, where there is no sidebar slot of its own.
+   */
+  async function loadAdminProfile() {
+    try {
+      const result = await adminProfileRequest('/api/admin/profile', { cache: 'no-store' });
+      const profile = (result && result.item) || {};
+      const username = typeof profile.username === 'string' ? profile.username.trim() : '';
+      const email = typeof profile.email === 'string' ? profile.email.trim() : '';
+
+      const sidebarInitials = document.getElementById('admin-initials');
+      const sidebarName = document.getElementById('admin-name');
+      if (username && sidebarName) sidebarName.textContent = username;
+      if (username && sidebarInitials) sidebarInitials.textContent = getInitials(username);
+
+      const usernameInput = document.getElementById('profileSettingsUsername');
+      const emailInput = document.getElementById('profileSettingsEmail');
+      if (usernameInput) usernameInput.value = username;
+      if (emailInput) emailInput.value = email;
+
+      profileState.username = username;
+      profileState.email = email;
+      profileState.avatarUrl = typeof profile.profile_photo === 'string'
+        ? profile.profile_photo
+        : null;
+      syncProfileSummary(profileState);
+    } catch (error) {
+      console.error('Unable to load the administrator profile.', error);
+      showFormMessage(
+        document.getElementById('profileSettingsAccountMessage'),
+        (error && error.message) || 'Unable to load the administrator profile.',
+        'error'
+      );
+    }
+  }
+
   async function initAdminSidebar() {
     const host = document.getElementById('adminSidebarHost');
     if (!host) return;
@@ -610,39 +657,6 @@
       const overviewLink = host.querySelector('a[href="/admin-dashboard/"]');
       if (overviewLink) overviewLink.classList.remove('active');
 
-      const sidebarInitials = host.querySelector('#admin-initials');
-      const sidebarName = host.querySelector('#admin-name');
-      try {
-        const result = await adminProfileRequest('/api/admin/profile', { cache: 'no-store' });
-        const profile = result.item;
-        const username = typeof profile.username === 'string' ? profile.username.trim() : '';
-        const email = typeof profile.email === 'string' ? profile.email.trim() : '';
-
-        if (username && sidebarName) sidebarName.textContent = username;
-        if (username && sidebarInitials) sidebarInitials.textContent = getInitials(username);
-
-        const usernameInput = document.getElementById('profileSettingsUsername');
-        const emailInput = document.getElementById('profileSettingsEmail');
-        if (username) {
-          profileState.username = username;
-          if (usernameInput) usernameInput.value = username;
-        }
-        if (email) {
-          profileState.email = email;
-          if (emailInput) emailInput.value = email;
-        }
-        profileState.avatarUrl = typeof profile.profile_photo === 'string'
-          ? profile.profile_photo
-          : null;
-        syncProfileSummary(profileState);
-      } catch (error) {
-        console.error('Unable to load the administrator profile.', error);
-        showFormMessage(
-          document.getElementById('profileSettingsAccountMessage'),
-          error.message || 'Unable to load the administrator profile.',
-          'error'
-        );
-      }
     } catch (error) {
       host.textContent = '';
       console.error(error);
@@ -650,10 +664,11 @@
   }
 
   // Initialize everything once DOM is ready
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', async function () {
     initDashboardControls();
-    initAdminSidebar();
     initAccountSection();
     initPasswordSection();
+    await initAdminSidebar();
+    await loadAdminProfile();
   });
 })();

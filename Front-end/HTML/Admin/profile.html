@@ -500,7 +500,13 @@
     /* Password */
     .profile-settings-password-field { position: relative; }
 
-    .profile-settings-password-field .profile-settings-input { padding-right: 64px; }
+    .profile-settings-password-field .profile-settings-input { padding-right: 48px; }
+
+    .profile-settings-password-toggle .password-eye {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
 
     .profile-settings-password-toggle {
       position: absolute;
@@ -513,8 +519,9 @@
       background: transparent;
       color: var(--ps-accent-strong);
       cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .profile-settings-password-toggle:hover { background: var(--ps-accent-soft); }
@@ -783,7 +790,7 @@
                     <label class="profile-settings-label" for="profileSettingsCurrentPassword">Current password</label>
                     <div class="profile-settings-password-field">
                       <input class="profile-settings-input" id="profileSettingsCurrentPassword" type="password" autocomplete="current-password" required>
-                      <button class="profile-settings-password-toggle" type="button" data-toggle-password="profileSettingsCurrentPassword">Show</button>
+                      <button class="profile-settings-password-toggle" type="button" data-toggle-password="profileSettingsCurrentPassword" aria-label="Show password" title="Show password" aria-pressed="false"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
                     </div>
                   </div>
 
@@ -791,7 +798,7 @@
                     <label class="profile-settings-label" for="profileSettingsNewPassword">New password</label>
                     <div class="profile-settings-password-field">
                       <input class="profile-settings-input" id="profileSettingsNewPassword" type="password" autocomplete="new-password" required>
-                      <button class="profile-settings-password-toggle" type="button" data-toggle-password="profileSettingsNewPassword">Show</button>
+                      <button class="profile-settings-password-toggle" type="button" data-toggle-password="profileSettingsNewPassword" aria-label="Show password" title="Show password" aria-pressed="false"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
                     </div>
                     <div class="profile-settings-password-strength" aria-hidden="true">
                       <span class="profile-settings-strength-bar" id="profileSettingsStrength1"></span>
@@ -806,7 +813,7 @@
                     <label class="profile-settings-label" for="profileSettingsConfirmPassword">Confirm new password</label>
                     <div class="profile-settings-password-field">
                       <input class="profile-settings-input" id="profileSettingsConfirmPassword" type="password" autocomplete="new-password" required>
-                      <button class="profile-settings-password-toggle" type="button" data-toggle-password="profileSettingsConfirmPassword">Show</button>
+                      <button class="profile-settings-password-toggle" type="button" data-toggle-password="profileSettingsConfirmPassword" aria-label="Show password" title="Show password" aria-pressed="false"><svg class="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
                     </div>
                   </div>
 
