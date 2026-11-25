@@ -989,6 +989,10 @@
       font-size: 0.86rem;
     }
 
+    .lt-cam-placeholder[hidden] {
+      display: none;
+    }
+
     .lt-side {
       display: flex;
       flex-direction: column;
@@ -1611,9 +1615,9 @@
   const ltNextBtn = document.getElementById("ltNextBtn");
   const tbTestBtn = document.getElementById("tbTestBtn");
 
-  // Minimum gap between camera frame posts. Words need the model's frame
-  // cadence, so they are paced by the model itself.
-  const TEST_FRAME_MS = { asl: 320, wlasl: 40 };
+  // Minimum gap between camera frame posts; one request in flight at a time.
+  // The model response carries landmarks only, so letters can run near 10 fps.
+  const TEST_FRAME_MS = { asl: 100, wlasl: 66 };
   const TEST_MAX_SIDE = 480;
   const testCanvas = document.createElement("canvas");
   const testCanvasCtx = testCanvas.getContext("2d");
@@ -1693,6 +1697,15 @@
     [0, 17]
   ];
   const HAND_TIPS = new Set([4, 8, 12, 16, 20]);
+  const POSE_BONES = [
+    [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
+    [11, 23], [12, 24], [23, 24],
+    [15, 17], [15, 19], [15, 21], [16, 18], [16, 20], [16, 22]
+  ];
+
+  function isSketchPoint(p) {
+    return Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]);
+  }
 
   function clearTestSkeleton() {
     if (!ltSkeletonCtx) return;
@@ -1700,9 +1713,13 @@
     ltSkeleton.style.display = "none";
   }
 
-  function drawTestSkeleton(hands) {
+  function drawTestSkeleton(hands, head, body) {
     if (!ltSkeletonCtx) return;
-    if (!Array.isArray(hands) || !hands.length) {
+    const hasHands = Array.isArray(hands) && hands.length > 0;
+    const hasBody = Array.isArray(body) && body.length > 0;
+    const hasHead = head && ((head.lines && head.lines.length) ||
+                             (head.dots && head.dots.length));
+    if (!hasHands && !hasBody && !hasHead) {
       clearTestSkeleton();
       return;
     }
@@ -1720,6 +1737,8 @@
     }
     ltSkeletonCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ltSkeletonCtx.clearRect(0, 0, boxW, boxH);
+    ltSkeletonCtx.lineCap = "round";
+    ltSkeletonCtx.lineJoin = "round";
 
     // The video is object-fit: cover, so map the frame the same way.
     const srcW = ltVideo.videoWidth || 4;
@@ -1731,25 +1750,73 @@
       offsetX + point[0] * srcW * cover,
       offsetY + point[1] * srcH * cover
     ];
+    const ctx = ltSkeletonCtx;
 
-    ltSkeletonCtx.lineWidth = 3;
-    ltSkeletonCtx.lineCap = "round";
-    ltSkeletonCtx.strokeStyle = "#4ade80";
-    ltSkeletonCtx.fillStyle = "#f8fafc";
+    if (hasBody) {
+      ctx.strokeStyle = "rgba(255, 178, 46, 0.9)";
+      ctx.fillStyle = "rgba(255, 178, 46, 0.9)";
+      ctx.lineWidth = 2;
+      POSE_BONES.forEach(([a, b]) => {
+        if (!isSketchPoint(body[a]) || !isSketchPoint(body[b])) return;
+        const pa = toPixel(body[a]);
+        const pb = toPixel(body[b]);
+        ctx.beginPath();
+        ctx.moveTo(pa[0], pa[1]);
+        ctx.lineTo(pb[0], pb[1]);
+        ctx.stroke();
+      });
+      body.forEach((point) => {
+        if (!isSketchPoint(point)) return;
+        const q = toPixel(point);
+        ctx.beginPath();
+        ctx.arc(q[0], q[1], 2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    if (hasHead) {
+      ctx.strokeStyle = "rgba(255, 138, 220, 0.85)";
+      ctx.lineWidth = 1.5;
+      (head.lines || []).forEach((line) => {
+        let started = false;
+        ctx.beginPath();
+        line.forEach((point) => {
+          if (!isSketchPoint(point)) { started = false; return; }
+          const q = toPixel(point);
+          if (!started) { ctx.moveTo(q[0], q[1]); started = true; }
+          else ctx.lineTo(q[0], q[1]);
+        });
+        ctx.stroke();
+      });
+      ctx.fillStyle = "rgba(255, 168, 226, 0.9)";
+      (head.dots || []).forEach((point) => {
+        if (!isSketchPoint(point)) return;
+        const q = toPixel(point);
+        ctx.beginPath();
+        ctx.arc(q[0], q[1], 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    if (!hasHands) return;
+    ctx.strokeStyle = "#4ade80";
+    ctx.fillStyle = "#f8fafc";
+    ctx.lineWidth = 3;
 
     hands.forEach((hand) => {
       if (!Array.isArray(hand) || hand.length < 21) return;
+      if (!hand.every(isSketchPoint)) return;
       const pts = hand.map(toPixel);
       HAND_BONES.forEach(([a, b]) => {
-        ltSkeletonCtx.beginPath();
-        ltSkeletonCtx.moveTo(pts[a][0], pts[a][1]);
-        ltSkeletonCtx.lineTo(pts[b][0], pts[b][1]);
-        ltSkeletonCtx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(pts[a][0], pts[a][1]);
+        ctx.lineTo(pts[b][0], pts[b][1]);
+        ctx.stroke();
       });
       pts.forEach((point, index) => {
-        ltSkeletonCtx.beginPath();
-        ltSkeletonCtx.arc(point[0], point[1], HAND_TIPS.has(index) ? 4 : 2.5, 0, Math.PI * 2);
-        ltSkeletonCtx.fill();
+        ctx.beginPath();
+        ctx.arc(point[0], point[1], HAND_TIPS.has(index) ? 4 : 2.5, 0, Math.PI * 2);
+        ctx.fill();
       });
     });
   }
@@ -1781,7 +1848,7 @@
       });
       roundTrip = performance.now() - startedAt;
       if (runId !== testRunId) return;
-      drawTestSkeleton(state.hands);
+      drawTestSkeleton(state.hands, state.head, state.body);
       if (state.passed) {
         completeSignTest();
         return;
@@ -1801,12 +1868,10 @@
       ltRetryBtn.hidden = false;
       return;
     }
-    const minGap = TEST_FRAME_MS[testCategory] || 320;
+    const minGap = TEST_FRAME_MS[testCategory] || 100;
     // One frame in flight at a time, and never tighter than the machine can
     // answer, so a slow model cannot build a queue that stutters the preview.
-    const gap = testCategory === "wlasl"
-      ? minGap
-      : Math.max(minGap, Math.round(roundTrip * 0.5));
+    const gap = Math.max(minGap, Math.round(roundTrip * 0.5));
     testTimer = setTimeout(() => runTestFrame(runId), gap);
   }
 

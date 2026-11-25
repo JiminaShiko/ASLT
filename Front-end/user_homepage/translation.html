@@ -233,18 +233,17 @@
       justify-content: center;
     }
 
-    #cam, #cam-render {
+    #cam, #cam-skeleton {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
     }
 
-    #cam { z-index: 1; }
-    #cam-render { z-index: 2; object-fit: cover; }
+    #cam { z-index: 1; object-fit: cover; }
+    #cam-skeleton { z-index: 2; pointer-events: none; }
     #cam-box.mirrored video,
-    #cam-box.mirrored #cam-render {
+    #cam-box.mirrored #cam-skeleton {
       transform: scaleX(-1);
     }
 
@@ -808,7 +807,7 @@
 
       <div class="cam-card" id="cam-box">
         <video id="cam" autoplay playsinline muted hidden></video>
-        <img id="cam-render" alt="Rendered camera frame" hidden />
+        <canvas id="cam-skeleton" aria-hidden="true"></canvas>
 
         <div class="cam-placeholder" id="cam-ph">
           <p style="font-weight:600; margin-bottom:4px;">Camera is off</p>
@@ -895,13 +894,13 @@
       <summary style="cursor:pointer;">Recognition &amp; Camera Settings</summary>
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(165px, 1fr)); gap:8px; margin-top:8px; padding:10px; border-radius:12px; background:var(--sage-bar);">
         <label><input id="mirror-live" type="checkbox" /> Mirror preview</label>
+        <label><input id="landmarks-live" type="checkbox" checked /> Draw landmarks</label>
         <div>Camera: <select id="camera-live"><option value="">Default</option></select></div>
         <div>Size: <select id="camera-size-live"><option value="640x480">640x480</option><option value="1280x720">1280x720</option></select></div>
       </div>
       <div id="letters-settings" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(165px, 1fr)); gap:8px; margin-top:8px; padding:10px; border-radius:12px; background:var(--sage-bar);">
         <label><input id="pairs-live" type="checkbox" checked /> Pair margins</label>
         <label><input id="motion-live" type="checkbox" checked /> J / Z motion</label>
-        <label><input id="landmarks-live" type="checkbox" checked /> Draw landmarks</label>
         <label><input id="motion-debug-live" type="checkbox" /> J / Z diagnostics</label>
         <label><input id="recover-flip-live" type="checkbox" checked /> Retry mirrored</label>
         <div>Profile: <select id="profile-live"><option value="all">all</option><option value="standard">standard</option></select></div>
@@ -989,8 +988,10 @@
     ? "http://127.0.0.1:5000"
     : "";
   const API_CREDENTIALS = API_BASE ? "include" : "same-origin";
-  const LIVE_INTERVAL = 55;
   const LIVE_MAX_SIDE = 640;
+  // One frame in flight, never tighter than the model can answer; the model
+  // response already carries the skeleton, so no rendered JPEG comes back.
+  const LIVE_GAP_MS = { letters: 100, words: 66 };
   const WORD_FPS = 20;
   const MODEL_ENDPOINTS = {
     letters: {
@@ -1211,7 +1212,9 @@
 
   const camBox = document.getElementById("cam-box");
   const cam = document.getElementById("cam");
-  const camRender = document.getElementById("cam-render");
+  const camSkeleton = document.getElementById("cam-skeleton");
+  const camSkeletonCtx = camSkeleton.getContext("2d");
+  const drawLandmarksToggle = document.getElementById("landmarks-live");
   const camPh = document.getElementById("cam-ph");
   const mirrorArrowBtn = document.getElementById("mirror-arrow-btn");
   const mirrorCheckbox = document.getElementById("mirror-live");
@@ -1233,7 +1236,6 @@
   let liveSession = null;
   let liveActive = false;
   let liveRunId = 0;
-  let nextLiveFrameAt = 0;
   let liveMode = "letters";
   let wordModelAvailable = false;
 
@@ -1274,7 +1276,7 @@
     if (!liveActive) {
       renderIdleResult();
       liveTop.innerHTML = `<li style="opacity:0.78;">${isWords ? "Waiting for a sign..." : "Waiting..."}</li>`;
-      camRender.hidden = true;
+      clearSkeleton();
     }
     calibrateBtn.disabled = true;
   }
@@ -1302,6 +1304,140 @@
   mirrorCheckbox.addEventListener("change", () => {
     syncMirrorState(mirrorCheckbox.checked);
   });
+
+  // Skeleton overlay: landmarks arrive normalised to the captured frame and
+  // are drawn over the live <video>; the CSS mirror flips video and canvas together.
+  const HAND_BONES = [
+    [0, 1], [1, 2], [2, 3], [3, 4],
+    [0, 5], [5, 6], [6, 7], [7, 8],
+    [5, 9], [9, 10], [10, 11], [11, 12],
+    [9, 13], [13, 14], [14, 15], [15, 16],
+    [13, 17], [17, 18], [18, 19], [19, 20],
+    [0, 17]
+  ];
+  const HAND_TIPS = new Set([4, 8, 12, 16, 20]);
+  const POSE_BONES = [
+    [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
+    [11, 23], [12, 24], [23, 24],
+    [15, 17], [15, 19], [15, 21], [16, 18], [16, 20], [16, 22]
+  ];
+
+  function isPoint(p) {
+    return Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]);
+  }
+
+  function clearSkeleton() {
+    if (!camSkeletonCtx) return;
+    camSkeletonCtx.setTransform(1, 0, 0, 1, 0, 0);
+    camSkeletonCtx.clearRect(0, 0, camSkeleton.width, camSkeleton.height);
+  }
+
+  function beginSkeletonFrame() {
+    if (!camSkeletonCtx) return null;
+    const boxW = camSkeleton.clientWidth;
+    const boxH = camSkeleton.clientHeight;
+    if (!boxW || !boxH) return null;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const pixelW = Math.round(boxW * dpr);
+    const pixelH = Math.round(boxH * dpr);
+    if (camSkeleton.width !== pixelW || camSkeleton.height !== pixelH) {
+      camSkeleton.width = pixelW;
+      camSkeleton.height = pixelH;
+    }
+    camSkeletonCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    camSkeletonCtx.clearRect(0, 0, boxW, boxH);
+    camSkeletonCtx.lineCap = "round";
+    camSkeletonCtx.lineJoin = "round";
+    // <video> is object-fit: cover, so the overlay maps normalised coords the same way.
+    const srcW = cam.videoWidth || 4;
+    const srcH = cam.videoHeight || 3;
+    const cover = Math.max(boxW / srcW, boxH / srcH);
+    const offsetX = (boxW - srcW * cover) / 2;
+    const offsetY = (boxH - srcH * cover) / 2;
+    return (p) => [offsetX + p[0] * srcW * cover, offsetY + p[1] * srcH * cover];
+  }
+
+  function strokeChain(map, points) {
+    const ctx = camSkeletonCtx;
+    let started = false;
+    ctx.beginPath();
+    points.forEach((p) => {
+      if (!isPoint(p)) { started = false; return; }
+      const q = map(p);
+      if (!started) { ctx.moveTo(q[0], q[1]); started = true; }
+      else ctx.lineTo(q[0], q[1]);
+    });
+    ctx.stroke();
+  }
+
+  function drawOverlay(overlay) {
+    const map = beginSkeletonFrame();
+    if (!map) return;
+    const ctx = camSkeletonCtx;
+    const body = Array.isArray(overlay && overlay.body) ? overlay.body : [];
+    const head = (overlay && overlay.head) || {};
+    const hands = Array.isArray(overlay && overlay.hands) ? overlay.hands : [];
+
+    if (body.length) {
+      ctx.strokeStyle = "rgba(255, 178, 46, 0.9)";
+      ctx.fillStyle = "rgba(255, 178, 46, 0.9)";
+      ctx.lineWidth = 2;
+      POSE_BONES.forEach(([a, b]) => {
+        if (!isPoint(body[a]) || !isPoint(body[b])) return;
+        const pa = map(body[a]);
+        const pb = map(body[b]);
+        ctx.beginPath();
+        ctx.moveTo(pa[0], pa[1]);
+        ctx.lineTo(pb[0], pb[1]);
+        ctx.stroke();
+      });
+      body.forEach((p) => {
+        if (!isPoint(p)) return;
+        const q = map(p);
+        ctx.beginPath();
+        ctx.arc(q[0], q[1], 2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    const lines = Array.isArray(head.lines) ? head.lines : [];
+    if (lines.length) {
+      ctx.strokeStyle = "rgba(255, 138, 220, 0.85)";
+      ctx.lineWidth = 1.5;
+      lines.forEach((line) => strokeChain(map, line));
+      ctx.fillStyle = "rgba(255, 168, 226, 0.9)";
+      (Array.isArray(head.dots) ? head.dots : []).forEach((p) => {
+        if (!isPoint(p)) return;
+        const q = map(p);
+        ctx.beginPath();
+        ctx.arc(q[0], q[1], 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    hands.forEach((hand) => {
+      if (!Array.isArray(hand) || hand.length < 21) return;
+      ctx.strokeStyle = "rgba(74, 222, 128, 0.95)";
+      ctx.fillStyle = "#f8fafc";
+      ctx.lineWidth = 2.5;
+      HAND_BONES.forEach(([a, b]) => {
+        if (!isPoint(hand[a]) || !isPoint(hand[b])) return;
+        const pa = map(hand[a]);
+        const pb = map(hand[b]);
+        ctx.beginPath();
+        ctx.moveTo(pa[0], pa[1]);
+        ctx.lineTo(pb[0], pb[1]);
+        ctx.stroke();
+      });
+      hand.forEach((p, index) => {
+        if (!isPoint(p)) return;
+        const q = map(p);
+        ctx.beginPath();
+        ctx.arc(q[0], q[1], HAND_TIPS.has(index) ? 3.5 : 2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    });
+  }
 
   function renderTagResult(label, mainText, note, conf) {
     const meter = typeof conf === "number"
@@ -1344,10 +1480,8 @@
       liveTop.innerHTML = `<li style="opacity:0.75;">${frame.hand_found ? "No match" : "No hand"}</li>`;
     }
 
-    if (frame.frame_image) {
-      camRender.src = frame.frame_image;
-      camRender.hidden = false;
-    }
+    if (frame.overlay && drawLandmarksToggle.checked) drawOverlay(frame.overlay);
+    else clearSkeleton();
 
     document.getElementById("live-fps").textContent = Number(frame.fps || 0).toFixed(1) + " fps";
     document.getElementById("live-hand-rate").textContent =
@@ -1439,10 +1573,8 @@
     calibrationProgress.hidden = true;
     cancelCalibrationBtn.hidden = true;
 
-    if (frame.frame_image) {
-      camRender.src = frame.frame_image;
-      camRender.hidden = false;
-    }
+    if (frame.overlay && drawLandmarksToggle.checked) drawOverlay(frame.overlay);
+    else clearSkeleton();
 
     clearLiveBtn.disabled = !liveActive;
     commitBtn.disabled = true;
@@ -1472,17 +1604,25 @@
 
   async function captureLiveFrame(runId) {
     if (!liveActive || runId !== liveRunId || !stream) return;
+    if (document.hidden) {
+      // A hidden tab still decodes and classifies every frame; idle instead.
+      setTimeout(() => captureLiveFrame(runId), 250);
+      return;
+    }
     const mode = liveMode;
     const image = drawLiveFrame();
     if (!image) {
       setTimeout(() => captureLiveFrame(runId), 100);
       return;
     }
+    const startedAt = performance.now();
+    let roundTrip = 0;
     try {
       const frame = await modelRequest(liveEndpoint("frame", mode), {
         session_id: liveSession,
         image
       });
+      roundTrip = performance.now() - startedAt;
       if (!liveActive || runId !== liveRunId || mode !== liveMode) return;
       if (mode === "words") renderWordFrame(frame);
       else renderLiveFrame(frame);
@@ -1493,8 +1633,10 @@
       }
       return;
     }
-    nextLiveFrameAt += LIVE_INTERVAL;
-    setTimeout(() => captureLiveFrame(runId), Math.max(0, nextLiveFrameAt - Date.now()));
+    // Response-based pacing: never queue requests faster than the model answers.
+    const minGap = LIVE_GAP_MS[mode] || 100;
+    const gap = Math.max(minGap, Math.round(roundTrip * 0.5));
+    setTimeout(() => captureLiveFrame(runId), gap);
   }
 
   async function startLiveSession(runId) {
@@ -1531,7 +1673,6 @@
           : "Live translation running. Hold a sign steady to type.",
         false
       );
-      nextLiveFrameAt = Date.now();
       captureLiveFrame(runId);
     } catch (apiErr) {
       liveActive = false;
@@ -1567,7 +1708,7 @@
       stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
       cam.srcObject = stream;
       cam.hidden = false;
-      camRender.hidden = true;
+      clearSkeleton();
       camPh.hidden = true;
       camMainCircle.classList.add("recording");
 
@@ -1619,8 +1760,7 @@
     }
     cam.srcObject = null;
     cam.hidden = true;
-    camRender.hidden = true;
-    camRender.removeAttribute("src");
+    clearSkeleton();
     camPh.hidden = false;
     camMainCircle.classList.remove("recording");
 

@@ -40,6 +40,9 @@ from asl_landmark_app.src import config as landmark_config  # noqa: E402
 from asl_landmark_app.src import hand_backend, live as landmark_live  # noqa: E402
 from asl_landmark_app.src import normalize  # noqa: E402
 from videoModel.src import config as words_config  # noqa: E402
+from .tracking import (  # noqa: E402
+    PoseOverlay, body_points, hand_points, head_payload, packed_hand_points,
+)
 
 MAX_SIDE = 640
 TTS_MAX_CHARS = 500
@@ -82,8 +85,6 @@ WORD_SESSIONS_LOCK = threading.Lock()
 STATIC_DETECTOR_LOCK = threading.Lock()
 STATIC_DETECTOR = None
 STATIC_RECOVERY = None
-
-HAND_POINT_COUNT = 21
 
 
 @lru_cache(maxsize=8)
@@ -175,37 +176,9 @@ def image_to_bgr(image):
                         cv2.COLOR_RGB2BGR)
 
 
-def encode_frame(display):
-    ok, encoded = cv2.imencode(".jpg", display, [cv2.IMWRITE_JPEG_QUALITY, 82])
-    if not ok:
-        raise RuntimeError("Could not encode the rendered camera frame.")
-    return "data:image/jpeg;base64," + base64.b64encode(encoded).decode("ascii")
-
-
-def render_frame(frame, session):
-    """Camera image for the page: hand-tracking lines only; all readings live in the page panels."""
-    display = frame.copy()
-    if session.settings["landmarks"] and session.landmarks is not None:
-        hand_backend.draw_landmarks(display, session.landmarks[:, :2])
-    return encode_frame(display)
-
-
-def draw_hand_landmarks(bgr, row):
-    """Draw both hand skeletons from a packed Holistic row (normalised coords)."""
-    if row is None:
-        return bgr
-    height, width = bgr.shape[:2]
-    for cols in (words_config.COLS_LHAND, words_config.COLS_RHAND):
-        points = row[cols, :2]
-        if np.isnan(points).any():
-            continue
-        pixels = [(int(x * width), int(y * height)) for x, y in points]
-        for start, end in hand_backend.HAND_CONNECTIONS:
-            cv2.line(bgr, pixels[start], pixels[end], (0, 255, 0), 2, cv2.LINE_AA)
-        for index, point in enumerate(pixels):
-            tip_color = (0, 128, 255) if index in (4, 8, 12, 16, 20) else (255, 255, 255)
-            cv2.circle(bgr, point, 4, tip_color, -1, cv2.LINE_AA)
-    return bgr
+def image_to_rgb(image):
+    return np.ascontiguousarray(np.asarray(image.convert("RGB"),
+                                           dtype=np.uint8))
 
 
 class LiveSession:
@@ -251,7 +224,11 @@ class LiveSession:
         self.cal_result = None
         self.force_next = False
         self.recent_commits = []
-        self.frame_image = None
+        # Body/face trace for the overlay only; recognition still runs on the
+        # hand detector, so enabling it can never change a reading.
+        self.pose = PoseOverlay() if self.settings["landmarks"] else None
+        self.overlay = {"hands": [], "head": {"lines": [], "dots": []},
+                        "body": []}
         self.last_recovery = ""
 
     def process_frame(self, image):
@@ -260,7 +237,8 @@ class LiveSession:
             self.last_activity = time.monotonic()
             self.frames += 1
             image = reduce_image(image)
-            frame = image_to_bgr(image)
+            rgb = image_to_rgb(image)
+            frame = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
             timestamp_ms = int((time.monotonic() - self.started_at) * 1000)
             result, how = hand_backend.detect_frame(
                 self.detector, frame, timestamp_ms, self.recovery,
@@ -311,7 +289,15 @@ class LiveSession:
             self.fps = self.frames / elapsed if elapsed > 0 else 0.0
             self.last_frame_ms = (time.perf_counter() - started) * 1000.0
             self.recent_commits = self.recent_commits[-8:]
-            self.frame_image = render_frame(frame, self)
+            overlay = {
+                "hands": ([hand_points(result.landmarks)]
+                          if result.landmarks is not None else []),
+                "head": {"lines": [], "dots": []},
+                "body": [],
+            }
+            if self.pose is not None:
+                overlay.update(self.pose.update(rgb))
+            self.overlay = overlay
             return self.response()
 
     def response(self):
@@ -356,7 +342,7 @@ class LiveSession:
                 if self.cal_result else None
             ),
             "commits": list(self.recent_commits),
-            "frame_image": self.frame_image,
+            "overlay": self.overlay,
         }
 
     def action(self, name):
@@ -391,6 +377,8 @@ class LiveSession:
             self.detector.close()
             if self.recovery is not None:
                 self.recovery.close()
+            if self.pose is not None:
+                self.pose.close()
 
 
 def _static_recovery():
@@ -403,37 +391,6 @@ def _static_recovery():
     if STATIC_RECOVERY is None:
         STATIC_RECOVERY = hand_backend.Recovery(after=1, every=1)
     return STATIC_RECOVERY
-
-
-def hand_points(landmarks):
-    """Normalised (x, y) hand landmarks for the browser skeleton overlay."""
-    if landmarks is None:
-        return []
-    points = np.asarray(landmarks)[:, :2]
-    return [[round(float(x), 4), round(float(y), 4)] for x, y in points]
-
-
-def word_hand_points(row):
-    """Both hands out of one packed videoModel landmark row (NaN = not seen)."""
-    if row is None:
-        return []
-    from videoModel.src import landmarks as word_landmarks
-
-    try:
-        present = word_landmarks.hand_present(row)
-    except Exception:
-        return []
-    hands = []
-    for is_present, hand in zip(present, ("left", "right")):
-        if not is_present:
-            continue
-        rows = [word_landmarks.hand_row(hand, index)
-                for index in range(HAND_POINT_COUNT)]
-        points = np.asarray(row)[rows, :2]
-        if np.isnan(points).any():
-            continue
-        hands.append([[round(float(x), 4), round(float(y), 4)] for x, y in points])
-    return hands
 
 
 def predict_photo(image, settings):
@@ -525,24 +482,26 @@ class WordLiveSession:
         self.hands = 0
         self.last_frame_ms = 0.0
         self.last_result = self.predictor.result()
-        self.frame_image = None
+        self.overlay = {"hands": [], "head": {"lines": [], "dots": []},
+                        "body": []}
 
     def process_frame(self, image):
         with self.lock:
             started = time.perf_counter()
             self.last_activity = time.monotonic()
-            rgb = np.asarray(image.convert("RGB"), dtype=np.uint8)
+            rgb = image_to_rgb(image)
             result = self.predictor.update(rgb)
             self.frames += 1
             if any(result.get("hand_in_frame") or ()):
                 self.hands += 1
             self.last_frame_ms = (time.perf_counter() - started) * 1000.0
             self.last_result = result
-            buffered = self.predictor.buffer.array()
-            row = buffered[-1] if len(buffered) else None
-            self.frame_image = encode_frame(
-                draw_hand_landmarks(cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR), row)
-            )
+            row = self.predictor.latest_row()
+            self.overlay = {
+                "hands": packed_hand_points(row),
+                "head": head_payload(row),
+                "body": body_points(row),
+            }
             return self.response()
 
     def response(self):
@@ -556,7 +515,7 @@ class WordLiveSession:
             "hands": self.hands,
             "backend": "torch",
             "model_profile": "words",
-            "frame_image": self.frame_image,
+            "overlay": self.overlay,
         })
         return out
 
@@ -569,18 +528,13 @@ class WordLiveSession:
             self.last_result = self.predictor.result()
             return self.response()
 
-    def latest_row(self):
-        """Packed pose+hand landmarks of the last frame, for the skeleton overlay."""
-        with self.lock:
-            try:
-                rows = self.predictor.buffer.array()
-            except Exception:
-                return None
-            return rows[-1] if len(rows) else None
-
     def close(self):
+        # Dropping the session first keeps stop instant: MediaPipe's native
+        # close can block for tens of seconds, so it finishes in the background.
         with self.lock:
-            self.predictor.close()
+            predictor, self.predictor = self.predictor, None
+        if predictor is not None:
+            threading.Thread(target=predictor.close, daemon=True).start()
 
 
 def tts_chunks(text, limit=TTS_CHUNK_CHARS):
