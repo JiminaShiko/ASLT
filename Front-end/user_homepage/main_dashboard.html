@@ -958,16 +958,23 @@
             pagesContainer.appendChild(styleTag.cloneNode(true));
           });
 
+          const translateRoot = parsed.getElementById("translatePageRoot");
           const pageRoot =
-            parsed.getElementById("translatePageRoot") ||
+            translateRoot ||
             parsed.getElementById("cursorSettingRoot") ||
             parsed.getElementById("learningPageRoot") ||
             parsed.body;
-          Array.from(pageRoot.children).forEach((child) => {
-            if (child.tagName !== "SCRIPT") {
-              pagesContainer.appendChild(child.cloneNode(true));
-            }
-          });
+          if (translateRoot) {
+            const translatedPage = translateRoot.cloneNode(true);
+            translatedPage.querySelectorAll("script").forEach((script) => script.remove());
+            pagesContainer.appendChild(translatedPage);
+          } else {
+            Array.from(pageRoot.children).forEach((child) => {
+              if (child.tagName !== "SCRIPT") {
+                pagesContainer.appendChild(child.cloneNode(true));
+              }
+            });
+          }
 
           const scripts = Array.from(parsed.querySelectorAll("script"));
           for (const oldScript of scripts) {

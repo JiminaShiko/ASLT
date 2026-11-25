@@ -39,11 +39,228 @@
     }
 
     .translate-root {
+      position: relative;
       width: 100%;
       max-width: 960px;
       margin: 0 auto;
       font-family: 'Lora', Georgia, serif;
       color: var(--typed-text-color);
+    }
+
+    .history-tab,
+    .history-close {
+      border: 1px solid var(--sage-bar-border);
+      background: rgba(203, 214, 188, 0.96);
+      color: var(--forest-dark);
+      box-shadow: 0 8px 24px rgba(15, 28, 16, 0.2);
+      cursor: pointer;
+    }
+
+    .history-tab {
+      position: fixed;
+      z-index: 31;
+      top: 50%;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: auto;
+      height: auto;
+      padding: 8px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #ffffff;
+      font: 700 1rem 'Lora', Georgia, serif;
+      text-shadow: 0 2px 8px rgba(20, 40, 24, 0.55);
+      box-shadow: none;
+      transform: translateY(-50%);
+      animation: historyNudge 7s ease-in-out infinite;
+    }
+
+    .history-tab svg {
+      width: 24px;
+      height: 24px;
+      flex: none;
+      color: var(--forest-dark);
+    }
+
+    .history-tab span {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+    }
+
+    .history-tab[hidden] {
+      display: none;
+    }
+
+    @keyframes historyNudge {
+      0%, 90%, 100% { translate: 0 0; }
+      93% { translate: -3px 0; }
+      96% { translate: 2px 0; }
+    }
+
+    .history-drawer {
+      position: fixed;
+      z-index: 32;
+      top: 50%;
+      right: 0;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      width: min(390px, calc(100vw - 24px));
+      max-height: min(72vh, 640px);
+      padding: 14px;
+      border: 1px solid var(--sage-bar-border);
+      border-radius: 18px 0 0 18px;
+      background: rgba(242, 245, 236, 0.96);
+      box-shadow: 0 14px 40px rgba(15, 28, 16, 0.28);
+      transform: translate(110%, -50%);
+      opacity: 0;
+      visibility: hidden;
+      transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+                  opacity 0.25s ease, visibility 0.42s;
+    }
+
+    .history-drawer.open {
+      transform: translate(0, -50%);
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .history-drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .history-drawer-header h2 {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+
+    .history-close {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .history-close svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .history-filter {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--sage-bar-border);
+      border-radius: 10px;
+      background: var(--sub-panel-bg);
+      color: inherit;
+      font: inherit;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      min-height: 80px;
+      padding-right: 3px;
+    }
+
+    .history-entry {
+      padding: 11px;
+      border: 1px solid var(--sage-bar-border);
+      border-radius: 12px;
+      background: var(--sub-panel-bg);
+      overflow-wrap: anywhere;
+    }
+
+    .history-entry-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 7px;
+      font: 600 0.72rem 'Inter', sans-serif;
+      opacity: 0.8;
+    }
+
+    .history-entry-keyword,
+    .history-entry-result {
+      margin: 5px 0;
+      font-size: 0.88rem;
+    }
+
+    .history-entry-media {
+      display: block;
+      max-width: 100%;
+      max-height: 210px;
+      margin: 8px auto 0;
+      border-radius: 9px;
+      object-fit: contain;
+      background: rgba(15, 28, 16, 0.1);
+    }
+
+    .history-result-tiles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .history-result-tile {
+      display: grid;
+      justify-items: center;
+      gap: 3px;
+      width: 62px;
+      padding: 4px;
+      border: 1px solid var(--sage-bar-border);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.58);
+      font-size: 0.7rem;
+    }
+
+    .history-result-tile img,
+    .history-result-tile video {
+      width: 52px;
+      height: 52px;
+      object-fit: contain;
+      border-radius: 5px;
+    }
+
+    .history-empty,
+    .history-status {
+      margin: 5px 0;
+      font-size: 0.84rem;
+      opacity: 0.78;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .history-open #panel-text .botanical-card,
+    .history-open #panel-upload .botanical-card {
+      width: calc(100% - 410px);
+      max-width: none;
+      margin-left: 0;
     }
 
     .mode-switcher-wrap {
@@ -114,6 +331,7 @@
 
     .flow-panel {
       animation: waterFadeIn 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: filter 0.25s ease;
     }
 
     .flow-panel[hidden] {
@@ -137,57 +355,48 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 6px 0 14px;
+      margin: 0 0 8px;
     }
 
-    .model-mode-caption {
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      opacity: 0.72;
+    .cam-controls-column {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      min-width: 0;
+      align-items: center;
     }
 
     .model-mode-seg {
       display: inline-flex;
-      gap: 6px;
-      padding: 4px;
+      gap: 2px;
+      padding: 2px;
       border: 1px solid var(--sage-bar-border);
-      border-radius: 12px;
+      border-radius: 10px;
       background: var(--sage-bar);
       box-shadow: 0 4px 12px rgba(15, 28, 16, 0.1);
     }
 
     .model-mode-btn {
       display: inline-flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 2px;
-      min-width: 118px;
-      padding: 6px 14px;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 30px;
+      padding: 0;
       border: 1px solid transparent;
-      border-radius: 8px;
+      border-radius: 7px;
       background: transparent;
       color: var(--typed-text-color);
-      font-family: 'Lora', Georgia, serif;
       cursor: pointer;
       transition: background-color 0.2s ease, color 0.2s ease,
                   transform 0.15s ease, opacity 0.2s ease;
     }
 
-    .model-mode-btn .model-mode-name {
-      font-size: 0.92rem;
-      font-weight: 700;
-      line-height: 1.1;
-    }
-
-    .model-mode-btn .model-mode-sub {
-      font-size: 0.62rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      opacity: 0.72;
+    .model-mode-btn svg {
+      width: 20px;
+      height: 20px;
+      flex: none;
     }
 
     .model-mode-btn:hover:not(:disabled) {
@@ -200,10 +409,6 @@
       box-shadow: 0 4px 10px rgba(15, 30, 18, 0.25);
     }
 
-    .model-mode-btn.active .model-mode-sub {
-      opacity: 0.82;
-    }
-
     .model-mode-btn:disabled {
       opacity: 0.42;
       cursor: not-allowed;
@@ -212,7 +417,8 @@
     .sign-stage-grid {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 330px;
-      gap: 20px;
+      column-gap: 20px;
+      row-gap: 8px;
       align-items: end;
       justify-content: center;
     }
@@ -221,7 +427,8 @@
       position: relative;
       width: 100%;
       max-width: 530px;
-      margin: 0 auto 20px auto;
+      box-sizing: border-box;
+      margin: 0 auto 20px;
       height: clamp(305px, 47vh, 385px);
       background: var(--cam-bg);
       border: 2.5px solid var(--cam-border);
@@ -322,15 +529,16 @@
     .typewriter-tag-wrap {
       position: relative;
       z-index: 4;
-      width: 330px;
+      box-sizing: border-box;
+      width: min(330px, calc(100vw - 16px));
       height: 455px;
-      margin: -24px auto -1px auto;
+      margin: -24px auto -1px;
       background-image: url('../assets/images/paper_tag_5.png');
       background-size: 100% 100%;
       background-repeat: no-repeat;
       background-position: bottom center;
       filter: drop-shadow(0 12px 24px rgba(12, 24, 14, 0.24));
-      padding: 68px 67px 182px 67px;
+      padding: 68px 67px 182px;
       color: var(--paper-ink);
       display: flex;
       flex-direction: column;
@@ -747,12 +955,31 @@
       border: 2px solid var(--cam-border);
     }
 
-    @media (max-width: 820px) {
+    @media (min-width: 1229px) {
+      .sign-stage-grid {
+        margin-top: -24px;
+      }
+    }
+
+    @media (max-width: 1228px) {
       .sign-stage-grid {
         grid-template-columns: 1fr;
       }
       .cam-card {
         margin-bottom: 0;
+      }
+      .history-open #panel-text .botanical-card,
+      .history-open #panel-upload .botanical-card {
+        width: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .history-tab {
+        animation: none;
+      }
+      .history-drawer {
+        transition: none;
       }
     }
   </style>
@@ -761,68 +988,73 @@
 
 <div id="translatePageRoot" class="translate-root">
 
-  <div class="mode-switcher-wrap">
-    <div class="mode-seg" id="modeSegBar" role="tablist" aria-label="Translation mode">
-      <span class="mode-water-pill" id="modeWaterPill" aria-hidden="true"></span>
-
-      <button type="button" role="tab" id="tab-sign" data-index="0" class="mode-tab-btn" aria-selected="true" aria-controls="panel-sign" title="Sign to Text (Webcam)">
-        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-          <circle cx="12" cy="13" r="4" />
-        </svg>
-      </button>
-
-      <button type="button" role="tab" id="tab-text" data-index="1" class="mode-tab-btn" aria-selected="false" aria-controls="panel-text" title="Text to Sign">
-        <span class="mode-t-glyph">T</span>
-      </button>
-
-      <button type="button" role="tab" id="tab-upload" data-index="2" class="mode-tab-btn" aria-selected="false" aria-controls="panel-upload" title="Upload Media">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="17 8 12 3 7 8" />
-          <line x1="12" y1="3" x2="12" y2="15" />
-        </svg>
-      </button>
-    </div>
-  </div>
-
   <div id="panel-sign" class="flow-panel" role="tabpanel" aria-labelledby="tab-sign">
+    <div class="mode-switcher-wrap">
+      <div class="mode-seg" id="modeSegBar" role="tablist" aria-label="Translation mode">
+        <span class="mode-water-pill" id="modeWaterPill" aria-hidden="true"></span>
+
+        <button type="button" role="tab" id="tab-sign" data-index="0" class="mode-tab-btn" aria-selected="true" aria-controls="panel-sign" title="Sign to Text (Webcam)">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
+        </button>
+
+        <button type="button" role="tab" id="tab-text" data-index="1" class="mode-tab-btn" aria-selected="false" aria-controls="panel-text" title="Text to Sign">
+          <span class="mode-t-glyph">T</span>
+        </button>
+
+        <button type="button" role="tab" id="tab-upload" data-index="2" class="mode-tab-btn" aria-selected="false" aria-controls="panel-upload" title="Upload Media">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
     <div class="model-mode-wrap">
-      <span class="model-mode-caption">Recognition model</span>
       <div class="model-mode-seg" role="tablist" aria-label="Recognition model">
         <button type="button" role="tab" id="model-letters" class="model-mode-btn active"
-                data-model="letters" aria-selected="true" title="Finger-spelled letters A to Z">
-          <span class="model-mode-name">Letters</span>
-          <span class="model-mode-sub">A–Z finger-spelling</span>
+                data-model="letters" aria-selected="true" aria-label="Letters" title="Letters (A–Z)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m4 19 8-15 8 15M7 13h10" />
+          </svg>
         </button>
         <button type="button" role="tab" id="model-words" class="model-mode-btn"
-                data-model="words" aria-selected="false" title="Whole-word signs" disabled>
-          <span class="model-mode-name">Words</span>
-          <span class="model-mode-sub">whole sign words</span>
+                data-model="words" aria-selected="false" aria-label="Words" title="Whole-word signs" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 5.5h12a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H9l-5 3v-3.5a3 3 0 0 1-3-3v-5.5a3 3 0 0 1 3-3Z" />
+            <path d="M8 10.5h.01M12 10.5h.01M16 10.5h.01" />
+          </svg>
         </button>
       </div>
     </div>
 
     <div class="sign-stage-grid">
 
-      <div class="cam-card" id="cam-box">
-        <video id="cam" autoplay playsinline muted hidden></video>
-        <canvas id="cam-skeleton" aria-hidden="true"></canvas>
+      <div class="cam-controls-column">
+        <div class="cam-card" id="cam-box">
+          <video id="cam" autoplay playsinline muted hidden></video>
+          <canvas id="cam-skeleton" aria-hidden="true"></canvas>
 
-        <div class="cam-placeholder" id="cam-ph">
-          <p style="font-weight:600; margin-bottom:4px;">Camera is off</p>
-          <p style="font-size:0.8rem;">Tap the bottom circle to start camera and live translation.</p>
+          <div class="cam-placeholder" id="cam-ph">
+            <p style="font-weight:600; margin-bottom:4px;">Camera is off</p>
+            <p style="font-size:0.8rem;">Tap the bottom circle to start camera and live translation.</p>
+          </div>
+
+          <button type="button" id="mirror-arrow-btn" class="cam-mirror-circle" title="Switch Mirror View" aria-label="Switch Mirror View">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="23 4 23 10 17 10" />
+              <polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+          </button>
+
+          <button type="button" id="cam-main-circle" class="cam-shutter-btn" title="Start / Stop Camera" aria-label="Start or Stop Camera"></button>
         </div>
 
-        <button type="button" id="mirror-arrow-btn" class="cam-mirror-circle" title="Switch Mirror View" aria-label="Switch Mirror View">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="23 4 23 10 17 10" />
-            <polyline points="1 20 1 14 7 14" />
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-          </svg>
-        </button>
-
-        <button type="button" id="cam-main-circle" class="cam-shutter-btn" title="Start / Stop Camera" aria-label="Start or Stop Camera"></button>
       </div>
 
       <div class="typewriter-tag-wrap" id="paperTagWrap">
@@ -929,6 +1161,7 @@
   </div>
 
   <div id="panel-text" class="flow-panel" role="tabpanel" aria-labelledby="tab-text" hidden>
+    <div class="mode-switcher-slot"></div>
     <div class="botanical-card">
       <label for="txt" style="font-size:0.92rem; font-weight:600; display:block; margin-bottom:6px;">Type your text</label>
       <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
@@ -957,6 +1190,7 @@
   </div>
 
   <div id="panel-upload" class="flow-panel" role="tabpanel" aria-labelledby="tab-upload" hidden>
+    <div class="mode-switcher-slot"></div>
     <div class="botanical-card">
       <div class="drop-zone" id="drop">
         <p style="font-size:1.05rem; font-weight:600; margin-bottom:4px;">Upload a photo or video of a sign</p>
@@ -978,6 +1212,33 @@
       </div>
     </div>
   </div>
+
+  <button type="button" class="history-tab" id="history-open" aria-controls="history-drawer" aria-expanded="false" aria-label="Open translation history" title="Open history">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+    <span>History</span>
+  </button>
+
+  <aside class="history-drawer" id="history-drawer" aria-label="Translation history" aria-hidden="true">
+    <div class="history-drawer-header">
+      <h2>History</h2>
+      <button type="button" class="history-close" id="history-close" aria-label="Close history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </button>
+    </div>
+    <label for="history-filter" class="sr-only">Filter translation history</label>
+    <select id="history-filter" class="history-filter">
+      <option value="all">All history</option>
+      <option value="webcam">Webcam</option>
+      <option value="text">Text to Sign</option>
+      <option value="upload">Upload</option>
+    </select>
+    <div id="history-status" class="history-status" role="status" aria-live="polite"></div>
+    <div id="history-list" class="history-list"></div>
+  </aside>
 
 </div>
 
@@ -1015,14 +1276,249 @@
   }
 
   function saveHistory(kind, text) {
-    try {
-      const list = JSON.parse(localStorage.getItem("asl_history") || "[]");
-      list.unshift({ id: Date.now() + "", kind, text, t: Date.now(), saved: false });
-      localStorage.setItem("asl_history", JSON.stringify(list.slice(0, 50)));
-    } catch (e) {}
+    const list = JSON.parse(localStorage.getItem("asl_history") || "[]");
+    list.unshift({ id: Date.now() + "", kind, text, t: Date.now(), saved: false });
+    localStorage.setItem("asl_history", JSON.stringify(list.slice(0, 50)));
   }
 
+  const historyDrawer = document.getElementById("history-drawer");
+  const historyOpenButton = document.getElementById("history-open");
+  const historyCloseButton = document.getElementById("history-close");
+  const historyFilter = document.getElementById("history-filter");
+  const historyList = document.getElementById("history-list");
+  const historyStatus = document.getElementById("history-status");
+  const historyLayout = document.getElementById("translatePageRoot") ||
+    document.getElementById("panel-sign").parentElement;
+  let historyRecords = [];
+  let historyLoaded = false;
+
+  function historyTypeLabel(type) {
+    if (type === "text") return "Text to Sign";
+    if (type === "upload") return "Upload";
+    if (type === "webcam_words") return "Webcam · Words";
+    return "Webcam · Letters";
+  }
+
+  function renderHistorySignPlan(container, rawResult) {
+    let plan;
+    try {
+      plan = JSON.parse(rawResult);
+    } catch (error) {
+      return false;
+    }
+    if (!plan || !Array.isArray(plan.items)) return false;
+
+    const tiles = document.createElement("div");
+    tiles.className = "history-result-tiles";
+    plan.items.forEach((item) => {
+      if (!item || typeof item !== "object") return;
+      if (item.type === "space") {
+        const gap = document.createElement("span");
+        gap.setAttribute("aria-hidden", "true");
+        gap.style.width = "8px";
+        tiles.appendChild(gap);
+        return;
+      }
+      if (item.type !== "word") return;
+      const addTile = (label, media, kind) => {
+        const tile = document.createElement("div");
+        tile.className = "history-result-tile";
+        if (media && typeof media.url === "string" && media.url.charAt(0) === "/") {
+          const source = mediaSource(media);
+          const asset = document.createElement(media.type === "video" ? "video" : "img");
+          asset.src = source;
+          asset.crossOrigin = "use-credentials";
+          if (asset instanceof HTMLVideoElement) {
+            asset.controls = true;
+            asset.playsInline = true;
+          } else {
+            asset.alt = "Sign for " + label;
+          }
+          tile.appendChild(asset);
+        } else {
+          const placeholder = document.createElement("span");
+          placeholder.textContent = label;
+          tile.appendChild(placeholder);
+        }
+        const caption = document.createElement("span");
+        caption.textContent = label;
+        tile.appendChild(caption);
+        if (kind) tile.dataset.kind = kind;
+        tiles.appendChild(tile);
+      };
+
+      if (item.sign === "word") {
+        addTile(item.text || "", item.media, "word");
+      } else if (Array.isArray(item.letters)) {
+        item.letters.forEach((letter) => addTile(letter.letter || "", letter.media, "letter"));
+      }
+    });
+    container.appendChild(tiles);
+    return true;
+  }
+
+  function renderHistory() {
+    const selectedType = historyFilter.value;
+    const filtered = historyRecords.filter((record) =>
+      selectedType === "all" ||
+      (selectedType === "webcam" ? (record.search_type || "").indexOf("webcam_") === 0 : record.search_type === selectedType)
+    );
+    historyList.replaceChildren();
+    if (!filtered.length) {
+      const empty = document.createElement("p");
+      empty.className = "history-empty";
+      empty.textContent = historyLoaded ? "No history for this filter yet." : "";
+      historyList.appendChild(empty);
+      return;
+    }
+
+    filtered.forEach((record) => {
+      const entry = document.createElement("article");
+      entry.className = "history-entry";
+      const head = document.createElement("div");
+      head.className = "history-entry-head";
+      const category = document.createElement("span");
+      category.textContent = historyTypeLabel(record.search_type);
+      const date = document.createElement("time");
+      date.textContent = record.searched_at ? new Date(record.searched_at).toLocaleString() : "";
+      head.append(category, date);
+      entry.appendChild(head);
+
+      if (record.search_type === "text" && record.search_keyword) {
+        const keyword = document.createElement("p");
+        keyword.className = "history-entry-keyword";
+        keyword.textContent = "Typed: " + record.search_keyword;
+        entry.appendChild(keyword);
+      } else if (record.search_type === "upload" && record.search_keyword) {
+        const keyword = document.createElement("p");
+        keyword.className = "history-entry-keyword";
+        keyword.textContent = "File: " + record.search_keyword;
+        entry.appendChild(keyword);
+      }
+
+      if (record.search_type === "upload" && record.has_media) {
+        const mediaUrl = API_BASE + "/api/search-history/" + encodeURIComponent(record.search_id) + "/media";
+        const media = document.createElement(record.media_type === "video" ? "video" : "img");
+        media.className = "history-entry-media";
+        media.src = mediaUrl;
+        media.crossOrigin = "use-credentials";
+        if (media instanceof HTMLVideoElement) {
+          media.controls = true;
+          media.playsInline = true;
+        } else {
+          media.alt = "Uploaded sign";
+        }
+        entry.appendChild(media);
+      }
+
+      if (record.search_type === "text") {
+        if (!renderHistorySignPlan(entry, record.search_result || "")) {
+          const result = document.createElement("p");
+          result.className = "history-entry-result";
+          result.textContent = record.search_result || "No result saved.";
+          entry.appendChild(result);
+        }
+      } else {
+        const result = document.createElement("p");
+        result.className = "history-entry-result";
+        result.textContent = "Result: " + (record.search_result || "No result saved.");
+        entry.appendChild(result);
+      }
+      historyList.appendChild(entry);
+    });
+  }
+
+  async function loadHistory() {
+    historyStatus.classList.remove("error");
+    historyStatus.textContent = "Loading history...";
+    try {
+      const response = await fetch(API_BASE + "/api/search-history", {
+        credentials: API_CREDENTIALS
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Could not load history.");
+      }
+      historyRecords = Array.isArray(data.items) ? data.items : [];
+      historyLoaded = true;
+      historyStatus.textContent = "";
+      renderHistory();
+    } catch (error) {
+      historyStatus.textContent = error.message;
+      historyStatus.classList.add("error");
+    }
+  }
+
+  async function saveSearchHistory({ type, keyword, result, media }) {
+    const localText = type === "text" ? keyword : result;
+    try {
+      saveHistory(historyTypeLabel(type), localText);
+    } catch (error) {
+      console.warn("Could not save browser-local translation history.", error);
+    }
+    let response;
+    if (media) {
+      const form = new FormData();
+      form.append("search_type", type);
+      form.append("search_keyword", keyword || "");
+      form.append("search_result", typeof result === "string" ? result : JSON.stringify(result));
+      form.append("media", media, media.name || "upload");
+      response = await fetch(API_BASE + "/api/search-history", {
+        method: "POST",
+        credentials: API_CREDENTIALS,
+        body: form
+      });
+    } else {
+      response = await fetch(API_BASE + "/api/search-history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: API_CREDENTIALS,
+        body: JSON.stringify({
+          search_type: type,
+          search_keyword: keyword || "",
+          search_result: typeof result === "string" ? result : JSON.stringify(result)
+        })
+      });
+    }
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Could not save this history item.");
+    }
+    historyLoaded = false;
+    if (historyDrawer.classList.contains("open")) await loadHistory();
+  }
+
+  async function openHistory() {
+    historyLayout.classList.add("history-open");
+    historyDrawer.classList.add("open");
+    historyDrawer.setAttribute("aria-hidden", "false");
+    historyOpenButton.hidden = true;
+    historyOpenButton.setAttribute("aria-expanded", "true");
+    await loadHistory();
+    historyCloseButton.focus();
+  }
+
+  function closeHistory() {
+    historyLayout.classList.remove("history-open");
+    historyDrawer.classList.remove("open");
+    historyDrawer.setAttribute("aria-hidden", "true");
+    historyOpenButton.hidden = false;
+    historyOpenButton.setAttribute("aria-expanded", "false");
+    historyOpenButton.focus();
+  }
+
+  historyOpenButton.addEventListener("click", openHistory);
+  historyCloseButton.addEventListener("click", closeHistory);
+  historyFilter.addEventListener("change", renderHistory);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && historyDrawer.classList.contains("open")) {
+      closeHistory();
+    }
+  });
+
   const waterPill = document.getElementById("modeWaterPill");
+  const modeSwitcher = document.querySelector(".mode-switcher-wrap");
+  const modelModeWrap = document.querySelector(".model-mode-wrap");
   const modeTabs = [
     { tab: document.getElementById("tab-sign"),   panel: document.getElementById("panel-sign"),   index: 0 },
     { tab: document.getElementById("tab-text"),   panel: document.getElementById("panel-text"),   index: 1 },
@@ -1035,6 +1531,12 @@
       waterPill.classList.add("flowing");
       waterPill.style.transform = `translateX(${offsetX}px)`;
       setTimeout(() => waterPill.classList.remove("flowing"), 380);
+    }
+
+    if (targetItem.tab.id === "tab-sign") {
+      targetItem.panel.insertBefore(modeSwitcher, modelModeWrap);
+    } else {
+      targetItem.panel.querySelector(".mode-switcher-slot").appendChild(modeSwitcher);
     }
 
     modeTabs.forEach((item) => {
@@ -1746,7 +2248,15 @@
     } catch (e) {}
     readBtn.disabled = !(finalText || "").trim();
     if (persist && finalText.trim()) {
-      saveHistory(mode === "words" ? "Sign to Text · Words" : "Sign to Text", finalText.trim());
+      try {
+        await saveSearchHistory({
+          type: mode === "words" ? "webcam_words" : "webcam_letters",
+          keyword: "",
+          result: finalText.trim()
+        });
+      } catch (error) {
+        setCamStatus("Translation completed, but history could not be saved: " + error.message, true);
+      }
     }
     return finalText;
   }
@@ -2090,7 +2600,11 @@
       parts.push("letter photos go in Front-end/text_to_sign_demo/alphabet");
     }
     setTextStatus(parts.concat(result.notes || []).join(" · "), false);
-    saveHistory("Text to Sign", raw);
+    try {
+      await saveSearchHistory({ type: "text", keyword: raw, result });
+    } catch (error) {
+      setTextStatus("Signs generated, but history could not be saved: " + error.message, true);
+    }
   }
 
   document.getElementById("show-sign").addEventListener("click", showSigns);
@@ -2179,6 +2693,7 @@
   const fileVideo = document.getElementById("file-video");
   const dropZone = document.getElementById("drop");
   let currentMedia = null;
+  let currentFile = null;
   let currentUrl = null;
 
   document.getElementById("pick-photo").addEventListener("click", () => filePhoto.click());
@@ -2195,6 +2710,7 @@
     }
     if (currentUrl) URL.revokeObjectURL(currentUrl);
     currentUrl = URL.createObjectURL(file);
+    currentFile = file;
     preview.innerHTML = "";
     const el = document.createElement(isImage ? "img" : "video");
     if (!isImage) {
@@ -2236,12 +2752,20 @@
       const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
 
       const res = await modelRequest("/api/predict-photo", { image: dataUrl, settings: liveSettings() });
+      let output;
       if (res.hand_found === false || res.text === "nothing") {
+        output = "No hand sign detected.";
         uploadResult.innerHTML = `<strong>No hand sign detected.</strong>`;
       } else {
+        output = res.text;
         uploadResult.innerHTML = `<strong>Result:</strong> ${esc(res.text)} (${Math.round((res.confidence || 0) * 100)}%)`;
-        saveHistory("Upload Media", res.text);
       }
+      await saveSearchHistory({
+        type: "upload",
+        keyword: currentFile ? currentFile.name : "",
+        result: output,
+        media: currentFile
+      });
       uploadStatus.textContent = "Done.";
     } catch (err) {
       uploadStatus.textContent = err.message;
