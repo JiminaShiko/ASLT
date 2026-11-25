@@ -61,8 +61,8 @@ DEFAULT_SETTINGS = {
     "landmarks": True,
     "motion_debug": False,
     "mirror": False,
-    "recover": 1,
-    "recover_every": 3,
+    "recover": 2,
+    "recover_every": 5,
     "recover_conf": 0.3,
     "recover_flip": True,
     "jz": "",
@@ -219,14 +219,27 @@ class LiveSession:
         self.started_at = time.monotonic()
         self.last_activity = self.started_at
         self.last_frame_ms = 0.0
+        # EMA of arrival intervals, so the readout follows the live rate instead
+        # of averaging in a slow start for the rest of the session.
+        self._last_frame_mono = 0.0
         self.streak = 0
         self.cal = None
         self.cal_result = None
         self.force_next = False
         self.recent_commits = []
+        # One note per typed letter: the top-3 the model saw and whether the
+        # letter came out of an UNCERTAIN / low-confidence stretch. Returned
+        # when the session stops so the page can attach it to history.
+        self.commit_notes = []
+        self.uncertain_at = {}
+        self.started_wall = time.time()
         # Body/face trace for the overlay only; recognition still runs on the
-        # hand detector, so enabling it can never change a reading.
+        # hand detector, so enabling it can never change a reading. The pass
+        # runs on a worker thread so the answer never waits for it.
         self.pose = PoseOverlay() if self.settings["landmarks"] else None
+        self._pose_lock = threading.Lock()
+        self._pose_busy = False
+        self._pose_payload = {"head": {"lines": [], "dots": []}, "body": []}
         self.overlay = {"hands": [], "head": {"lines": [], "dots": []},
                         "body": []}
         self.last_recovery = ""
@@ -234,12 +247,26 @@ class LiveSession:
     def process_frame(self, image):
         with self.lock:
             started = time.perf_counter()
-            self.last_activity = time.monotonic()
+            now_mono = time.monotonic()
+            self.last_activity = now_mono
             self.frames += 1
+            if self._last_frame_mono:
+                interval = now_mono - self._last_frame_mono
+                if interval > 0:
+                    instant = 1.0 / interval
+                    self.fps = (instant if self.fps <= 0 else
+                                self.fps * 0.85 + instant * 0.15)
+            self._last_frame_mono = now_mono
             image = reduce_image(image)
-            rgb = image_to_rgb(image)
-            frame = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
-            timestamp_ms = int((time.monotonic() - self.started_at) * 1000)
+            # Only the overlay needs RGB; recognition converts BGR itself, so
+            # skip the extra round trip when the trace is off.
+            if self.pose is not None:
+                rgb = image_to_rgb(image)
+                frame = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+            else:
+                rgb = None
+                frame = image_to_bgr(image)
+            timestamp_ms = int((now_mono - self.started_at) * 1000)
             result, how = hand_backend.detect_frame(
                 self.detector, frame, timestamp_ms, self.recovery,
                 empty_streak=self.streak + 1,
@@ -274,19 +301,26 @@ class LiveSession:
                         self.text += motion_letter
                         self.motion_letter = motion_letter
                         self.recent_commits.append(motion_letter)
+                        self._note_commit(motion_letter, now, source="motion")
+            # The display gates still label a frame UNCERTAIN; they no longer
+            # block typing. The highest-probability letter always votes, and the
+            # smoother's vote window + hold timer decide when it is written.
+            top_letter = call["top3"][0][0] if call["top3"] else None
+            if call["top3"] and (call["uncertain"] or call["low_conf"]):
+                self.uncertain_at[top_letter] = now
             force, self.force_next = self.force_next, False
             held, typed, held_conf = self.smoother.step(
-                call["letter"], call["conf"], now, force=force,
-                hand_present=result.landmarks is not None,
+                top_letter, call["conf"], now, force=force,
+                hand_present=result.landmarks is not None, gate=0.0,
             )
             if typed:
                 self.text += typed
                 self.recent_commits.append(typed)
+                self._note_commit(typed, now, call,
+                                  confidence=held_conf or call["conf"])
             self.held = held
             self.held_conf = held_conf or call["conf"]
             self.call = call
-            elapsed = time.monotonic() - self.started_at
-            self.fps = self.frames / elapsed if elapsed > 0 else 0.0
             self.last_frame_ms = (time.perf_counter() - started) * 1000.0
             self.recent_commits = self.recent_commits[-8:]
             overlay = {
@@ -296,9 +330,57 @@ class LiveSession:
                 "body": [],
             }
             if self.pose is not None:
-                overlay.update(self.pose.update(rgb))
+                with self._pose_lock:
+                    payload = self._pose_payload
+                overlay["head"] = payload["head"]
+                overlay["body"] = payload["body"]
+                self._pose_tick(rgb)
             self.overlay = overlay
             return self.response()
+
+    def _pose_tick(self, rgb):
+        """One throttled Holistic pass on a worker thread; the frame never waits."""
+        with self._pose_lock:
+            if self._pose_busy:
+                return
+            self._pose_busy = True
+
+        def run():
+            try:
+                payload = self.pose.update(rgb)
+            except Exception:
+                payload = None
+            with self._pose_lock:
+                if payload is not None:
+                    self._pose_payload = payload
+                self._pose_busy = False
+
+        threading.Thread(target=run, name="pose-overlay", daemon=True).start()
+
+    def _note_commit(self, letter, now, call=None, confidence=0.0,
+                     source="classifier"):
+        """Record one typed letter: what it was, and what else was possible."""
+        call = call or {}
+        top = [[str(label), float(probability)]
+               for label, probability in (call.get("top3") or [])][:3]
+        reason = ""
+        if call.get("uncertain"):
+            reason = "margin"
+        elif call.get("low_conf"):
+            reason = "confidence"
+        recent_uncertain = self.uncertain_at.get(letter, 0.0) >= now - 2.0
+        self.commit_notes.append({
+            "letter": str(letter),
+            "at": round(now - self.started_wall, 2),
+            "guess": bool(source == "classifier"
+                          and (reason or recent_uncertain)),
+            "source": source,
+            "reason": reason,
+            "confidence": float(confidence),
+            "top": top,
+        })
+        if len(self.commit_notes) > 120:
+            del self.commit_notes[:-120]
 
     def response(self):
         call = self.call
@@ -353,9 +435,12 @@ class LiveSession:
                 self.text = self.text[:-1]
                 if self.recent_commits:
                     self.recent_commits.pop()
+                if self.commit_notes:
+                    self.commit_notes.pop()
             elif name == "clear":
                 self.text = ""
                 self.recent_commits.clear()
+                self.commit_notes.clear()
             elif name == "calibrate":
                 self.cal = landmark_live.JZCalibrator(
                     self.motion, reps=self.settings["calibrate_reps"])
@@ -710,8 +795,9 @@ def live_stop():
     if session is None:
         return jsonify({"error": "Session not found"}), 404
     text = session.text
+    notes = list(session.commit_notes)
     session.close()
-    return jsonify({"text": text})
+    return jsonify({"text": text, "notes": notes})
 
 
 @api_bp.post("/api/words/live/start")
