@@ -31,6 +31,7 @@ from user.api import api_bp as translation_api_bp  # noqa: E402
 from user.text_to_sign import text_to_sign_bp  # noqa: E402
 from cursor_effects_process import cursor_bp  # noqa: E402
 from user.learning import learning_bp  # noqa: E402
+from user.search_history import history_bp  # noqa: E402
 
 PROJECT_ROOT = BACKEND_DIR.parent
 FRONTEND_DIR = PROJECT_ROOT / "Front-end"
@@ -74,6 +75,7 @@ app.register_blueprint(admin_users_bp)
 app.register_blueprint(admin_quiz_bp)
 app.register_blueprint(cursor_bp)
 app.register_blueprint(learning_bp)
+app.register_blueprint(history_bp)
 
 
 LOOPBACK_ADDRESSES = {"127.0.0.1", "::1", "::ffff:127.0.0.1", "localhost"}
@@ -97,7 +99,7 @@ def require_login_for_translation_api():
     # CORS preflights carry no cookies; they must pass.
     if request.method == "OPTIONS":
         return None
-    if (request.blueprint in {"asl_translation_api", "text_to_sign_api"}
+    if (request.blueprint in {"asl_translation_api", "text_to_sign_api", "search_history_api"}
             and not session.get("user_email")):
         if _translation_auth_bypassed():
             return None
