@@ -1142,11 +1142,16 @@
         <div>Vote: <input id="vote-live" type="number" value="7" style="width:50px;" /></div>
         <div>Hold (s): <input id="hold-live" type="number" step="0.1" value="0.5" style="width:50px;" /></div>
         <div>Pair custom: <input id="pair-custom-live" type="text" placeholder="PQ=0.40" style="width:85px;" /></div>
-        <div>Recover: <input id="recover-live" type="number" value="1" style="width:48px;" /></div>
-        <div>Retry K: <input id="recover-every-live" type="number" value="3" style="width:48px;" /></div>
+        <div>Recover: <input id="recover-live" type="number" value="2" style="width:48px;" /></div>
+        <div>Retry K: <input id="recover-every-live" type="number" value="5" style="width:48px;" /></div>
         <div>Rec conf: <input id="recover-conf-live" type="number" step="0.05" value="0.3" style="width:50px;" /></div>
         <div>J/Z overrides: <input id="jz-live" type="text" style="width:85px;" /></div>
         <div>Calib reps: <input id="calibrate-reps-live" type="number" value="3" style="width:48px;" /></div>
+        <p style="grid-column:1 / -1; margin:0; font-size:0.72rem; line-height:1.35; opacity:0.82;">
+          Conf and Margin only label a frame UNCERTAIN. The highest-percentage letter is still
+          typed after the vote and hold, and every typed letter is logged with the top-3
+          predictions it was chosen from.
+        </p>
       </div>
       <div id="words-settings" style="display:none; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; margin-top:8px; padding:10px; border-radius:12px; background:var(--sage-bar);">
         <div>Conf: <input id="word-conf-live" type="number" step="0.05" value="0.85" style="width:60px;" /></div>
@@ -1250,9 +1255,14 @@
     : "";
   const API_CREDENTIALS = API_BASE ? "include" : "same-origin";
   const LIVE_MAX_SIDE = 640;
-  // One frame in flight, never tighter than the model can answer; the model
-  // response already carries the skeleton, so no rendered JPEG comes back.
-  const LIVE_GAP_MS = { letters: 100, words: 66 };
+  // The per-frame session check dominates round-trip time, so up to two frames
+  // may overlap: capture runs on a timer and responses carry the skeleton (never
+  // a rendered JPEG). More in-flight would queue work, not raise the visible rate.
+  // Words keep their old pace: the word predictor sizes its ring buffer in
+  // frames at a declared 20 fps, so feeding it faster would shorten the
+  // wall-clock window the model reads.
+  const LIVE_GAP_MS = { letters: 40, words: 66 };
+  const LIVE_MAX_IN_FLIGHT = 2;
   const WORD_FPS = 20;
   const MODEL_ENDPOINTS = {
     letters: {
@@ -1275,10 +1285,28 @@
     }[c]));
   }
 
-  function saveHistory(kind, text) {
-    const list = JSON.parse(localStorage.getItem("asl_history") || "[]");
-    list.unshift({ id: Date.now() + "", kind, text, t: Date.now(), saved: false });
-    localStorage.setItem("asl_history", JSON.stringify(list.slice(0, 50)));
+  function saveHistory(kind, text, notes) {
+    try {
+      const list = JSON.parse(localStorage.getItem("asl_history") || "[]");
+      const record = { id: Date.now() + "", kind, text, t: Date.now(), saved: false };
+      if (Array.isArray(notes) && notes.length) {
+        // One note per typed letter: the top-3 the model saw at commit time.
+        record.notes = notes.slice(-80).map((n) => ({
+          letter: String(n.letter || ""),
+          at: Number(n.at) || 0,
+          guess: Boolean(n.guess),
+          source: n.source || "classifier",
+          reason: n.reason || "",
+          confidence: Number(n.confidence) || 0,
+          top: (Array.isArray(n.top) ? n.top : []).slice(0, 3).map((pair) => [
+            String(pair[0]),
+            Number(pair[1]) || 0
+          ])
+        }));
+      }
+      list.unshift(record);
+      localStorage.setItem("asl_history", JSON.stringify(list.slice(0, 50)));
+    } catch (e) {}
   }
 
   const historyDrawer = document.getElementById("history-drawer");
@@ -1449,10 +1477,10 @@
     }
   }
 
-  async function saveSearchHistory({ type, keyword, result, media }) {
+  async function saveSearchHistory({ type, keyword, result, media, notes }) {
     const localText = type === "text" ? keyword : result;
     try {
-      saveHistory(historyTypeLabel(type), localText);
+      saveHistory(historyTypeLabel(type), localText, notes);
     } catch (error) {
       console.warn("Could not save browser-local translation history.", error);
     }
@@ -1738,6 +1766,10 @@
   let liveSession = null;
   let liveActive = false;
   let liveRunId = 0;
+  let liveTimingAt = 0;
+  let liveInFlight = 0;
+  let liveSeq = 0;
+  let liveRenderedSeq = 0;
   let liveMode = "letters";
   let wordModelAvailable = false;
 
@@ -1952,15 +1984,41 @@
       meter;
   }
 
+  function predictionSummary(frame) {
+    return (frame.top_predictions || [])
+      .slice(0, 3)
+      .map((p) => `${String(p.text).toUpperCase()} ${(p.confidence * 100).toFixed(0)}%`)
+      .join(" · ");
+  }
+
   function renderLiveFrame(frame) {
+    const alternatives = predictionSummary(frame);
     if (!frame.hand_found) {
       renderTagResult("Result......", "NO HAND", "Show hand clearly in view.");
     } else if (frame.held) {
-      renderTagResult("Holding...", frame.held.toUpperCase(), "Hold steady to commit.", frame.held_confidence);
+      const guessed = frame.uncertain || frame.low_conf;
+      renderTagResult(
+        guessed ? "Guess" : "Holding...",
+        frame.held.toUpperCase(),
+        guessed && alternatives
+          ? `Uncertain - top: ${alternatives}`
+          : "Hold steady to commit.",
+        frame.held_confidence
+      );
     } else if (frame.uncertain) {
-      renderTagResult("Uncertain", (frame.letter || "-").toUpperCase(), "Low margin", frame.confidence);
+      renderTagResult(
+        "Uncertain",
+        (frame.letter || "-").toUpperCase(),
+        alternatives ? `Typing top guess. ${alternatives}` : "Low margin",
+        frame.confidence
+      );
     } else if (frame.low_conf) {
-      renderTagResult("Low Conf", (frame.letter || "-").toUpperCase(), "Below threshold", frame.confidence);
+      renderTagResult(
+        "Low Conf",
+        (frame.letter || "-").toUpperCase(),
+        alternatives ? `Typing top guess. ${alternatives}` : "Below threshold",
+        frame.confidence
+      );
     } else {
       renderTagResult(
         "Result......",
@@ -2104,41 +2162,53 @@
     return liveFrameCanvas.toDataURL("image/jpeg", 0.8);
   }
 
-  async function captureLiveFrame(runId) {
+  function captureLiveFrame(runId) {
     if (!liveActive || runId !== liveRunId || !stream) return;
+    const mode = liveMode;
     if (document.hidden) {
       // A hidden tab still decodes and classifies every frame; idle instead.
       setTimeout(() => captureLiveFrame(runId), 250);
       return;
     }
-    const mode = liveMode;
+    if (liveInFlight < LIVE_MAX_IN_FLIGHT) sendLiveFrame(runId, mode);
+    setTimeout(() => captureLiveFrame(runId), LIVE_GAP_MS[mode] || 100);
+  }
+
+  async function sendLiveFrame(runId, mode) {
+    const encodeStart = performance.now();
     const image = drawLiveFrame();
-    if (!image) {
-      setTimeout(() => captureLiveFrame(runId), 100);
-      return;
-    }
+    const encodeMs = performance.now() - encodeStart;
+    if (!image) return;
+    const mySeq = ++liveSeq;
     const startedAt = performance.now();
-    let roundTrip = 0;
+    liveInFlight++;
     try {
       const frame = await modelRequest(liveEndpoint("frame", mode), {
         session_id: liveSession,
         image
       });
-      roundTrip = performance.now() - startedAt;
+      const roundTrip = performance.now() - startedAt;
       if (!liveActive || runId !== liveRunId || mode !== liveMode) return;
+      if (mySeq <= liveRenderedSeq) return;
+      liveRenderedSeq = mySeq;
       if (mode === "words") renderWordFrame(frame);
       else renderLiveFrame(frame);
+      const nowMs = performance.now();
+      if (nowMs - liveTimingAt >= 500) {
+        liveTimingAt = nowMs;
+        setCamStatus(
+          `timing: capture ${encodeMs.toFixed(0)} ms · round trip ${roundTrip.toFixed(0)} ms · ` +
+          `server ${Number(frame.frame_ms || 0).toFixed(0)} ms · ${Number(frame.fps || 0).toFixed(1)} fps`
+        );
+      }
     } catch (err) {
       if (runId === liveRunId) {
         await stopCameraAndLive(true);
         setCamStatus(err.message, true);
       }
-      return;
+    } finally {
+      liveInFlight--;
     }
-    // Response-based pacing: never queue requests faster than the model answers.
-    const minGap = LIVE_GAP_MS[mode] || 100;
-    const gap = Math.max(minGap, Math.round(roundTrip * 0.5));
-    setTimeout(() => captureLiveFrame(runId), gap);
   }
 
   async function startLiveSession(runId) {
@@ -2198,7 +2268,7 @@
       const videoConstraints = {
         width: { ideal: Number(requestedSize[0]) },
         height: { ideal: Number(requestedSize[1]) },
-        frameRate: { ideal: 24 }
+        frameRate: { ideal: 30 }
       };
       const selectedCamera = document.getElementById("camera-live").value;
       if (selectedCamera) {
@@ -2241,9 +2311,11 @@
     }
 
     let finalText = prevText;
+    let notes = [];
     try {
       const res = await modelRequest(liveEndpoint("stop", mode), { session_id: sessionId });
       finalText = res.text || "";
+      notes = Array.isArray(res.notes) ? res.notes : [];
       if (liveText) liveText.textContent = finalText;
     } catch (e) {}
     readBtn.disabled = !(finalText || "").trim();
@@ -2252,7 +2324,8 @@
         await saveSearchHistory({
           type: mode === "words" ? "webcam_words" : "webcam_letters",
           keyword: "",
-          result: finalText.trim()
+          result: finalText.trim(),
+          notes
         });
       } catch (error) {
         setCamStatus("Translation completed, but history could not be saved: " + error.message, true);

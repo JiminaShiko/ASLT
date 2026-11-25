@@ -117,9 +117,11 @@
   var HK = 'asl_history';
   var history = {
     list: function () { return read(HK, []); },
-    add: function (kind, text) {
+    add: function (kind, text, notes) {
       var l = read(HK, []);
-      l.unshift({ id: Date.now() + '' + Math.floor(Math.random() * 1000), kind: kind, text: text, t: Date.now(), saved: false });
+      var rec = { id: Date.now() + '' + Math.floor(Math.random() * 1000), kind: kind, text: text, t: Date.now(), saved: false };
+      if (notes && notes.length) { rec.notes = notes; }
+      l.unshift(rec);
       var saved = l.filter(function (x) { return x.saved; });
       var rest = l.filter(function (x) { return !x.saved; }).slice(0, 50);
       write(HK, saved.concat(rest).sort(function (a, b) { return b.t - a.t; }));

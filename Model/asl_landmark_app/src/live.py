@@ -121,11 +121,19 @@ class Smoother:
         self.empty_streak = 0
 
     def step(self, letter: str | None, confidence: float, now: float,
-             force: bool = False, hand_present: bool = True
+             force: bool = False, hand_present: bool = True,
+             gate: float | None = None
              ) -> tuple[str | None, str | None, float]:
-        """Return (held_letter, letter_committed_now, mean_confidence_of_held)."""
+        """Return (held_letter, letter_committed_now, mean_confidence_of_held).
+
+        `gate` overrides this instance's confidence floor for one call. The web
+        typer passes 0.0 so the highest-probability letter is always eligible
+        to vote; the vote window and hold timer, not the confidence gate, then
+        decide what is typed. Omit it for the original gate-at-`conf` behaviour.
+        """
+        floor = self.conf if gate is None else float(gate)
         confident = letter if (hand_present and letter is not None
-                               and confidence >= self.conf) else None
+                               and confidence >= floor) else None
         self.buf.append((confident or "", confidence))
 
         # streak of the same confident letter, for the hold timer
@@ -1057,13 +1065,13 @@ def selftest() -> int:
             return True
         return False
 
-    def run_seq(s, letters, conf, dt=0.05, t0=0.0, force_last=False):
+    def run_seq(s, letters, conf, dt=0.05, t0=0.0, force_last=False, gate=None):
         """Feed a scripted sequence, return (commits, last_held, last_hconf)."""
         t, commits, held, hc = t0, [], None, 0.0
         for i, l in enumerate(letters):
             t += dt
             held, c, hc = s.step(l, conf, t, force=(force_last and i == len(letters) - 1),
-                                 hand_present=(l is not None))
+                                 hand_present=(l is not None), gate=gate)
             if c:
                 commits.append(c)
         return commits, held, hc
@@ -1080,6 +1088,13 @@ def selftest() -> int:
 
     out, held_low, _ = run_seq(Smoother(conf=0.7, vote=7, hold=0.5), ["A"] * 20, 0.4)
     checks.append(("sub-threshold frames never commit or hold", out == [] and held_low is None))
+
+    # The web typer's write rule: no confidence floor, so the top guess votes
+    # even on a frame the display calls UNCERTAIN; vote+hold still govern it.
+    out, held_open, _ = run_seq(Smoother(conf=0.7, vote=7, hold=0.5),
+                                ["A"] * 20, 0.4, gate=0.0)
+    checks.append(("gate=0.0 lets the top guess commit after the vote/hold",
+                   out == ["A"] and held_open == "A"))
 
     s3 = Smoother(conf=0.7, vote=7, hold=0.5)
     c1, _, _ = run_seq(s3, ["S"] * 12, 0.9)
