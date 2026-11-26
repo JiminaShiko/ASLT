@@ -918,10 +918,10 @@
   function syncPreviewOnly() {
     const trailId = masterOn && trailEnabled ? draftTrailId : null;
     const clickId = masterOn && burstEnabled ? draftClickId : null;
-    const changed = trailId !== (savedTrail?.effect_id ?? null) ||
+    const changed = masterOn && (trailId !== (savedTrail?.effect_id ?? null) ||
       clickId !== (savedClick?.effect_id ?? null) ||
       (trailId !== null && draftTrailSize !== savedTrail?.size) ||
-      (clickId !== null && draftClickSize !== savedClick?.size);
+      (clickId !== null && draftClickSize !== savedClick?.size));
     const wasChanged = stageWrapper.dataset.previewOnly === "true";
     stageWrapper.dataset.previewOnly = String(changed);
     if (changed && !wasChanged && typeof window.clearSignrestCursorParticles === "function") {

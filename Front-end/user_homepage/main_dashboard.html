@@ -802,7 +802,7 @@
     window.addEventListener("mousemove", (e) => {
       if (!activeTrailEffect) return;
       if (document.querySelector('#csStageWrapper[data-preview-only="true"]')) return;
-      if (e.target instanceof Element && e.target.closest("#trialPadBox")) return;
+      if (e.target instanceof Element && e.target.closest("#csStageWrapper.is-on #trialPadBox")) return;
 
       const now = performance.now();
       const dist = Math.hypot(e.clientX - lastTrailX, e.clientY - lastTrailY);
@@ -830,7 +830,7 @@
     window.addEventListener("mousedown", (e) => {
       if (!activeClickEffect) return;
       if (document.querySelector('#csStageWrapper[data-preview-only="true"]')) return;
-      if (e.target instanceof Element && e.target.closest("#trialPadBox")) return;
+      if (e.target instanceof Element && e.target.closest("#csStageWrapper.is-on #trialPadBox")) return;
 
       cursorParticles.push({
         url: activeClickEffect.effect_path,
