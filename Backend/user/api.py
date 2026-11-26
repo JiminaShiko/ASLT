@@ -27,7 +27,7 @@ os.environ.setdefault("ABSL_PROPAGATE_CXX_STD", "1")
 
 import cv2
 import numpy as np
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, jsonify, request, send_file, session as flask_session
 from PIL import Image
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -184,10 +184,12 @@ def image_to_rgb(image):
 class LiveSession:
     def __init__(self, raw_settings):
         self.lock = threading.RLock()
+        self.owner = None
         self.settings = validate_settings(raw_settings)
         self.backend, self.labels = get_backend(
             self.settings["backend"], self.settings["profile"])
-        self.detector = hand_backend.create_detector(static=False)
+        # Built on the first image frame: landmark frames from the page never need it.
+        self.detector = None
         self.recovery = (
             hand_backend.Recovery(
                 conf=self.settings["recover_conf"],
@@ -244,7 +246,7 @@ class LiveSession:
                         "body": []}
         self.last_recovery = ""
 
-    def process_frame(self, image):
+    def process_frame(self, image=None, landmarks=None, browser=False):
         with self.lock:
             started = time.perf_counter()
             now_mono = time.monotonic()
@@ -257,22 +259,34 @@ class LiveSession:
                     self.fps = (instant if self.fps <= 0 else
                                 self.fps * 0.85 + instant * 0.15)
             self._last_frame_mono = now_mono
-            image = reduce_image(image)
-            # Only the overlay needs RGB; recognition converts BGR itself, so
-            # skip the extra round trip when the trace is off.
-            if self.pose is not None:
-                rgb = image_to_rgb(image)
-                frame = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+            rgb = None
+            if browser:
+                # The page's hand tracker already found the landmarks, so this
+                # frame skips decoding, detection and recovery entirely.
+                result = hand_backend.HandResult(landmarks, None, 0.0)
+                self.streak = 0 if landmarks is not None else self.streak + 1
+                self.last_recovery = ""
+                # An optional image still feeds the body/face trace only.
+                if image is not None and self.pose is not None:
+                    rgb = image_to_rgb(reduce_image(image))
             else:
-                rgb = None
-                frame = image_to_bgr(image)
-            timestamp_ms = int((now_mono - self.started_at) * 1000)
-            result, how = hand_backend.detect_frame(
-                self.detector, frame, timestamp_ms, self.recovery,
-                empty_streak=self.streak + 1,
-            )
-            self.last_recovery = how if how in ("direct_0.3", "flip_0.3") else ""
-            self.streak = self.streak + 1 if result.landmarks is None else 0
+                if self.detector is None:
+                    self.detector = hand_backend.create_detector(static=False)
+                image = reduce_image(image)
+                # Only the overlay needs RGB; recognition converts BGR itself, so
+                # skip the extra round trip when the trace is off.
+                if self.pose is not None:
+                    rgb = image_to_rgb(image)
+                    frame = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+                else:
+                    frame = image_to_bgr(image)
+                timestamp_ms = int((now_mono - self.started_at) * 1000)
+                result, how = hand_backend.detect_frame(
+                    self.detector, frame, timestamp_ms, self.recovery,
+                    empty_streak=self.streak + 1,
+                )
+                self.last_recovery = how if how in ("direct_0.3", "flip_0.3") else ""
+                self.streak = self.streak + 1 if result.landmarks is None else 0
             self.landmarks = result.landmarks
             call = landmark_live.blank_call()
             now = time.time()
@@ -329,7 +343,7 @@ class LiveSession:
                 "head": {"lines": [], "dots": []},
                 "body": [],
             }
-            if self.pose is not None:
+            if self.pose is not None and rgb is not None:
                 with self._pose_lock:
                     payload = self._pose_payload
                 overlay["head"] = payload["head"]
@@ -459,7 +473,8 @@ class LiveSession:
         with self.lock:
             if self.cal is not None and not self.cal.done:
                 self.cal.cancel()
-            self.detector.close()
+            if self.detector is not None:
+                self.detector.close()
             if self.recovery is not None:
                 self.recovery.close()
             if self.pose is not None:
@@ -552,6 +567,7 @@ class WordLiveSession:
         from videoModel.src import predictor as word_predictor
 
         self.lock = threading.RLock()
+        self.owner = None
         self.settings = validate_word_settings(raw_settings)
         self.predictor = word_predictor.WordPredictor(
             weights=Path(words_config.FOR_RELEASE),
@@ -731,6 +747,7 @@ def live_start():
     try:
         data = request.get_json(silent=True) or {}
         session = LiveSession(data.get("settings"))
+        session.owner = flask_session.get("user_id")
         session_id = uuid.uuid4().hex
         with SESSIONS_LOCK:
             now = time.monotonic()
@@ -756,8 +773,28 @@ def live_frame():
         session = SESSIONS.get(session_id)
     if session is None:
         return jsonify({"error": "Session expired. Start live translation again."}), 404
+    if session.owner != flask_session.get("user_id"):
+        return jsonify({"error": "This live session belongs to another user."}), 403
+    if "landmarks" in data:
+        landmarks = data.get("landmarks")
+        if landmarks is None:
+            pass  # no hand in this frame
+        else:
+            try:
+                landmarks = np.asarray(landmarks, dtype=np.float32)
+            except (TypeError, ValueError):
+                landmarks = None
+            if (landmarks is None or landmarks.shape != (21, 3)
+                    or not np.isfinite(landmarks).all()):
+                return jsonify({"error": "landmarks must be 21 [x, y, z] points"}), 400
+        image = decode_image(data["image"]) if "image" in data else None
+        try:
+            return jsonify(session.process_frame(
+                image=image, landmarks=landmarks, browser=True))
+        except Exception as error:
+            return jsonify({"error": str(error)}), 500
     if "image" not in data:
-        return jsonify({"error": "image required"}), 400
+        return jsonify({"error": "image or landmarks required"}), 400
     try:
         return jsonify(session.process_frame(decode_image(data["image"])))
     except Exception as error:
@@ -805,6 +842,7 @@ def words_live_start():
     try:
         data = request.get_json(silent=True) or {}
         session = WordLiveSession(data.get("settings"))
+        session.owner = flask_session.get("user_id")
         session_id = uuid.uuid4().hex
         with WORD_SESSIONS_LOCK:
             now = time.monotonic()
@@ -832,6 +870,8 @@ def words_live_frame():
         return jsonify(
             {"error": "Word session expired. Start live translation again."}
         ), 404
+    if session.owner != flask_session.get("user_id"):
+        return jsonify({"error": "This live session belongs to another user."}), 403
     if "image" not in data:
         return jsonify({"error": "image required"}), 400
     try:

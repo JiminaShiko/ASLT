@@ -1756,6 +1756,11 @@
   const LIVE_GAP_MS = { letters: 40, words: 66 };
   const LIVE_MAX_IN_FLIGHT = 2;
   const WORD_FPS = 20;
+  // Hand tracking runs in the page, on the same .task model the Python detector
+  // uses, so the skeleton is drawn at video rate and the server only classifies
+  // the 21 landmarks it is sent. Without it the JPEG path below is unchanged.
+  const VISION_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3";
+  const HAND_MODEL_PATH = "/models/hand_landmarker.task";
   const MODEL_ENDPOINTS = {
     letters: {
       start: "/api/live/start",
@@ -2598,8 +2603,16 @@
       liveTop.innerHTML = `<li style="opacity:0.75;">${frame.hand_found ? "No match" : "No hand"}</li>`;
     }
 
-    if (frame.overlay && drawLandmarksToggle.checked) drawOverlay(frame.overlay);
-    else clearSkeleton();
+    if (frame.overlay) {
+      remoteHead = frame.overlay.head || remoteHead;
+      remoteBody = frame.overlay.body || remoteBody;
+    }
+    // With the local tracker the draw loop owns the canvas; without it this is
+    // the only place the skeleton ever updates.
+    if (!tracker) {
+      if (frame.overlay && drawLandmarksToggle.checked) drawOverlay(frame.overlay);
+      else clearSkeleton();
+    }
 
     document.getElementById("live-fps").textContent = Number(frame.fps || 0).toFixed(1) + " fps";
     document.getElementById("live-hand-rate").textContent =
@@ -2705,7 +2718,7 @@
   const liveFrameCanvas = document.createElement("canvas");
   const liveFrameCtx = liveFrameCanvas.getContext("2d");
 
-  function drawLiveFrame() {
+  function drawFrameToCanvas() {
     const width = cam.videoWidth;
     const height = cam.videoHeight;
     if (!width || !height || !liveFrameCtx) return null;
@@ -2717,7 +2730,90 @@
       liveFrameCanvas.height = frameH;
     }
     liveFrameCtx.drawImage(cam, 0, 0, frameW, frameH);
-    return liveFrameCanvas.toDataURL("image/jpeg", 0.8);
+    return liveFrameCanvas;
+  }
+
+  function drawLiveFrame() {
+    const canvas = drawFrameToCanvas();
+    return canvas && canvas.toDataURL("image/jpeg", 0.8);
+  }
+
+  // Local tracker state: hands are drawn from this, head/body come from the
+  // last server response (the pose trace still runs server-side).
+  let tracker = null;
+  let trackerLoading = false;
+  let trackTimer = 0;
+  let trackRunId = 0;
+  let localHands = [];
+  let remoteHead = { lines: [], dots: [] };
+  let remoteBody = [];
+  let lastPoseAt = 0;
+
+  async function ensureTracker() {
+    if (trackerLoading) return null;
+    trackerLoading = true;
+    try {
+      const vision = await import(VISION_URL + "/vision_bundle.mjs");
+      const fileset = await vision.FilesetResolver.forVisionTasks(VISION_URL + "/wasm");
+      const options = {
+        baseOptions: {
+          modelAssetPath: API_BASE + HAND_MODEL_PATH,
+          delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numHands: 1,
+        minHandDetectionConfidence: 0.5,
+        minHandPresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      };
+      try {
+        tracker = await vision.HandLandmarker.createFromOptions(fileset, options);
+      } catch (err) {
+        // Blocked or missing WebGL: the CPU delegate runs the same model.
+        options.baseOptions.delegate = "CPU";
+        tracker = await vision.HandLandmarker.createFromOptions(fileset, options);
+      }
+    } catch (err) {
+      tracker = null;
+    }
+    return tracker;
+  }
+
+  function trackTick(runId) {
+    if (runId !== trackRunId || !stream) return;
+    if (liveMode !== "letters" || !tracker) {
+      trackTimer = setTimeout(() => trackTick(runId), 200);
+      return;
+    }
+    const canvas = drawFrameToCanvas();
+    let hands = [];
+    if (canvas) {
+      try {
+        const result = tracker.detectForVideo(canvas, performance.now());
+        if (result && result.landmarks && result.landmarks.length) {
+          hands = result.landmarks[0].map((p) => [p.x, p.y, p.z]);
+        }
+      } catch (err) {}
+    }
+    localHands = hands.length ? [hands] : [];
+    if (drawLandmarksToggle.checked) {
+      drawOverlay({ hands: localHands, head: remoteHead, body: remoteBody });
+    } else {
+      clearSkeleton();
+    }
+    trackTimer = setTimeout(() => trackTick(runId), 33);
+  }
+
+  function startTracking() {
+    const runId = ++trackRunId;
+    ensureTracker().then(() => trackTick(runId));
+  }
+
+  function stopTracking() {
+    trackRunId++;
+    clearTimeout(trackTimer);
+    trackTimer = 0;
+    localHands = [];
   }
 
   function captureLiveFrame(runId) {
@@ -2732,18 +2828,32 @@
   }
 
   async function sendLiveFrame(runId, mode) {
-    const encodeStart = performance.now();
-    const image = drawLiveFrame();
-    const encodeMs = performance.now() - encodeStart;
-    if (!image) return;
+    let payload;
+    let encodeMs = 0;
+    if (mode === "letters" && tracker) {
+      payload = {
+        session_id: liveSession,
+        landmarks: localHands.length ? localHands[0] : null
+      };
+      // The body/face trace still runs server-side, so an image goes out a few
+      // times a second while that overlay is switched on.
+      if (drawLandmarksToggle.checked && performance.now() - lastPoseAt >= 250) {
+        lastPoseAt = performance.now();
+        const poseImage = drawLiveFrame();
+        if (poseImage) payload.image = poseImage;
+      }
+    } else {
+      const encodeStart = performance.now();
+      const image = drawLiveFrame();
+      encodeMs = performance.now() - encodeStart;
+      if (!image) return;
+      payload = { session_id: liveSession, image };
+    }
     const mySeq = ++liveSeq;
     const startedAt = performance.now();
     liveInFlight++;
     try {
-      const frame = await modelRequest(liveEndpoint("frame", mode), {
-        session_id: liveSession,
-        image
-      });
+      const frame = await modelRequest(liveEndpoint("frame", mode), payload);
       const roundTrip = performance.now() - startedAt;
       if (!liveActive || runId !== liveRunId || mode !== liveMode) return;
       if (mySeq <= liveRenderedSeq) return;
@@ -2840,6 +2950,7 @@
       clearSkeleton();
       camPh.hidden = true;
       camMainCircle.classList.add("recording");
+      startTracking();
 
       const runId = ++liveRunId;
       await startLiveSession(runId);
@@ -2895,6 +3006,7 @@
 
   async function stopCameraAndLive(keepStatus) {
     await stopLiveSession(true);
+    stopTracking();
 
     if (stream) {
       stream.getTracks().forEach((t) => t.stop());
