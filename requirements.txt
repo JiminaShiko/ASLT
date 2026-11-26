@@ -23,6 +23,8 @@ flask-cors==6.0.5
 mysql-connector-python==26.10.0
 python-dotenv==1.2.4
 Pillow==12.3.0
+# Pusher Channels server SDK (Backend/config/realtime.py: live admin session updates)
+pusher==3.3.4
 # gunicorn is only used by production/Linux hosts (e.g. Render); Windows runs
 # the app with `python app.py`.
 gunicorn==27.0.1
