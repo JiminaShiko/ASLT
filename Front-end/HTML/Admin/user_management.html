@@ -169,8 +169,13 @@
     .um-pill small { font-size: 12px; font-weight: 500; opacity: .8; }
 
     .um-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid transparent; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-    .um-badge::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
-    .um-badge.is-active { background: var(--um-success-bg); border-color: var(--um-success-border); color: var(--um-success); }
+    .um-badge::before { width: 7px; height: 7px; border-radius: 50%; background: currentColor; content: ""; }
+    .um-badge.is-active, .um-badge.is-online { background: var(--um-success-bg); border-color: var(--um-success-border); color: var(--um-success); }
+    .um-badge.is-active::before, .um-badge.is-online::before { background: #22a55c; box-shadow: 0 0 0 3px rgba(34, 165, 92, .18); }
+    .um-badge.is-away { background: var(--um-warn-bg); border-color: var(--um-warn-border); color: var(--um-warn); }
+    .um-badge.is-away::before { background: #d9a02b; }
+    .um-badge.is-offline { background: var(--um-neutral-bg); border-color: var(--um-border); color: var(--um-neutral-fg); }
+    .um-badge.is-offline::before { background: #d64545; }
     .um-badge.is-inactive, .um-badge.is-expired { background: var(--um-warn-bg); border-color: var(--um-warn-border); color: var(--um-warn); }
     .um-badge.is-banned, .um-badge.is-revoked { background: var(--um-danger-bg); border-color: var(--um-danger-border); color: var(--um-danger); }
     .um-badge.is-pending, .um-badge.is-signed_out { background: var(--um-neutral-bg); border-color: var(--um-border); color: var(--um-neutral-fg); }
@@ -285,7 +290,7 @@
     /* ------------------------------------------------------------
        Sessions
        ------------------------------------------------------------ */
-    .um-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }
+    .um-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 22px; }
     .um-stat { display: flex; align-items: center; gap: 14px; padding: 18px; background: var(--um-surface); border: 1px solid var(--um-border); border-radius: var(--um-radius); box-shadow: var(--um-shadow); }
     .um-stat-icon { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 11px; background: var(--um-accent-soft); color: var(--um-accent-strong); }
     .um-stat-icon svg { width: 20px; height: 20px; }
@@ -315,6 +320,11 @@
     .um-session-user { display: flex; align-items: center; gap: 8px; min-width: 0; margin-bottom: 6px; }
     .um-mini { display: grid; place-items: center; flex: none; width: 24px; height: 24px; overflow: hidden; border-radius: 50%; background: var(--um-disc); color: var(--um-accent-strong); font-size: 10px; font-weight: 600; }
     .um-mini img { width: 100%; height: 100%; object-fit: cover; }
+    .um-mini-wrap { position: relative; display: inline-flex; flex: none; }
+    .um-presence { position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--um-surface); background: #d64545; }
+    .um-presence.is-online { background: #22a55c; }
+    .um-presence.is-away { background: #d9a02b; }
+    .um-presence.is-offline { background: #d64545; }
     .um-session-user strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
     .um-session-user span { overflow: hidden; color: var(--um-muted); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
     .um-meta { display: grid; gap: 2px; margin: 0; color: var(--um-muted); font-size: 12.5px; }
@@ -445,38 +455,37 @@
 
           <div class="um-panel" style="margin-bottom:22px">
             <div class="um-panel-head">
-              <div><h2 class="um-panel-title">Device overview</h2><p class="um-panel-desc">Based on currently active sessions.</p></div>
+              <div><h2 class="um-panel-title">Device overview</h2><p class="um-panel-desc">Every device with a signed-in session, including offline ones.</p></div>
             </div>
             <div class="um-panel-body um-devices" id="deviceOverview"></div>
           </div>
 
           <div class="um-panel" style="margin-bottom:22px">
             <div class="um-panel-head">
-              <div><h2 class="um-panel-title">Session monitor</h2><p class="um-panel-desc" id="sessionCount"></p></div>
+              <div><h2 class="um-panel-title">Session monitor</h2><p class="um-panel-desc" id="sessionCount"></p><p class="um-panel-desc">Every browser and device the user is signed in on: <b>Online</b> = active in the last 2 minutes, <b>Away</b> = up to 15 minutes, <b>Offline</b> = signed in but the browser is closed or idle. Sign-in attempts and ended sessions are in Login history below.</p></div>
             </div>
             <div class="um-panel-body">
               <div class="um-toolbar" style="margin-bottom:18px">
                 <div class="um-search">
                   <svg viewBox="0 0 24 24" aria-hidden="true" class="um-svg"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
-                  <input class="um-input" id="sessionSearch" type="search" placeholder="Search by username or email" aria-label="Search sessions by username or email">
+                  <input class="um-input" id="sessionSearch" type="search" placeholder="Search by username or email" aria-label="Search signed-in sessions by username or email">
                 </div>
-                <select class="um-input" id="sessionStatus" aria-label="Filter sessions by status">
-                  <option value="active">Active</option>
-                  <option value="expired">Expired</option>
-                  <option value="revoked">Revoked</option>
-                  <option value="signed_out">Signed out</option>
-                  <option value="all">All sessions</option>
-                </select>
               </div>
               <div id="sessionList" class="um-sessions" aria-live="polite"></div>
               <div id="sessionState"></div>
-              <div class="um-more" id="sessionMore" hidden><button class="um-btn um-btn-secondary" id="sessionLoadMore" type="button">Load more</button></div>
+              <div class="um-pager" id="sessionPager" hidden>
+                <span id="sessionInfo"></span>
+                <div>
+                  <button class="um-btn um-btn-secondary" id="sessionPrev" type="button">Previous</button>
+                  <button class="um-btn um-btn-secondary" id="sessionNext" type="button">Next</button>
+                </div>
+              </div>
             </div>
           </div>
 
           <div class="um-panel">
             <div class="um-panel-head">
-              <div><h2 class="um-panel-title">Session history</h2><p class="um-panel-desc">Read-only record of sign-ins, sign-outs and revocations.</p></div>
+              <div><h2 class="um-panel-title">Login history</h2><p class="um-panel-desc">Every sign-in attempt, sign-out, expiry and revocation — the audit log, not the live device list.</p></div>
             </div>
             <div class="um-panel-body">
               <div class="um-toolbar" style="margin-bottom:6px">
@@ -544,6 +553,7 @@
 
   <div class="um-toast" id="toast" role="status" aria-live="polite"></div>
 
+  <script src="https://js.pusher.com/8.3.0/pusher.min.js" defer></script>
   <script src="/admin-dashboard/js/user_management.js" defer></script>
 </body>
 </html>

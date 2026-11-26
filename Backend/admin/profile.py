@@ -140,21 +140,17 @@ def update_admin_profile():
     if not isinstance(username, str):
         return jsonify({
             "success": False,
-            "message": "Username is required."
+            "message": "Name is required."
         }), 400
 
     username = username.strip()
 
+    # Any name is allowed (spaces, accents, symbols); it only has to be
+    # non-empty, at most 100 characters, and not already in use.
     if not username or len(username) > 100:
         return jsonify({
             "success": False,
-            "message": "Username must contain 1–100 characters."
-        }), 400
-
-    if not re.fullmatch(r"[A-Za-z0-9_.-]+", username):
-        return jsonify({
-            "success": False,
-            "message": "Username can only contain letters, numbers, dots, underscores, and hyphens."
+            "message": "Name must contain 1–100 characters."
         }), 400
 
     conn = None
@@ -184,7 +180,7 @@ def update_admin_profile():
         if cursor.fetchone():
             return jsonify({
                 "success": False,
-                "message": "This username is already taken."
+                "message": "That name is already taken. Please choose another."
             }), 409
 
         cursor.execute(

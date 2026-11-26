@@ -1,6 +1,7 @@
 import hashlib
 import os
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import json
@@ -100,8 +101,20 @@ def upload_to_cloudinary(
         method="POST",
     )
 
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        result = json.loads(resp.read().decode("utf-8"))
+    # CDN edges occasionally present a bad certificate or drop the TLS
+    # handshake; one quick retry rides that out without hiding real 4xx errors.
+    for attempt in range(2):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+            break
+        except urllib.error.HTTPError:
+            raise
+        except urllib.error.URLError:
+            if attempt == 0:
+                time.sleep(0.6)
+                continue
+            raise
 
     secure_url = result.get("secure_url")
     if not secure_url:

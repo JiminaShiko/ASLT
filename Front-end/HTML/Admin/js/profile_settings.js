@@ -10,7 +10,7 @@
   // Configuration & Constants
   const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5 MB limit
   const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-  const USERNAME_PATTERN = /^[A-Za-z0-9._-]+$/;
+  const USERNAME_MAX_LENGTH = 100;
 
   // SVG Icons for Theme Toggle & Shared Controls
   const ICONS = {
@@ -206,15 +206,15 @@
       const email = emailInput ? emailInput.value.trim() : '';
 
       if (!username) {
-        showFormMessage(messageEl, 'Please enter a username.', 'error');
+        showFormMessage(messageEl, 'Please enter a name.', 'error');
         if (usernameInput) usernameInput.focus();
         return;
       }
 
-      if (!USERNAME_PATTERN.test(username)) {
+      if (username.length > USERNAME_MAX_LENGTH) {
         showFormMessage(
           messageEl,
-          'Username may only contain letters, numbers, dots, underscores, and hyphens.',
+          `Name must contain 1–${USERNAME_MAX_LENGTH} characters.`,
           'error'
         );
         if (usernameInput) usernameInput.focus();

@@ -17,6 +17,7 @@
   const API = "/api/admin";
   const SIDEBAR_URL = "/admin-dashboard/admin_sidebar.html";
   const PAGE_SIZE = 12;
+  const SESSION_PAGE_SIZE = 9;
   const HISTORY_PAGE_SIZE = 15;
 
   const $ = (id) => document.getElementById(id);
@@ -623,16 +624,19 @@
 
   const DEVICE_COLORS = { desktop: "var(--um-accent)", mobile: "#c7a35f", tablet: "#8aa896", other: "#b7bbad" };
   const DEVICE_LABELS = { desktop: "Desktop / laptop", mobile: "Smartphone", tablet: "Tablet", other: "Other" };
-  const SESSION_LABEL = { active: "Active", expired: "Expired", revoked: "Revoked", signed_out: "Signed out" };
+  const SESSION_LABEL = { online: "Online", away: "Away", offline: "Offline", active: "Active", expired: "Expired", revoked: "Revoked", signed_out: "Signed out" };
 
   /* ---- statistics + device overview ---- */
   function renderStats(data) {
     const t = data ? data.totals : null;
+    const devices = (data && data.devices) || {};
+    // Live device view only: ended sessions live in Login history instead.
     const cards = [
-      ["Active sessions", t && t.active, "activity", ""],
-      ["Expired sessions", t && t.expired, "clock", "is-warn"],
-      ["Revoked sessions", t && t.revoked, "revoke", "is-bad"],
-      ["Unique active users", t && t.unique_active_users, "users", ""],
+      ["Signed-in sessions", t && t.active, "activity", ""],
+      ["People signed in", t && t.unique_active_users, "users", ""],
+      ["Desktop / laptop", devices.desktop, "desktop", ""],
+      ["Smartphones", devices.mobile, "mobile", ""],
+      ["Tablets", devices.tablet, "tablet", ""],
     ];
     $("sessionStats").replaceChildren(
       ...cards.map(([label, value, icon, tone]) =>
@@ -651,7 +655,7 @@
     }
     const total = Object.values(data.devices).reduce((sum, n) => sum + n, 0);
     if (!total) {
-      box.replaceChildren(el("p", { class: "um-note", text: "No active sessions right now." }));
+      box.replaceChildren(    el("p", { class: "um-note", text: "No signed-in sessions right now." }));
       return;
     }
     const kinds = Object.keys(DEVICE_LABELS).filter((kind) => data.devices[kind] > 0);
@@ -668,9 +672,11 @@
     box.replaceChildren(left, right);
   }
 
-  async function loadSessionStats() {
-    renderStats(null);
-    renderDevices(null);
+  async function loadSessionStats({ silent = false } = {}) {
+    if (!silent) {
+      renderStats(null);
+      renderDevices(null);
+    }
     try {
       const data = await api("/sessions/stats");
       renderStats(data);
@@ -683,9 +689,10 @@
 
   /* ---- session monitor ---- */
   function sessionCard(item) {
-    const ended = item.status !== "active";
+    const live = ["online", "away", "offline"].includes(item.status);
+    const ended = !live;
     const items = [];
-    if (item.status === "active" && !item.is_current) {
+    if (live && !item.is_current) {
       items.push({ label: "Revoke session", icon: "revoke", danger: true, run: () => confirmRevoke(item) });
       items.push({ label: `Revoke all for ${handle(item.user)}`, icon: "ban", danger: true, run: () => confirmRevokeAll(item.user) });
     }
@@ -698,7 +705,7 @@
     return el("article", { class: "um-session" + (ended ? " is-ended" : ""), "data-session-id": item.session_id },
       el("span", { class: "um-device", title: DEVICE_LABELS[item.device_type] || "Device" }, svg(item.device_type in ICONS ? item.device_type : "other")),
       el("div", { style: "min-width:0" },
-        el("div", { class: "um-session-user" }, el("span", { class: "um-mini" }, avatarContent(item.user)), el("strong", { text: item.user.display_name }), item.user.username ? el("span", { text: `@${item.user.username}` }) : null),
+        el("div", { class: "um-session-user" }, el("span", { class: "um-mini-wrap" }, el("span", { class: "um-mini" }, avatarContent(item.user)), el("i", { class: `um-presence is-${item.status}`, title: SESSION_LABEL[item.status] || item.status })), el("strong", { text: item.user.display_name }), item.user.username ? el("span", { text: `@${item.user.username}` }) : null),
         el("p", { class: "um-meta" },
           el("span", { text: where }),
           el("span", { text: `Signed in ${fmtDateTime(item.login_at) || "—"}` }),
@@ -712,10 +719,14 @@
   function renderSessions() {
     const list = $("sessionList");
     const box = $("sessionState");
-    const more = $("sessionMore");
+    const pager = $("sessionPager");
     box.replaceChildren();
-    more.hidden = true;
-    $("sessionCount").textContent = sessions.total ? `${sessions.total} ${sessions.total === 1 ? "session" : "sessions"} match this view` : "";
+    pager.hidden = true;
+    $("sessionCount").textContent = sessions.loading && !sessions.total
+      ? "Loading sessions…"
+      : sessions.total
+        ? `${sessions.total} signed-in ${sessions.total === 1 ? "session" : "sessions"} · your account, then admins, then users · online → away → offline`
+        : "Nobody is signed in right now.";
 
     if (sessions.loading && !sessions.items.length) {
       list.replaceChildren(...Array.from({ length: 3 }, () => el("div", { class: "um-skeleton", style: "height:112px;border-radius:12px" })));
@@ -725,34 +736,43 @@
     if (sessions.error && !sessions.items.length) {
       box.append(stateBlock("error", "Couldn’t load sessions", sessions.error, "Try again", () => loadSessions()));
     } else if (!sessions.items.length) {
-      box.append(stateBlock("empty", "No sessions here", sessions.q || sessions.status !== "active" ? "Nothing matches these filters." : "Nobody is signed in right now."));
+      box.append(stateBlock("empty", "No sessions", sessions.q ? "Nothing matches this search." : "Nobody is signed in right now."));
     } else {
-      more.hidden = sessions.items.length >= sessions.total;
-      $("sessionLoadMore").disabled = sessions.loading;
-      $("sessionLoadMore").textContent = sessions.loading ? "Loading…" : "Load more";
+      const start = (sessions.page - 1) * SESSION_PAGE_SIZE;
+      $("sessionInfo").textContent = `Showing ${start + 1}–${start + sessions.items.length} of ${sessions.total}`;
+      $("sessionPrev").disabled = sessions.page <= 1;
+      $("sessionNext").disabled = start + sessions.items.length >= sessions.total;
+      pager.hidden = false;
     }
   }
 
-  async function loadSessions({ append = false } = {}) {
+  async function loadSessions({ silent = false } = {}) {
     const mine = ++sessions.req;
     closeMenu();
-    if (append) sessions.page += 1;
-    else {
-      sessions.page = 1;
-      sessions.items = [];
-    }
     sessions.loading = true;
     sessions.error = "";
-    renderSessions();
+    if (!silent) renderSessions();
     try {
-      const data = await api("/sessions", { params: { status: sessions.status, q: sessions.q, page: sessions.page, page_size: PAGE_SIZE } });
+      const data = await api("/sessions", { params: { status: sessions.status, q: sessions.q, page: sessions.page, page_size: SESSION_PAGE_SIZE } });
       if (mine !== sessions.req) return;
-      sessions.items = append ? sessions.items.concat(data.items) : data.items;
+      sessions.items = data.items;
       sessions.total = data.total;
+      // Sessions can end while a page is open: step back instead of showing a blank page.
+      if (!data.items.length && data.total && sessions.page > 1) {
+        sessions.page = Math.max(1, Math.ceil(data.total / SESSION_PAGE_SIZE));
+        sessions.loading = false;
+        loadSessions({ silent: true });
+        return;
+      }
     } catch (error) {
       if (mine !== sessions.req) return;
       sessions.error = error.message;
-      if (append) sessions.page -= 1;
+      if (sessions.page > 1) {
+        sessions.page -= 1;
+        sessions.loading = false;
+        loadSessions({ silent: true });
+        return;
+      }
     }
     sessions.loading = false;
     renderSessions();
@@ -762,6 +782,64 @@
     loadSessionStats();
     loadSessions();
     loadHistory();
+  }
+
+  // Refresh while the tab is open so Online/Away/Offline stays true. Skipped while a
+  // menu, dialog or a deeper page of results is in use.
+  const LIVE_REFRESH_MS = 30000;
+  setInterval(() => {
+    if (document.hidden || $("view-sessions").hidden) return;
+    if (!menuEl.hidden || confirmDialog.open || drawer.open) return;
+    if (sessions.loading) return;
+    loadSessionStats({ silent: true });
+    loadSessions({ silent: true });
+  }, LIVE_REFRESH_MS);
+
+  /* ---- realtime (Pusher Channels; the 30 s poll above stays as the fallback) ---- */
+  let realtimeClient = null;
+  let accountsStale = false;
+
+  // One event covers both tabs: "account_*" reasons also refresh the gallery.
+  const realtimeChanged = debounce((payload) => {
+    const busy = !menuEl.hidden || confirmDialog.open || drawer.open;
+    const reason = (payload && payload.reason) || "";
+
+    if (reason.startsWith("account")) {
+      if (document.hidden || $("view-accounts").hidden || busy) accountsStale = true;
+      else loadUsers();
+    }
+
+    if (document.hidden || $("view-sessions").hidden) {
+      sessionsStale = true; // refreshed when the admin comes back to the tab
+      return;
+    }
+    if (busy) {
+      sessionsStale = true; // don't yank the UI out from under a click
+      return;
+    }
+    loadSessionStats({ silent: true });
+    loadSessions({ silent: true });
+  }, 700);
+
+  async function startRealtime() {
+    if (!window.Pusher) return;
+    let config;
+    try {
+      config = await api("/realtime/config");
+    } catch {
+      return; // polling still keeps the monitor current
+    }
+    if (!config || !config.enabled) return;
+    try {
+      realtimeClient = new window.Pusher(config.key, {
+        cluster: config.cluster,
+        forceTLS: true,
+        channelAuthorization: { endpoint: config.authEndpoint, transport: "ajax" },
+      });
+      realtimeClient.subscribe(config.channel).bind(config.event, realtimeChanged);
+    } catch {
+      realtimeClient = null;
+    }
   }
 
   function confirmRevoke(item) {
@@ -786,13 +864,22 @@
     );
   }
 
-  $("sessionLoadMore").addEventListener("click", () => loadSessions({ append: true }));
-  $("sessionStatus").addEventListener("change", (event) => {
-    sessions.status = event.target.value;
+  $("sessionPrev").addEventListener("click", () => {
+    if (sessions.page <= 1) return;
+    sessions.page -= 1;
+    sessions.items = [];
+    loadSessions();
+  });
+  $("sessionNext").addEventListener("click", () => {
+    if ((sessions.page - 1) * SESSION_PAGE_SIZE + sessions.items.length >= sessions.total) return;
+    sessions.page += 1;
+    sessions.items = [];
     loadSessions();
   });
   const searchSessions = debounce((value) => {
     sessions.q = value.trim();
+    sessions.page = 1;
+    sessions.items = [];
     loadSessions();
   });
   $("sessionSearch").addEventListener("input", (event) => {
@@ -894,6 +981,10 @@
       sessionsLoaded = true;
       sessionsStale = false;
       refreshSessionData();
+    }
+    if (tab === "accounts" && accountsStale) {
+      accountsStale = false;
+      loadUsers();
     }
   }
   $("tab-accounts").addEventListener("click", () => showTab("accounts"));
@@ -1008,5 +1099,6 @@
   loadAdminProfile();
   renderPills();
   loadUsers();
+  startRealtime();
   if (location.hash === "#sessions") showTab("sessions");
 })();

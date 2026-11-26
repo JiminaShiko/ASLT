@@ -35,6 +35,7 @@ from functools import wraps
 
 from flask import Blueprint, current_app, g, jsonify, redirect, request, session
 
+from config import realtime
 from config.database import get_db_connection
 
 admin_users_bp = Blueprint("admin_users", __name__)
@@ -45,6 +46,9 @@ admin_users_bp = Blueprint("admin_users", __name__)
 SESSION_LIFETIME = timedelta(hours=24)        # how long a web login stays valid server-side
 REMEMBER_SESSION_LIFETIME = timedelta(days=30)  # "Remember me" logins
 LAST_SEEN_WRITE_SECONDS = 60                   # write last_seen_at at most once a minute per session
+ONLINE_WINDOW = timedelta(minutes=2)           # seen this recently -> "Online"
+LIVE_SESSION_WINDOW = timedelta(minutes=15)    # seen this recently -> "Away", older -> "Offline"
+OFFLINE_GRACE = timedelta(seconds=10)          # pagehide beacon settles before "Offline" shows
 STATIC_PREFIXES = ("/css/", "/js/", "/assets/")
 
 STATUS_FILTERS = {"all", "active", "inactive", "banned", "pending"}
@@ -197,11 +201,19 @@ def _device_label(raw: str | None) -> str:
 
 
 def _session_status(row, now: datetime) -> str:
+    """A session is live only while it is being used; last_seen_at is written by the
+    session guard on the browser's requests, and pagehide marks a closing tab."""
     if row.get("revoked_at") is not None:
         return "revoked" if row.get("end_reason") == "admin" else "signed_out"
     if row.get("expires_at") is not None and row["expires_at"] <= now:
         return "expired"
-    return "active"
+    offline_at = row.get("offline_at")
+    if offline_at is not None and offline_at <= now - OFFLINE_GRACE:
+        return "offline"  # the browser reported the tab closing, or it has gone quiet
+    last_seen = row.get("last_seen_at") or row.get("created_at")
+    if last_seen is None or last_seen < now - LIVE_SESSION_WINDOW:
+        return "offline"  # still signed in, but the browser has gone quiet
+    return "online" if last_seen >= now - ONLINE_WINDOW else "away"
 
 
 def _user_summary(row) -> dict:
@@ -242,6 +254,7 @@ def ensure_user_management_schema() -> None:
             ("device_type", "VARCHAR(20) NULL"),
             ("revoked_by", "INT NULL"),
             ("end_reason", "VARCHAR(20) NULL"),
+            ("offline_at", "DATETIME NULL"),
         ):
             if not has_column("user_sessions", column):
                 cursor.execute(f"ALTER TABLE user_sessions ADD COLUMN {column} {ddl}")
@@ -329,6 +342,7 @@ def start_user_session(user_id: int, remember: bool | None = None) -> None:
     session["remember_me"] = remember
     # A non-permanent cookie is deleted when the browser closes.
     session.permanent = remember
+    realtime.publish_sessions_changed("login")
 
 
 def end_current_session(reason: str = "logout") -> None:
@@ -347,6 +361,7 @@ def end_current_session(reason: str = "logout") -> None:
                 (_now(), reason, session_id, user_id),
             )
             conn.commit()
+        realtime.publish_sessions_changed(reason)
     except Exception:  # noqa: BLE001 - logging out must still work
         current_app.logger.exception("Could not close the server-side session")
 
@@ -365,7 +380,8 @@ def _validate_server_session():
         with _db() as (conn, cursor):
             cursor.execute(
                 """
-                SELECT s.refresh_token_hash, s.revoked_at, s.expires_at, u.role, u.status
+                SELECT s.refresh_token_hash, s.revoked_at, s.expires_at, s.offline_at,
+                       u.role, u.status
                 FROM user_sessions s
                 JOIN users u ON u.user_id = s.user_id
                 WHERE s.session_id = %s AND s.user_id = %s
@@ -393,7 +409,17 @@ def _validate_server_session():
             if (row["status"] or "").lower() not in {"active", "pending"}:
                 return "account_disabled"
 
-            if time.time() - session.get("session_seen_at", 0) > LAST_SEEN_WRITE_SECONDS:
+            if row["offline_at"] is not None:
+                # The tab said it was closing, but this request proves the session is in
+                # use again (another tab, or a navigation that kept the cookie).
+                cursor.execute(
+                    "UPDATE user_sessions SET last_seen_at = %s, offline_at = NULL "
+                    "WHERE session_id = %s",
+                    (now, session_id),
+                )
+                conn.commit()
+                session["session_seen_at"] = int(time.time())
+            elif time.time() - session.get("session_seen_at", 0) > LAST_SEEN_WRITE_SECONDS:
                 cursor.execute(
                     "UPDATE user_sessions SET last_seen_at = %s WHERE session_id = %s",
                     (now, session_id),
@@ -772,6 +798,9 @@ def change_account_status(user_id: int, action: str):
                 (user_id, admin_id, verb, reason, now),
             )
             conn.commit()
+        # The account itself changed, so the Accounts tab refreshes even when the
+        # account had no sessions to end.
+        realtime.publish_sessions_changed("account_updated")
     except Exception:  # noqa: BLE001
         current_app.logger.exception("Failed to change account status")
         return _err("The account could not be updated. Nothing was changed.", 500)
@@ -787,6 +816,65 @@ def change_account_status(user_id: int, action: str):
 # --------------------------------------------------------------------------------------
 # Session Management routes
 # --------------------------------------------------------------------------------------
+@admin_users_bp.post("/api/session/offline")
+def mark_session_offline():
+    """Best-effort pagehide signal: the tab is closing, so the device is not in use.
+    Any later request from this cookie clears the marker again."""
+    session_id = session.get("session_id")
+    user_id = session.get("user_id")
+    if not session_id or not user_id:
+        return jsonify({"success": True}), 200
+    now = _now()
+    try:
+        with _db() as (conn, cursor):
+            cursor.execute(
+                """
+                UPDATE user_sessions SET offline_at = %s
+                WHERE session_id = %s AND user_id = %s
+                  AND revoked_at IS NULL AND expires_at > %s
+                """,
+                (now, session_id, user_id, now),
+            )
+            conn.commit()
+        realtime.publish_sessions_changed("closed")
+    except Exception:  # noqa: BLE001 - presence is best effort
+        current_app.logger.exception("Could not mark the session offline")
+    return jsonify({"success": True}), 200
+
+
+@admin_users_bp.get("/api/realtime/config")
+@admin_required
+def realtime_config():
+    """Browser-safe Pusher settings, or {"enabled": false} when polling should be used."""
+    return jsonify({"success": True, **realtime.public_config()})
+
+
+@admin_users_bp.post("/api/realtime/auth")
+def realtime_auth():
+    """Private-channel authorization for an administrator's browser (Pusher posts here)."""
+    if not realtime.is_configured():
+        return _err("Real-time updates are not configured.", 503)
+    if not session.get("user_id") or (session.get("user_role") or "").lower() != "admin":
+        return _err("Administrator access required.", 403)
+    # session_guard() already verified the cookie against user_sessions and read the role.
+    account = g.get("signrest_account")
+    if account is None or account.get("role") != "admin" or account.get("status") != "active":
+        return _err("Administrator access required.", 403)
+
+    socket_id = (request.form.get("socket_id") or "").strip()
+    channel = (request.form.get("channel_name") or "").strip()
+    if not socket_id or channel != realtime.channel_name():
+        return _err("Invalid subscription request.", 422)
+    try:
+        auth = realtime.authenticate(channel, socket_id)
+    except Exception:  # noqa: BLE001
+        current_app.logger.exception("Pusher channel authorization failed")
+        return _err("Could not authorize real-time updates.", 500)
+    if not auth:
+        return _err("Real-time updates are not configured.", 503)
+    return jsonify(auth)
+
+
 @admin_users_bp.get("/api/admin/sessions/stats")
 @admin_required
 def session_stats():
@@ -849,9 +937,12 @@ def list_sessions():
         return _err("Invalid status or paging value.", 422)
     page, size = paging
     now = _now()
+    me = session.get("user_id")
 
     where, params = [], []
     if status == "active":
+        # Every signed-in session, duplicates included. Recency only decides the badge
+        # (online / away / offline); it never hides a device that is still signed in.
         where.append("s.revoked_at IS NULL AND s.expires_at > %s")
         params.append(now)
     elif status == "expired":
@@ -874,14 +965,39 @@ def list_sessions():
             # refresh_token_hash is deliberately never selected.
             cursor.execute(
                 f"""
-                SELECT s.session_id, s.user_id, s.device_name, s.platform, s.device_type, s.ip_address,
-                       s.created_at, s.last_seen_at, s.expires_at, s.revoked_at, s.end_reason,
-                       u.username, u.email, u.profile_photo
-                {base}
-                ORDER BY COALESCE(s.last_seen_at, s.created_at) DESC, s.session_id DESC
+                SELECT * FROM (
+                  SELECT x.*, MIN(x.status_rank) OVER (PARTITION BY x.user_id) AS account_rank
+                  FROM (
+                    SELECT s.session_id, s.user_id, s.device_name, s.platform, s.device_type, s.ip_address,
+                           s.created_at, s.last_seen_at, s.expires_at, s.revoked_at, s.end_reason,
+                           s.offline_at, u.username, u.email, u.profile_photo, u.role,
+                           -- Your own account first, then other administrators, then users.
+                           CASE WHEN s.user_id = %s THEN 0
+                                WHEN u.role = 'admin' THEN 1
+                                ELSE 2 END AS account_tier,
+                           COALESCE(s.last_seen_at, s.created_at) AS last_activity,
+                           CASE
+                             WHEN (s.offline_at IS NOT NULL AND s.offline_at <= %s)
+                                  OR COALESCE(s.last_seen_at, s.created_at) < %s THEN 2
+                             WHEN COALESCE(s.last_seen_at, s.created_at) < %s THEN 1
+                             ELSE 0
+                           END AS status_rank
+                    {base}
+                  ) x
+                ) t
+                -- Your own account first, then admin accounts, then user accounts. Inside a
+                -- tier, accounts are ordered by their best status (online, away, offline),
+                -- and inside one account each device again.
+                ORDER BY t.account_tier, t.account_rank, t.username, t.user_id, t.status_rank,
+                         t.last_activity DESC, t.session_id DESC
                 LIMIT %s OFFSET %s
                 """,
-                [*params, size, (page - 1) * size],
+                [
+                    # Both CASEs sit in the inner SELECT list, so they come before the WHERE clause ones.
+                    me, now - OFFLINE_GRACE, now - LIVE_SESSION_WINDOW, now - ONLINE_WINDOW,
+                    *params,
+                    size, (page - 1) * size,
+                ],
             )
             rows = cursor.fetchall()
     except Exception:  # noqa: BLE001
@@ -978,6 +1094,7 @@ def revoke_session(session_id: int):
                 (now, session["user_id"], session_id),
             )
             conn.commit()
+        realtime.publish_sessions_changed("revoked")
     except Exception:  # noqa: BLE001
         current_app.logger.exception("Failed to revoke session")
         return _err("The session could not be revoked.", 500)
@@ -1012,6 +1129,7 @@ def revoke_all_user_sessions(user_id: int):
                     (user_id, session["user_id"], f"{revoked} session(s) revoked", now),
                 )
             conn.commit()
+        realtime.publish_sessions_changed("revoked_all")
     except Exception:  # noqa: BLE001
         current_app.logger.exception("Failed to revoke all sessions")
         return _err("The sessions could not be revoked.", 500)
