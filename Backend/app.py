@@ -454,6 +454,22 @@ def serve_frontend_js(filename):
     return send_from_directory(FRONTEND_DIR / "js", filename)
 
 
+# The page's MediaPipe hand tracker runs the same .task file the Python
+# detector uses, so only these whitelisted files are exposed.
+MODEL_ASSETS = {
+    "hand_landmarker.task":
+        PROJECT_ROOT / "Model" / "asl_landmark_app" / "models" / "hand_landmarker.task",
+}
+
+
+@app.route("/models/<filename>")
+def serve_model_asset(filename):
+    path = MODEL_ASSETS.get(filename)
+    if path is None or not path.is_file():
+        return "Not Found", 404
+    return send_from_directory(path.parent, path.name)
+
+
 @app.route("/HTML/<path:filename>")
 def serve_frontend_html(filename):
     if not session.get("user_email"):
