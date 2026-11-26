@@ -1254,7 +1254,7 @@
           <p id="ltInstruction" class="lt-instruction"></p>
           <div id="ltReadout" class="lt-readout">Waiting for the model…</div>
           <div class="lt-actions">
-            <button type="button" id="ltRetryBtn" class="tb-nav-btn" hidden>Retry camera</button>
+            <button type="button" id="ltRetryBtn" class="tb-nav-btn" hidden>Start camera</button>
             <button type="button" id="ltStopBtn" class="tb-chart-return-btn" hidden>Stop camera</button>
             <button type="button" id="ltNextBtn" class="tb-nav-btn" hidden>Next sign &rarr;</button>
           </div>
@@ -1878,9 +1878,13 @@
 
   function completeSignTest() {
     stopSignTest();
-    ltRetryBtn.hidden = true;
+    // Camera is off after a pass; the same button now repeats the test.
+    ltRetryBtn.textContent = "Retry";
+    ltRetryBtn.hidden = false;
+    ltPlaceholder.hidden = false;
+    ltPlaceholder.textContent = "Camera stopped";
     testReadout(
-      `Correct! The model recognised \u201c${testItem.label}\u201d. Saved to your progress.`,
+      `Correct! The model recognised \u201c${testItem.label}\u201d. Saved to your progress. Press \u201cRetry\u201d to test again.`,
       "ok"
     );
     applyLearned(testCategory, testItem.key);
@@ -1896,6 +1900,7 @@
   async function startSignTest() {
     stopSignTest();
     const runId = ++testRunId;
+    ltRetryBtn.textContent = "Start camera";
     ltRetryBtn.hidden = true;
     ltNextBtn.hidden = true;
     ltPlaceholder.hidden = false;
@@ -1974,7 +1979,8 @@
     stopSignTest();
     ltPlaceholder.hidden = false;
     ltPlaceholder.textContent = "Camera stopped";
-    testReadout("Camera stopped. Press \u201cRetry camera\u201d to test again.");
+    testReadout("Camera stopped. Press \u201cStart camera\u201d to test again.");
+    ltRetryBtn.textContent = "Start camera";
     ltRetryBtn.hidden = false;
   });
   ltNextBtn.addEventListener("click", () => {
@@ -2187,5 +2193,6 @@
   initCurriculum();
 })();
 </script>
+<script src="/js/session_presence.js" defer></script>
 </body>
 </html>

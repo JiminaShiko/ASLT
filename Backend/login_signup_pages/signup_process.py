@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request, session
 from werkzeug.security import generate_password_hash
 
+from config import realtime
 from config.database import get_db_connection
 from config.mailer import send_otp_email
 
@@ -122,6 +123,7 @@ def initiate_signup():
             ), 500
 
         session["pending_signup_email"] = email
+        realtime.publish_sessions_changed("account_created")
 
         return jsonify(
             {
@@ -201,6 +203,7 @@ def verify_signup_otp():
         conn.commit()
         cursor.close()
 
+        realtime.publish_sessions_changed("account_updated")
         session.pop("pending_signup_email", None)
         session["user_id"] = record["user_id"]
         session["user_email"] = email

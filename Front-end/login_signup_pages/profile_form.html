@@ -368,8 +368,8 @@
                 type="text"
                 id="usernameInput"
                 class="username-line-input"
-                placeholder="your username"
-                maxlength="40"
+                placeholder="your name"
+                maxlength="100"
                 autocomplete="off"
               />
               <div class="twinkle-underline" aria-hidden="true"></div>
@@ -572,7 +572,7 @@
     }
 
     function updateConfirmButtonState() {
-      const hasUsername = usernameInput.value.trim().length >= 2;
+      const hasUsername = usernameInput.value.trim().length >= 1;
       const hasPhoto = Boolean(croppedBlob);
       if (!isSubmitting) {
         confirmProfileBtn.disabled = !(hasUsername && hasPhoto);
@@ -703,7 +703,7 @@
 
     confirmProfileBtn.addEventListener("click", async () => {
       const username = usernameInput.value.trim();
-      if (!croppedBlob || username.length < 2) return;
+      if (!croppedBlob || username.length < 1) return;
 
       isSubmitting = true;
       confirmProfileBtn.disabled = true;
