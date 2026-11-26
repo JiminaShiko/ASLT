@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/png" href="/assets/images/signrest-favicon.png" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Signrest — Dashboard</title>
@@ -105,9 +106,7 @@
     .brand-logo-img {
       width: 44px;
       height: 44px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 1.5px solid rgba(44, 74, 44, 0.35);
+      object-fit: contain;
     }
 
     .brand-name {
@@ -458,6 +457,9 @@
       background: #1e3522;
       transform: translateY(-1px);
     }
+    .logout-spinner { display: inline-block; width: 13px; height: 13px; margin-right: 8px; vertical-align: -2px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: logout-spin .7s linear infinite; }
+    @keyframes logout-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .logout-spinner { animation: none; } }
 
     .pages-stage {
       flex: 1;
@@ -469,19 +471,17 @@
       z-index: 10;
     }
 
-    @keyframes expandFromArrowHead {
-      0% {
-        clip-path: circle(0px at var(--origin-x, 88%) var(--origin-y, 26%));
-        opacity: 0.25;
-      }
-      100% {
-        clip-path: circle(150% at var(--origin-x, 88%) var(--origin-y, 26%));
-        opacity: 1;
-      }
+    @keyframes revealPage {
+      from { clip-path: circle(0px at var(--origin-x) var(--origin-y)); }
+      to { clip-path: circle(var(--reveal-radius) at var(--origin-x) var(--origin-y)); }
     }
 
     .pages-stage.arrow-expanding {
-      animation: expandFromArrowHead 0.56s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation: revealPage 0.35s cubic-bezier(0.2, 0.7, 0.3, 1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pages-stage.arrow-expanding { animation: none; }
     }
 
     @media (max-width: 768px) {
@@ -719,7 +719,6 @@
       if (!url) return null;
       if (!loadedEffectImages[url]) {
         const img = new Image();
-        img.crossOrigin = "anonymous";
         img.src = url;
         loadedEffectImages[url] = img;
       }
@@ -727,9 +726,15 @@
       return cached.complete && cached.naturalWidth > 0 ? cached : null;
     }
 
+    window.clearSignrestCursorParticles = function () {
+      cursorParticles = [];
+      cursorCtx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+    };
+
     window.setSignrestCursorEffects = function (trailObj, clickObj) {
       activeTrailEffect = trailObj && trailObj.effect_path ? trailObj : null;
       activeClickEffect = clickObj && clickObj.effect_path ? clickObj : null;
+      window.clearSignrestCursorParticles();
       if (activeTrailEffect) getCachedEffectImage(activeTrailEffect.effect_path);
       if (activeClickEffect) getCachedEffectImage(activeClickEffect.effect_path);
     };
@@ -796,7 +801,8 @@
 
     window.addEventListener("mousemove", (e) => {
       if (!activeTrailEffect) return;
-      if (document.getElementById("cursorSettingRoot")) return;
+      if (document.querySelector('#csStageWrapper[data-preview-only="true"]')) return;
+      if (e.target instanceof Element && e.target.closest("#trialPadBox")) return;
 
       const now = performance.now();
       const dist = Math.hypot(e.clientX - lastTrailX, e.clientY - lastTrailY);
@@ -823,7 +829,8 @@
 
     window.addEventListener("mousedown", (e) => {
       if (!activeClickEffect) return;
-      if (document.getElementById("cursorSettingRoot")) return;
+      if (document.querySelector('#csStageWrapper[data-preview-only="true"]')) return;
+      if (e.target instanceof Element && e.target.closest("#trialPadBox")) return;
 
       cursorParticles.push({
         url: activeClickEffect.effect_path,
@@ -888,21 +895,16 @@
     function navigateToPage(targetPage, expandOriginEvent) {
       if (!PAGE_ROUTES[targetPage]) return;
 
-      if (expandOriginEvent && expandOriginEvent.currentTarget) {
-        const arrowEl = expandOriginEvent.currentTarget.querySelector(".chevron-arrow") || expandOriginEvent.currentTarget;
-        const rect = arrowEl.getBoundingClientRect();
-        const originX = Math.round(rect.left + rect.width / 2);
-        const originY = Math.round(rect.top + rect.height / 2);
-        pagesContainer.style.setProperty("--origin-x", `${originX}px`);
-        pagesContainer.style.setProperty("--origin-y", `${originY}px`);
-      } else {
-        pagesContainer.style.removeProperty("--origin-x");
-        pagesContainer.style.removeProperty("--origin-y");
-      }
-
+      const trigger = expandOriginEvent?.currentTarget;
+      const originElement = trigger?.querySelector(".chevron-arrow") || trigger;
+      const originRect = originElement?.getBoundingClientRect();
+      const origin = originRect ? {
+        x: originRect.left + originRect.width / 2,
+        y: originRect.top + originRect.height / 2
+      } : null;
       closeProfileDrawer();
       window.history.pushState({ page: targetPage }, "", `/home?page=${targetPage}`);
-      loadPage(targetPage, Boolean(expandOriginEvent));
+      loadPage(targetPage, origin);
     }
 
     async function loadProfileDrawer() {
@@ -924,8 +926,18 @@
       const logoutBtn = document.getElementById("sidebarLogoutBtn");
       if (logoutBtn) {
         logoutBtn.addEventListener("click", async () => {
-          await fetch("/api/logout", { method: "POST" });
-          window.location.href = "/login";
+          logoutBtn.disabled = true;
+          logoutBtn.setAttribute("aria-busy", "true");
+          logoutBtn.innerHTML = '<span class="logout-spinner" aria-hidden="true"></span>Logging out…';
+          try {
+            const response = await fetch("/api/logout", { method: "POST" });
+            if (!response.ok) throw new Error("Logout failed");
+            window.location.assign("/");
+          } catch (error) {
+            logoutBtn.disabled = false;
+            logoutBtn.removeAttribute("aria-busy");
+            logoutBtn.textContent = "Logout failed — try again";
+          }
         });
       }
     }
@@ -937,7 +949,7 @@
       });
     });
 
-    async function loadPage(pageKey, triggerArrowExpand) {
+    async function loadPage(pageKey, revealOrigin) {
       setActiveDockCircle(pageKey);
       const fileUrl = PAGE_ROUTES[pageKey];
 
@@ -993,22 +1005,20 @@
           }
         }
 
-        if (triggerArrowExpand) {
+        if (revealOrigin) {
           pagesContainer.classList.remove("arrow-expanding");
-          pagesContainer.style.clipPath = "";
+          const bounds = pagesContainer.getBoundingClientRect();
+          const x = revealOrigin.x - bounds.left;
+          const y = revealOrigin.y - bounds.top;
+          const radius = Math.hypot(Math.max(Math.abs(x), Math.abs(bounds.width - x)),
+                                    Math.max(Math.abs(y), Math.abs(bounds.height - y))) + 2;
+          pagesContainer.style.setProperty("--origin-x", `${x}px`);
+          pagesContainer.style.setProperty("--origin-y", `${y}px`);
+          pagesContainer.style.setProperty("--reveal-radius", `${radius}px`);
           void pagesContainer.offsetWidth;
           pagesContainer.classList.add("arrow-expanding");
-          pagesContainer.addEventListener(
-            "animationend",
-            () => {
-              pagesContainer.classList.remove("arrow-expanding");
-              pagesContainer.style.clipPath = "none";
-            },
-            { once: true }
-          );
         } else {
           pagesContainer.classList.remove("arrow-expanding");
-          pagesContainer.style.clipPath = "none";
         }
       } catch (err) {
         pagesContainer.innerHTML = `<p>Error loading ${pageKey} page.</p>`;
