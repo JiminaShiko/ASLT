@@ -406,12 +406,19 @@ def _validate_server_session():
         return "unavailable"
 
 
+# The live camera posts several frames per second, and the hosted-database
+# lookup below costs ~150 ms per call, so these two routes are validated once
+# when their live session opens instead (see user/api.py).
+LIVE_FRAME_PATHS = {"/api/live/frame", "/api/words/live/frame"}
+
+
 def session_guard():
     """
     Call from app.py's before_request. Ends the cookie session when its server-side record
     is revoked/expired or the account was banned/deactivated. Returns a response or None.
     """
-    if request.method == "OPTIONS" or request.path.startswith(STATIC_PREFIXES):
+    if (request.method == "OPTIONS" or request.path.startswith(STATIC_PREFIXES)
+            or request.path in LIVE_FRAME_PATHS):
         return None
     reason = _validate_server_session()
     if reason == "missing":
