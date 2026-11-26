@@ -456,4 +456,4 @@ def resend_login_otp():
 def logout_user():
     end_current_session("logout")
     session.clear()
-    return jsonify({"success": True, "redirect_url": "/login"}), 200
+    return jsonify({"success": True, "redirect_url": "/"}), 200

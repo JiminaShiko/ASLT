@@ -29,6 +29,7 @@ build/
 Thumbs.db
 .idea/
 .vscode/
+.cursor/
 
 # Local-only model data, caches and uploads
 /asl_landmark_app/
