@@ -1,7 +1,8 @@
 ASL ALPHABET - LIVE WEBCAM RECOGNISER (landmarks + MLP)
 =======================================================
 
-A webcam recogniser for the 24 static ASL letters (A-Z without J and Z).
+A webcam recogniser for all 26 ASL letters: A-Z minus J/Z from a per-frame MLP,
+and J and Z from a trained stroke head that reads a 1.2 s window of landmarks.
 
 ```
     webcam frame -> MediaPipe Hands (21 landmarks) -> normalise -> small MLP
@@ -11,8 +12,11 @@ A webcam recogniser for the 24 static ASL letters (A-Z without J and Z).
 Everything is trained from public datasets. You never record, upload or add a
 single image of your own, and no tool here saves your camera frames.
 
-J and Z are movement, not shape, so they are produced by a separate trajectory
-rule in front of the same model (see "J AND Z" below).
+J and Z are movement, not shape, so a per-frame model cannot name them. They are
+produced by a second, trained model - `models/jz_motion.pt`, a window classifier
+over the same landmarks (see "J AND Z" below). The old hand-written trajectory
+rule is still in the file as the fallback used when those weights are missing or
+`ASL_JZ_MODEL=off` is set.
 
 
 THE NUMBERS
@@ -152,7 +156,7 @@ Left sidebar, in the order they appear (these are the widget labels):
   Vote window (frames)    how many recent frames the majority is counted over.
   Hold before typing      how long a letter must be stable before it is typed.
    (seconds)
-  J / Z motion rule       the trajectory rule on/off.
+     J / Z stroke head       the trained J/Z model on/off.
   Draw the 21 landmarks   overlay on the picture. Off saves ~1 ms a frame,
                           nothing more.
   Mirror the webcam        display only. No feature ever sees the mirror.
@@ -266,7 +270,7 @@ datasets already on disk. To check it yourself:
      python src/live.py --logic-test
 ```
 
-The first prints nothing (verified). The second is 87 checks over the decision
+The first prints nothing (verified). The second is 94 checks over the decision
 logic and never opens a camera. The only files the live path can write are
 reports, and only when a script is run with an explicit `--out`.
 
@@ -277,7 +281,9 @@ VERIFY WITHOUT A CAMERA
      cd "D:\sign language project\ASTL project\ASLT\asl_landmark_app"
 
      python src/live.py --logic-test
-         -> 87 checks on the voting, the pair margins and the J/Z rule. PASS/FAIL.
+         -> 94 checks on the voting, the pair margins, the trained J/Z head
+            (including a real cached stroke read end to end) and the landmark
+            smoothing. PASS/FAIL.
 
      python src/verify_livepath.py --profile all --backend onnx
          -> the whole live path on real dataset photographs at ~20 FPS, no
@@ -350,8 +356,15 @@ LIMITATIONS (read before trusting a number)
   - N is 0.3 % and M 15.9 % cross-dataset because the datasets disagree about
     what those letters look like (massey signs M/N/P in its own style); more
     features will not fix it, more agreeing data will.
-  - J and Z depend on your movement being big enough for the thresholds. They
-    are calibrated from synthetic strokes until you run the calibration yourself.
+  - J and Z come from a trained stroke model (a 5-seed ensemble) measured on
+    signers it never saw, on the windows the live gate opens: J 100% precision /
+    92% recall, Z 94% / 96% per window; counted per *stroke*, which is what live
+    actually commits, J 69/70 and Z 52/53 (`reports/jz_model.md`). A stroke fires
+    if any of its windows clears the bar, so the per-stroke number is the honest
+    one and the per-window one is the conservative floor. It was trained on the MSL dynamic
+    alphabet because no ASL J/Z motion corpus exists on this machine, so the
+    strokes are the same but the handshape style is not - the shape gate is what
+    keeps that from mattering. `ASL_JZ_MODEL=off` falls back to the old rule.
   - ~20 fps is the ceiling on this machine's CPU, whatever the settings.
 ```
 

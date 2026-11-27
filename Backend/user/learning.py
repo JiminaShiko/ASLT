@@ -698,8 +698,17 @@ class LetterPractice:
         )
         self.smoother = landmark_live.Smoother(
             conf=LETTER_VOTE_CONF, vote=LETTER_VOTE_FRAMES, hold=0.0)
+        # J and Z are not among the classifier's 24 static classes, so without the
+        # trained stroke head this camera test could never pass them - it read an
+        # I-shaped hand as "I" forever. Same decider live.py runs.
+        self.motion = landmark_live.MotionDecider()
         # Body/face trace for the overlay only; the letter reading is unchanged.
         self.pose = PoseOverlay()
+        # The pose pass is heavy next to the hand model and the answer never needs
+        # it, so it runs on a worker thread and the last payload is shown meanwhile.
+        self._pose_lock = threading.Lock()
+        self._pose_busy = False
+        self._pose_payload = {"head": {"lines": [], "dots": []}, "body": []}
         self.started_at = time.monotonic()
         self.streak = 0
         self.frames = 0
@@ -711,7 +720,11 @@ class LetterPractice:
         image = reduce_image(image)
         bgr = image_to_bgr(image)
         overlay = {"hands": [], "head": {"lines": [], "dots": []}, "body": []}
-        overlay.update(self.pose.update(image_to_rgb(image)))
+        with self._pose_lock:
+            payload = self._pose_payload
+        overlay["head"] = payload["head"]
+        overlay["body"] = payload["body"]
+        self._pose_tick(image_to_rgb(image))
         timestamp_ms = int((time.monotonic() - self.started_at) * 1000)
         result, _how = hand_backend.detect_frame(
             self.detector, bgr, timestamp_ms, self.recovery,
@@ -722,6 +735,7 @@ class LetterPractice:
         self.last_frame_ms = (time.perf_counter() - started) * 1000.0
 
         if result.landmarks is None:
+            self.motion.reset()
             self.smoother.step(None, 0.0, now, hand_present=False)
             return {
                 "matched": False,
@@ -743,11 +757,21 @@ class LetterPractice:
         held, _committed, held_conf = self.smoother.step(
             call["letter"], call["conf"], now, hand_present=True)
         top1 = call["top3"][0][0] if call["top3"] else ""
+        # A stroke the J/Z head names overrides this frame's static reading: the
+        # classifier has no J or Z to offer, so the hand-written letter is all it
+        # can say about a hook or a zigzag.
+        motion_letter = self.motion.update(
+            now, result.landmarks, top1, call["conf"])
+        if motion_letter:
+            held = motion_letter
+            held_conf = float(self.motion.last_probs.get(motion_letter, 1.0))
         confidence = float(held_conf if held else call["conf"])
+        # A fired stroke already cleared the head's own threshold, so the static
+        # pass-confidence gate must not reject it afterwards.
         matched = bool(
             held
             and held.upper() == self.target
-            and confidence >= LETTER_PASS_CONF
+            and (motion_letter is not None or confidence >= LETTER_PASS_CONF)
         )
         return {
             "matched": matched,
@@ -760,6 +784,25 @@ class LetterPractice:
             "frame_ms": self.last_frame_ms,
             "hint": "" if held else "Hold the sign steady in the middle of the frame.",
         }
+
+    def _pose_tick(self, rgb):
+        """One throttled Holistic pass on a worker thread; the frame never waits."""
+        with self._pose_lock:
+            if self._pose_busy:
+                return
+            self._pose_busy = True
+
+        def run():
+            try:
+                payload = self.pose.update(rgb)
+            except Exception:
+                payload = None
+            with self._pose_lock:
+                if payload is not None:
+                    self._pose_payload = payload
+                self._pose_busy = False
+
+        threading.Thread(target=run, name="practice-pose", daemon=True).start()
 
     def close(self):
         try:

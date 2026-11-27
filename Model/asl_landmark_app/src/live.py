@@ -19,11 +19,15 @@ import numpy as np  # noqa: E402
 
 if __package__:
     from . import config, hand_backend as hb, normalize  # noqa: E402
+    from . import jz_features, jz_model, smoothing  # noqa: E402
 else:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import config  # noqa: E402
     import hand_backend as hb  # noqa: E402
     import normalize  # noqa: E402
+    import jz_features  # noqa: E402
+    import jz_model  # noqa: E402
+    import smoothing  # noqa: E402
 
 
 # One process, one clock: all three loops share one VIDEO detector, and two
@@ -274,13 +278,14 @@ def resolve_pair_margins(spec: str | None) -> dict[str, float]:
 
 
 class MotionDecider:
-    """Recognise J and Z from hand trajectory, never from a single frame.
+    """Name J and Z from a trained stroke head; never from a single frame.
 
     Two preconditions open the watch: the index-up shape, or the classifier reading
-    the frame as I (J) or as an unsure X (Z). J = one wrist reversal plus travel
-    with the finger still; Z = two fingertip reversals plus vertical progress.
-    All distances are in palm units. The shape gate alone was measured unreachable
-    on real hands (reports/jz_trigger.md), hence the display gate.
+    the frame as I (J) or as an unsure X (Z). While it is open, every frame is
+    pushed into a WINDOW-second buffer, and the *model* trained by `train_jz.py`
+    reads that window and says J, Z or neither (reports/jz_model.md). The hand-
+    written trajectory rule below is kept only as the fallback used when the
+    weights are absent or `ASL_JZ_MODEL=off` is set.
     """
 
     WINDOW = 1.20        # s of trajectory kept
@@ -317,7 +322,7 @@ class MotionDecider:
     # like, so only the trajectory rule guards it. Z keeps 0.90 (median p1 0.50).
     DISPLAY_P1_MAX_FOR = {"J": None, "Z": DISPLAY_P1_MAX}
 
-    def __init__(self):
+    def __init__(self, use_model: bool = True):
         for k, v in self.DEFAULTS.items():
             setattr(self, k, v)      # per-instance copy; the class stays clean
         self.threshold_source = ""   # "defaults" / "--jz ..." / "calibrated"
@@ -326,6 +331,11 @@ class MotionDecider:
         self._seg: list[tuple[float, float, float, float]] = []
         self.holding = False
         self.last_flags = (False, False)
+        # The trained head reads raw landmarks, so the ring keeps them as well as
+        # the derived streams the fallback rule needs.
+        self.jz = jz_model.JZModel.load() if use_model else None
+        self.lms: deque = deque(maxlen=400)        # (t, (21,3) landmarks)
+        self.last_probs: dict[str, float] = {}
         self.t: deque[float] = deque(maxlen=400)
         self.wx: deque[float] = deque(maxlen=400)   # wrist x, palm units
         self.tx: deque[float] = deque(maxlen=400)   # index tip x relative to wrist
@@ -347,7 +357,7 @@ class MotionDecider:
         """Forget the trajectory; the segment that ended is archived for calibration."""
         self._close_stroke()
         self.t.clear(); self.wx.clear(); self.tx.clear(); self.ty.clear()
-        self.dq.clear()
+        self.dq.clear(); self.lms.clear()
         self.hold_since = None
         self.miss = 0
         self.holding = False
@@ -591,12 +601,15 @@ class MotionDecider:
         self.t.append(now); self.wx.append(w)
         self.tx.append(float(tip[0]) / palm); self.ty.append(float(tip[1]) / palm)
         self.dq.append(cand)
+        self.lms.append((now, np.asarray(lm, dtype=np.float64)))
         self._seg.append((now, w, float(tip[0]) / palm, float(tip[1]) / palm, cand))
         self.holding = True          # a precondition met, whatever the path says
         self.last_now = now
         while len(self.t) > 2 and now - self.t[0] > self.WINDOW:
             self.t.popleft(); self.wx.popleft(); self.tx.popleft()
             self.ty.popleft(); self.dq.popleft()
+        while len(self.lms) > 2 and now - self.lms[0][0] > self.WINDOW:
+            self.lms.popleft()
 
         wx_now, tx_now = list(self.wx), list(self.tx)
         self.debug = {"held": now - self.hold_since, "idx_ext": idx_ext,
@@ -612,21 +625,35 @@ class MotionDecider:
         allowed = self._allowed(up, self.dq)
         self.candidates = allowed
         wx, tx = wx_now, tx_now
-        hit_j, hit_z = self._judge(wx, tx, list(self.ty), self.thresholds())
-        self.last_flags = (hit_j, hit_z)
         wr = self._reversals(wx, self.SEG)
         tr = self._reversals(tx, self.SEG)
         drop = abs(self.ty[-1] - self.ty[0])
         self.debug.update({"wrist_rev": wr, "tip_rev": tr, "drop": drop,
                            "allowed": list(allowed)})
         out = None
-        if hit_z and "Z" in allowed:
-            out = "Z"
-        elif hit_j and "J" in allowed:
-            out = "J"
-        elif (hit_j or hit_z) and not allowed:
-            # path matched but no precondition survived the window
-            self.debug["blocked"] = "path matched, precondition did not hold"
+        if self.jz is not None:
+            # The trained head, on the same window the rule would have judged.
+            self.debug["decider"] = "model"
+            span = self.lms[-1][0] - self.lms[0][0] if len(self.lms) > 1 else 0.0
+            if allowed and len(self.lms) >= 6 and span >= 0.5:
+                feats = jz_features.features_from_frames(
+                    [frame for _t, frame in self.lms],
+                    [t for t, _f in self.lms])
+                letter, probs = self.jz.decide(feats, allowed)
+                self.last_probs = {k: round(v, 4) for k, v in probs.items()}
+                self.debug["jz_probs"] = self.last_probs
+                if letter:
+                    out = letter
+        else:
+            hit_j, hit_z = self._judge(wx, tx, list(self.ty), self.thresholds())
+            self.last_flags = (hit_j, hit_z)
+            if hit_z and "Z" in allowed:
+                out = "Z"
+            elif hit_j and "J" in allowed:
+                out = "J"
+            elif (hit_j or hit_z) and not allowed:
+                # path matched but no precondition survived the window
+                self.debug["blocked"] = "path matched, precondition did not hold"
         if out:
             self.last_debug = dict(self.debug)
             self.fired_at = now
@@ -1056,6 +1083,11 @@ def render(frame: np.ndarray, held: str | None, conf: float, committed: str | No
 def selftest() -> int:
     print("== live.py selftest (smoothing logic, no camera, nothing saved) ==")
     checks = []
+    # Everything up to the head's own block pins the *fallback rule*, whose
+    # semantics are not the head's; switch the head off for that stretch so a
+    # trained model cannot mask a rule regression (and vice versa).
+    _jz_env = os.environ.get(jz_model.ENV)
+    os.environ[jz_model.ENV] = "off"
 
     def _raises(fn) -> bool:
         """True when `fn` raises."""
@@ -1130,8 +1162,12 @@ def selftest() -> int:
 
     # J / Z trajectory rules
     def run_motion(lms, dt=0.05):
-        """Feed a scripted trajectory; return (letters, fire times, decider)."""
-        md = MotionDecider()
+        """Feed a scripted trajectory; return (letters, fire times, decider).
+
+        The rule is what these checks pin, so the trained head is switched off:
+        synthetic geometry is not a human stroke. The head has its own checks.
+        """
+        md = MotionDecider(use_model=False)
         out, times, t = [], [], 0.0
         for lm in lms:
             t += dt
@@ -1216,6 +1252,64 @@ def selftest() -> int:
     m8, _t8, _ = run_motion(seq_offset(jshape, hook_xs(30, 0.22, 0.075) + [0.0] * 40
                                        + hook_xs(30, 0.22, 0.075)))
     checks.append(("a second hook after the cooldown does fire again", len(m8) == 2))
+
+    # The trained stroke head: it must load, agree with the feature builder, and
+    # reproduce its own training windows - that last one is the parity check
+    # between what train_jz.py computed and what the camera path computes.
+    # (the head is switched off for the rule checks above; build it directly here
+    # so the two cannot interfere)
+    if not jz_model.weights_path().is_file():
+        checks.append(("J/Z head: no weights, the rule is in charge (not a failure)",
+                       True))
+    else:
+        import glob as _glob
+        head = jz_model.JZModel()
+        checks.append(("the J/Z head loads and matches jz_features' dimension",
+                       head is not None
+                       and int(head.meta["feature_dim"]) == jz_features.feature_dim()))
+        checks.append(("the J/Z head carries a threshold per letter",
+                       head is not None and {"j", "z"} <= set(head.thresholds)
+                       and "other" in head.labels))
+        shards = sorted(_glob.glob(str(config.CACHE_DIR / "msl_landmarks" / "*.npz")))
+        want = {"Z": "Z", "K": None}
+        seen = {}
+        for path in shards:
+            z = np.load(path, allow_pickle=True)
+            letter = str(z["letter"])
+            if letter in want and letter not in seen:
+                lm = np.asarray(z["lm"], dtype=np.float64)
+                fps = float(z["fps"]) if float(z["fps"]) > 1 else 30.0
+                idx = np.asarray(z["idx"], dtype=np.float64) if "idx" in z else None
+                t = (idx if idx is not None and len(idx) == len(lm)
+                     else np.arange(len(lm), dtype=np.float64)) / fps
+                keep = t >= max(float(t[0]), float(t[-1]) - jz_features.WINDOW_S)
+                feats = jz_features.features_from_frames(lm[keep], t[keep])
+                seen[letter] = head.decide(feats, ("J", "Z"))[0]
+            if len(seen) == len(want):
+                break
+        checks.append((f"a real Z stroke is read as Z by the shipped head "
+                       f"(got {seen.get('Z')!r})", seen.get("Z") == "Z"))
+        checks.append((f"a real K stroke is not read as J or Z "
+                       f"(got {seen.get('K')!r})", seen.get("K") is None))
+
+    # Landmark smoothing: a glitch is clamped, a real move still tracks.
+    smf = smoothing.LandmarkFilter()
+    base = synth_jshape_hand()
+    smf(base, 0.0)
+    jumped = base + np.array([0.45, 0.0, 0.0])      # half a palm in one frame
+    out = smf(jumped, 0.05)
+    moved = float(np.linalg.norm(out[0, :2] - base[0, :2]))
+    checks.append((f"a one-frame glitch moves the wrist {moved:.2f} palms, not 0.45",
+                   moved < 0.44))
+    smf.reset()
+    smf(base, 0.0)
+    track_err = []
+    for i in range(1, 25):                      # a steady 0.02 palm/frame slide
+        raw = base + np.array([0.02 * i, 0.0, 0.0])
+        out = smf(raw, 0.033 * i)
+        track_err.append(float(np.linalg.norm(out[0, :2] - raw[0, :2])))
+    checks.append((f"a steady move is tracked to within {max(track_err):.3f} palms",
+                   max(track_err) < 0.10))
 
     # top-3 / uncertain gate
     L = config.LABELS
@@ -1767,7 +1861,7 @@ def benchmark(n_frames: int, size=(640, 480)) -> float:
 
 
 def _profiles(spec: str | None) -> list[str]:
-    """`--profile all,standard` -> ['all', 'standard']; validates each name."""
+    """`--profile all` -> ['all']; validates each name (only `all` ships now)."""
     names = [x.strip() for x in (spec or "").split(",") if x.strip()]
     if not names:
         return [config.PROFILE_DEFAULT]
@@ -2070,12 +2164,10 @@ def main() -> int:
     ap.add_argument("--height", type=int, default=480)
     ap.add_argument("--backend", choices=["torch", "onnx"], default="torch")
     ap.add_argument("--profile", default=None,
-                    help="which trained model to load: all = every style "
-                         "equally, standard = minority-style cells removed from "
-                         "training, round2 = the round-2 shipped model "
-                         f"(default: {config.PROFILE_DEFAULT}). The guided "
-                         "self-test also takes a comma list, e.g. "
-                         "`--profile all,standard`, and runs both back to back.")
+                    help="which trained model to load. Only `all` exists now "
+                         "(every signer weighted equally; the old `standard` "
+                         "and `round2` models were deleted) "
+                         f"(default: {config.PROFILE_DEFAULT}).")
     ap.add_argument("--selftest", "--drill", dest="selftest", action="store_true",
                     help="guided live self-test: show each letter, hold it, "
                          "count the per-frame top-1 in memory and print a hit "
@@ -2170,6 +2262,7 @@ def main() -> int:
 
     sm = Smoother(conf=args.conf, vote=args.vote, hold=args.hold)
     motion = MotionDecider()
+    lfilter = smoothing.LandmarkFilter() if smoothing.smoothing_enabled() else None
     if args.jz:
         try:
             th = parse_spec(args.jz)
@@ -2202,11 +2295,21 @@ def main() -> int:
             res, how = hb.detect_frame(det, frame, ts_ms, recovery,
                                        empty_streak=streak + 1)
             streak = streak + 1 if res.landmarks is None else 0
+            # Recognition uses the raw landmarks the models were trained on; the
+            # filter is only what gets drawn, so the picture is calm and the
+            # numbers the models see are unchanged.
+            lms = res.landmarks
+            if lms is None:
+                if lfilter is not None:
+                    lfilter.reset()
+                drawn = None
+            else:
+                drawn = lfilter(lms, ts_ms / 1000.0) if lfilter is not None else lms
             call = blank_call()
-            if res.landmarks is not None:
+            if lms is not None:
                 if not args.no_landmarks:
-                    hb.draw_landmarks(frame, res.landmarks[:, :2])
-                feats = normalize.features(res.landmarks)
+                    hb.draw_landmarks(frame, drawn[:, :2])
+                feats = normalize.features(lms)
                 probs = backend(feats)
                 call = frame_call(probs, labels, args.conf, args.margin, pairs=args.pairs)
             held = call["letter"]
@@ -2214,18 +2317,20 @@ def main() -> int:
             k = cv2.waitKey(1) & 0xFF
             force = k == ord(" ")
             held_now, committed, held_conf = sm.step(
-                held, conf, now, force=force, hand_present=res.landmarks is not None)
+                held, conf, now, force=force, hand_present=lms is not None,
+            )
             if committed:
                 text += committed
 
-            # J/Z come from the trajectory; the classifier reading picks the frames
+            # J/Z come from the trained stroke head; the classifier reading picks
+            # which frames it is asked about.
             motion_letter = None
             if not args.no_motion:
-                if res.landmarks is None:
+                if lms is None:
                     motion.reset()
                 else:
                     shown = call["top3"][0][0] if call["top3"] else None
-                    motion_letter = motion.update(now, res.landmarks, shown,
+                    motion_letter = motion.update(now, lms, shown,
                                                   call["conf"])
                 if motion_letter:
                     text += motion_letter
@@ -2241,7 +2346,7 @@ def main() -> int:
             fpsShown = frames / elapsed if elapsed > 0 else 0.0
             pending_s = sm.hold_progress(now)
             render(frame, held_now, held_conf or conf, committed, text, fpsShown,
-                   res.landmarks is not None, pending_s, args.hold, backend.name,
+                   lms is not None, pending_s, args.hold, backend.name,
                    top3=call["top3"], uncertain=call["uncertain"],
                    margin=call["margin"], need=call["need"])
             if call["top3"] and (call["low_conf"] or call["close"]):

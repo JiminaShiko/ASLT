@@ -1221,12 +1221,10 @@ def main() -> int:
                          "datasets disagree about (1 = keep everything as-is, "
                          "0.5 = halve it, 0 = effectively drop it). Needs "
                          "cache/divergence.csv from src/inspect_data.py. "
-                         "Leave it out and the --profile owns it: 1.0 for `all` "
-                         "and `standard`, 0.5 for the legacy `round2`. The "
-                         "measured effect is neutral on the pooled number "
-                         "(reports/ablation_styleweight_off.md), so `all` does "
-                         "not reweight at all and the halving survives only as "
-                         "round 2's documented recipe.")
+                         "Leave it out and the --profile owns it: 1.0 for the "
+                         "shipped `all` profile. The measured effect is neutral "
+                         "on the pooled number (reports/ablation_styleweight_off.md), "
+                         "which is why the shipped model does not reweight at all.")
     ap.add_argument("--drop-divergent", action="store_true",
                     help="shorthand for --style-weight 0")
     ap.add_argument("--also-drop", default=None, metavar="ds:L,ds:L",
@@ -1239,12 +1237,10 @@ def main() -> int:
                          "shape distance is >= this many times the median such "
                          "distance over all letters")
     ap.add_argument("--profile", default=None, choices=sorted(config.PROFILES),
-                    help="train one of the shipped model profiles: `all` weights "
-                         "every style equally, `standard` drops the minority-style "
-                         "cells from training entirely, `round2` is the incumbent "
-                         "(minority cells halved). Sets --style-weight / "
+                    help="train a model profile. Only `all` ships (every style "
+                         "weighted equally); it sets --style-weight / "
                          "--drop-divergent / the output paths from "
-                         "config.PROFILES; an explicit --style-weight still wins.")
+                         "config.PROFILES, and an explicit --style-weight wins.")
     ap.add_argument("--dump-preds", default=None, metavar="CSV",
                     help="write every leave-one-dataset-out prediction (one row "
                          "per test image: dataset, letter, predicted, how, "
@@ -1310,7 +1306,7 @@ def main() -> int:
     data["w"] = style_weights(data, cells, sw)
     if drop_specs and sw == 1.0:
         print("  [style] WARNING: --also-drop given with weight 1.0, which drops "
-              "nothing. Use --profile standard or --style-weight 0.")
+              "nothing. Use --style-weight 0.")
     cfg["style_weight"] = sw
     cfg["divergent_ratio"] = args.divergent_ratio
     cfg["divergent_cells"] = sorted(f"{l}/{d}" for l, d in cells)

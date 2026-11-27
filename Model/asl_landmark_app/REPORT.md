@@ -1,12 +1,11 @@
 # ASL alphabet recogniser — current numbers
 
 Rounds 3–6, 2026-11-15 and 2026-11-21. Short version of the measurements; the
-full generated report for each model is `reports/report_all.md` and
-`reports/report_standard.md` (the `round2` profile's report and weights were
-pruned in the 2026-11-15 folder cleanup; `python src/train.py --profile round2`
-regenerates both). The shipped weights are the 2026-11-21 run, which added the
-`rushil` dataset; `reports/report_standard.md` is still the three-dataset run,
-because `standard` was not retrained. Every
+full generated report is `reports/report_all.md`. One model ships; the other
+profiles' weights and reports (`standard`, `round2`) were **deleted on
+2026-11-27**, because `all` won every comparison and keeping them only invited
+the wrong file to load. The shipped weights are the 2026-11-21 run, which added
+the `rushil` dataset. Every
 accuracy here is **leave-one-dataset-out**: the
 image was scored by a model that never saw its dataset. Nothing in this file is a
 live accuracy claim — the only measurement of a particular hand is the self-test,
@@ -40,8 +39,9 @@ reads like the shipped model's accuracy, the headline above is the current one.
 
 `all` trains on every signer equally. `standard` gives the flagged minority-style
 cells (massey M/N/P) weight 0, so the model never sees that way of signing them.
-Same 71 features, same folds, same seed, paired image by image
-(`python src/profile_compare.py`).
+Same 71 features, same folds, same seed, paired image by image. The `standard`
+weights, report and comparison script were deleted on 2026-11-27; the table
+below is kept as the measurement that decided it.
 
 | measure | all | standard |
 |---|---|---|
@@ -63,9 +63,9 @@ in both profiles — and the entire difference lands on the grassknoted fold, wh
 those letters kept their own M/N/P. Read on the cells it was meant to rescue,
 removing the minority style bought nothing: grassknoted went M 3.3% → 1.7%,
 N 0.2% → 0.0%, P 71.4% → 71.1%, and T 31.9% → 17.0% as collateral damage. `all` is
-therefore the default; `ASL_PROFILE=standard` or `--profile standard` overrides it
-per run. Round 2's halved-weights model pooled at 65.9% and stays loadable as
-`--profile round2`.
+therefore the only shipped model. Round 2's halved-weights model pooled at 65.9%
+and, like `standard`, has been deleted — retrain it with `--style-weight 0.5` if
+that experiment is ever wanted again.
 
 ## Stage B — why T fails
 
@@ -131,12 +131,20 @@ now been shown not to fix.
 Triggered by a live test: *"great model, but J, P and Z are not correct."* The
 three letters have three different causes, and only one of them is a threshold.
 
-**J and Z** are not in the classifier at all; they are the trajectory rule. When
-the shape was held and the trajectory did not fire, the 24-class model answered
-with its nearest neighbour (usually I) and nothing said so. The rule now reports
-which criterion missed, from the same table that makes the decision, and
-`--calibrate-jz` measures this session's thresholds from three J and three Z of
-your own signing — in memory, with floors and caps, nothing written.
+**J and Z** are not in the per-frame classifier. Round 5 answered them with a
+hand-written trajectory rule; rounds 6-7 fixed what that rule could not see, and
+the rule is now the *fallback*. A trained stroke head (`models/jz_motion.pt`,
+written by `src/train_jz.py`) reads a 1.2 s window of landmarks and is what names
+J and Z in both front ends. Measured on signers it never saw, restricted to the
+windows the live gate opens: J 100% precision / 92% recall, Z 94% / 96%
+(`reports/jz_model.md`). Counted the way live commits - one stroke fires if any of
+its windows clears the threshold - that is J 69/70 strokes and Z 52/53, with the
+head shipped as a 5-seed ensemble so no single seed's margins decide it. The two
+signers held out of every fold give J 6/6 strokes and Z 4/7, which is the number
+to expect on a brand-new hand. The shape/display preconditions are kept in front of it,
+because they are what stops a moving hand that is not J or Z from being asked at
+all. `--calibrate-jz` still measures the fallback rule's thresholds from three J
+and three Z of your own signing - in memory, nothing written.
 
 **P** is a data problem, and the margin experiment is what proved it. The plan
 was to raise the top1−top2 gap required for the collisions the OOF data shows
@@ -361,11 +369,12 @@ not evidence about the app, whose browser path demonstrably delivered frames: th
 picture appeared before the teardown.)
 
 **The price, stated.** MediaPipe VIDEO costs 45–52 ms whatever the resolution (240 px
-45.7 ms vs 1280 px 49.9 ms), so shrinking the picture cannot buy speed and the ceiling
-stays ~20 fps — `live.py --benchmark` reports 19.5 fps. Stride 2 halves the work but
-also halves what the J/Z rule sees: 12 hand positions a second instead of 24, and its
-binding criterion on real movement is the reversal count. The slider's help text now
-says so — if J or Z stops firing, drop back to 1 or re-run `--calibrate-jz`.
+45.7 ms vs 1280 px 49.9 ms), so shrinking the picture cannot buy server-side speed and
+the CLI ceiling stays ~20 fps — `live.py --benchmark` reports 19.5 fps. That is why the
+web page runs the hand tracker in the browser: the server then only classifies 21
+landmarks, and the page can send a frame every 28 ms instead of every 40 ms. Stride 2
+still halves what the stroke head sees (12 hand positions a second instead of 24), so
+if J or Z stops firing, drop back to 1.
 
 **Verification.** `python src/live.py --logic-test` is still **87 checks** (this round
 touched only `app.py`, and none of `MotionDecider`); `python src/verify_livepath.py
@@ -399,9 +408,7 @@ matches.
 
 
 ```
-python src/train.py --profile all && python src/export.py --profile all
-python src/train.py --profile standard --no-extra-splits && python src/export.py --profile standard
-python src/profile_compare.py            # the Stage C table, from the dumps, no retraining
+python src/train.py && python src/export.py
 python src/diagnose_letter.py --letters T,N,M,P --profile all --out reports/letter_diagnosis.md
 python src/verify_livepath.py --per 20 --backend onnx --profile all
 python src/verify_jz_trigger.py --per 300 --profile all --backend torch
