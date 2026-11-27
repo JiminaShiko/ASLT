@@ -165,7 +165,7 @@
 
   /* ---------- Events ---------- */
   document.addEventListener("DOMContentLoaded", async () => {
-    const saved = localStorage.getItem("signrest-admin-theme");
+    const saved = localStorage.getItem("signrest_theme");
     document.documentElement.dataset.theme = saved === "dark" ? "dark" : "light";
     ["search", "fType", "fCat", "fStatus"].forEach((id) => $(id).addEventListener("input", render));
     $("addBtn").onclick = () => openEditor(null);

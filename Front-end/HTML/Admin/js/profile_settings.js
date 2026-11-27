@@ -538,7 +538,7 @@
     // Apply saved theme preference (non-sensitive UI preference only)
     let savedTheme = 'light';
     try {
-      savedTheme = localStorage.getItem('signrest-admin-theme') || 'light';
+      savedTheme = localStorage.getItem('signrest_theme') || 'light';
     } catch (error) {
       console.warn('Unable to read the saved admin theme preference.', error);
     }
@@ -554,7 +554,7 @@
         const nextTheme = isDark ? 'light' : 'dark';
         root.setAttribute('data-theme', nextTheme);
         try {
-          localStorage.setItem('signrest-admin-theme', nextTheme);
+          localStorage.setItem('signrest_theme', nextTheme);
         } catch (error) {
           console.warn('Unable to save the admin theme preference.', error);
         }

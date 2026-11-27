@@ -1092,7 +1092,7 @@
   window.toggleTheme = () => {
     const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     applyTheme(theme);
-    try { localStorage.setItem("signrest-admin-theme", theme); } catch { /* storage unavailable */ }
+    try { localStorage.setItem("signrest_theme", theme); } catch { /* storage unavailable */ }
   };
   window.collapseSidebar = () => {
     const app = $("app");

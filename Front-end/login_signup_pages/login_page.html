@@ -214,7 +214,7 @@
     const isSignupPath = /^\/signup\/?$/.test(location.pathname);
     const state = {
       mode: (urlMode === "signup" || (urlMode !== "login" && isSignupPath)) ? "signup" : "login",
-      theme: savedTheme === "dark" ? "dark" : "light",
+      theme: savedTheme === "dark" || savedTheme === "light" ? savedTheme : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
       isSubmitting: false
     };
 

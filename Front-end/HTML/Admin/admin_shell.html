@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Signrest — Admin Portal</title>
-<script>try{document.documentElement.dataset.theme=localStorage.getItem('signrest-admin-theme')==='dark'?'dark':'light'}catch(e){}</script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('signrest_theme')==='dark'?'dark':'light'}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
@@ -340,11 +340,11 @@
   themeToggle.addEventListener("click", function () {
     var theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     applyTheme(theme);
-    try { localStorage.setItem("signrest-admin-theme", theme); } catch (error) {}
+    try { localStorage.setItem("signrest_theme", theme); } catch (error) {}
   });
 
   window.addEventListener("storage", function (event) {
-    if (event.key === "signrest-admin-theme") applyTheme(event.newValue || "light");
+    if (event.key === "signrest_theme") applyTheme(event.newValue || "light");
     if (event.key === "signrest-admin-sidebar") app.classList.toggle("collapsed", event.newValue === "collapsed");
   });
 
@@ -353,7 +353,7 @@
   window.closeMobile = closeMobile;
   window.logout = logout;
 
-  try { applyTheme(localStorage.getItem("signrest-admin-theme") || "light"); } catch (error) {}
+  try { applyTheme(localStorage.getItem("signrest_theme") || "light"); } catch (error) {}
   markActive();
   loadFrame(frameUrl(current, currentSearch));
   loadHeaderProfile();
