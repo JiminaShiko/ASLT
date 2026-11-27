@@ -73,25 +73,7 @@ dialog::backdrop{background:rgba(20,30,24,.55)}
 <div id="adminSidebarHost"></div>
 
 <main class="q-main">
-  <header class="header q-header">
-    <div class="header-start">
-      <button class="collapse mobile-collapse" type="button" onclick="collapseSidebar()" aria-label="Toggle sidebar">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg>
-      </button>
-      <div class="header-title">Admin Portal</div>
-    </div>
-    <div class="header-right">
-      <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"></button>
-      <label class="search">
-        <span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 5 5"></path></svg></span>
-        <input id="search" type="search" placeholder="Search questions..." aria-label="Search quiz questions">
-      </label>
-      <span class="icon-button notification-bell" role="img" aria-label="Notifications" title="Notifications">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
-      </span>
-      <div class="avatar header-avatar" id="top-initials">A</div>
-    </div>
-  </header>
+  <input id="search" type="search" placeholder="Search questions..." aria-label="Search quiz questions" hidden>
 
   <div class="q-content">
    <div class="q-top">

@@ -235,6 +235,7 @@
       const submitBtn = accountForm.querySelector('button[type="submit"]');
       if (submitBtn) submitBtn.disabled = true;
 
+      let profileUpdated = false;
       try {
         if (username !== profileState.username) {
           await adminProfileRequest('/api/admin/profile', {
@@ -243,6 +244,7 @@
             body: JSON.stringify({ username })
           });
           profileState.username = username;
+          profileUpdated = true;
         }
 
         if (selectedImage) {
@@ -253,6 +255,7 @@
             body: formData
           });
           profileState.avatarUrl = result.profile_photo;
+          profileUpdated = true;
           profileState.pendingAvatarUrl = null;
           avatarInput.value = '';
         }
@@ -268,6 +271,9 @@
         );
       } finally {
         if (submitBtn) submitBtn.disabled = false;
+        if (profileUpdated && window.parent !== window) {
+          window.parent.postMessage({ type: 'signrest-admin-profile-updated' }, window.location.origin);
+        }
       }
     });
 
