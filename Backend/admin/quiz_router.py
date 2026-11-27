@@ -1,10 +1,14 @@
 """Admin-only quiz manager API and storage."""
 
+import json
+import io
 import os
+from pathlib import Path
 
 from flask import Blueprint, g, jsonify, request, session
 
 from config.database import get_db_connection
+from config.cloudinary import upload_to_cloudinary
 from .user_management import admin_required
 
 admin_quiz_bp = Blueprint("admin_quiz", __name__, url_prefix="/api/admin/quiz")
@@ -113,6 +117,219 @@ def _admin_id():
         return int(value)
     except (TypeError, ValueError):
         raise ApiError(401, "Your administrator session is not valid")
+
+
+@admin_quiz_bp.post("/media")
+@admin_required
+def upload_quiz_media():
+    if not _write_origin_allowed():
+        raise ApiError(403, "This origin is not allowed")
+    upload = request.files.get("file")
+    if not upload or not upload.filename:
+        raise ApiError(422, "Choose an image or video")
+    ext = Path(upload.filename).suffix.lower()
+    image_exts = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+    video_exts = {".mp4", ".webm"}
+    if ext not in image_exts | video_exts:
+        raise ApiError(422, "Use PNG, JPG, WebP, GIF, MP4, or WebM")
+    content = upload.stream.read(20 * 1024 * 1024 + 1)
+    if not content or len(content) > 20 * 1024 * 1024:
+        raise ApiError(422, "Media must be no larger than 20 MB")
+    if ext in image_exts:
+        try:
+            from PIL import Image
+            with Image.open(io.BytesIO(content)) as image:
+                image.verify()
+        except Exception:
+            raise ApiError(422, "The selected file is not a valid image")
+    elif not ((ext == ".mp4" and len(content) > 12 and content[4:8] == b"ftyp") or
+              (ext == ".webm" and content.startswith(b"\x1a\x45\xdf\xa3"))):
+        raise ApiError(422, "The selected file is not a valid video")
+    url = upload_to_cloudinary(content, folder="quiz_media", filename="quiz" + ext,
+                               resource_type="image" if ext in image_exts else "video")
+    return jsonify({"url": url, "type": "image" if ext in image_exts else "video"}), 201
+
+
+def _validate_managed_quiz(data):
+    """Validate the shared quiz representation without trusting browser input."""
+    if not isinstance(data, dict):
+        raise ApiError(400, "A quiz is required")
+    title = data.get("title")
+    description = data.get("description", "")
+    status = data.get("status", "draft")
+    questions = data.get("questions", [])
+    if not isinstance(title, str) or not title.strip() or len(title.strip()) > 150:
+        raise ApiError(422, "Enter a quiz title of up to 150 characters")
+    if not isinstance(description, str) or len(description) > 4000:
+        raise ApiError(422, "Description is too long")
+    if not isinstance(status, str) or status not in {"draft", "active"} or not isinstance(questions, list) or len(questions) > 200:
+        raise ApiError(422, "Invalid quiz status or questions")
+    if status == "active" and len(questions) < 10:
+        raise ApiError(422, "A published quiz needs at least 10 questions")
+    if status == "active" and any(isinstance(item, dict) and item.get("kind") != "multiple_choice" for item in questions):
+        raise ApiError(422, "Only multiple-choice quizzes can be published for now")
+    validated = []
+    for item in questions:
+        if not isinstance(item, dict):
+            raise ApiError(422, "Each question must be an object")
+        kind = item.get("kind")
+        text = item.get("text", "")
+        media_type = item.get("media_type", "text")
+        media_url = item.get("media_url", "")
+        if not isinstance(kind, str) or kind not in {"multiple_choice", "camera"} or not isinstance(media_type, str) or media_type not in {"text", "image", "video"}:
+            raise ApiError(422, "Invalid question type or media type")
+        if not isinstance(text, str) or len(text) > 4000 or not isinstance(media_url, str) or len(media_url) > 500:
+            raise ApiError(422, "Question content is invalid")
+        if media_type == "text" and not text.strip():
+            raise ApiError(422, "Enter the question text")
+        if media_type != "text" and not _media_url(media_url):
+            raise ApiError(422, "Image and video questions require a valid media URL")
+        question = {"kind": kind, "text": text.strip(), "media_type": media_type,
+                    "media_url": media_url if media_type != "text" else ""}
+        if kind == "multiple_choice":
+            options = item.get("options")
+            correct = item.get("correct")
+            if not isinstance(options, list) or len(options) != 4 or type(correct) is not int or correct not in range(4):
+                raise ApiError(422, "Multiple-choice questions need four options and one correct answer")
+            for option in options:
+                if not isinstance(option, dict) or not isinstance(option.get("type"), str) or option.get("type") not in {"text", "image", "video"}:
+                    raise ApiError(422, "Invalid answer option")
+                value = option.get("value")
+                if not isinstance(value, str) or not value.strip() or len(value) > 500:
+                    raise ApiError(422, "Every answer option needs content")
+                if option["type"] != "text" and not _media_url(value.strip()):
+                    raise ApiError(422, "Image and video options require a valid media URL")
+            question["options"] = [{"type": o["type"], "value": o["value"].strip()} for o in options]
+            question["correct"] = correct
+        else:
+            from user.learning import ASL_LETTERS, WLASL_WORDS
+            category, target = item.get("target_category"), item.get("target_item_key")
+            if not isinstance(target, str) or not isinstance(category, str) or category not in {"asl", "wlasl"}:
+                raise ApiError(422, "Choose a supported camera sign")
+            target = target.strip().upper() if category == "asl" else target.strip().lower()
+            if target not in (ASL_LETTERS if category == "asl" else WLASL_WORDS):
+                raise ApiError(422, "This sign is not supported by the camera model")
+            question.update(target_category=category, target_item_key=target)
+        validated.append(question)
+    return {"title": title.strip(), "description": description.strip(),
+            "status": status, "questions": validated}
+
+
+@admin_quiz_bp.get("/managed-quizzes")
+@admin_required
+def list_managed_quizzes():
+    connection = get_db_connection()
+    try:
+        with connection.cursor(dictionary=True) as cursor:
+            cursor.execute("""SELECT q.quiz_id, q.title, q.description, q.status,
+                              COUNT(qq.question_id) AS question_count
+                              FROM quizzes q LEFT JOIN quiz_questions qq ON qq.quiz_id=q.quiz_id
+                              GROUP BY q.quiz_id, q.title, q.description, q.status
+                              ORDER BY q.quiz_id DESC""")
+            return jsonify({"items": cursor.fetchall()})
+    finally:
+        connection.close()
+
+
+def _insert_managed_questions(cursor, quiz_id, questions):
+    for order, question in enumerate(questions):
+        cursor.execute("""INSERT INTO quiz_questions
+            (quiz_id, question_text, image_path, correct_answer, options, question_kind,
+             prompt_media_type, target_category, target_item_key, display_order)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+            (quiz_id, question["text"], question["media_url"],
+             str(question.get("correct", "")), json.dumps(question.get("options", [])),
+             question["kind"], question["media_type"], question.get("target_category"),
+             question.get("target_item_key"), order))
+
+
+@admin_quiz_bp.get("/managed-quizzes/<int:quiz_id>")
+@admin_required
+def get_managed_quiz(quiz_id):
+    connection = get_db_connection()
+    try:
+        with connection.cursor(dictionary=True) as cursor:
+            cursor.execute("SELECT quiz_id, title, description, status FROM quizzes WHERE quiz_id=%s", (quiz_id,))
+            quiz = cursor.fetchone()
+            if not quiz:
+                raise ApiError(404, "Quiz not found")
+            cursor.execute("""SELECT question_kind, question_text, image_path, prompt_media_type,
+                              options, correct_answer, target_category, target_item_key
+                              FROM quiz_questions WHERE quiz_id=%s ORDER BY display_order, question_id""", (quiz_id,))
+            questions = []
+            for row in cursor.fetchall():
+                options = row["options"]
+                if isinstance(options, str):
+                    options = json.loads(options)
+                question = {"kind": row["question_kind"], "text": row["question_text"] or "",
+                            "media_type": row["prompt_media_type"], "media_url": row["image_path"] or ""}
+                if row["question_kind"] == "camera":
+                    question.update(target_category=row["target_category"], target_item_key=row["target_item_key"])
+                else:
+                    if not isinstance(options, list) or len(options) != 4 or not all(isinstance(o, dict) for o in options):
+                        raise ApiError(409, "This older quiz uses a different question format and cannot be edited here")
+                    question.update(options=options, correct=int(row["correct_answer"]))
+                questions.append(question)
+            quiz["questions"] = questions
+            return jsonify({"item": quiz})
+    finally:
+        connection.close()
+
+
+@admin_quiz_bp.post("/managed-quizzes")
+@admin_required
+def create_managed_quiz():
+    if not _write_origin_allowed():
+        raise ApiError(403, "This origin is not allowed")
+    quiz = _validate_managed_quiz(request.get_json(silent=True))
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("INSERT INTO quizzes (created_by, title, description, status, created_at) VALUES (%s,%s,%s,%s,UTC_TIMESTAMP())",
+                           (_admin_id(), quiz["title"], quiz["description"], quiz["status"]))
+            quiz_id = cursor.lastrowid
+            _insert_managed_questions(cursor, quiz_id, quiz["questions"])
+        connection.commit()
+        return jsonify({"quiz_id": quiz_id}), 201
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+@admin_quiz_bp.put("/managed-quizzes/<int:quiz_id>")
+@admin_required
+def update_managed_quiz(quiz_id):
+    if not _write_origin_allowed():
+        raise ApiError(403, "This origin is not allowed")
+    quiz = _validate_managed_quiz(request.get_json(silent=True))
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT status FROM quizzes WHERE quiz_id=%s FOR UPDATE", (quiz_id,))
+            existing = cursor.fetchone()
+            if not existing:
+                raise ApiError(404, "Quiz not found")
+            if existing[0] not in {"draft", "active"}:
+                raise ApiError(409, "This quiz cannot be edited here")
+            cursor.execute("SELECT COUNT(*) FROM quiz_results WHERE quiz_id=%s", (quiz_id,))
+            if cursor.fetchone()[0]:
+                raise ApiError(409, "This quiz already has results and cannot be changed")
+            cursor.execute("SELECT COUNT(*) FROM quiz_attempts WHERE quiz_id=%s", (quiz_id,))
+            if cursor.fetchone()[0]:
+                raise ApiError(409, "This quiz already has attempts and cannot be changed")
+            cursor.execute("UPDATE quizzes SET title=%s, description=%s, status=%s WHERE quiz_id=%s",
+                           (quiz["title"], quiz["description"], quiz["status"], quiz_id))
+            cursor.execute("DELETE FROM quiz_questions WHERE quiz_id=%s", (quiz_id,))
+            _insert_managed_questions(cursor, quiz_id, quiz["questions"])
+        connection.commit()
+        return jsonify({"quiz_id": quiz_id})
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 
 
 def _validate_question(cursor, data):

@@ -193,8 +193,8 @@
     .learn-board-card {
       position: relative;
       border-radius: 18px;
-      padding: 28px 26px 26px 26px;
-      min-height: 235px;
+      padding: 20px 22px;
+      min-height: 190px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -250,7 +250,7 @@
 
     .board-main-info h3 {
       font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 1.78rem;
+      font-size: 1.5rem;
       font-weight: 700;
       margin-bottom: 6px;
     }
@@ -266,7 +266,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 16px;
+      margin-top: 10px;
     }
 
     .board-count-tag {
@@ -303,18 +303,8 @@
     }
 
     /* Progress Bar Under Each Card */
-    .learn-progress-box {
-      background: rgba(242, 246, 236, 0.86);
-      border: 1px solid rgba(44, 74, 44, 0.2);
-      border-radius: 14px;
-      padding: 12px 16px;
-      backdrop-filter: blur(8px);
-    }
-
-    body.dark-mode .learn-progress-box {
-      background: rgba(24, 39, 29, 0.86);
-      border-color: rgba(175, 212, 175, 0.22);
-    }
+    .learn-progress-box { margin-top: 10px; }
+    .wlasl-matcha-card .progress-track { background: rgba(255, 255, 255, 0.28); }
 
     .progress-label-row {
       display: flex;
@@ -750,6 +740,16 @@
       box-shadow: 0 22px 48px rgba(10, 20, 12, 0.34);
     }
 
+    .quiz-save-spinner { display:inline-block; width:13px; height:13px; margin-right:7px; vertical-align:-2px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:quiz-spin .7s linear infinite; }
+    @keyframes quiz-spin { to { transform:rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .quiz-save-spinner { animation:none; } }
+    .rank-card { text-align:center; padding:20px 16px 24px; border-radius:18px; background:linear-gradient(145deg,#e8efdf,#c8d8b8); border:1px solid #a8c095; color:#1d3825; }
+    .rank-emblem { display:grid; place-items:center; width:86px; height:86px; margin:0 auto 12px; border-radius:50%; background:#e8c56a; color:#62480c; border:4px solid #fff3c4; box-shadow:0 6px 16px rgba(47,55,28,.18); font-size:2rem; }
+    .rank-caption { font:700 .75rem 'Inter',sans-serif; letter-spacing:.13em; text-transform:uppercase; }
+    .rank-position { font:700 2.4rem 'Cormorant Garamond',Georgia,serif; line-height:1.15; margin:6px 0; }
+    .rank-note { font-size:.88rem; line-height:1.45; margin:0; }
+    body.dark-mode .rank-card { background:linear-gradient(145deg,#304936,#203527); border-color:#668466; color:#eef4ec; }
+
     body.dark-mode .quiz-modal-card {
       background: #1a2b20;
       color: #eef4ec;
@@ -1064,8 +1064,12 @@
         grid-template-columns: 1fr;
       }
       .quiz-sprout-walker {
-        left: 14px;
-        bottom: 54px;
+        position: relative;
+        left: auto;
+        bottom: auto;
+        width: max-content;
+        margin: 20px auto 0;
+        animation: none;
       }
     }
   </style>
@@ -1125,15 +1129,14 @@
             </svg>
           </button>
         </div>
-      </div>
-
-      <div class="learn-progress-box">
-        <div class="progress-label-row">
-          <span>ASL Progress</span>
-          <span id="aslProgressText">Loading…</span>
-        </div>
-        <div class="progress-track">
-          <div id="aslProgressFill" class="progress-fill asl-fill"></div>
+        <div class="learn-progress-box">
+          <div class="progress-label-row">
+            <span>ASL Progress</span>
+            <span id="aslProgressText">Loading…</span>
+          </div>
+          <div class="progress-track">
+            <div id="aslProgressFill" class="progress-fill asl-fill"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1155,19 +1158,23 @@
             </svg>
           </button>
         </div>
-      </div>
-
-      <div class="learn-progress-box">
-        <div class="progress-label-row">
-          <span>WLASL Progress</span>
-          <span id="wlaslProgressText">Loading…</span>
-        </div>
-        <div class="progress-track">
-          <div id="wlaslProgressFill" class="progress-fill wlasl-fill"></div>
+        <div class="learn-progress-box">
+          <div class="progress-label-row">
+            <span>WLASL Progress</span>
+            <span id="wlaslProgressText">Loading…</span>
+          </div>
+          <div class="progress-track">
+            <div id="wlaslProgressFill" class="progress-fill wlasl-fill"></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
+
+  <section id="learnQuizSection" class="textbook-view active" aria-labelledby="learnQuizHeading" style="margin-top:22px">
+    <div class="tb-topbar"><div class="tb-title-group"><h3 id="learnQuizHeading">Quizzes &amp; Results</h3><p>Choose a quiz to see your progress and best score.</p></div></div>
+    <div id="learnQuizList" aria-live="polite">Loading quizzes…</div>
+  </section>
 
   <!-- =========================================================
        DIGITAL TEXTBOOK VIEW (STARTS AS CHART + ONE-BY-ONE MODE)
@@ -1213,8 +1220,8 @@
   <!-- =========================================================
        WALKING SPROUT MASCOT (`green_element_5`) — SHOWN ONLY ON START PAGE
        ========================================================= -->
-  <div id="quizSproutWalker" class="quiz-sprout-walker" role="button" tabindex="0" aria-label="Open Quizzes">
-    <div class="sprout-speech-bubble">Here is quizzes for ya!</div>
+  <div id="quizSproutWalker" class="quiz-sprout-walker" role="button" tabindex="0" aria-label="View your ranking">
+    <div class="sprout-speech-bubble" id="learningRankBubble">Loading your rank…</div>
     <img id="sproutMascotImg" src="../assets/images/green_element_5.png" alt="Quiz Sprout Mascot" class="sprout-character-img" draggable="false" />
   </div>
 
@@ -1275,6 +1282,8 @@
   });
   
   const hubView = document.getElementById("learnHubView");
+  const quizSection = document.getElementById("learnQuizSection");
+  const quizList = document.getElementById("learnQuizList");
   const bookView = document.getElementById("digitalTextbookView");
   const sproutWalker = document.getElementById("quizSproutWalker");
 
@@ -1419,6 +1428,7 @@
     if (!track.completed.includes(itemKey)) {
       track.completed.push(itemKey);
       updateProgressBars(category);
+      refreshLearningRank();
     }
   }
 
@@ -1558,6 +1568,8 @@
   function openDigitalTextbook(category) {
     activeCategory = category;
     hubView.style.display = "none";
+    quizSection.hidden = true;
+    quizSection.classList.remove("active");
     bookView.classList.add("active");
     sproutWalker.classList.add("hidden-in-book");
     renderChartView();
@@ -1570,6 +1582,8 @@
     closeSignTest();
     bookView.classList.remove("active");
     hubView.style.display = "grid";
+    quizSection.hidden = false;
+    quizSection.classList.add("active");
     sproutWalker.classList.remove("hidden-in-book");
   });
 
@@ -1995,6 +2009,105 @@
   const quizModalBackdrop = document.getElementById("quizModalBackdrop");
   const qmModalTitle = document.getElementById("qmModalTitle");
   const qmBody = document.getElementById("qmBody");
+  const rankBubble = document.getElementById("learningRankBubble");
+  let latestRank = null;
+
+  async function refreshLearningRank() {
+    try {
+      const response = await fetch("/api/learning/rank", { cache: "no-store" });
+      if (!response.ok) throw new Error("Rank unavailable");
+      latestRank = await response.json();
+      rankBubble.textContent = `Your rank: #${latestRank.rank}`;
+    } catch (_) {
+      latestRank = null;
+      rankBubble.textContent = "Rank unavailable";
+    }
+  }
+
+  async function showLearningRank() {
+    qmModalTitle.textContent = "Your ranking";
+    qmBody.textContent = "Loading your rank…";
+    quizModalBackdrop.classList.add("open");
+    await refreshLearningRank();
+    if (!latestRank) { qmBody.textContent = "Your rank is unavailable right now."; return; }
+    qmBody.replaceChildren();
+    const card = document.createElement("div");
+    card.className = "rank-card";
+    const emblem = document.createElement("div");
+    emblem.className = "rank-emblem";
+    emblem.setAttribute("aria-hidden", "true");
+    emblem.textContent = "★";
+    const caption = document.createElement("div");
+    caption.className = "rank-caption";
+    caption.textContent = "Your position";
+    const rank = document.createElement("div");
+    rank.className = "rank-position";
+    rank.textContent = `#${latestRank.rank}`;
+    const note = document.createElement("p");
+    note.className = "rank-note";
+    note.textContent = `Among ${latestRank.learner_count} learners · Learn signs and complete quizzes to climb the ranks.`;
+    card.append(emblem, caption, rank, note);
+    qmBody.appendChild(card);
+  }
+
+  async function refreshQuizList() {
+    quizList.textContent = "Loading quizzes…";
+    try {
+      const res = await fetch("/api/quizzes", { cache: "no-store" });
+      if (!res.ok) throw new Error("Could not load quizzes.");
+      const data = await res.json();
+      quizList.replaceChildren();
+      if (!data.quizzes?.length) {
+        quizList.textContent = "No quizzes are published yet.";
+        return;
+      }
+      data.quizzes.forEach((quiz) => {
+        const card = document.createElement("div");
+        card.className = "quiz-list-item";
+        const info = document.createElement("div");
+        const title = document.createElement("strong");
+        title.textContent = quiz.title;
+        const description = document.createElement("div");
+        description.textContent = quiz.description || "Test your ASL knowledge";
+        const result = document.createElement("small");
+        result.textContent = quiz.best_result
+          ? `Best: ${quiz.best_result.best_score}/${quiz.best_result.total_questions} · ${quiz.attempts_remaining} of 3 attempts remaining`
+          : `${quiz.question_count} questions · ${quiz.attempts_remaining} of 3 attempts remaining`;
+        if (quiz.progress) result.textContent += ` · In progress: ${quiz.progress.answered}/${quiz.progress.total}`;
+        info.append(title, description, result);
+        if (quiz.results?.length) {
+          const details = document.createElement("details");
+          const summary = document.createElement("summary");
+          summary.textContent = "Previous results";
+          const history = document.createElement("ul");
+          quiz.results.forEach((attempt) => {
+            const item = document.createElement("li");
+            item.textContent = `${attempt.score ?? "—"} / ${attempt.total_questions ?? "—"}`;
+            history.appendChild(item);
+          });
+          details.append(summary, history);
+          info.appendChild(details);
+        }
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "quiz-start-pill";
+        button.disabled = quiz.attempts_remaining <= 0 && !quiz.in_progress;
+        button.textContent = button.disabled ? "No attempts left" : quiz.in_progress ? "Resume" : "Start";
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          button.setAttribute("aria-busy", "true");
+          button.innerHTML = '<span class="quiz-save-spinner" aria-hidden="true"></span>Opening…';
+          quizModalBackdrop.classList.add("open");
+          try { await startQuizPlayer(quiz.quiz_id); }
+          finally { button.disabled = false; button.removeAttribute("aria-busy"); button.textContent = quiz.in_progress ? "Resume" : "Start"; }
+        });
+        card.append(info, button);
+        quizList.appendChild(card);
+      });
+    } catch (err) {
+      quizList.textContent = err.message;
+    }
+  }
 
   document.getElementById("qmCloseBtn").addEventListener("click", () => {
     quizModalBackdrop.classList.remove("open");
@@ -2023,15 +2136,30 @@
         const bestText = q.best_result
           ? `Best: ${q.best_result.best_score}/${q.best_result.total_questions}`
           : `${q.question_count} Questions`;
-        card.innerHTML = `
-          <div>
-            <div style="font-weight:700; font-size:1.02rem;">${q.title}</div>
-            <div style="font-size:0.84rem; opacity:0.8; margin-top:2px;">${q.description || "Test your ASL knowledge"}</div>
-            <div style="font-family:'Inter',sans-serif; font-size:0.75rem; font-weight:600; margin-top:5px; color:#557229;">${bestText}</div>
-          </div>
-          <button type="button" class="quiz-start-pill">Start</button>
-        `;
-        card.addEventListener("click", () => startQuizPlayer(q.quiz_id));
+        const info = document.createElement("div");
+        const title = document.createElement("div");
+        title.style.cssText = "font-weight:700;font-size:1.02rem";
+        title.textContent = q.title;
+        const description = document.createElement("div");
+        description.style.cssText = "font-size:0.84rem;opacity:0.8;margin-top:2px";
+        description.textContent = q.description || "Test your ASL knowledge";
+        const status = document.createElement("div");
+        status.style.cssText = "font-family:Inter,sans-serif;font-size:0.75rem;font-weight:600;margin-top:5px;color:#557229";
+        status.textContent = `${bestText} · ${q.attempts_remaining} of 3 attempts remaining`;
+        info.append(title, description, status);
+        const start = document.createElement("button");
+        start.type = "button";
+        start.className = "quiz-start-pill";
+        start.textContent = q.in_progress ? "Resume" : q.attempts_remaining ? "Start" : "No attempts left";
+        start.disabled = !q.attempts_remaining && !q.in_progress;
+        card.append(info, start);
+        if (q.attempts_remaining || q.in_progress) start.addEventListener("click", async () => {
+          start.disabled = true;
+          start.setAttribute("aria-busy", "true");
+          start.innerHTML = '<span class="quiz-save-spinner" aria-hidden="true"></span>Opening…';
+          try { await startQuizPlayer(q.quiz_id); }
+          finally { start.disabled = false; start.removeAttribute("aria-busy"); start.textContent = q.in_progress ? "Resume" : "Start"; }
+        });
         qmBody.appendChild(card);
       });
     } catch (err) {
@@ -2042,8 +2170,8 @@
   async function startQuizPlayer(quizId) {
     qmBody.innerHTML = `<p style="padding:14px 0;">Loading quiz questions...</p>`;
     try {
-      const res = await fetch(`/api/quizzes/${quizId}`);
-      if (!res.ok) throw new Error("Could not load quiz details.");
+      const res = await fetch(`/api/quizzes/${quizId}/attempts`, { method: "POST" });
+      if (!res.ok) { const error = await res.json().catch(() => ({})); throw new Error(error.error || "Could not start quiz."); }
       const quiz = await res.json();
       const questions = quiz.questions || [];
 
@@ -2053,8 +2181,28 @@
       }
 
       qmModalTitle.textContent = quiz.title;
-      const userAnswers = {};
-      let qIdx = 0;
+      const userAnswers = quiz.answers || {};
+      let qIdx = questions.findIndex((question) => userAnswers[String(question.question_id)] === undefined);
+      if (qIdx < 0) qIdx = questions.length - 1;
+      refreshQuizList();
+
+      function quizMedia(type, value) {
+        if (type === "text") {
+          const span = document.createElement("span");
+          span.textContent = value || "";
+          return span;
+        }
+        try {
+          const url = new URL(value, window.location.origin);
+          if (url.protocol !== "https:" && url.origin !== window.location.origin) return document.createTextNode("Media unavailable");
+          const element = document.createElement(type === "video" ? "video" : "img");
+          element.src = url.href;
+          element.className = "qp-question-media";
+          if (type === "video") { element.controls = true; element.playsInline = true; }
+          else element.alt = "Quiz media";
+          return element;
+        } catch (_) { return document.createTextNode("Media unavailable"); }
+      }
 
       function renderQuestion() {
         const q = questions[qIdx];
@@ -2063,10 +2211,11 @@
 
         qmBody.innerHTML = `
           <div style="font-family:'Inter',sans-serif; font-size:0.8rem; font-weight:600; opacity:0.78;">
-            Question ${qIdx + 1} of ${questions.length}
+            Question ${qIdx + 1} of ${questions.length} · ${Object.keys(userAnswers).length} answered
           </div>
-          <div style="font-size:1.08rem; font-weight:600; margin-top:6px;">${q.question_text}</div>
-          ${q.image_path ? `<img src="${q.image_path}" alt="Quiz sign" class="qp-question-media" />` : ""}
+          <progress max="${questions.length}" value="${Object.keys(userAnswers).length}" aria-label="Quiz progress" style="width:100%;margin-top:8px;accent-color:#779338"></progress>
+          <div id="qpQuestionText" style="font-size:1.08rem; font-weight:600; margin-top:6px;"></div>
+          <div id="qpQuestionMedia"></div>
           <div class="qp-options-list" id="qpOptionsContainer"></div>
           <div style="display:flex; justify-content:space-between; gap:10px;">
             <button type="button" id="qpPrevBtn" class="tb-nav-btn" ${qIdx === 0 ? "disabled" : ""}>&larr; Prev</button>
@@ -2074,17 +2223,58 @@
           </div>
         `;
 
+        document.getElementById("qpQuestionText").textContent = q.question_text;
+        if (q.image_path) {
+          const mediaType = q.prompt_media_type === "video" || /\.(mp4|webm)(?:\?|$)/i.test(q.image_path) ? "video" : "image";
+          document.getElementById("qpQuestionMedia").appendChild(quizMedia(mediaType, q.image_path));
+        }
         const optsContainer = document.getElementById("qpOptionsContainer");
-        (q.options || []).forEach((optText) => {
+        (q.options || []).forEach((option, index) => {
+          const structured = option && typeof option === "object";
+          const answer = structured ? String(index) : String(option);
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.className = "qp-option-btn" + (chosen === optText ? " selected" : "");
-          btn.textContent = optText;
-          btn.addEventListener("click", () => {
-            userAnswers[q.question_id] = optText;
-            renderQuestion();
+          btn.className = "qp-option-btn" + (chosen === answer ? " selected" : "");
+          btn.setAttribute("aria-pressed", String(chosen === answer));
+          const optionType = structured ? option.type : "text";
+          const mediaOption = optionType === "video" || optionType === "image";
+          if (mediaOption) btn.textContent = `Choose option ${index + 1}`;
+          else btn.appendChild(quizMedia("text", structured ? option.value : option));
+          btn.addEventListener("click", async () => {
+            const controls = qmBody.querySelectorAll("button");
+            controls.forEach((control) => { control.disabled = true; });
+            btn.setAttribute("aria-busy", "true");
+            const indicator = document.createElement("span");
+            indicator.className = "quiz-save-spinner";
+            indicator.setAttribute("aria-hidden", "true");
+            btn.prepend(indicator);
+            try {
+              const response = await fetch(`/api/quiz-attempts/${quiz.attempt_id}/answer`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question_id: q.question_id, answer })
+              });
+              const data = await response.json().catch(() => ({}));
+              if (!response.ok) throw new Error(data.error || "Could not save your answer.");
+              userAnswers[q.question_id] = answer;
+              renderQuestion();
+            } catch (error) {
+              indicator.remove();
+              btn.removeAttribute("aria-busy");
+              controls.forEach((control) => { control.disabled = false; });
+              const prev = document.getElementById("qpPrevBtn");
+              if (prev) prev.disabled = qIdx === 0;
+              let message = document.getElementById("qpAnswerMessage");
+              if (!message) { message = document.createElement("p"); message.id = "qpAnswerMessage"; message.setAttribute("role", "alert"); optsContainer.after(message); }
+              message.textContent = error.message;
+            }
           });
-          optsContainer.appendChild(btn);
+          if (mediaOption) {
+            const wrapper = document.createElement("div");
+            wrapper.append(quizMedia(optionType, option.value), btn);
+            optsContainer.appendChild(wrapper);
+          } else {
+            optsContainer.appendChild(btn);
+          }
         });
 
         document.getElementById("qpPrevBtn").addEventListener("click", () => {
@@ -2095,25 +2285,46 @@
         });
 
         document.getElementById("qpNextOrSubmitBtn").addEventListener("click", async () => {
+          if (!userAnswers[q.question_id]) {
+            let message = document.getElementById("qpAnswerMessage");
+            if (!message) {
+              message = document.createElement("p");
+              message.id = "qpAnswerMessage";
+              message.setAttribute("role", "alert");
+              message.style.color = "#a12828";
+              document.getElementById("qpOptionsContainer").after(message);
+            }
+            message.textContent = "Please choose an answer before continuing.";
+            return;
+          }
           if (!isLast) {
             qIdx += 1;
             renderQuestion();
             return;
           }
 
-          qmBody.innerHTML = `<p style="padding:18px 0;">Grading your quiz...</p>`;
-          const submitRes = await fetch(`/api/quizzes/${quizId}/submit`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ answers: userAnswers })
-          });
-          const result = await submitRes.json();
-          if (!submitRes.ok) {
-            qmBody.innerHTML = `<p style="color:#a12828;">${result.error || "Submission failed."}</p>`;
+          const submitButton = document.getElementById("qpNextOrSubmitBtn");
+          submitButton.disabled = true;
+          submitButton.setAttribute("aria-busy", "true");
+          submitButton.innerHTML = '<span class="quiz-save-spinner" aria-hidden="true"></span>Submitting…';
+          let result;
+          try {
+            const submitRes = await fetch(`/api/quiz-attempts/${quiz.attempt_id}/finish`, { method: "POST" });
+            result = await submitRes.json().catch(() => ({}));
+            if (!submitRes.ok) throw new Error(result.error || "Submission failed.");
+          } catch (error) {
+            submitButton.disabled = false;
+            submitButton.removeAttribute("aria-busy");
+            submitButton.textContent = "Submit Quiz";
+            let message = document.getElementById("qpAnswerMessage");
+            if (!message) { message = document.createElement("p"); message.id = "qpAnswerMessage"; message.setAttribute("role", "alert"); optsContainer.after(message); }
+            message.textContent = error.message;
             return;
           }
 
           const pct = Math.round((result.score / result.total_questions) * 100);
+          refreshQuizList();
+          refreshLearningRank();
           qmModalTitle.textContent = "Quiz Completed!";
           qmBody.innerHTML = `
             <div style="text-align:center; padding:12px 0 18px 0;">
@@ -2140,7 +2351,13 @@
     }
   }
 
-  sproutWalker.addEventListener("click", openQuizSelectionModal);
+  sproutWalker.addEventListener("click", showLearningRank);
+  sproutWalker.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showLearningRank(); }
+  });
+
+  refreshQuizList();
+  refreshLearningRank();
 
   async function initCurriculum(attempt = 0) {
     try {

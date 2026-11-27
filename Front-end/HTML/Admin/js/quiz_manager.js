@@ -264,10 +264,7 @@
     $("delCancel").onclick = () => $("delDialog").close();
     $("delOk").onclick = async () => { try { await api.remove(deleting); $("delDialog").close(); toast("Question deleted."); load(); } catch (x) { toast(x.message); } };
 
-    try {
-      signs = await api.signs();
-      $("fCat").innerHTML += [...new Set(signs.map((s) => s.category))].map((c) => `<option>${esc(c)}</option>`).join("");
-    } catch (e) { toast(e.message); }
-    load();
+    // The legacy question bank remains available in the code for migration,
+    // but the visible manager now reads and writes whole quizzes instead.
   });
 })();

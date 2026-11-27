@@ -63,6 +63,13 @@ dialog::backdrop{background:rgba(20,30,24,.55)}
 .q-model{background:var(--q-tint);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--q-muted)}
 .q-model b{color:var(--q-text)}
 .q-error{color:var(--q-danger);font-size:13px;margin:0}
+.builder-question{border:1px solid var(--q-border);border-radius:12px;padding:14px;display:grid;gap:10px}
+.builder-question h3{margin:0;font-size:15px}.builder-question label{display:grid;gap:5px;font-size:13px;font-weight:600}
+.builder-question input,.builder-question select,.builder-meta input,.builder-meta textarea{width:100%;background:var(--q-surface);color:var(--q-text);border:1px solid var(--q-border);border-radius:9px;padding:9px;font:14px Inter,sans-serif}
+.builder-option{display:grid;grid-template-columns:100px 1fr auto;gap:8px;align-items:center}
+.builder-option input[type=radio]{width:auto}.builder-list{display:grid;gap:8px}.builder-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px;border:1px solid var(--q-border);border-radius:10px}
+.builder-spinner{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;margin-right:7px;vertical-align:-2px;animation:builder-spin .7s linear infinite}@keyframes builder-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.builder-spinner{animation:none}}
 .q-toast{position:fixed;right:20px;bottom:20px;background:var(--q-accent);color:var(--q-on);padding:12px 18px;border-radius:12px;font-weight:600;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
 .q-toast.show{opacity:1;transform:none}
 @media(max-width:1000px){.q-stats{grid-template-columns:repeat(2,1fr)}}
@@ -85,7 +92,7 @@ dialog::backdrop{background:rgba(20,30,24,.55)}
       <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"></button>
       <label class="search">
         <span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 5 5"></path></svg></span>
-        <input id="search" type="search" placeholder="Search questions..." aria-label="Search quiz questions">
+        <input id="search" type="search" placeholder="Search quizzes..." aria-label="Search quizzes">
       </label>
       <span class="icon-button notification-bell" role="img" aria-label="Notifications" title="Notifications">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
@@ -96,12 +103,15 @@ dialog::backdrop{background:rgba(20,30,24,.55)}
 
   <div class="q-content">
    <div class="q-top">
-    <div><h1>Quiz Manager</h1><p>Create multiple‑choice questions from your sign dataset.</p></div>
+    <div><h1>Quiz Manager</h1><p>Create quizzes and add at least 10 multiple-choice questions before publishing.</p></div>
     <div class="q-actions">
-      <button class="q-btn" id="addBtn">+ Add question</button>
+      <button type="button" class="q-btn" id="managedBuilderOpen">+ Create quiz</button>
+      <button class="q-btn" id="addBtn" hidden>+ Add question</button>
     </div>
   </div>
 
+  <div id="managedQuizList" class="builder-list" aria-live="polite"></div>
+  <div hidden>
   <section class="q-stats">
     <div class="q-stat"><span>Total questions</span><b id="stTotal">0</b></div>
     <div class="q-stat"><span>Sign → Text</span><b id="stS2T">0</b></div>
@@ -116,6 +126,7 @@ dialog::backdrop{background:rgba(20,30,24,.55)}
   </div>
 
   <div id="list" class="q-list"></div>
+  </div>
   </div>
 </main>
 
@@ -152,7 +163,23 @@ dialog::backdrop{background:rgba(20,30,24,.55)}
   <div class="q-dlg-foot"><button class="q-btn ghost" id="delCancel">Cancel</button><button class="q-btn danger" id="delOk">Delete</button></div>
 </dialog>
 
+<dialog id="managedQuizDialog" aria-labelledby="managedQuizTitle">
+  <div class="q-dlg-head"><h2 id="managedQuizTitle">Quiz builder</h2><button type="button" class="q-icon" id="managedQuizClose" aria-label="Close">✕</button></div>
+  <div class="q-dlg-body">
+    <p>Add at least 10 questions to publish. Upload images or videos, or enter HTTPS or site-relative media URLs.</p>
+    <button type="button" class="q-btn ghost" id="managedQuizNew" hidden>New quiz</button>
+    <div id="managedQuizEditor" hidden>
+      <div class="builder-meta q-field"><label>Quiz title<input id="managedQuizName" maxlength="150"></label><label>Description<textarea id="managedQuizDescription" maxlength="4000"></textarea></label></div>
+      <h3>Questions</h3><div id="managedQuizQuestions" class="builder-list"></div>
+      <div class="q-actions" style="margin-top:12px"><button type="button" class="q-btn ghost" id="managedAddChoice">Add question</button><button type="button" class="q-btn ghost" id="managedAddCamera" hidden>Add camera question</button></div>
+      <p id="managedQuizMessage" class="q-error" role="status"></p>
+    </div>
+  </div>
+  <div class="q-dlg-foot"><button type="button" class="q-btn ghost" id="managedQuizCancel">Close</button><button type="button" class="q-btn ghost" id="managedQuizSave" hidden>Save draft</button><button type="button" class="q-btn" id="managedQuizPublish" hidden>Publish quiz</button></div>
+</dialog>
+
 <div class="q-toast" id="toast" role="status"></div>
 <script src="js/quiz_manager.js"></script>
+<script src="js/managed_quiz_builder.js"></script>
 </body>
 </html>

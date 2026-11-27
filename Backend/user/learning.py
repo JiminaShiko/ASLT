@@ -194,6 +194,52 @@ def get_learning_curriculum():
     return response, 200
 
 
+@learning_bp.route("/api/learning/rank", methods=["GET"])
+def learning_rank():
+    if not session.get("user_email") and not session.get("user_id"):
+        return jsonify({"error": "Authentication required."}), 401
+    ensure_learning_progress_table()
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        user_id = _resolve_user_id(cur)
+        if not user_id:
+            return jsonify({"error": "User not found."}), 404
+        cur.execute("SELECT user_id FROM users WHERE role = 'user' AND status = 'active'")
+        user_ids = [row[0] for row in cur.fetchall()]
+        if user_id not in user_ids:
+            return jsonify({"error": "Ranking is available for active learners."}), 403
+        progress = {uid: {"asl": set(), "wlasl": set()} for uid in user_ids}
+        cur.execute("SELECT user_id, category, item_key FROM user_learning_progress")
+        for uid, category, key in cur.fetchall():
+            if uid in progress and ((category == "asl" and key in ASL_LETTERS) or
+                                    (category == "wlasl" and key in WLASL_WORDS)):
+                progress[uid][category].add(key)
+        cur.execute("SELECT quiz_id FROM quizzes WHERE status = 'active'")
+        quiz_ids = {row[0] for row in cur.fetchall()}
+        best = {uid: {} for uid in user_ids}
+        cur.execute("SELECT user_id, quiz_id, score, total_questions FROM quiz_results")
+        for uid, quiz_id, score, total in cur.fetchall():
+            if uid in best and quiz_id in quiz_ids and score is not None and total and total > 0:
+                percent = max(0.0, min(1.0, score / total))
+                best[uid][quiz_id] = max(best[uid].get(quiz_id, 0.0), percent)
+        scores = {}
+        for uid in user_ids:
+            learning_score = (len(progress[uid]["asl"]) / len(ASL_LETTERS) +
+                              len(progress[uid]["wlasl"]) / len(WLASL_WORDS)) / 2
+            quiz_score = sum(best[uid].values()) / len(quiz_ids) if quiz_ids else 0.0
+            scores[uid] = (learning_score, quiz_score, 50 * (learning_score + quiz_score))
+        learning_score, quiz_score, score = scores[user_id]
+        rank = 1 + sum(1 for _learn, _quiz, other in scores.values() if other > score + 1e-9)
+        return jsonify({"rank": rank, "learner_count": len(user_ids), "score": round(score, 2),
+                        "learning_percent": round(learning_score * 100, 2),
+                        "quiz_percent": round(quiz_score * 100, 2),
+                        "published_quizzes": len(quiz_ids), "donations_included": False})
+    finally:
+        cur.close()
+        conn.close()
+
+
 @learning_bp.route("/api/quizzes", methods=["GET"])
 def list_active_quizzes():
     if not session.get("user_email") and not session.get("user_id"):
@@ -216,18 +262,36 @@ def list_active_quizzes():
     rows = cur.fetchall()
 
     best_scores = {}
+    attempt_counts = {}
+    attempt_history = {}
+    in_progress = {}
     if user_id:
         cur.execute(
             """
-            SELECT quiz_id, MAX(score) AS best_score, MAX(total_questions) AS total_q
+            SELECT quiz_id, score, total_questions, completed_at
             FROM quiz_results
             WHERE user_id = %s
-            GROUP BY quiz_id
+            ORDER BY completed_at DESC, result_id DESC
             """,
             (user_id,),
         )
-        for qid, bscore, tq in cur.fetchall():
-            best_scores[qid] = {"best_score": bscore, "total_questions": tq}
+        for qid, score, total, completed_at in cur.fetchall():
+            attempt_counts[qid] = attempt_counts.get(qid, 0) + 1
+            attempt_history.setdefault(qid, []).append({
+                "score": score, "total_questions": total,
+                "completed_at": completed_at.isoformat() if hasattr(completed_at, "isoformat") else str(completed_at or ""),
+            })
+            if score is None or not total:
+                continue
+            current = best_scores.get(qid)
+            if current is None or score / total > current["best_score"] / current["total_questions"]:
+                best_scores[qid] = {"best_score": score, "total_questions": total}
+        # Completed runs also have a quiz_results row; count them only once.
+        cur.execute("SELECT quiz_id, status, answer_state, question_snapshot FROM quiz_attempts WHERE user_id = %s", (user_id,))
+        for qid, status, raw_answers, raw_snapshot in cur.fetchall():
+            if status == "in_progress":
+                in_progress[qid] = {"answered": len(_quiz_json(raw_answers, {})), "total": len(_quiz_json(raw_snapshot, []))}
+                attempt_counts[qid] = attempt_counts.get(qid, 0) + 1
 
     cur.close()
     conn.close()
@@ -241,10 +305,161 @@ def list_active_quizzes():
                 "description": desc or "",
                 "question_count": int(qcount or 0),
                 "best_result": best_scores.get(qid),
+                "attempts_used": attempt_counts.get(qid, 0),
+                "attempts_remaining": max(0, 3 - attempt_counts.get(qid, 0)),
+                "in_progress": qid in in_progress,
+                "progress": in_progress.get(qid),
+                "results": attempt_history.get(qid, []),
             }
         )
 
     return jsonify({"quizzes": quizzes}), 200
+
+
+def _quiz_json(value, default):
+    if isinstance(value, (str, bytes, bytearray)):
+        try:
+            return json.loads(value)
+        except (TypeError, ValueError):
+            return default
+    return value if value is not None else default
+
+
+def _quiz_attempt_payload(attempt_id, quiz_id, title, snapshot, answers, attempt_number):
+    # Correct answers never leave the server while the quiz is in progress.
+    return {"attempt_id": attempt_id, "quiz_id": quiz_id, "title": title,
+            "attempt_number": attempt_number, "answers": answers,
+            "questions": [{key: value for key, value in question.items() if key != "correct_answer"}
+                          for question in snapshot]}
+
+
+@learning_bp.route("/api/quizzes/<int:quiz_id>/attempts", methods=["POST"])
+def start_or_resume_quiz(quiz_id):
+    if not session.get("user_email") and not session.get("user_id"):
+        return jsonify({"error": "Authentication required."}), 401
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        user_id = _resolve_user_id(cur)
+        if not user_id:
+            return jsonify({"error": "User not found."}), 404
+        cur.execute("SELECT user_id FROM users WHERE user_id=%s FOR UPDATE", (user_id,))
+        if not cur.fetchone():
+            return jsonify({"error": "User not found."}), 404
+        cur.execute("SELECT title, status FROM quizzes WHERE quiz_id=%s FOR UPDATE", (quiz_id,))
+        quiz = cur.fetchone()
+        if not quiz or quiz[1] != "active":
+            return jsonify({"error": "This quiz is not available."}), 404
+        cur.execute("""SELECT attempt_id, question_snapshot, answer_state, attempt_number
+                       FROM quiz_attempts WHERE quiz_id=%s AND user_id=%s AND status='in_progress'
+                       ORDER BY attempt_number DESC LIMIT 1 FOR UPDATE""", (quiz_id, user_id))
+        existing = cur.fetchone()
+        if existing:
+            snapshot, answers = _quiz_json(existing[1], []), _quiz_json(existing[2], {})
+            conn.commit()
+            return jsonify(_quiz_attempt_payload(existing[0], quiz_id, quiz[0], snapshot, answers, existing[3]))
+        cur.execute("SELECT COUNT(*) FROM quiz_results WHERE quiz_id=%s AND user_id=%s", (quiz_id, user_id))
+        completed = cur.fetchone()[0]
+        cur.execute("SELECT COALESCE(MAX(attempt_number),0) FROM quiz_attempts WHERE quiz_id=%s AND user_id=%s", (quiz_id, user_id))
+        attempt_number = max(completed, cur.fetchone()[0]) + 1
+        if attempt_number > 3:
+            return jsonify({"error": "You have used all three attempts for this quiz."}), 409
+        cur.execute("""SELECT question_id, question_text, image_path, options, question_kind,
+                       prompt_media_type, correct_answer FROM quiz_questions WHERE quiz_id=%s
+                       ORDER BY display_order, question_id""", (quiz_id,))
+        rows = cur.fetchall()
+        if not rows or any(row[4] != "multiple_choice" for row in rows):
+            return jsonify({"error": "This quiz is not available for multiple-choice play."}), 409
+        snapshot = [{"question_id": row[0], "question_text": row[1] or "", "image_path": row[2] or "",
+                     "options": _quiz_json(row[3], []), "question_kind": row[4],
+                     "prompt_media_type": row[5] or "text", "correct_answer": row[6]} for row in rows]
+        if any(not isinstance(q["options"], list) or len(q["options"]) != 4 for q in snapshot):
+            return jsonify({"error": "This quiz has invalid answer options."}), 409
+        cur.execute("""INSERT INTO quiz_attempts (quiz_id,user_id,attempt_number,status,question_snapshot,answer_state,started_at)
+                       VALUES (%s,%s,%s,'in_progress',%s,%s,%s)""",
+                    (quiz_id, user_id, attempt_number, json.dumps(snapshot), "{}", datetime.now(timezone.utc)))
+        attempt_id = cur.lastrowid
+        conn.commit()
+        return jsonify(_quiz_attempt_payload(attempt_id, quiz_id, quiz[0], snapshot, {}, attempt_number)), 201
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
+
+
+@learning_bp.route("/api/quiz-attempts/<int:attempt_id>/answer", methods=["POST"])
+def save_quiz_answer(attempt_id):
+    if not session.get("user_email") and not session.get("user_id"):
+        return jsonify({"error": "Authentication required."}), 401
+    data = request.get_json(silent=True) or {}
+    question_id, answer = data.get("question_id"), data.get("answer")
+    if type(question_id) is not int or not isinstance(answer, str):
+        return jsonify({"error": "Invalid answer."}), 400
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        user_id = _resolve_user_id(cur)
+        cur.execute("""SELECT status, question_snapshot, answer_state FROM quiz_attempts
+                       WHERE attempt_id=%s AND user_id=%s FOR UPDATE""", (attempt_id, user_id))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"error": "Attempt not found."}), 404
+        if row[0] != "in_progress":
+            return jsonify({"error": "This attempt has already finished."}), 409
+        snapshot, answers = _quiz_json(row[1], []), _quiz_json(row[2], {})
+        question = next((q for q in snapshot if q["question_id"] == question_id), None)
+        if not question:
+            return jsonify({"error": "Question not found in this attempt."}), 400
+        options = question["options"]
+        allowed = [str(i) for i in range(len(options))] if options and all(isinstance(o, dict) for o in options) else [str(o) for o in options]
+        if answer not in allowed:
+            return jsonify({"error": "Invalid answer option."}), 400
+        answers[str(question_id)] = answer
+        cur.execute("UPDATE quiz_attempts SET answer_state=%s WHERE attempt_id=%s", (json.dumps(answers), attempt_id))
+        conn.commit()
+        return jsonify({"answered": len(answers), "total_questions": len(snapshot)})
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
+
+
+@learning_bp.route("/api/quiz-attempts/<int:attempt_id>/finish", methods=["POST"])
+def finish_quiz_attempt(attempt_id):
+    if not session.get("user_email") and not session.get("user_id"):
+        return jsonify({"error": "Authentication required."}), 401
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        user_id = _resolve_user_id(cur)
+        cur.execute("""SELECT quiz_id, status, question_snapshot, answer_state FROM quiz_attempts
+                       WHERE attempt_id=%s AND user_id=%s FOR UPDATE""", (attempt_id, user_id))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"error": "Attempt not found."}), 404
+        snapshot, answers = _quiz_json(row[2], []), _quiz_json(row[3], {})
+        if not snapshot or any(str(q["question_id"]) not in answers for q in snapshot):
+            return jsonify({"error": "Please answer every question before submitting."}), 400
+        score = sum(1 for q in snapshot if str(answers[str(q["question_id"])]).strip().lower() == str(q["correct_answer"]).strip().lower())
+        if row[1] == "in_progress":
+            now = datetime.now(timezone.utc)
+            cur.execute("INSERT INTO quiz_results (quiz_id,user_id,score,total_questions,completed_at) VALUES (%s,%s,%s,%s,%s)",
+                        (row[0], user_id, score, len(snapshot), now))
+            cur.execute("UPDATE quiz_attempts SET status='completed', completed_at=%s WHERE attempt_id=%s", (now, attempt_id))
+            conn.commit()
+        elif row[1] != "completed":
+            return jsonify({"error": "This attempt cannot be submitted."}), 409
+        return jsonify({"quiz_id": row[0], "score": score, "total_questions": len(snapshot)})
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
 
 
 @learning_bp.route("/api/quizzes/<int:quiz_id>", methods=["GET"])
@@ -254,6 +469,13 @@ def get_quiz_detail(quiz_id: int):
 
     conn = get_db_connection()
     cur = conn.cursor()
+
+    user_id = _resolve_user_id(cur)
+    cur.execute("SELECT attempt_id FROM quiz_attempts WHERE quiz_id=%s AND user_id=%s AND status='in_progress' LIMIT 1", (quiz_id, user_id))
+    if not cur.fetchone():
+        cur.close()
+        conn.close()
+        return jsonify({"error": "Start a quiz attempt to view its questions."}), 409
 
     cur.execute(
         "SELECT quiz_id, title, description FROM quizzes WHERE quiz_id = %s AND status = 'active'",
@@ -267,15 +489,15 @@ def get_quiz_detail(quiz_id: int):
 
     cur.execute(
         """
-        SELECT question_id, question_text, image_path, options
+        SELECT question_id, question_text, image_path, options, question_kind, prompt_media_type
         FROM quiz_questions
         WHERE quiz_id = %s
-        ORDER BY question_id ASC
+        ORDER BY display_order ASC, question_id ASC
         """,
         (quiz_id,),
     )
     questions = []
-    for qid, qtext, img_path, raw_opts in cur.fetchall():
+    for qid, qtext, img_path, raw_opts, question_kind, prompt_media_type in cur.fetchall():
         parsed_opts = raw_opts
         if isinstance(raw_opts, str):
             try:
@@ -290,6 +512,8 @@ def get_quiz_detail(quiz_id: int):
                 "question_id": qid,
                 "question_text": qtext or "",
                 "image_path": img_path or "",
+                "question_kind": question_kind or "multiple_choice",
+                "prompt_media_type": prompt_media_type or "text",
                 "options": parsed_opts,
             }
         )
@@ -314,6 +538,8 @@ def submit_quiz_attempt(quiz_id: int):
 
     data = request.get_json(silent=True) or {}
     answers = data.get("answers") or {}
+    if not isinstance(answers, dict):
+        return jsonify({"error": "Answers must be provided for each question."}), 400
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -323,23 +549,85 @@ def submit_quiz_attempt(quiz_id: int):
         conn.close()
         return jsonify({"error": "User not found."}), 404
 
+    # Serialize attempts for a user so concurrent submissions cannot exceed
+    # the three-attempt limit. The lock is released on commit or rollback.
+    cur.execute("SELECT user_id FROM users WHERE user_id = %s FOR UPDATE", (user_id,))
+    if not cur.fetchone():
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify({"error": "User not found."}), 404
+    cur.execute("SELECT status FROM quizzes WHERE quiz_id = %s FOR UPDATE", (quiz_id,))
+    quiz = cur.fetchone()
+    if not quiz or quiz[0] != "active":
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify({"error": "This quiz is not available."}), 404
+    cur.execute("SELECT COUNT(*) FROM quiz_results WHERE quiz_id = %s AND user_id = %s", (quiz_id, user_id))
+    if cur.fetchone()[0] >= 3:
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify({"error": "You have used all three attempts for this quiz."}), 409
+    cur.execute("SELECT COUNT(*) FROM quiz_attempts WHERE quiz_id=%s AND user_id=%s AND status='in_progress'", (quiz_id, user_id))
+    if cur.fetchone()[0]:
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify({"error": "Resume your in-progress quiz instead."}), 409
+
     cur.execute(
-        "SELECT question_id, correct_answer FROM quiz_questions WHERE quiz_id = %s ORDER BY question_id ASC",
+        "SELECT question_id, correct_answer, question_kind, options FROM quiz_questions WHERE quiz_id = %s ORDER BY display_order ASC, question_id ASC",
         (quiz_id,),
     )
     qrows = cur.fetchall()
     if not qrows:
+        conn.rollback()
         cur.close()
         conn.close()
         return jsonify({"error": "Quiz has no questions."}), 400
+
+    if any(kind != "multiple_choice" for _qid, _correct, kind, _options in qrows):
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify({"error": "Camera quiz questions are not available yet."}), 409
+
+    if any(isinstance(_quiz_json(raw, None), list) and _quiz_json(raw, None) and
+           all(isinstance(option, dict) for option in _quiz_json(raw, None))
+           for _qid, _correct, _kind, raw in qrows):
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify({"error": "Please use the saved quiz attempt to submit this quiz."}), 409
+
+    if any(not isinstance(answers.get(str(qid)), str) or not answers[str(qid)].strip()
+           for qid, _correct, _kind, _options in qrows):
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify({"error": "Please answer every question before submitting."}), 400
 
     total_questions = len(qrows)
     score = 0
     breakdown = []
 
-    for qid, correct_ans in qrows:
+    for qid, correct_ans, _kind, raw_options in qrows:
         user_choice = str(answers.get(str(qid), "")).strip()
-        is_correct = user_choice.lower() == str(correct_ans).strip().lower()
+        try:
+            options = json.loads(raw_options) if isinstance(raw_options, str) else raw_options
+        except (ValueError, TypeError):
+            options = []
+        if isinstance(options, list) and options and all(isinstance(option, dict) for option in options):
+            if user_choice not in {str(index) for index in range(len(options))}:
+                conn.rollback()
+                cur.close()
+                conn.close()
+                return jsonify({"error": "Invalid answer option."}), 400
+            is_correct = user_choice == str(correct_ans)
+        else:
+            is_correct = user_choice.lower() == str(correct_ans).strip().lower()
         if is_correct:
             score += 1
         breakdown.append(
