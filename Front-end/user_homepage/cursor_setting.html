@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/png" href="/assets/images/signrest-favicon.png" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Signrest — Cursor Settings</title>
@@ -49,9 +50,9 @@
        ========================================================= */
     .cs-noti-overlay {
       position: fixed;
-      top: 26px;
-      left: 50%;
-      transform: translate(-50%, -150%);
+      top: 76px;
+      right: 28px;
+      transform: translateY(-30px);
       z-index: 10000;
       opacity: 0;
       pointer-events: none;
@@ -59,19 +60,18 @@
     }
 
     .cs-noti-overlay.show {
-      transform: translate(-50%, 0);
+      transform: translateY(0);
       opacity: 1;
       pointer-events: auto;
     }
 
     .cs-noti-card {
       position: relative;
-      min-width: 390px;
-      max-width: 470px;
+      width: min(390px, calc(100vw - 68px));
+      box-sizing: border-box;
       background: #cddbc7;
       color: #162217;
       padding: 24px 44px 18px 58px;
-      border-bottom: 2.5px dashed #1f2b20;
       box-shadow: 0 14px 32px rgba(12, 24, 14, 0.24);
       text-align: center;
       font-family: 'Lora', Georgia, serif;
@@ -83,7 +83,6 @@
     body.dark-mode .cs-noti-card {
       background: #2b3f30;
       color: #eef4ec;
-      border-bottom-color: #b8ceb8;
     }
 
     .cs-noti-star-badge {
@@ -123,18 +122,10 @@
       transform: scale(1.08);
     }
 
-    .cs-noti-countdown {
-      margin-top: 8px;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.76rem;
-      font-weight: 600;
-      color: #4f6830;
-      letter-spacing: 0.02em;
-    }
-
-    body.dark-mode .cs-noti-countdown {
-      color: #b7d882;
-    }
+    .cs-noti-bars { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+    .cs-noti-bar { height: 3px; background: #1f2b20; transition: opacity .3s ease; }
+    body.dark-mode .cs-noti-bar { background: #b8ceb8; }
+    .cs-noti-bar.elapsed { opacity: .25; }
 
     /* =========================================================
        MAIN STAGE LAYOUT
@@ -407,17 +398,11 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
       text-align: center;
       pointer-events: none;
       user-select: none;
       line-height: 1.22;
-    }
-
-    .tag-status-text {
-      font-size: 0.62rem;
-      font-weight: 600;
-      color: #1c241c;
     }
 
     .tag-action-text {
@@ -531,12 +516,18 @@
     }
 
     /* Horizontal Scrollable Sticker Tray */
+    .sticker-filters { display: flex; gap: 18px; margin: 12px 2px 4px; }
+    .sticker-filter { padding: 2px 0; border: 0; background: none; color: inherit; opacity: .65; font: 600 .8rem 'Inter', sans-serif; cursor: pointer; }
+    .sticker-filter.active { opacity: 1; border-bottom: 2px solid currentColor; }
+    .sticker-item { position: relative; display: flex; flex: 0 0 42px; width: 42px; height: 42px; }
+    .sticker-new { position: absolute; z-index: 1; top: -5px; right: -4px; font: 700 .58rem 'Inter', sans-serif; color: #28462c; pointer-events: none; }
+    .sticker-delete { position: absolute; top: -8px; right: -8px; z-index: 1; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: #75413d; color: white; font: 700 13px/18px sans-serif; cursor: pointer; }
     .sticker-scroll-tray {
       display: flex;
       align-items: center;
       gap: 10px;
       overflow-x: auto;
-      padding: 4px 2px 10px 2px;
+      padding: 10px 2px 10px 2px;
       scrollbar-width: thin;
       scrollbar-color: rgba(255, 255, 255, 0.65) transparent;
     }
@@ -572,9 +563,9 @@
 
     .sticker-circle-btn.selected {
       border-color: #1c311e;
-      box-shadow: 0 0 0 2.5px rgba(255, 255, 255, 0.9);
-      transform: scale(1.08);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
     }
+    .sticker-circle-btn.selected:hover { transform: none; }
 
     .sticker-circle-btn img {
       width: 100%;
@@ -655,9 +646,9 @@
 
     .cs-game-save-btn {
       position: relative;
-      background: linear-gradient(180deg, #98b552 0%, #83a03f 100%);
-      color: #142215;
-      border: 1.5px solid #4c6420;
+      background: #28462c;
+      color: #fff;
+      border: 1px solid transparent;
       border-radius: 9999px;
       padding: 10px 38px;
       font-family: 'Lora', Georgia, serif;
@@ -665,37 +656,42 @@
       font-weight: 700;
       letter-spacing: 0.02em;
       cursor: pointer;
-      box-shadow:
-        0 5px 0 #4c6420,
-        0 9px 18px rgba(15, 28, 16, 0.24),
-        inset 0 2px 0 rgba(255, 255, 255, 0.42);
-      transition:
-        transform 0.14s cubic-bezier(0.22, 1.4, 0.36, 1),
-        box-shadow 0.14s cubic-bezier(0.22, 1.4, 0.36, 1),
-        filter 0.15s ease;
+      box-shadow: 0 4px 12px rgba(15, 28, 16, 0.18);
+      transition: transform .18s cubic-bezier(.22, 1.25, .36, 1), background-color .18s ease, box-shadow .18s ease;
     }
 
-    .cs-game-save-btn:hover {
-      transform: translateY(-2px) scale(1.03);
-      filter: brightness(1.04);
-      box-shadow:
-        0 7px 0 #4c6420,
-        0 12px 22px rgba(15, 28, 16, 0.28),
-        inset 0 2px 0 rgba(255, 255, 255, 0.5);
+    .cs-game-save-btn:hover:not(:disabled) {
+      background: #3a5f3e;
+      transform: translateY(-3px) scale(1.04);
+      box-shadow: 0 6px 16px rgba(15, 28, 16, 0.25);
     }
 
-    .cs-game-save-btn:active {
-      transform: translateY(4px) scale(0.98);
-      box-shadow:
-        0 1px 0 #4c6420,
-        0 3px 6px rgba(15, 28, 16, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    .cs-game-save-btn:active:not(:disabled) {
+      background: #1c3520;
+      transform: translateY(1px) scale(.97);
     }
 
     .cs-game-save-btn:disabled {
       opacity: 0.7;
       cursor: wait;
     }
+    @media (prefers-reduced-motion: reduce) {
+      .cs-game-save-btn { transition: none; }
+      .cs-game-save-btn:hover:not(:disabled), .cs-game-save-btn:active:not(:disabled) { transform: none; }
+    }
+
+    .cs-delete-dialog { position: fixed; inset: 0; margin: auto; width: min(360px, calc(100vw - 48px)); height: fit-content; box-sizing: border-box; border: 1px solid #a9bca0; border-radius: 20px; padding: 26px; background: #f4f7ef; color: #1c311e; box-shadow: 0 20px 55px rgba(0,0,0,.3); font-family: 'Lora', Georgia, serif; }
+    .cs-delete-dialog::backdrop { background: rgba(10, 20, 13, .55); }
+    body.dark-mode .cs-delete-dialog { background: #263a2c; color: #eef4ec; border-color: #68836b; }
+    .cs-delete-dialog h3 { margin: 0 0 8px; font-size: 1.2rem; }
+    .cs-delete-dialog p { margin: 0; line-height: 1.5; font-size: .9rem; }
+    .cs-delete-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+    .cs-delete-actions button { padding: 8px 18px; border: 1px solid #8ca48a; border-radius: 999px; background: transparent; color: inherit; font: 600 .85rem 'Inter', sans-serif; cursor: pointer; }
+    .cs-delete-actions .cs-confirm-delete { background: #8c3131; border-color: #8c3131; color: white; }
+    .cs-button-spinner { display: inline-block; width: 13px; height: 13px; margin-right: 7px; vertical-align: -2px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: cs-spin .7s linear infinite; }
+    .cs-button-spinner[hidden] { display: none; }
+    @keyframes cs-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .cs-button-spinner { animation: none; } }
 
     @media (max-width: 720px) {
       .effect-controls-area {
@@ -705,10 +701,9 @@
         right: 12px;
       }
       .cs-noti-card {
-        min-width: 300px;
-        max-width: 90vw;
         padding: 20px 38px 18px 48px;
       }
+      .cs-noti-overlay { right: 12px; top: 66px; }
       .trial-pad-quote {
         font-size: 1.2rem;
       }
@@ -727,7 +722,7 @@
       <img src="../assets/images/green_element_7.png" alt="" class="cs-noti-star-badge" draggable="false" />
       <button type="button" id="csNotiCloseBtn" class="cs-noti-close-btn" aria-label="Close notification">X</button>
       <div id="csNotiText">your cursor effects are saved!<br>enjoy your new trail &amp; burst across Signrest</div>
-      <div id="csNotiCountdown" class="cs-noti-countdown">Closing in 5s...</div>
+      <div class="cs-noti-bars" aria-hidden="true"><span class="cs-noti-bar"></span><span class="cs-noti-bar"></span><span class="cs-noti-bar"></span><span class="cs-noti-bar"></span><span class="cs-noti-bar"></span></div>
     </div>
   </div>
 
@@ -748,7 +743,6 @@
     <div id="paperTagDraggable" class="paper-tag-draggable" role="button" tabindex="0" aria-label="Pull paper tag down to edit cursor effects">
       <img id="paperTagImg" src="../assets/images/paper_tag_9.png" alt="Cursor Toggle Tag" draggable="false" />
       <div class="paper-tag-copy">
-        <span id="tagStatusText" class="tag-status-text">right now<br>your cursor is off</span>
         <span id="tagActionText" class="tag-action-text">Pull me to<br>edit</span>
       </div>
     </div>
@@ -795,6 +789,7 @@
           </button>
         </div>
 
+        <div class="sticker-filters" aria-label="Trail effect filters"><button type="button" class="sticker-filter active" data-filter="all" data-target="trail" aria-pressed="true">All</button><button type="button" class="sticker-filter" data-filter="mine" data-target="trail" aria-pressed="false">Mine</button></div>
         <div id="trailStickerTray" class="sticker-scroll-tray"></div>
 
         <div class="size-slider-row">
@@ -813,6 +808,7 @@
           </button>
         </div>
 
+        <div class="sticker-filters" aria-label="Burst effect filters"><button type="button" class="sticker-filter active" data-filter="all" data-target="click" aria-pressed="true">All</button><button type="button" class="sticker-filter" data-filter="mine" data-target="click" aria-pressed="false">Mine</button></div>
         <div id="burstStickerTray" class="sticker-scroll-tray"></div>
 
         <div class="size-slider-row">
@@ -824,10 +820,15 @@
 
       <!-- Centered Game-Style Pop-Up Save Button in the space under the 2 boxes -->
       <div class="cs-save-row">
-        <button type="button" id="csSaveBtn" class="cs-game-save-btn">Save</button>
+        <button type="button" id="csSaveBtn" class="cs-game-save-btn"><span class="cs-button-spinner" hidden aria-hidden="true"></span><span>Save</span></button>
       </div>
     </div>
   </div>
+  <dialog id="csDeleteDialog" class="cs-delete-dialog" aria-labelledby="csDeleteTitle" aria-describedby="csDeleteDescription">
+    <h3 id="csDeleteTitle">Delete effect?</h3>
+    <p id="csDeleteDescription">This effect will be removed from your collection.</p>
+    <div class="cs-delete-actions"><button type="button" id="csDeleteCancel">Cancel</button><button type="button" id="csDeleteConfirm" class="cs-confirm-delete"><span class="cs-button-spinner" hidden aria-hidden="true"></span><span>Delete</span></button></div>
+  </dialog>
 </div>
 
 <script>
@@ -835,7 +836,6 @@
   const stageWrapper = document.getElementById("csStageWrapper");
   const tagDraggable = document.getElementById("paperTagDraggable");
   const tagCordLine = document.getElementById("tagCordLine");
-  const tagStatusText = document.getElementById("tagStatusText");
   const tagActionText = document.getElementById("tagActionText");
 
   const trailPanel = document.getElementById("trailPanel");
@@ -852,7 +852,7 @@
 
   const notiOverlay = document.getElementById("csNotiOverlay");
   const notiText = document.getElementById("csNotiText");
-  const notiCountdown = document.getElementById("csNotiCountdown");
+  const notiBars = Array.from(notiOverlay.querySelectorAll(".cs-noti-bar"));
   const notiCloseBtn = document.getElementById("csNotiCloseBtn");
   let notiInterval = null;
 
@@ -872,16 +872,15 @@
   function showFiveSecondNoti(htmlMessage) {
     let secondsLeft = 5;
     notiText.innerHTML = htmlMessage;
-    notiCountdown.textContent = `Closing in ${secondsLeft}s...`;
+    notiBars.forEach((bar) => bar.classList.remove("elapsed"));
     notiOverlay.classList.add("show");
 
     if (notiInterval) clearInterval(notiInterval);
     notiInterval = setInterval(() => {
       secondsLeft -= 1;
+      if (notiBars[secondsLeft]) notiBars[secondsLeft].classList.add("elapsed");
       if (secondsLeft <= 0) {
         hideNotiBanner();
-      } else {
-        notiCountdown.textContent = `Closing in ${secondsLeft}s...`;
       }
     }, 1000);
   }
@@ -912,15 +911,43 @@
   let draftTrailSize = 24;
   let draftClickSize = 26;
   let pendingUploadTarget = "both";
+  const trayFilters = { trail: "all", click: "all" };
+  let savedTrail = null;
+  let savedClick = null;
+
+  function syncPreviewOnly() {
+    const trailId = masterOn && trailEnabled ? draftTrailId : null;
+    const clickId = masterOn && burstEnabled ? draftClickId : null;
+    const changed = masterOn && (trailId !== (savedTrail?.effect_id ?? null) ||
+      clickId !== (savedClick?.effect_id ?? null) ||
+      (trailId !== null && draftTrailSize !== savedTrail?.size) ||
+      (clickId !== null && draftClickSize !== savedClick?.size));
+    const wasChanged = stageWrapper.dataset.previewOnly === "true";
+    stageWrapper.dataset.previewOnly = String(changed);
+    if (changed && !wasChanged && typeof window.clearSignrestCursorParticles === "function") {
+      window.clearSignrestCursorParticles();
+    }
+  }
+
+  document.querySelectorAll(".sticker-filter").forEach((button) => {
+    button.addEventListener("click", () => {
+      trayFilters[button.dataset.target] = button.dataset.filter;
+      document.querySelectorAll(`.sticker-filter[data-target="${button.dataset.target}"]`).forEach((item) => {
+        const active = item === button;
+        item.classList.toggle("active", active);
+        item.setAttribute("aria-pressed", String(active));
+      });
+      renderStickerTrays();
+    });
+  });
 
   function syncMasterUI() {
     stageWrapper.classList.toggle("is-on", masterOn);
+    syncPreviewOnly();
     if (masterOn) {
-      tagStatusText.innerHTML = "right now<br>your cursor is on";
       tagActionText.innerHTML = "Pull me to<br>turn off";
       if (trialPadIdleVideo) trialPadIdleVideo.pause();
     } else {
-      tagStatusText.innerHTML = "right now<br>your cursor is off";
       tagActionText.innerHTML = "Pull me to<br>edit";
       trialParticles = [];
       trialCtx.clearRect(0, 0, trialCanvas.width, trialCanvas.height);
@@ -929,6 +956,7 @@
   }
 
   function syncSubSwitchesUI() {
+    syncPreviewOnly();
     trailSwitchBtn.classList.toggle("is-active", trailEnabled);
     burstSwitchBtn.classList.toggle("is-active", burstEnabled);
     trailPanel.classList.toggle("panel-muted", !trailEnabled);
@@ -1019,22 +1047,51 @@
     container.appendChild(addBtn);
 
     stickers.forEach((st) => {
+      const item = document.createElement("div");
+      item.className = "sticker-item";
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "sticker-circle-btn" + (selectedId === st.effect_id ? " selected" : "");
       btn.title = st.effect_name;
-      btn.innerHTML = `<img src="${st.effect_path}" alt="${st.effect_name}" draggable="false" />`;
-      btn.addEventListener("click", () => {
+      const img = document.createElement("img");
+      img.src = st.effect_path;
+      img.alt = st.effect_name;
+      img.draggable = false;
+      btn.appendChild(img);
+      btn.addEventListener("click", async () => {
         onSelect(st.effect_id);
+        if (st.is_new) {
+          try {
+            const res = await fetch(`/api/cursor-effects/${st.effect_id}/select`, { method: "POST" });
+            if (!res.ok) throw new Error("Could not record selection.");
+            st.is_new = false;
+          } catch (err) { showFiveSecondNoti(err.message); }
+        }
         renderStickerTrays();
       });
-      container.appendChild(btn);
+      item.appendChild(btn);
+      if (trayFilters[targetType] === "all" && !st.is_custom && st.is_new) {
+        const badge = document.createElement("span");
+        badge.className = "sticker-new";
+        badge.textContent = "new";
+        item.appendChild(badge);
+      }
+      if (trayFilters[targetType] === "mine" && st.is_custom) {
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "sticker-delete";
+        remove.textContent = "×";
+        remove.setAttribute("aria-label", `Delete ${st.effect_name}`);
+        remove.addEventListener("click", () => deleteSticker(st));
+        item.appendChild(remove);
+      }
+      container.appendChild(item);
     });
   }
 
   function renderStickerTrays() {
-    const trailChoices = allStickers.filter((s) => s.effect_type === "trail" || s.effect_type === "both");
-    const burstChoices = allStickers.filter((s) => s.effect_type === "click" || s.effect_type === "both");
+    const trailChoices = allStickers.filter((s) => (s.effect_type === "trail" || s.effect_type === "both") && (trayFilters.trail === "all" || s.is_custom));
+    const burstChoices = allStickers.filter((s) => (s.effect_type === "click" || s.effect_type === "both") && (trayFilters.click === "all" || s.is_custom));
 
     buildStickerTray(trailTray, trailChoices, draftTrailId, "trail", (id) => {
       draftTrailId = id;
@@ -1043,11 +1100,66 @@
     });
 
     buildStickerTray(burstTray, burstChoices, draftClickId, "click", (id) => {
+      trialParticles = trialParticles.filter((particle) => !particle.isPop);
       draftClickId = id;
       burstEnabled = true;
       syncSubSwitchesUI();
     });
   }
+
+  const deleteDialog = document.getElementById("csDeleteDialog");
+  const deleteConfirm = document.getElementById("csDeleteConfirm");
+  const deleteCancel = document.getElementById("csDeleteCancel");
+  let stickerToDelete = null;
+  let deleteTrigger = null;
+
+  function deleteSticker(st) {
+    stickerToDelete = st;
+    deleteTrigger = document.activeElement;
+    deleteDialog.showModal();
+    document.getElementById("csDeleteCancel").focus();
+  }
+
+  deleteCancel.addEventListener("click", () => deleteDialog.close());
+  deleteDialog.addEventListener("cancel", (event) => { if (deleteConfirm.disabled) event.preventDefault(); });
+  deleteDialog.addEventListener("close", () => {
+    stickerToDelete = null;
+    if (deleteTrigger?.isConnected) deleteTrigger.focus();
+  });
+  deleteConfirm.addEventListener("click", async () => {
+    const st = stickerToDelete;
+    if (!st) return;
+    deleteConfirm.disabled = true;
+    deleteCancel.disabled = true;
+    deleteConfirm.setAttribute("aria-busy", "true");
+    deleteConfirm.querySelector(".cs-button-spinner").hidden = false;
+    try {
+      const res = await fetch(`/api/cursor-effects/${st.effect_id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || (res.status === 404 || res.status === 405
+        ? "Delete service unavailable. Restart the app and try again."
+        : "Could not delete the effect. Please try again."));
+      deleteDialog.close();
+      allStickers = allStickers.filter((effect) => effect.effect_id !== st.effect_id);
+      if (draftTrailId === st.effect_id) draftTrailId = null;
+      if (draftClickId === st.effect_id) draftClickId = null;
+      if (savedTrail?.effect_id === st.effect_id) savedTrail = null;
+      if (savedClick?.effect_id === st.effect_id) savedClick = null;
+      trialParticles = trialParticles.filter((particle) => particle.url !== st.effect_path);
+      if (typeof window.setSignrestCursorEffects === "function") window.setSignrestCursorEffects(savedTrail, savedClick);
+      syncPreviewOnly();
+      renderStickerTrays();
+      showFiveSecondNoti("sticker deleted");
+    } catch (err) {
+      deleteDialog.close();
+      showFiveSecondNoti(err.message);
+    } finally {
+      deleteConfirm.disabled = false;
+      deleteCancel.disabled = false;
+      deleteConfirm.removeAttribute("aria-busy");
+      deleteConfirm.querySelector(".cs-button-spinner").hidden = true;
+    }
+  });
 
   customFileInput.addEventListener("change", async () => {
     const file = customFileInput.files && customFileInput.files[0];
@@ -1066,10 +1178,12 @@
       if (!res.ok) throw new Error(data.error || "Sticker upload failed.");
 
       allStickers.unshift(data.effect);
+      data.effect.is_new = false;
       if (pendingUploadTarget === "trail") {
         draftTrailId = data.effect.effect_id;
         trailEnabled = true;
       } else {
+        trialParticles = trialParticles.filter((particle) => !particle.isPop);
         draftClickId = data.effect.effect_id;
         burstEnabled = true;
       }
@@ -1093,26 +1207,32 @@
 
   trailSizeSlider.addEventListener("input", () => {
     draftTrailSize = Number(trailSizeSlider.value);
+    syncPreviewOnly();
   });
   document.getElementById("trailSizeMinus").addEventListener("click", () => {
     trailSizeSlider.value = Math.max(14, Number(trailSizeSlider.value) - 4);
     draftTrailSize = Number(trailSizeSlider.value);
+    syncPreviewOnly();
   });
   document.getElementById("trailSizePlus").addEventListener("click", () => {
     trailSizeSlider.value = Math.min(54, Number(trailSizeSlider.value) + 4);
     draftTrailSize = Number(trailSizeSlider.value);
+    syncPreviewOnly();
   });
 
   burstSizeSlider.addEventListener("input", () => {
     draftClickSize = Number(burstSizeSlider.value);
+    syncPreviewOnly();
   });
   document.getElementById("burstSizeMinus").addEventListener("click", () => {
     burstSizeSlider.value = Math.max(16, Number(burstSizeSlider.value) - 4);
     draftClickSize = Number(burstSizeSlider.value);
+    syncPreviewOnly();
   });
   document.getElementById("burstSizePlus").addEventListener("click", () => {
     burstSizeSlider.value = Math.min(62, Number(burstSizeSlider.value) + 4);
     draftClickSize = Number(burstSizeSlider.value);
+    syncPreviewOnly();
   });
 
   /* =========================================================
@@ -1262,9 +1382,13 @@
      ========================================================= */
   saveBtn.addEventListener("click", async () => {
     saveBtn.disabled = true;
+    saveBtn.setAttribute("aria-busy", "true");
+    saveBtn.querySelector(".cs-button-spinner").hidden = false;
 
     const finalTrailId = masterOn && trailEnabled ? draftTrailId : null;
     const finalClickId = masterOn && burstEnabled ? draftClickId : null;
+    const finalTrailSize = draftTrailSize;
+    const finalClickSize = draftClickSize;
 
     try {
       const res = await fetch("/api/user/cursor-effects", {
@@ -1273,29 +1397,34 @@
         body: JSON.stringify({
           trail_effect_id: finalTrailId,
           click_effect_id: finalClickId,
-          trail_effect_size: draftTrailSize,
-          click_effect_size: draftClickSize
+          trail_effect_size: finalTrailSize,
+          click_effect_size: finalClickSize
         })
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(result.error || "Could not save cursor preferences.");
 
       const trailObj = finalTrailId
-        ? { ...allStickers.find((s) => s.effect_id === finalTrailId), size: draftTrailSize }
+        ? { ...allStickers.find((s) => s.effect_id === finalTrailId), size: finalTrailSize }
         : null;
       const clickObj = finalClickId
-        ? { ...allStickers.find((s) => s.effect_id === finalClickId), size: draftClickSize }
+        ? { ...allStickers.find((s) => s.effect_id === finalClickId), size: finalClickSize }
         : null;
 
       if (typeof window.setSignrestCursorEffects === "function") {
         window.setSignrestCursorEffects(trailObj, clickObj);
       }
+      savedTrail = trailObj;
+      savedClick = clickObj;
+      syncPreviewOnly();
 
       showFiveSecondNoti("your cursor effects are saved!<br>enjoy your new look across Signrest");
     } catch (err) {
       showFiveSecondNoti(err.message);
     } finally {
       saveBtn.disabled = false;
+      saveBtn.removeAttribute("aria-busy");
+      saveBtn.querySelector(".cs-button-spinner").hidden = true;
     }
   });
 
@@ -1309,6 +1438,8 @@
       const data = await res.json();
 
       allStickers = data.effects || [];
+      savedTrail = data.trail_effect;
+      savedClick = data.click_effect;
       draftTrailId = data.trail_effect_id ?? null;
       draftClickId = data.click_effect_id ?? null;
       draftTrailSize = data.trail_effect_size || 24;
@@ -1333,5 +1464,6 @@
 })();
 </script>
 <script src="/js/session_presence.js" defer></script>
+<script src="/js/account_realtime.js" defer></script>
 </body>
 </html>

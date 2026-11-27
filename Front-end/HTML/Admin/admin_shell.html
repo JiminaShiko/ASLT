@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/png" href="/assets/images/signrest-favicon.png" />
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Signrest — Admin Portal</title>
@@ -32,6 +33,11 @@
     text-wrap: balance;
   }
   #logout-dialog .form-actions { justify-content: center; }
+  .app > .main { height: 100%; overflow: hidden; }
+  #adminPageFrame { display: block; width: 100%; height: 100%; border: 0; background: var(--bg); }
+  .logout-spinner { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: logout-spin .7s linear infinite; }
+  @keyframes logout-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .logout-spinner { animation: none; } }
 </style>
 </head>
 <body>
@@ -247,6 +253,20 @@
       .catch(function () {})
       .then(function () { window.location.assign("/login"); });
   });
+  async function logout() {
+    var button = document.getElementById("logout");
+    var label = button && button.querySelector("span");
+    if (button) { button.disabled = true; button.setAttribute("aria-busy", "true"); }
+    if (label) label.innerHTML = '<span class="logout-spinner" aria-hidden="true"></span>Logging out…';
+    try {
+      var response = await fetch("/api/logout", { method: "POST", credentials: "same-origin" });
+      if (!response.ok) throw new Error("Logout failed");
+      window.location.assign("/");
+    } catch (error) {
+      if (button) { button.disabled = false; button.removeAttribute("aria-busy"); }
+      if (label) label.textContent = "Logout failed — try again";
+    }
+  }
 
   document.addEventListener("click", function (event) {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

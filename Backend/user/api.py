@@ -72,7 +72,9 @@ WORD_DEFAULT_SETTINGS = {
     "fps": 20.0,
     "stride": max(1, int(words_config.LIVE_STRIDE)),
     "buffer": float(words_config.BUFFER_SECONDS),
-    "conf": float(words_config.CONFIDENCE_MIN),
+    # Web word mode writes the highest-% (top-1) word above a small confidence
+    # floor, while still requiring the top1-top2 margin gap.
+    "conf": 0.30,
     "margin": float(words_config.MARGIN_MIN),
 }
 
@@ -210,6 +212,7 @@ class LiveSession:
                 source="web --jz " + self.settings["jz"],
             )
         self.text = ""
+        self.text_version = 0
         self.landmarks = None
         self.held = None
         self.held_conf = 0.0
@@ -313,6 +316,7 @@ class LiveSession:
                             now, result.landmarks, shown, call["conf"])
                     if motion_letter:
                         self.text += motion_letter
+                        self.text_version += 1
                         self.motion_letter = motion_letter
                         self.recent_commits.append(motion_letter)
                         self._note_commit(motion_letter, now, source="motion")
@@ -329,6 +333,7 @@ class LiveSession:
             )
             if typed:
                 self.text += typed
+                self.text_version += 1
                 self.recent_commits.append(typed)
                 self._note_commit(typed, now, call,
                                   confidence=held_conf or call["conf"])
@@ -405,6 +410,7 @@ class LiveSession:
             "held": self.held,
             "held_confidence": float(self.held_conf),
             "text": self.text,
+            "text_version": self.text_version,
             "top_predictions": [
                 {"text": label, "confidence": float(probability)}
                 for label, probability in call["top3"]
@@ -445,14 +451,21 @@ class LiveSession:
         with self.lock:
             if name == "commit":
                 self.force_next = True
+            elif name == "space":
+                self.text += " "
+                self.text_version += 1
             elif name == "backspace":
+                removed = self.text[-1:]
                 self.text = self.text[:-1]
-                if self.recent_commits:
-                    self.recent_commits.pop()
-                if self.commit_notes:
-                    self.commit_notes.pop()
+                self.text_version += 1
+                if removed and removed != " ":
+                    if self.recent_commits:
+                        self.recent_commits.pop()
+                    if self.commit_notes:
+                        self.commit_notes.pop()
             elif name == "clear":
                 self.text = ""
+                self.text_version += 1
                 self.recent_commits.clear()
                 self.commit_notes.clear()
             elif name == "calibrate":
@@ -576,6 +589,8 @@ class WordLiveSession:
             buffer_seconds=self.settings["buffer"],
             min_conf=self.settings["conf"],
             min_margin=self.settings["margin"],
+            # Web word mode commits the top-1 even for confusable pairs.
+            hedge_pairs={},
         )
         self.started_at = time.monotonic()
         self.last_activity = self.started_at

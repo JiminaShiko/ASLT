@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/png" href="/assets/images/signrest-favicon.png" />
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign Materials | Signrest Admin</title>
@@ -10,6 +11,9 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/sidebar-toggle.css">
   <style>
+    .logout-spinner { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: logout-spin .7s linear infinite; }
+    @keyframes logout-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .logout-spinner { animation: none; } }
     /* ------------------------------------------------------------
        Tokens (same palette as Profile Settings)
        ------------------------------------------------------------ */
@@ -1272,10 +1276,18 @@
     };
     window.closeMobile = () => app.classList.remove("mobile-open");
     window.logout = async () => {
+      const button = document.getElementById("logout");
+      const label = button?.querySelector("span");
+      if (button) { button.disabled = true; button.setAttribute("aria-busy", "true"); }
+      if (label) label.innerHTML = '<span class="logout-spinner" aria-hidden="true"></span>Logging out…';
       try {
         const result = await apiRequest("/api/logout", { method: "POST" });
-        window.location.assign(result.redirect_url || "/login");
-      } catch (error) { toast(error.message, "error"); }
+        window.location.assign(result.redirect_url || "/");
+      } catch (error) {
+        if (button) { button.disabled = false; button.removeAttribute("aria-busy"); }
+        if (label) label.textContent = "Logout";
+        toast(error.message, "error");
+      }
     };
 
     function setAvatar(element, initials, photoUrl) {
