@@ -21,6 +21,11 @@ DEFAULT_CHANNEL = "private-admin-sessions"
 EVENT_NAME = "sessions-changed"
 AUTH_ENDPOINT = "/api/realtime/auth"
 
+# One private channel per account, so a ban or deactivation reaches every open tab
+# of that user without broadcasting to anybody else.
+USER_EVENT = "account-blocked"
+USER_AUTH_ENDPOINT = "/api/realtime/auth/user"
+
 _client = None
 _client_loaded = False
 _client_lock = threading.Lock()
@@ -89,6 +94,41 @@ def authenticate(channel: str, socket_id: str):
     if client is None:
         return None
     return client.authenticate(channel, socket_id)
+
+
+def user_channel(user_id) -> str:
+    return f"private-user-{int(user_id)}"
+
+
+def public_config_for_user(user_id) -> dict:
+    """What one signed-in user's browser needs for its own channel."""
+    if not is_configured():
+        return {"enabled": False}
+    return {
+        "enabled": True,
+        "key": _setting("PUSHER_APP_KEY"),
+        "cluster": _setting("PUSHER_APP_CLUSTER"),
+        "channel": user_channel(user_id),
+        "event": USER_EVENT,
+        "authEndpoint": USER_AUTH_ENDPOINT,
+    }
+
+
+def publish_user_status(user_id, status: str) -> None:
+    """Tell that account's open tabs it was banned/deactivated. Fire-and-forget."""
+    client = _get_client()
+    if client is None:
+        return
+    channel = user_channel(user_id)
+    payload = {"status": status, "at": datetime.now(timezone.utc).isoformat()}
+
+    def _send():
+        try:
+            client.trigger(channel, USER_EVENT, payload)
+        except Exception:  # noqa: BLE001 - the next request still ends the session
+            log.warning("Pusher account event could not be delivered", exc_info=True)
+
+    threading.Thread(target=_send, name="pusher-account", daemon=True).start()
 
 
 def publish_sessions_changed(reason: str) -> None:

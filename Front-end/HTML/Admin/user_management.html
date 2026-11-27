@@ -132,6 +132,9 @@
     .um-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 16px; border: 1px solid transparent; border-radius: var(--um-radius-sm); cursor: pointer; font-size: 13.5px; font-weight: 600; transition: transform .12s, background .15s, border-color .15s; }
     .um-btn:active { transform: translateY(1px); }
     .um-btn:disabled { opacity: .65; cursor: progress; }
+    .um-btn.is-busy svg { animation: um-spin .8s linear infinite; }
+    @keyframes um-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .um-btn.is-busy svg { animation: none; } }
     .um-btn svg { width: 16px; height: 16px; }
     .um-btn-primary { background: var(--um-primary-bg); color: var(--um-primary-text); }
     .um-btn-primary:hover:not(:disabled) { background: var(--um-primary-hover); }
@@ -208,6 +211,15 @@
     .um-name { max-width: 100%; margin: 14px 0 0; overflow: hidden; font-family: var(--um-font-title); font-size: 19px; font-weight: 600; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
     .um-username { max-width: 100%; margin: 2px 0 0; overflow: hidden; color: var(--um-muted); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
     .um-status { display: inline-flex; align-items: center; gap: 7px; margin: 12px 0 14px; font-size: 12.5px; font-weight: 600; }
+    .um-tile-meta { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 12px 0 8px; }
+    .um-tile-meta .um-status { margin: 0; }
+    .um-role { padding: 2px 9px; border: 1px solid var(--um-line); border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--um-muted); }
+    .um-role.is-admin { color: var(--um-success); border-color: color-mix(in srgb, var(--um-success) 45%, transparent); }
+    .um-live { display: inline-flex; align-items: center; gap: 7px; margin: 0 0 14px; font-size: 12.5px; font-weight: 600; color: var(--um-muted); }
+    .um-live::before { width: 8px; height: 8px; border-radius: 50%; background: #d64545; content: ""; }
+    .um-live.is-online::before { background: #22a55c; }
+    .um-live.is-away::before { background: #d9a02b; }
+    .um-live.is-offline::before { background: #d64545; }
     .um-status::before { width: 8px; height: 8px; border-radius: 50%; background: currentColor; content: ""; }
     .um-status.is-active { color: var(--um-success); }
     .um-status.is-inactive { color: var(--um-warn); }
@@ -442,6 +454,10 @@
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
             </select>
+            <button class="um-btn um-btn-secondary" id="refreshAccounts" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v5.5h-5.5"/></svg>
+              Refresh
+            </button>
           </div>
           <div class="um-toolbar" id="userPills" role="group" aria-label="Filter by account status"></div>
 
@@ -471,6 +487,10 @@
                   <svg viewBox="0 0 24 24" aria-hidden="true" class="um-svg"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
                   <input class="um-input" id="sessionSearch" type="search" placeholder="Search by username or email" aria-label="Search signed-in sessions by username or email">
                 </div>
+                <button class="um-btn um-btn-secondary" id="refreshSessions" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v5.5h-5.5"/></svg>
+                  Refresh
+                </button>
               </div>
               <div id="sessionList" class="um-sessions" aria-live="polite"></div>
               <div id="sessionState"></div>

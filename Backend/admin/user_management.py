@@ -30,6 +30,7 @@ import re
 import secrets
 import time
 from contextlib import contextmanager
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
@@ -133,6 +134,23 @@ def _db():
         conn.close()
 
 
+def _parallel_reads(jobs: dict) -> dict:
+    """Run independent read-only queries at the same time (the pool gives each a session).
+
+    Every query against the hosted database costs ~110 ms of round trip, so a page that
+    needs three of them would otherwise spend a third of a second queueing them.
+    """
+    if len(jobs) <= 1:
+        name, job = next(iter(jobs.items()))
+        return {name: job()}
+    results = {}
+    with ThreadPoolExecutor(max_workers=len(jobs), thread_name_prefix="um-read") as pool:
+        futures = {pool.submit(job): name for name, job in jobs.items()}
+        for future in as_completed(futures):
+            results[futures[future]] = future.result()
+    return results
+
+
 def parse_user_agent(user_agent: str | None):
     """Return (browser, operating system, device type) from a User-Agent string."""
     ua = user_agent or ""
@@ -225,6 +243,7 @@ def _user_summary(row) -> dict:
         "profile_photo": row.get("profile_photo"),
         "role": (row.get("role") or "user").lower(),
         "status": (row.get("status") or "").lower(),
+        "presence": {2: "online", 1: "away"}.get(row.get("presence_rank") or 0, "offline"),
         "created_at": _iso(row.get("created_at")),
     }
 
@@ -600,27 +619,68 @@ def list_users():
     clause = (" WHERE " + " AND ".join(where)) if where else ""
     direction = "DESC" if sort == "newest" else "ASC"
 
-    try:
+    now = _now()
+    grace_cutoff = now - OFFLINE_GRACE
+    online_cutoff = now - ONLINE_WINDOW
+    live_cutoff = now - LIVE_SESSION_WINDOW
+    me = session.get("user_id")
+    filtered = status != "all" or bool(q)
+    page_sql = f"""
+                SELECT u.user_id, u.username, u.email, u.profile_photo, u.role, u.status, u.created_at,
+                       COALESCE(p.presence_rank, 0) AS presence_rank
+                FROM users u
+                LEFT JOIN (
+                    -- best presence across the account's signed-in devices
+                    SELECT s.user_id,
+                           MAX(CASE
+                                 WHEN (s.offline_at IS NULL OR s.offline_at > %s)
+                                      AND COALESCE(s.last_seen_at, s.created_at) >= %s THEN 2
+                                 WHEN (s.offline_at IS NULL OR s.offline_at > %s)
+                                      AND COALESCE(s.last_seen_at, s.created_at) >= %s THEN 1
+                                 ELSE 0 END) AS presence_rank
+                    FROM user_sessions s
+                    WHERE s.revoked_at IS NULL AND s.expires_at > %s
+                    GROUP BY s.user_id
+                ) p ON p.user_id = u.user_id{clause}
+                -- online devices float to the top; then your account, admins, everyone else.
+                -- Same account order as the session monitor: newest account first.
+                ORDER BY COALESCE(p.presence_rank, 0) DESC,
+                         CASE WHEN u.user_id = %s THEN 0 WHEN LOWER(u.role) = 'admin' THEN 1 ELSE 2 END,
+                         u.created_at {direction}, u.user_id {direction}
+                LIMIT %s OFFSET %s
+                """
+    page_params = [grace_cutoff, online_cutoff, grace_cutoff, live_cutoff, now, *params, me, size, (page - 1) * size]
+
+    def read_page():
+        with _db() as (_conn, cursor):
+            cursor.execute(page_sql, page_params)
+            return cursor.fetchall()
+
+    def read_counts():
+        with _db() as (_conn, cursor):
+            cursor.execute("SELECT LOWER(status) AS s, COUNT(*) AS n FROM users GROUP BY LOWER(status)")
+            return cursor.fetchall()
+
+    def read_total():
         with _db() as (_conn, cursor):
             cursor.execute(f"SELECT COUNT(*) AS n FROM users u{clause}", params)
-            total = cursor.fetchone()["n"]
-            cursor.execute(
-                f"""
-                SELECT u.user_id, u.username, u.email, u.profile_photo, u.role, u.status, u.created_at
-                FROM users u{clause}
-                ORDER BY u.created_at {direction}, u.user_id {direction}
-                LIMIT %s OFFSET %s
-                """,
-                [*params, size, (page - 1) * size],
-            )
-            items = [_user_summary(row) for row in cursor.fetchall()]
+            return cursor.fetchone()["n"]
 
-            cursor.execute("SELECT LOWER(status) AS s, COUNT(*) AS n FROM users GROUP BY LOWER(status)")
-            counts = {name: 0 for name in STATUS_FILTERS}
-            for row in cursor.fetchall():
-                if row["s"] in counts:
-                    counts[row["s"]] = row["n"]
-            counts["all"] = sum(v for k, v in counts.items() if k != "all")
+    try:
+        # The three reads are independent, so they share the pool instead of queueing
+        # three 110 ms database round trips one after another.
+        jobs = {"page": read_page, "counts": read_counts}
+        if filtered:
+            jobs["total"] = read_total
+        results = _parallel_reads(jobs)
+        items = [_user_summary(row) for row in results["page"]]
+
+        counts = {name: 0 for name in STATUS_FILTERS}
+        for row in results["counts"]:
+            if row["s"] in counts:
+                counts[row["s"]] = row["n"]
+        counts["all"] = sum(v for k, v in counts.items() if k != "all")
+        total = results["total"] if filtered else counts["all"]
     except Exception:  # noqa: BLE001
         current_app.logger.exception("Failed to list users")
         return _err("Could not load users.", 500)
@@ -808,6 +868,10 @@ def change_account_status(user_id: int, action: str):
         # The account itself changed, so the Accounts tab refreshes even when the
         # account had no sessions to end.
         realtime.publish_sessions_changed("account_updated")
+        if action in ("ban", "deactivate"):
+            # Every open tab of that account signs out straight away instead of
+            # waiting for its next request to hit the session guard.
+            realtime.publish_user_status(user_id, action)
     except Exception:  # noqa: BLE001
         current_app.logger.exception("Failed to change account status")
         return _err("The account could not be updated. Nothing was changed.", 500)
@@ -882,11 +946,43 @@ def realtime_auth():
     return jsonify(auth)
 
 
+@admin_users_bp.get("/api/realtime/me")
+def realtime_user_config():
+    """Any signed-in user: browser-safe Pusher settings for their own private channel."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return _err("Authentication required.", 401)
+    return jsonify({"success": True, **realtime.public_config_for_user(user_id)})
+
+
+@admin_users_bp.post("/api/realtime/auth/user")
+def realtime_user_auth():
+    """Authorize one user's subscription to their own channel, and nothing else."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return _err("Authentication required.", 401)
+    if not realtime.is_configured():
+        return _err("Real-time updates are not configured.", 503)
+    socket_id = (request.form.get("socket_id") or "").strip()
+    channel = (request.form.get("channel_name") or "").strip()
+    if not socket_id or channel != realtime.user_channel(user_id):
+        return _err("Invalid subscription request.", 422)
+    try:
+        auth = realtime.authenticate(channel, socket_id)
+    except Exception:  # noqa: BLE001
+        current_app.logger.exception("Pusher account channel authorization failed")
+        return _err("Could not authorize real-time updates.", 500)
+    if not auth:
+        return _err("Real-time updates are not configured.", 503)
+    return jsonify(auth)
+
+
 @admin_users_bp.get("/api/admin/sessions/stats")
 @admin_required
 def session_stats():
     now = _now()
-    try:
+
+    def read_totals():
         with _db() as (_conn, cursor):
             cursor.execute(
                 """
@@ -900,7 +996,10 @@ def session_stats():
                 """,
                 (now, now, now),
             )
-            totals = cursor.fetchone()
+            return cursor.fetchone()
+
+    def read_devices():
+        with _db() as (_conn, cursor):
             cursor.execute(
                 """
                 SELECT device_type, platform, device_name FROM user_sessions
@@ -908,12 +1007,17 @@ def session_stats():
                 """,
                 (now,),
             )
-            devices = {"desktop": 0, "mobile": 0, "tablet": 0, "other": 0}
-            browsers: dict[str, int] = {}
-            for row in cursor.fetchall():
-                devices[_device_type_for(row)] += 1
-                name = row["device_name"] or "Unknown"
-                browsers[name] = browsers.get(name, 0) + 1
+            return cursor.fetchall()
+
+    try:
+        measured = _parallel_reads({"totals": read_totals, "devices": read_devices})
+        totals = measured["totals"]
+        devices = {"desktop": 0, "mobile": 0, "tablet": 0, "other": 0}
+        browsers: dict[str, int] = {}
+        for row in measured["devices"]:
+            devices[_device_type_for(row)] += 1
+            name = row["device_name"] or "Unknown"
+            browsers[name] = browsers.get(name, 0) + 1
     except Exception:  # noqa: BLE001
         current_app.logger.exception("Failed to load session stats")
         return _err("Could not load session statistics.", 500)
@@ -965,19 +1069,15 @@ def list_sessions():
     clause = (" WHERE " + " AND ".join(where)) if where else ""
     base = f"FROM user_sessions s JOIN users u ON u.user_id = s.user_id{clause}"
 
-    try:
-        with _db() as (_conn, cursor):
-            cursor.execute(f"SELECT COUNT(*) AS n {base}", params)
-            total = cursor.fetchone()["n"]
-            # refresh_token_hash is deliberately never selected.
-            cursor.execute(
-                f"""
+    # refresh_token_hash is deliberately never selected.
+    page_sql = f"""
                 SELECT * FROM (
                   SELECT x.*, MIN(x.status_rank) OVER (PARTITION BY x.user_id) AS account_rank
                   FROM (
                     SELECT s.session_id, s.user_id, s.device_name, s.platform, s.device_type, s.ip_address,
                            s.created_at, s.last_seen_at, s.expires_at, s.revoked_at, s.end_reason,
                            s.offline_at, u.username, u.email, u.profile_photo, u.role,
+                           u.created_at AS account_created,
                            -- Your own account first, then other administrators, then users.
                            CASE WHEN s.user_id = %s THEN 0
                                 WHEN u.role = 'admin' THEN 1
@@ -992,21 +1092,35 @@ def list_sessions():
                     {base}
                   ) x
                 ) t
-                -- Your own account first, then admin accounts, then user accounts. Inside a
-                -- tier, accounts are ordered by their best status (online, away, offline),
-                -- and inside one account each device again.
-                ORDER BY t.account_tier, t.account_rank, t.username, t.user_id, t.status_rank,
+                -- Online devices float to the top, exactly like the accounts gallery ranks
+                -- accounts: online -> away -> offline, then your own account, admin accounts,
+                -- user accounts (newest account first, as in the gallery). Inside one account
+                -- the devices are ordered by status again.
+                ORDER BY t.status_rank, t.account_tier, t.account_created DESC, t.user_id DESC,
                          t.last_activity DESC, t.session_id DESC
                 LIMIT %s OFFSET %s
-                """,
-                [
-                    # Both CASEs sit in the inner SELECT list, so they come before the WHERE clause ones.
-                    me, now - OFFLINE_GRACE, now - LIVE_SESSION_WINDOW, now - ONLINE_WINDOW,
-                    *params,
-                    size, (page - 1) * size,
-                ],
-            )
-            rows = cursor.fetchall()
+                """
+    page_params = [
+        # Both CASEs sit in the inner SELECT list, so they come before the WHERE clause ones.
+        me, now - OFFLINE_GRACE, now - LIVE_SESSION_WINDOW, now - ONLINE_WINDOW,
+        *params,
+        size, (page - 1) * size,
+    ]
+
+    def read_total():
+        with _db() as (_conn, cursor):
+            cursor.execute(f"SELECT COUNT(*) AS n {base}", params)
+            return cursor.fetchone()["n"]
+
+    def read_page():
+        with _db() as (_conn, cursor):
+            cursor.execute(page_sql, page_params)
+            return cursor.fetchall()
+
+    try:
+        results = _parallel_reads({"total": read_total, "page": read_page})
+        total = results["total"]
+        rows = results["page"]
     except Exception:  # noqa: BLE001
         current_app.logger.exception("Failed to list sessions")
         return _err("Could not load sessions.", 500)
@@ -1021,6 +1135,7 @@ def list_sessions():
                 "display_name": _display_name(row["username"], row["email"]),
                 "email": row["email"],
                 "profile_photo": row["profile_photo"],
+                "role": (row["role"] or "user").lower(),
             },
             "device_type": _device_type_for(row),
             "browser": row["device_name"] or "Unknown browser",
@@ -1085,7 +1200,7 @@ def revoke_session(session_id: int):
     try:
         with _db() as (conn, cursor):
             cursor.execute(
-                "SELECT session_id, revoked_at, expires_at FROM user_sessions WHERE session_id = %s FOR UPDATE",
+                "SELECT session_id, user_id, revoked_at, expires_at FROM user_sessions WHERE session_id = %s FOR UPDATE",
                 (session_id,),
             )
             row = cursor.fetchone()
@@ -1093,6 +1208,11 @@ def revoke_session(session_id: int):
                 return _err("Session not found.", 404)
             if row["revoked_at"] is not None or row["expires_at"] <= now:
                 return _err("This session has already ended.", 409)
+            # Only learner accounts can be signed out from here, never another administrator.
+            cursor.execute("SELECT role FROM users WHERE user_id = %s", (row["user_id"],))
+            owner = cursor.fetchone() or {}
+            if (owner.get("role") or "user").lower() == "admin":
+                return _err("Administrator sessions can't be revoked here.", 403)
             cursor.execute(
                 """
                 UPDATE user_sessions SET revoked_at = %s, revoked_by = %s, end_reason = 'admin'
@@ -1116,9 +1236,13 @@ def revoke_all_user_sessions(user_id: int):
     now = _now()
     try:
         with _db() as (conn, cursor):
-            cursor.execute("SELECT user_id FROM users WHERE user_id = %s", (user_id,))
-            if not cursor.fetchone():
+            cursor.execute("SELECT role FROM users WHERE user_id = %s", (user_id,))
+            target = cursor.fetchone()
+            if not target:
                 return _err("User not found.", 404)
+            # Only learner accounts can be signed out from here, never another administrator.
+            if (target.get("role") or "user").lower() == "admin":
+                return _err("Administrator sessions can't be revoked here.", 403)
             cursor.execute(
                 """
                 UPDATE user_sessions SET revoked_at = %s, revoked_by = %s, end_reason = 'admin'
