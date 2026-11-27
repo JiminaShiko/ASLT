@@ -21,16 +21,12 @@ LANDMARKS_PARQUET = CACHE_DIR / "landmarks.parquet"
 CACHE_VERSION = 2
 EXTRACT_META_JSON = CACHE_DIR / "extract_meta.json"
 DATASET_INDEX_PARQUET = CACHE_DIR / "dataset_index.parquet"
-# Legacy bare paths, still written by the `round2` profile (weights were pruned;
-# retrain to regenerate). CONFUSION_PNG is kept only so old notes resolve.
-MODEL_PATH = MODELS_DIR / "asl_mlp.pt"
-META_PATH = MODELS_DIR / "meta.json"
-ONNX_PATH = MODELS_DIR / "asl_mlp.onnx"
 REPORT_MD = ROOT / "REPORT.md"
-CONFUSION_PNG = REPORTS_DIR / "confusion_matrix.png"
 
-# Profiles differ only in the weight given to flagged minority-style cells
-# (massey M/N/P). drop_cells=True gives those cells weight 0.
+# One shipped profile. The superseded `standard` (massey M/N/P down-weighted to
+# zero, 66.0 % pooled) and `round2` (65.9 %) models were deleted on 2026-11-27
+# along with their weights: `all` is the model that won cross-dataset (68.7 %)
+# and keeping a second one only invited the wrong file to be loaded.
 PROFILES: dict[str, dict] = {
     "all": {
         "prefix": "asl_all",
@@ -39,25 +35,8 @@ PROFILES: dict[str, dict] = {
         "also_drop": "",
         "note": "every signer trained on equally, nothing down-weighted",
     },
-    "standard": {
-        "prefix": "asl_standard",
-        "style_weight": 1.0,
-        "drop_cells": True,
-        "also_drop": "",
-        "note": ("the minority-style cells (massey M/N/P) get weight 0: the "
-                 "model only ever sees the majority signing of those letters"),
-    },
-    "round2": {
-        "prefix": "asl_mlp",
-        "style_weight": 0.5,
-        "drop_cells": False,
-        "also_drop": "",
-        "note": ("round 2's shipped model: minority cells halved, not removed "
-                 "(weights pruned 2026-11-15; retrain to load)"),
-    },
 }
-# Default profile: `all` scored best cross-dataset (67.0 % vs 66.0 / 65.9).
-# Override with ASL_PROFILE or --profile.
+# Override with ASL_PROFILE or --profile (only `all` exists now).
 PROFILE_DEFAULT = os.environ.get("ASL_PROFILE", "all")
 
 
@@ -91,9 +70,6 @@ def onnx_path(name: str | None = None):
 
 
 def meta_path(name: str | None = None):
-    # round 2 predates profiles, so its sidecar kept the original bare name.
-    if profile(name) == "round2":
-        return META_PATH
     return MODELS_DIR / f"{_prefix(name)}.meta.json"
 
 
@@ -298,12 +274,6 @@ META_DEFAULT = {
 def ensure_dirs() -> None:
     for d in (DATA_DIR, CACHE_DIR, MODELS_DIR, REPORTS_DIR):
         d.mkdir(parents=True, exist_ok=True)
-
-
-def write_default_meta() -> dict:
-    ensure_dirs()
-    META_PATH.write_text(json.dumps(META_DEFAULT, indent=2), encoding="utf-8")
-    return META_DEFAULT
 
 
 def env_flag(name: str, default: bool = False) -> bool:
