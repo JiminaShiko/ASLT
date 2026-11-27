@@ -38,13 +38,13 @@ sys.path.insert(0, str(MODEL_DIR))
 
 from asl_landmark_app.src import config as landmark_config  # noqa: E402
 from asl_landmark_app.src import hand_backend, live as landmark_live  # noqa: E402
-from asl_landmark_app.src import normalize  # noqa: E402
+from asl_landmark_app.src import normalize, smoothing  # noqa: E402
 from videoModel.src import config as words_config  # noqa: E402
 from .tracking import (  # noqa: E402
     PoseOverlay, body_points, hand_points, head_payload, packed_hand_points,
 )
 
-MAX_SIDE = 640
+MAX_SIDE = 560       # matches the page's LIVE_MAX_SIDE; smaller = faster decode
 TTS_MAX_CHARS = 500
 TTS_CHUNK_CHARS = 200
 TTS_TIMEOUT = 15
@@ -192,6 +192,9 @@ class LiveSession:
             self.settings["backend"], self.settings["profile"])
         # Built on the first image frame: landmark frames from the page never need it.
         self.detector = None
+        # Temporal filter: the same smoothed landmarks feed the classifier, the
+        # stroke head and the overlay, so the skeleton and the reading agree.
+        self.filter = smoothing.LandmarkFilter() if smoothing.smoothing_enabled() else None
         self.recovery = (
             hand_backend.Recovery(
                 conf=self.settings["recover_conf"],
@@ -290,30 +293,41 @@ class LiveSession:
                 )
                 self.last_recovery = how if how in ("direct_0.3", "flip_0.3") else ""
                 self.streak = self.streak + 1 if result.landmarks is None else 0
-            self.landmarks = result.landmarks
+            # Recognition runs on the raw landmarks the models were trained on;
+            # the filter exists to stop the drawn skeleton vibrating. Smoothing
+            # the input would change probabilities nobody measured.
+            lms = result.landmarks
+            if lms is None:
+                if self.filter is not None:
+                    self.filter.reset()
+                self.landmarks = None
+            elif self.filter is not None:
+                self.landmarks = self.filter(lms, now_mono)
+            else:
+                self.landmarks = lms
             call = landmark_live.blank_call()
             now = time.time()
-            if result.landmarks is not None:
+            if lms is not None:
                 self.hands += 1
-                probabilities = self.backend(normalize.features(result.landmarks))
+                probabilities = self.backend(normalize.features(lms))
                 call = landmark_live.frame_call(
                     probabilities, self.labels, self.settings["conf"],
                     self.settings["margin"], pairs=self.settings["pairs"],
                 )
             if self.settings["motion"]:
-                if result.landmarks is None:
+                if lms is None:
                     self.motion.reset()
                 else:
                     shown = call["top3"][0][0] if call["top3"] else None
                     if self.cal is not None and not self.cal.done:
                         motion_letter = self.cal.step(
-                            now, result.landmarks, shown, call["conf"])
+                            now, lms, shown, call["conf"])
                         if self.cal.done:
                             self.cal_result = self.cal.result
                             self.cal = None
                     else:
                         motion_letter = self.motion.update(
-                            now, result.landmarks, shown, call["conf"])
+                            now, lms, shown, call["conf"])
                     if motion_letter:
                         self.text += motion_letter
                         self.text_version += 1
@@ -329,7 +343,7 @@ class LiveSession:
             force, self.force_next = self.force_next, False
             held, typed, held_conf = self.smoother.step(
                 top_letter, call["conf"], now, force=force,
-                hand_present=result.landmarks is not None, gate=0.0,
+                hand_present=lms is not None, gate=0.0,
             )
             if typed:
                 self.text += typed
@@ -343,8 +357,8 @@ class LiveSession:
             self.last_frame_ms = (time.perf_counter() - started) * 1000.0
             self.recent_commits = self.recent_commits[-8:]
             overlay = {
-                "hands": ([hand_points(result.landmarks)]
-                          if result.landmarks is not None else []),
+                "hands": ([hand_points(self.landmarks)]
+                          if self.landmarks is not None else []),
                 "head": {"lines": [], "dots": []},
                 "body": [],
             }

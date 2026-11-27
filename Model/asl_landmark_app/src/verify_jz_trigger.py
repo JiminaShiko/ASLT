@@ -41,7 +41,8 @@ def drive(lms: np.ndarray, top1=None, p1=None, th: dict | None = None,
 
     Pass top1=p1=None for shape-gate-only behaviour (the pre-round-6 app).
     """
-    md = live.MotionDecider()
+    # the rule, not the trained head: this file measures preconditions
+    md = live.MotionDecider(use_model=False)
     if th:
         md.apply_thresholds(th)
     if intended:
@@ -164,7 +165,8 @@ def msl_table(backend, labels, per_clips: int, seed: int,
 
 def drive_msl(lms, dt: float, rd: pd.DataFrame | None = None) -> dict:
     """Same as `drive` but on the clip's own frame interval, per run of frames."""
-    md = live.MotionDecider()
+    # the rule, not the trained head: this file measures preconditions
+    md = live.MotionDecider(use_model=False)
     out = {"n": 0, "shape": 0, "disp": 0, "J": 0, "Z": 0, "blocked": 0,
            "ceil_refused": 0}
     t = 0.0

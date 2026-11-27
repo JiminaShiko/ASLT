@@ -5,7 +5,8 @@ Language Alphabet - dynamic signs only", CC-BY-4.0, 622 frontal clips, letters
 J K Ñ Q X Z, 18 train signers + 2 disjoint test signers). The clips were
 unpacked once, run through MediaPipe VIDEO landmarks, and cached; the archive
 and the mp4s were then deleted with the user's approval, so this file plus
-`cache/msl_landmarks*` and `cache/msl_windows.pkl` is what remains.
+the 622 shards in `cache/msl_landmarks/` is what remains (the derived
+`msl_landmarks.npz/.csv` and `msl_windows.pkl` were deleted 2026-11-27).
 
 Reproduce the surviving part with `python src/verify_jz_trigger.py` (the
 precondition measurement, which reads the landmark cache). The trained head

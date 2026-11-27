@@ -1,0 +1,279 @@
+{
+ "kind": "jz-stroke-head",
+ "feature_version": 2,
+ "feature_dim": 190,
+ "window_s": 1.2,
+ "steps": 24,
+ "labels": [
+  "J",
+  "Z",
+  "other"
+ ],
+ "thresholds": {
+  "J": 0.5,
+  "Z": 0.85
+ },
+ "hidden": [
+  128,
+  64
+ ],
+ "dropout": 0.2,
+ "ensemble": 5,
+ "train": {
+  "windows": 2813,
+  "signers": 20,
+  "cv_signers": [
+   "S1",
+   "S10",
+   "S11",
+   "S13",
+   "S14",
+   "S15",
+   "S16",
+   "S17",
+   "S18",
+   "S19",
+   "S2",
+   "S3",
+   "S4",
+   "S5",
+   "S6",
+   "S7",
+   "S8",
+   "S9"
+  ],
+  "held_out_signers": [
+   "S20",
+   "S21"
+  ],
+  "corpus": "MSL dynamic alphabet (Zenodo 14689869), CC-BY-4.0",
+  "note": "Mexican SL strokes; J and Z are the same hook and zigzag in ASL. Classifier handshapes are close, not identical."
+ },
+ "cross_validation": {
+  "scheme": "leave-one-signer-out",
+  "target_precision": 0.9,
+  "masked": {
+   "J": {
+    "n": 159,
+    "fired": 146,
+    "tp": 146,
+    "fp": 0,
+    "precision": 1.0,
+    "recall": 0.9182389937106918
+   },
+   "Z": {
+    "n": 184,
+    "fired": 188,
+    "tp": 177,
+    "fp": 11,
+    "precision": 0.9414893617021277,
+    "recall": 0.9619565217391305
+   }
+  },
+  "masked_strokes": {
+   "J": {
+    "strokes": 70,
+    "fired": 69,
+    "tp": 69,
+    "precision": 1.0,
+    "recall": 0.9857142857142858
+   },
+   "Z": {
+    "strokes": 53,
+    "fired": 60,
+    "tp": 52,
+    "precision": 0.8666666666666667,
+    "recall": 0.9811320754716981
+   }
+  },
+  "argmax": {
+   "J": {
+    "n": 159,
+    "tp": 146,
+    "fp": 0,
+    "fn": 13,
+    "precision": 1.0,
+    "recall": 0.9182389937106918
+   },
+   "Z": {
+    "n": 184,
+    "tp": 181,
+    "fp": 18,
+    "fn": 3,
+    "precision": 0.9095477386934674,
+    "recall": 0.9836956521739131
+   },
+   "other": {
+    "n": 701,
+    "tp": 683,
+    "fp": 16,
+    "fn": 18,
+    "precision": 0.977110157367668,
+    "recall": 0.9743223965763196
+   }
+  },
+  "seeds": 5,
+  "per_seed": [
+   {
+    "seed": 0,
+    "thresholds": {
+     "J": 0.5,
+     "Z": 0.85
+    },
+    "masked": {
+     "J": {
+      "n": 159,
+      "fired": 146,
+      "tp": 146,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 0.9182389937106918
+     },
+     "Z": {
+      "n": 184,
+      "fired": 188,
+      "tp": 177,
+      "fp": 11,
+      "precision": 0.9414893617021277,
+      "recall": 0.9619565217391305
+     }
+    }
+   },
+   {
+    "seed": 1,
+    "thresholds": {
+     "J": 0.5,
+     "Z": 0.85
+    },
+    "masked": {
+     "J": {
+      "n": 159,
+      "fired": 146,
+      "tp": 146,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 0.9182389937106918
+     },
+     "Z": {
+      "n": 184,
+      "fired": 188,
+      "tp": 177,
+      "fp": 11,
+      "precision": 0.9414893617021277,
+      "recall": 0.9619565217391305
+     }
+    }
+   },
+   {
+    "seed": 2,
+    "thresholds": {
+     "J": 0.5,
+     "Z": 0.85
+    },
+    "masked": {
+     "J": {
+      "n": 159,
+      "fired": 146,
+      "tp": 146,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 0.9182389937106918
+     },
+     "Z": {
+      "n": 184,
+      "fired": 188,
+      "tp": 177,
+      "fp": 11,
+      "precision": 0.9414893617021277,
+      "recall": 0.9619565217391305
+     }
+    }
+   },
+   {
+    "seed": 3,
+    "thresholds": {
+     "J": 0.5,
+     "Z": 0.85
+    },
+    "masked": {
+     "J": {
+      "n": 159,
+      "fired": 146,
+      "tp": 146,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 0.9182389937106918
+     },
+     "Z": {
+      "n": 184,
+      "fired": 188,
+      "tp": 177,
+      "fp": 11,
+      "precision": 0.9414893617021277,
+      "recall": 0.9619565217391305
+     }
+    }
+   },
+   {
+    "seed": 4,
+    "thresholds": {
+     "J": 0.5,
+     "Z": 0.85
+    },
+    "masked": {
+     "J": {
+      "n": 159,
+      "fired": 146,
+      "tp": 146,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 0.9182389937106918
+     },
+     "Z": {
+      "n": 184,
+      "fired": 188,
+      "tp": 177,
+      "fp": 11,
+      "precision": 0.9414893617021277,
+      "recall": 0.9619565217391305
+     }
+    }
+   }
+  ]
+ },
+ "held_out_signers": {
+  "J": {
+   "n": 11,
+   "fired": 11,
+   "tp": 11,
+   "fp": 0,
+   "precision": 1.0,
+   "recall": 1.0
+  },
+  "Z": {
+   "n": 14,
+   "fired": 8,
+   "tp": 8,
+   "fp": 0,
+   "precision": 1.0,
+   "recall": 0.5714285714285714
+  }
+ },
+ "held_out_strokes": {
+  "J": {
+   "strokes": 6,
+   "fired": 6,
+   "tp": 6,
+   "precision": 1.0,
+   "recall": 1.0
+  },
+  "Z": {
+   "strokes": 7,
+   "fired": 4,
+   "tp": 4,
+   "precision": 1.0,
+   "recall": 0.5714285714285714
+  }
+ },
+ "trained_at": "2026-11-27 11:04:44"
+}

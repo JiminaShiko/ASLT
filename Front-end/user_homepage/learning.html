@@ -1617,9 +1617,11 @@
   const tbTestBtn = document.getElementById("tbTestBtn");
 
   // Minimum gap between camera frame posts; one request in flight at a time.
-  // The model response carries landmarks only, so letters can run near 10 fps.
-  const TEST_FRAME_MS = { asl: 100, wlasl: 66 };
-  const TEST_MAX_SIDE = 480;
+  // Letters must feed the J/Z stroke window, which needs ~a second of closely
+  // spaced landmarks, so this path runs as fast as the round trip allows
+  // instead of the old 10 fps. 560 px matches the translator's camera size.
+  const TEST_FRAME_MS = { asl: 33, wlasl: 66 };
+  const TEST_MAX_SIDE = 560;
   const testCanvas = document.createElement("canvas");
   const testCanvasCtx = testCanvas.getContext("2d");
   let testStream = null;

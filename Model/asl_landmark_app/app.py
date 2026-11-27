@@ -533,16 +533,9 @@ if not PROFILES:
 
 with st.sidebar:
     st.header("Model")
-    prof = st.selectbox(
-        "Profile", PROFILES,
-        index=PROFILES.index(config.PROFILE_DEFAULT)
-        if config.PROFILE_DEFAULT in PROFILES else 0,
-        help="One trained model per profile. 'all' trains on every signer "
-             "equally; 'standard' sets the flagged minority-style cells to "
-             "weight 0; 'round2' is the shipped halved-weights model. Pick "
-             "the one that wins the live drill: "
-             "python src/live.py --selftest --profile all,standard")
-    st.caption(config.PROFILES[prof]["note"])
+    # One shipped model; the old `standard` / `round2` weights were deleted.
+    prof = PROFILES[0]
+    st.caption(f"`{prof}` — {config.PROFILES[prof]['note']}")
 
 require_model(prof)
 meta = json.loads(config.meta_path(prof).read_text(encoding="utf-8"))
@@ -572,7 +565,7 @@ with st.sidebar:
              f"{'→'.join(str(h) for h in meta['model']['hidden'])}→"
              f"{meta['model']['n_classes']}")
     st.write(f"labels: `{''.join(meta['labels'])}` (J and Z come from the "
-             "motion rule, not the MLP)")
+             "trained stroke head, not the MLP)")
     st.write(f"trained: {meta.get('trained_at', 'unknown')}")
 
     st.header("Live settings")
@@ -615,7 +608,7 @@ with st.sidebar:
     vote_n = st.slider("Vote window (frames)", 3, 15, int(VOTE_FRAMES))
     hold_s = st.slider("Hold before typing (seconds)", 0.0, 2.0,
                        float(HOLD_SECONDS), 0.1)
-    motion_on = st.checkbox("J / Z motion rule", value=True)
+    motion_on = st.checkbox("J / Z stroke head", value=True)
     overlay_on = st.checkbox("Draw the 21 landmarks", value=True)
     mirror_on = st.checkbox("Mirror the webcam (selfie view)", value=True)
     stride = st.select_slider("Work every Nth frame", options=[1, 2, 3, 4],
@@ -625,9 +618,9 @@ with st.sidebar:
                                    "often. Measured here: a processed frame "
                                    "costs ~50 ms, so 2 is what fits the frames "
                                    "this camera sends. Set it back to 1 if J or "
-                                   "Z stops firing - the motion rule counts "
-                                   "direction changes, and 2 halves how many "
-                                   "it can see.")
+                                   "Z stops firing - the stroke head judges a "
+                                   "window of frames, and 2 halves how many "
+                                   "positions it can see.")
     show_feats = st.checkbox(f"Show the {meta['features']['dim']} feature values",
                              value=False)
     stun_on = st.checkbox("Use a public STUN server", value=False,
@@ -1041,9 +1034,8 @@ with tab_model:
     st.subheader("Retrain")
     st.code("cd \"" + str(ROOT) + "\"\n"
             "python run_all.py --skip-download --skip-extract\n"
-            "python src/train.py --profile standard && python src/export.py --profile standard",
+            "python src/train.py && python src/export.py",
             language="powershell")
     st.caption("Full pipeline: `python run_all.py`. Everything is idempotent; "
-               "`--quick` is a small smoke run. Profiles: "
-               "`all` (everything equal), `standard` (minority-style cells at "
-               "weight 0), `round2` (those cells halved) — see docs/DETAILS.md.")
+               "`--quick` is a small smoke run. One model ships (`all`, every "
+               "signer weighted equally) — see docs/DETAILS.md.")

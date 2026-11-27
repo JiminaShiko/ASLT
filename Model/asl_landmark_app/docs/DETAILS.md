@@ -39,7 +39,7 @@ not the model — see *What round 5 changed*.
 | what | number | meaning |
 |---|---|---|
 | **cross-dataset, leave-one-dataset-out, POOLED** (2026-11-15, 3 datasets) | **67.0 %** [66.7–67.2 %] — danrasband 94.4 % (712 imgs, small-n), grassknoted 79.5 %, massey 53.8 % | the honest headline for profile `all` on that run: every test image was predicted by a model that never saw its dataset. The shipped 2026-11-21 model is 68.7 % with rushil added |
-| the other profile, `standard` | 66.0 % pooled; grassknoted M 3.3 → 1.7 %, N 0.2 → 0.0 %, T 31.9 → 17.0 % | removing the minority-style cells rescued nothing where it was meant to, so `all` ships — see `python src/profile_compare.py` and REPORT.md |
+| the other profile, `standard` | 66.0 % pooled; grassknoted M 3.3 → 1.7 %, N 0.2 → 0.0 %, T 31.9 → 17.0 % | removing the minority-style cells rescued nothing where it was meant to, so `all` ships. That profile's weights, report and plot were **deleted on 2026-11-27**; the number stays here as history |
 | same yardstick as round 1 | 69.2 % on the 101,932 images round 1's detector could find at all | the only cell comparable with round 1's 67.6 %, and inside the run-to-run band: no measurable change |
 | **held-out capture group** (massey A+B → C+D+E) | **85.7 %** over 35,893 images | unseen hands, matched imaging style — the closest *dataset-side* proxy for your webcam. It is still not a webcam measurement |
 | detection recall, offline images | 74.0 % → **88.5 %** (106,906 → 127,791 hands) | the extractor's ladder: +20,885 usable images at no annotation cost. Not the same quantity as live frame coverage — read the next row and the section below it |
@@ -128,7 +128,7 @@ not worse at that style, it has never seen it. Details in `REPORT.md` and
 
 | change | evidence | measured effect |
 |---|---|---|
-| two shipped profiles — `all` (every style at weight 1.0) and `standard` (massey M/N/P at weight 0) — with one `--profile` flag through `train.py`, `live.py` and `app.py` | `python src/profile_compare.py`, `reports/report_all.md`, `reports/report_standard.md` | `all` **67.0 %** vs `standard` 66.0 % pooled. The down-weight did not rescue the letters it aimed at (grassknoted M 3.3 → 1.7 %, N 0.2 → 0.0 %, T 31.9 → 17.0 %), so `all` is the default and `standard` stays selectable |
+| a second profile, `standard` (massey M/N/P at weight 0), was built and measured against `all` | `reports/report_all.md` (the `standard` report and weights were deleted 2026-11-27) | `all` **67.0 %** vs `standard` 66.0 % pooled. The down-weight did not rescue the letters it aimed at (grassknoted M 3.3 → 1.7 %, N 0.2 → 0.0 %, T 31.9 → 17.0 %), so `all` ships and `standard` was removed outright rather than left loadable |
 | T diagnosed without changing the model | `reports/letter_diagnosis.md` | neither a style gap nor a detection-path artifact: T's cross-dataset shape gap (4.12 units) sits *below* the alphabet median (4.57), while inside each dataset its nearest neighbour is the letter it is actually answered as — L in grassknoted (crowding 0.23), A in massey (0.44). M↔N collide inside all three datasets, which is why no weight and no feature moved them |
 | a bounded live retry instead of the offline ladder | `reports/live_path.md` | hand coverage 84.3 → **98.3 %** of frames at 103.6 → **85.0 frames/s** (17.9 ms per try, 17.8 amortised) — clears the ≥20 FPS target, so it ships. Upscale+pad is deliberately absent from the live path |
 | the two coverage denominators separated, at the source | `coverage_sentence()` in `src/train.py`, README, `reports/report_*.md`, `REPORT.md` | offline image recall (74.0 → 88.5 % of 144,446 files) and live frame coverage (84.3 → 98.3 %) are different quantities and are now stated separately everywhere; the earlier wording that called the first one "frames" is gone from every document |
@@ -173,7 +173,7 @@ name as the proper fix.
 | change | evidence | measured effect |
 |---|---|---|
 | J/Z get a **second precondition**: the trajectory rule now also judges a frame the 24-class model reads as I (candidate J) or as an unsure X, `p1 < 0.90` (candidate Z), with the letter only allowed to fire if that reading covers ≥ 60 % of the window being judged. The shape gate is untouched and still opens both letters on its own | `python src/verify_jz_trigger.py --per 300` → `reports/jz_trigger.md`, 15,772 cached photographs over all 26 letters + 3,301 frames of real MSL movement | the old gate was **backwards**: it opened on 0.0 % of J frames and 20.0 % of Z while opening on 28.1 % of G, 20.4 % of L and 13.6 % of Q. The display precondition opens on 47.3 % of J and 94.2 % of Z and on nothing else above 8.7 %, because the model has no J and answers a real J as I (96.3 % of J frames) and a real Z as X (94.2 %). Fires moved 17 → 27 for J and **0 → 1** for Z locally, and 0 → 3 on the MSL J clips (12 → 15 across all MSL letters) — all 11 added local fires on J or Z, **the 15 pre-existing false fires unchanged**, because none of them come through the new path |
-| the MSL dynamic corpus (Zenodo 14689869, 622 front-view clips of J K Ñ Q X Z) was extracted to landmarks and a motion classifier was trained on it, then **deliberately not shipped** | the numbers are in `reports/msl_motion.md`; what survives of the corpus is `cache/msl_landmarks/` (14 MB) + `msl_landmarks.npz` (11 MB) + `msl_windows.pkl` (2.9 MB), which `python src/verify_jz_trigger.py` reads. The ~10 GB archive + clips and the throwaway training scripts are deleted, so the trajectories can be re-scored but not re-extracted | leave-one-signer-out precision on MSL is J 91.9 % / Z 85.5 % (98.1 % / 93.1 % with the static head), but the same head scores **0.8 % recall for J** on this project's local ASL photographs, i.e. chance — it learned MSL hands, not fingerspelling motion. The trajectory rule stays, and `--calibrate-jz` stays the per-person fix |
+| the MSL dynamic corpus (Zenodo 14689869, 622 front-view clips of J K Ñ Q X Z) was extracted to landmarks and a motion classifier was trained on it, then **deliberately not shipped** | the numbers are in `reports/msl_motion.md`; what survives of the corpus is `cache/msl_landmarks/` (13 MB of per-clip shards), which `python src/verify_jz_trigger.py` and `src/train_jz.py` read; the derived `msl_landmarks.npz` / `.csv` / `msl_windows.pkl` were deleted on 2026-11-27. The ~10 GB archive + clips and the throwaway training scripts are deleted, so the trajectories can be re-scored but not re-extracted | leave-one-signer-out precision on MSL is J 91.9 % / Z 85.5 % (98.1 % / 93.1 % with the static head), but the same head scores **0.8 % recall for J** on this project's local ASL photographs, i.e. chance — it learned MSL hands, not fingerspelling motion. The trajectory rule stays, and `--calibrate-jz` stays the per-person fix |
 | calibration and the overlay now receive the same per-frame reading the typer uses, so a Z stroke can be *recorded* at all | `python src/live.py --logic-test` — 84 checks at this round (87 since round 7), 11 of them about the display gate, including an AST check that both front-ends pass the reading (`live.py` 5/5 call sites, `app.py` 2/2) | with no reading, the shipped Z gate records 0 of the synthetic Z strokes; with one it records them and reports how much of each stroke the model supported. The app's read-out says which precondition is actually in force (`shape gate: index extension 1.12 (needs >= 1.6)` vs `display gate: the model reads this frame as X at 0.71`), instead of quoting a gate that did not open the watch |
 
 Nothing was retrained, no dataset was added to the model, and the only new files
@@ -303,8 +303,10 @@ from outside this folder.
 - Input images are converted **BGR → RGB and stay colour**. `hand_backend.bgr_to_rgb()`
   raises instead of accepting a grayscale frame, because MediaPipe's palm model
   was trained on colour images.
-- J and Z are **not** in the 24-class model. They are moving letters, so a
-  single frame carries almost no information about them; see *J and Z* below.
+- J and Z are **not** in the 24-class per-frame model. They are moving letters,
+  so a single frame carries almost no information about them; they come from a
+  trained stroke head over a 1.2 s window (`models/jz_motion.pt`, written by
+  `src/train_jz.py`, measured in `reports/jz_model.md`). See *J and Z* below.
 
 ### Verifying the no-save claim
 
@@ -391,9 +393,10 @@ to answer one question: can the J/Z precondition see motion at all, and does a
 model trained on real motion transfer to ASL. It was unpacked (2.1 GB archive +
 8.1 GB of mp4s), run through MediaPipe VIDEO to 50,022 cached landmark frames,
 and then the archive and the clips were deleted with the user's approval. What is
-left is `cache/msl_landmarks/` (14 MB), `cache/msl_landmarks.npz` (11 MB),
-`cache/msl_landmarks.csv` and `cache/msl_windows.pkl` (2.9 MB), which is what
-`python src/verify_jz_trigger.py` reads. It is a different language, it changed no
+left is `cache/msl_landmarks/` (13 MB of shards), which is what
+`python src/verify_jz_trigger.py` and `src/train_jz.py` read; the derived
+aggregate files (`msl_landmarks.npz/.csv`, `msl_windows.pkl`) were deleted on
+2026-11-27 as superseded. It is a different language, it changed no
 shipped accuracy number, and the head trained on it is documented as **rejected**
 in `reports/msl_motion.md` (0.8 % J recall on local ASL). Nothing from it reaches
 the classifier's training set.
@@ -426,7 +429,6 @@ honest splits possible.
 | `src/live.py` | the webcam app with smoothing and the `--selftest` guided drill | nothing on disk |
 | `app.py` | the Streamlit browser UI: live webcam, photo upload, camera snapshot, results tables — imports `live.py`'s backend and smoother classes so the two front-ends cannot disagree | nothing on disk |
 | `src/export.py` | ONNX export + parity check against PyTorch, for one `--profile` | `models/<profile>.onnx` |
-| `src/profile_compare.py` | round 3 Stage C: builds the paired profile table straight out of the dumped OOF predictions — no retraining, no re-scoring | stdout |
 | `src/diagnose_letter.py` | round 3 Stage B: for the letters you name, prints what they get confused with in each held-out dataset, splits their accuracy by the detection path that found the hand, and pulls in the within-dataset shape-collision and thumb-landmark tables — all from files already on disk, so a camera is never involved | `reports/letter_diagnosis.md` with `--out` |
 | `run_all.py` | runs the stages above as subprocesses | — |
 
@@ -445,10 +447,9 @@ python src/train.py --folds-only --no-save --train-how direct_0.5
         #     images" from "we changed the features": it is the only way to replay
         #     round 1's data mix against today's code.
 python src/train.py --style-weight 1.0     # off: Stage B's divergent cells keep weight 1
-        #   ^ since round 3 this is not a global default any more — the *profile*
-        #     decides it (`all` = 1.0, `standard` = 0, `round2` = 0.5). Leaving it
-        #     out means "use the profile's value"; giving it explicitly still wins.
-        #     The measured effect on the pooled number is zero either way.
+        #   ^ the shipped `all` profile uses 1.0, so this flag changes nothing
+        #     unless you pass it. The measured effect on the pooled number is
+        #     zero either way.
 python src/train.py --folds-only --no-save --dump-preds reports/oof_all.csv
         #   ^ the fastest way to rebuild the prediction dump: `--folds-only` skips
         #     the final full-data model, and since round 5 an explicit
@@ -654,8 +655,11 @@ can quietly run a different model than the one you asked for.
 | profile | what it trains on | files |
 |---|---|---|
 | `all` | every dataset and every signer at weight 1.0 | `models/asl_all.pt` / `.onnx` / `.meta.json` |
-| `standard` | the same, except the flagged minority-style cells (massey M/N/P) at weight 0 | `models/asl_standard.*` |
-| `round2` | those cells halved (0.5) instead of removed — the model shipped before round 3 | `models/asl_mlp.*` — **pruned 2026-11-15**, retrain with `python src/train.py --profile round2` to get it back |
+
+`standard` (massey M/N/P at weight 0) and `round2` (those cells halved, the
+pre-round-3 model) were both **deleted on 2026-11-27**: `all` won every
+comparison, and a second set of weights only invited the wrong file to be
+loaded. There is one profile now.
 
 `--dump-preds` writes the leave-one-dataset-out prediction for every cached
 image, which is what the per-letter, per-dataset and per-detection-path tables in
@@ -790,10 +794,8 @@ measurement *rejected*), the J/Z motion toggle, landmark overlay, mirror, a
 `weights:` an ONNX that is older than the `.pt` it was exported from is flagged
 with the exact `src/export.py` command that fixes it, because the Runtime switch
 would otherwise quietly serve yesterday's model.
-The Results tab reads the selected profile's own report
-(`reports/report_all.md`, `report_standard.md`; a `round2` run would write
-`report_round2.md`, whose copy was pruned along with that profile's weights) and
-passes `--profile` to the selftest and benchmark buttons, so the browser can
+The Results tab reads the shipped model's own report (`reports/report_all.md`)
+and passes `--profile` to the selftest and benchmark buttons, so the browser can
 never show one model's numbers while running another's.
 
 Two deliberate absences:
@@ -889,9 +891,9 @@ the sidecar's feature width disagrees with `normalize.feature_dim()`.
 
 `.gitignore` keeps the folder committable: **50 files, 1.6 MB** instead of 698
 files and 116 MB. Committed — every `src/*.py`, `app.py`, `run_all.py`,
-`data/datasets.json`, both trained models with their
-`meta.json` (`models/asl_all.pt/.onnx`, `asl_standard.pt/.onnx`, ~80 KB each, so
-the app runs straight after a clone), and the written reports including the two
+`data/datasets.json`, the trained models with their
+`meta.json` (`models/asl_all.pt/.onnx` for letters, `models/jz_motion.pt` for
+J/Z strokes, ~0.5 MB together, so the app runs straight after a clone), and the written reports including the two
 confusion-matrix PNGs. Ignored — `cache/` (the extracted landmark store: 629 files,
 76 MB), `reports/oof_*.csv` (23 MB of per-frame predictions), `reports/samples/`
 (the contact sheets), `models/hand_landmarker.task` (MediaPipe's own 7.5 MB file,
@@ -1088,7 +1090,11 @@ a Z, a confident I/X or a reading outside `{I, X}` must not, a reading that
 flickers between I and X must be refused by the 60 % window share, and both
 front-ends must pass the frame's own reading to the decider (checked by AST on
 the real source, 5/5 call sites in `live.py`, 2/2 in `app.py`). Round 7 replaces
-one of those 11 and adds three more (87 checks in total): the same hook under a
+one of those 11 and adds three more (87 checks at that point). Round 8 takes the
+total to 94: the trained stroke head must load at the feature builder's own
+dimension, carry a threshold per letter, read a real cached Z stroke as Z and a
+real K stroke as neither, and the landmark filter must clamp a one-frame glitch
+while still tracking a steady move. Those checks, still on the rule itself: the same hook under a
 confident I at p1 0.99 must fire J, a confident X must still not fire Z, an I
 held still for 1.5 s must type nothing even with the reading wide open, and the
 exemption table must cover J only, keep Z on the shipped ceiling, and stay

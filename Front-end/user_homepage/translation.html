@@ -1768,8 +1768,13 @@
     ? "http://127.0.0.1:5000"
     : "";
   const API_CREDENTIALS = API_BASE ? "include" : "same-origin";
-  const LIVE_MAX_SIDE = 640;
-  const LIVE_GAP_MS = { letters: 40, words: 66 };
+  // 560 px keeps the hand ~2x the size MediaPipe needs while cutting the JPEG
+  // path's encode/upload/decode by about a third against 640.
+  const LIVE_MAX_SIDE = 560;
+  // The letters path sends landmarks only, so it runs on a fixed 30 fps grid;
+  // the in-flight cap below stops a slow round trip from piling frames up.
+  const LIVE_GAP_MS = { letters: 33, words: 55 };
+  const TRACK_FRAME_MS = 33;   // 30 fps for tracking, drawing and landmark sends
   const LIVE_MAX_IN_FLIGHT = 2;
   const WORD_FPS = 20;
   // Hand tracking runs in the page, on the same .task model the Python detector
@@ -2756,7 +2761,7 @@
 
   function drawLiveFrame() {
     const canvas = drawFrameToCanvas();
-    return canvas && canvas.toDataURL("image/jpeg", 0.8);
+    return canvas && canvas.toDataURL("image/jpeg", 0.68);
   }
 
   // Local tracker state: hands are drawn from this, head/body come from the
@@ -2766,9 +2771,12 @@
   let trackTimer = 0;
   let trackRunId = 0;
   let localHands = [];
+  let prevHands = null;
   let remoteHead = { lines: [], dots: [] };
   let remoteBody = [];
   let lastPoseAt = 0;
+  let trackNextAt = 0;
+  let lastLandmarkSendAt = 0;
 
   async function ensureTracker() {
     if (trackerLoading) return null;
@@ -2803,9 +2811,17 @@
   function trackTick(runId) {
     if (runId !== trackRunId || !stream) return;
     if (liveMode !== "letters" || !tracker) {
+      trackNextAt = 0;
       trackTimer = setTimeout(() => trackTick(runId), 200);
       return;
     }
+    // Fixed grid, not "33 ms after the detector returns": with a 10 ms
+    // detectForVideo call the old timer produced 23 fps, and the landmark send
+    // loop then repeated the same stale points. Schedule from the grid, and
+    // resync only when a pass overruns a whole frame.
+    const tickAt = performance.now();
+    if (!trackNextAt || tickAt - trackNextAt > TRACK_FRAME_MS) trackNextAt = tickAt;
+    trackNextAt += TRACK_FRAME_MS;
     const canvas = drawFrameToCanvas();
     let hands = [];
     if (canvas) {
@@ -2816,13 +2832,43 @@
         }
       } catch (err) {}
     }
-    localHands = hands.length ? [hands] : [];
+    // The server's J/Z head builds its window from these points exactly the way
+    // live.py does, so what is sent must be the detector's own output. The EMA
+    // below is for the drawn skeleton only: smoothing the sent copy blunts the
+    // very strokes that separate J's hook and Z's zigzag from a held I or X,
+    // which is why those two read worse here than in the desktop app.
+    const rawHands = hands;
+    if (hands.length && prevHands && prevHands.length === hands.length) {
+      const a = 0.55;
+      hands = hands.map((p, i) => [
+        a * p[0] + (1 - a) * prevHands[i][0],
+        a * p[1] + (1 - a) * prevHands[i][1],
+        p[2]
+      ]);
+    }
+    prevHands = rawHands.length ? rawHands : null;
+    localHands = rawHands.length ? [rawHands] : [];
+    const drawHands = hands.length ? [hands] : [];
     if (drawLandmarksToggle.checked) {
-      drawOverlay({ hands: localHands, head: remoteHead, body: remoteBody });
+      drawOverlay({ hands: drawHands, head: remoteHead, body: remoteBody });
     } else {
       clearSkeleton();
     }
-    trackTimer = setTimeout(() => trackTick(runId), 33);
+    // Send from here: these are the landmarks just detected this frame, so the
+    // server's arrival rate now equals the tracking rate instead of a separate
+    // timer racing it with duplicates.
+    // 20 ms floor (not 33): the tick itself is the 30 fps clock, and comparing
+    // against a full 33 ms would skip every other frame after timer rounding.
+    if (liveActive && liveMode === "letters" &&
+        liveInFlight < LIVE_MAX_IN_FLIGHT &&
+        tickAt - lastLandmarkSendAt >= 20) {
+      lastLandmarkSendAt = tickAt;
+      sendLiveFrame(runId, "letters");
+    }
+    trackTimer = setTimeout(
+      () => trackTick(runId),
+      Math.max(0, trackNextAt - performance.now())
+    );
   }
 
   function startTracking() {
@@ -2834,7 +2880,10 @@
     trackRunId++;
     clearTimeout(trackTimer);
     trackTimer = 0;
+    trackNextAt = 0;
+    lastLandmarkSendAt = 0;
     localHands = [];
+    prevHands = null;
   }
 
   function captureLiveFrame(runId) {
@@ -2842,6 +2891,13 @@
     const mode = liveMode;
     if (document.hidden) {
       setTimeout(() => captureLiveFrame(runId), 250);
+      return;
+    }
+    // With the local tracker the letters frames go out from trackTick, on the
+    // same 30 fps pass that produced them. This loop stays as the watchdog and
+    // still carries the JPEG path when the tracker is unavailable.
+    if (mode === "letters" && tracker) {
+      setTimeout(() => captureLiveFrame(runId), 100);
       return;
     }
     if (liveInFlight < LIVE_MAX_IN_FLIGHT) sendLiveFrame(runId, mode);
