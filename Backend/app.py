@@ -277,14 +277,11 @@ ADMIN_SIDEBAR_BOOT = (
     "document.getElementById('app').classList.add('collapsed')}catch(e){}</script>"
 )
 
-# The shell mounts one sidebar and loads only the page inside its frame. Embedded
-# pages therefore drop the sidebar slot and the sidebar layout offset.
+# Embedded pages use the sidebar and header mounted by the shared shell.
 ADMIN_EMBED_STYLE = """<style id="admin-embed-style">
 .app > .main,.main{margin-left:0 !important;width:100% !important}
 .app{min-height:100vh}
 .mobile-overlay{display:none !important}
-.mobile-collapse{display:none}
-@media (max-width:800px){.mobile-collapse{display:flex}}
 </style>"""
 
 ADMIN_EMBED_SCRIPT = """<script id="admin-embed-script">
@@ -326,7 +323,7 @@ ADMIN_EMBED_SCRIPT = """<script id="admin-embed-script">
 
 
 def _render_admin_embed(html: str) -> str:
-    """Render a page for the shell frame: no sidebar, no sidebar layout offset."""
+    """Render the page content inside the shared admin shell."""
     html = html.replace(ADMIN_SIDEBAR_SLOT, "", 1)
     if "admin-embed-style" not in html:
         html = html.replace("</head>", ADMIN_EMBED_STYLE + "\n</head>", 1)
@@ -387,8 +384,7 @@ def serve_admin_dashboard(filename):
             return _render_admin_page(page, embed=True), 200, headers
         if filename == "admin_sidebar.html":
             return send_from_directory(ADMIN_DIR, filename)
-        # Every admin page is opened inside the one shell, so the sidebar is
-        # never re-rendered as part of a page load (including refresh).
+        # All admin pages share the same sidebar and header within the shell.
         return _render_admin_page(ADMIN_DIR / ADMIN_SHELL_FILE), 200, headers
     return send_from_directory(ADMIN_DIR, filename)
 

@@ -14,8 +14,25 @@
 <style>
   html, body { height: 100%; }
   body { margin: 0; overflow: hidden; background: var(--bg); }
-  /* The sidebar is mounted once by this shell; only the page in the frame changes. */
+  /* The sidebar and header stay mounted while the page in the frame changes. */
   .app { height: 100vh; height: 100dvh; min-height: 0; }
+  .app > .main { display: flex; flex-direction: column; height: 100%; min-width: 0; overflow: hidden; }
+  #admin-header { flex: 0 0 72px; min-width: 0; background: var(--bg); }
+  #admin-header .header-right { min-width: 0; }
+  #admin-header .header-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  #adminPageFrame { display: block; flex: 1; width: 100%; min-height: 0; border: 0; background: var(--bg); }
+  @media (max-width: 430px) {
+    #admin-header .header-title { white-space: nowrap; }
+    #admin-header .search { width: clamp(72px, 31vw, 130px); }
+  }
+  #logout-dialog { width: 390px; text-align: center; }
+  #logout-dialog img { display: block; margin: 0 auto 14px; object-fit: contain; }
+  #logout-title {
+    margin: 0;
+    font: 600 clamp(22px, 6vw, 26px)/1.25 var(--font-title), Georgia, serif;
+    text-wrap: balance;
+  }
+  #logout-dialog .form-actions { justify-content: center; }
   .app > .main { height: 100%; overflow: hidden; }
   #adminPageFrame { display: block; width: 100%; height: 100%; border: 0; background: var(--bg); }
   .logout-spinner { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: logout-spin .7s linear infinite; }
@@ -27,15 +44,55 @@
 <div class="app" id="app">
 <div id="adminSidebarHost"></div>
 <main class="main">
+  <header id="admin-header" aria-label="Admin portal">
+    <div class="header-start">
+      <button class="collapse mobile-collapse" id="admin-menu-toggle" type="button" aria-label="Toggle sidebar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg>
+      </button>
+      <div class="header-title">Admin Portal</div>
+    </div>
+    <div class="header-right">
+      <button class="icon-button theme-toggle" id="admin-theme-toggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">
+        <svg class="theme-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path id="admin-theme-moon" d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/>
+          <path id="admin-theme-sun" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" style="display:none"/>
+        </svg>
+      </button>
+      <label class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+        <input id="admin-search" type="search" placeholder="Search..." aria-label="Search admin page" readonly>
+      </label>
+      <span class="icon-button notification-bell" role="img" aria-label="Notifications" title="Notifications">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+      </span>
+      <div class="avatar header-avatar" id="admin-header-avatar" role="img" aria-label="Administrator">A</div>
+    </div>
+  </header>
   <iframe id="adminPageFrame" title="Admin page"></iframe>
 </main>
 </div>
+<dialog id="logout-dialog" aria-labelledby="logout-title">
+  <img src="/assets/images/logo_bgremove.png" alt="Signrest" width="56" height="56">
+  <h2 id="logout-title">Are you sure you want to log out?</h2>
+  <form method="dialog" class="form-actions">
+    <button class="btn outline" type="submit" value="cancel" autofocus>Cancel</button>
+    <button class="btn" type="submit" value="logout">Log out</button>
+  </form>
+</dialog>
 <script>
 (function () {
   "use strict";
 
   var frame = document.getElementById("adminPageFrame");
   var app = document.getElementById("app");
+  var headerSearch = document.getElementById("admin-search");
+  var themeToggle = document.getElementById("admin-theme-toggle");
+  var headerAvatar = document.getElementById("admin-header-avatar");
+  var pageSearch;
+  var searchObserver;
+  var profileRequest;
+  var logoutDialog = document.getElementById("logout-dialog");
+  var logoutStarted = false;
   var FILES = {
     overview: "admin_dashboard",
     logs: "accuracy",
@@ -81,6 +138,10 @@
   }
 
   function loadFrame(url) {
+    searchObserver?.disconnect();
+    pageSearch = null;
+    headerSearch.value = "";
+    headerSearch.readOnly = true;
     // replace() instead of src so page changes do not add iframe history
     // entries; Back/Forward must walk the shell's own pushState entries.
     try { frame.contentWindow.location.replace(url); }
@@ -109,6 +170,89 @@
     app.classList.remove("mobile-open");
   }
 
+  function connectSearch(win) {
+    var input = win.document.getElementById("search");
+    searchObserver?.disconnect();
+    pageSearch = input;
+    headerSearch.readOnly = !input;
+    if (!input) return;
+
+    function syncSearch() {
+      if (pageSearch !== input) return;
+      if (headerSearch.value !== input.value) headerSearch.value = input.value;
+      headerSearch.placeholder = input.placeholder;
+      headerSearch.setAttribute("aria-label", input.getAttribute("aria-label") || "Search admin page");
+    }
+
+    // Local filters and reset buttons can change the page's search input.
+    function syncAfterPageEvent() { setTimeout(syncSearch, 0); }
+    ["input", "click", "change"].forEach(function (type) {
+      win.document.addEventListener(type, syncAfterPageEvent, true);
+    });
+    win.addEventListener("hashchange", syncAfterPageEvent);
+    win.addEventListener("keydown", focusSearch, true);
+    searchObserver = new MutationObserver(syncSearch);
+    searchObserver.observe(input, { attributes: true, attributeFilter: ["placeholder", "aria-label"] });
+    syncSearch();
+  }
+
+  function focusSearch(event) {
+    if (!pageSearch || logoutDialog.open || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "k") return;
+    event.preventDefault();
+    event.stopPropagation();
+    headerSearch.focus();
+  }
+
+  headerSearch.addEventListener("input", function () {
+    if (!pageSearch) return;
+    pageSearch.value = headerSearch.value;
+    pageSearch.dispatchEvent(new frame.contentWindow.Event("input", { bubbles: true }));
+  });
+  document.addEventListener("keydown", focusSearch);
+  document.getElementById("admin-menu-toggle").addEventListener("click", collapseSidebar);
+
+  async function loadHeaderProfile() {
+    profileRequest?.abort();
+    var request = new AbortController();
+    profileRequest = request;
+    try {
+      var response = await fetch("/api/admin/profile", { cache: "no-store", signal: request.signal });
+      if (!response.ok) return;
+      var result = await response.json();
+      if (!result.item || request.signal.aborted) return;
+      var name = result.item.username || "Administrator";
+      var initials = name.trim().split(/\s+/).slice(0, 2).map(function (part) { return part[0]; }).join("").toUpperCase() || "A";
+      headerAvatar.setAttribute("aria-label", name);
+      headerAvatar.title = name;
+      headerAvatar.textContent = initials;
+      if (!result.item.profile_photo) return;
+      var photo = new URL(result.item.profile_photo, location.origin);
+      if (photo.protocol !== "https:" && photo.origin !== location.origin) return;
+      var image = document.createElement("img");
+      image.alt = "";
+      image.addEventListener("error", function () {
+        if (headerAvatar.contains(image)) headerAvatar.textContent = initials;
+      }, { once: true });
+      image.src = photo.href;
+      headerAvatar.replaceChildren(image);
+    } catch (error) {
+      // Keep the current avatar if the profile is temporarily unavailable.
+    }
+  }
+
+  function logout() {
+    if (logoutStarted || logoutDialog.open) return;
+    logoutDialog.returnValue = "";
+    logoutDialog.showModal();
+  }
+
+  logoutDialog.addEventListener("close", function () {
+    if (logoutStarted || logoutDialog.returnValue !== "logout") return;
+    logoutStarted = true;
+    fetch("/api/logout", { method: "POST", credentials: "same-origin" })
+      .catch(function () {})
+      .then(function () { window.location.assign("/login"); });
+  });
   async function logout() {
     var button = document.getElementById("logout");
     var label = button && button.querySelector("span");
@@ -148,7 +292,9 @@
     }
     var page = PAGES[pathname];
     if (page) { current = page; markActive(); }
-    try { if (win.document.title) document.title = win.document.title; } catch (error) {}
+    win.document.documentElement.dataset.theme = document.documentElement.dataset.theme;
+    connectSearch(win);
+    if (win.document.title) document.title = win.document.title;
   });
 
   window.addEventListener("popstate", function (event) {
@@ -161,6 +307,10 @@
   window.addEventListener("message", function (event) {
     if (event.origin !== location.origin || event.source !== frame.contentWindow) return;
     var data = event.data || {};
+    if (data.type === "signrest-admin-profile-updated") {
+      loadHeaderProfile();
+      return;
+    }
     if (data.type === "signrest-admin-page" && typeof data.path === "string") {
       var url;
       try { url = new URL(data.path, location.origin); } catch (error) { return; }
@@ -175,8 +325,23 @@
   });
 
   function applyTheme(theme) {
-    document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
+    var isDark = theme === "dark";
+    var selected = isDark ? "dark" : "light";
+    document.documentElement.dataset.theme = selected;
+    var pageRoot = frame.contentDocument?.documentElement;
+    if (pageRoot) pageRoot.dataset.theme = selected;
+    var label = isDark ? "Switch to light mode" : "Switch to dark mode";
+    themeToggle.setAttribute("aria-label", label);
+    themeToggle.title = label;
+    document.getElementById("admin-theme-moon").style.display = isDark ? "none" : "";
+    document.getElementById("admin-theme-sun").style.display = isDark ? "" : "none";
   }
+
+  themeToggle.addEventListener("click", function () {
+    var theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    applyTheme(theme);
+    try { localStorage.setItem("signrest-admin-theme", theme); } catch (error) {}
+  });
 
   window.addEventListener("storage", function (event) {
     if (event.key === "signrest-admin-theme") applyTheme(event.newValue || "light");
@@ -191,6 +356,7 @@
   try { applyTheme(localStorage.getItem("signrest-admin-theme") || "light"); } catch (error) {}
   markActive();
   loadFrame(frameUrl(current, currentSearch));
+  loadHeaderProfile();
 })();
 </script>
 <script src="/js/session_presence.js" defer></script>
