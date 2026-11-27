@@ -945,6 +945,21 @@
       letter-spacing: 0.02em;
     }
 
+    .typed-readout-line.is-typing::after {
+      content: "";
+      display: inline-block;
+      width: 2px;
+      height: 1.05em;
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      background: currentColor;
+      animation: caretBlink 1s step-end infinite;
+    }
+
+    @keyframes caretBlink {
+      50% { opacity: 0; }
+    }
+
     .typed-bar-footer {
       display: flex;
       align-items: center;
@@ -1606,7 +1621,7 @@
         </p>
       </div>
       <div id="words-settings" style="display:none; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; margin-top:8px; padding:10px; border-radius:12px; background:var(--sage-bar);">
-        <div>Conf: <input id="word-conf-live" type="number" step="0.05" value="0.85" style="width:60px;" /></div>
+        <div>Conf: <input id="word-conf-live" type="number" step="0.05" value="0.30" style="width:60px;" /></div>
         <div>Margin: <input id="word-margin-live" type="number" step="0.05" value="0.15" style="width:60px;" /></div>
         <div>Stride: <input id="word-stride-live" type="number" value="1" style="width:50px;" /></div>
         <p style="grid-column:1 / -1; margin:0; font-size:0.72rem; line-height:1.35; opacity:0.82;">
@@ -2338,6 +2353,7 @@
   let liveSeq = 0;
   let liveRenderedSeq = 0;
   let liveMode = "letters";
+  let liveTextRevision = 0;
   let wordModelAvailable = false;
 
   const modelModeButtons = Array.from(document.querySelectorAll(".model-mode-btn"));
@@ -2591,7 +2607,11 @@
       );
     }
 
-    liveText.textContent = frame.text || "";
+    const textRevision = Number(frame.text_version || 0);
+    if (textRevision >= liveTextRevision) {
+      liveTextRevision = textRevision;
+      liveText.textContent = frame.text || "";
+    }
     readBtn.disabled = !(liveText.textContent || "").trim();
 
     liveTop.innerHTML = "";
@@ -2893,7 +2913,9 @@
       }
       liveSession = result.session_id;
       liveActive = true;
+      liveTextRevision = 0;
       liveText.textContent = "";
+      liveText.classList.add("is-typing");
       liveTop.innerHTML = `<li style="opacity:0.75;">${
         mode === "words" ? "Waiting for a sign..." : "Waiting..."
       }</li>`;
@@ -2967,6 +2989,7 @@
     liveActive = false;
     liveSession = null;
     liveRunId++;
+    liveText.classList.remove("is-typing");
     setScopedLoading(camLoadingOverlay, false);
 
     clearLiveBtn.disabled = true;
@@ -3593,5 +3616,6 @@
 })();
 </script>
 <script src="/js/session_presence.js" defer></script>
+<script src="/js/account_realtime.js" defer></script>
 </body>
 </html>

@@ -235,6 +235,7 @@
       const submitBtn = accountForm.querySelector('button[type="submit"]');
       if (submitBtn) submitBtn.disabled = true;
 
+      let profileUpdated = false;
       try {
         if (username !== profileState.username) {
           await adminProfileRequest('/api/admin/profile', {
@@ -243,6 +244,7 @@
             body: JSON.stringify({ username })
           });
           profileState.username = username;
+          profileUpdated = true;
         }
 
         if (selectedImage) {
@@ -253,6 +255,7 @@
             body: formData
           });
           profileState.avatarUrl = result.profile_photo;
+          profileUpdated = true;
           profileState.pendingAvatarUrl = null;
           avatarInput.value = '';
         }
@@ -268,6 +271,9 @@
         );
       } finally {
         if (submitBtn) submitBtn.disabled = false;
+        if (profileUpdated && window.parent !== window) {
+          window.parent.postMessage({ type: 'signrest-admin-profile-updated' }, window.location.origin);
+        }
       }
     });
 
@@ -532,7 +538,7 @@
     // Apply saved theme preference (non-sensitive UI preference only)
     let savedTheme = 'light';
     try {
-      savedTheme = localStorage.getItem('signrest-admin-theme') || 'light';
+      savedTheme = localStorage.getItem('signrest_theme') || 'light';
     } catch (error) {
       console.warn('Unable to read the saved admin theme preference.', error);
     }
@@ -548,7 +554,7 @@
         const nextTheme = isDark ? 'light' : 'dark';
         root.setAttribute('data-theme', nextTheme);
         try {
-          localStorage.setItem('signrest-admin-theme', nextTheme);
+          localStorage.setItem('signrest_theme', nextTheme);
         } catch (error) {
           console.warn('Unable to save the admin theme preference.', error);
         }

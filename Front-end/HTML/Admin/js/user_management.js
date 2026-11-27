@@ -312,6 +312,7 @@
      ACCOUNTS: profile gallery
      ==================================================================== */
   const STATUS_LABEL = { active: "Active", inactive: "Inactive", banned: "Banned", pending: "Pending" };
+  const PRESENCE_LABEL = { online: "Online", away: "Away", offline: "Offline" };
   const PILLS = [["all", "All users"], ["active", "Active"], ["inactive", "Inactive"], ["banned", "Banned"], ["pending", "Pending"]];
 
   const users = { q: "", status: "all", sort: "newest", page: 1, total: 0, items: [], counts: null, loading: false, error: "", req: 0 };
@@ -395,7 +396,11 @@
       frame(user, false),
       el("h3", { class: "um-name", text: user.display_name, title: user.display_name }),
       el("p", { class: "um-username", text: user.username ? `@${user.username}` : user.email || "", title: user.email || "" }),
-      el("span", { class: `um-status is-${user.status}`, text: STATUS_LABEL[user.status] || user.status }),
+      el("div", { class: "um-tile-meta" },
+        el("span", { class: `um-status is-${user.status}`, text: STATUS_LABEL[user.status] || user.status }),
+        el("span", { class: `um-role is-${user.role}`, text: user.role === "admin" ? "Admin" : "User" })
+      ),
+      el("span", { class: `um-live is-${user.presence || "offline"}`, text: PRESENCE_LABEL[user.presence] || PRESENCE_LABEL.offline }),
       el("button", { class: "um-btn um-btn-secondary", type: "button", onclick: (event) => openDetails(user, event.currentTarget), text: "View Details" })
     );
   }
@@ -449,23 +454,26 @@
     renderGalleryState();
   }
 
-  async function loadUsers({ append = false } = {}) {
+  async function loadUsers({ append = false, silent = false } = {}) {
     const mine = ++users.req;
     closeMenu();
     if (append) users.page += 1;
-    else {
+    else if (!silent) {
       users.page = 1;
       users.items = [];
     }
     users.loading = true;
     users.error = "";
     if (append) renderGalleryState();
-    else {
+    else if (!silent) {
       renderGallery();
       renderPills();
     }
+    // A silent refresh keeps the tiles on screen while presence/reordering changes.
+    const page = silent ? 1 : users.page;
+    const size = silent ? Math.min(PAGE_SIZE * Math.max(users.page, 1), 48) : PAGE_SIZE;
     try {
-      const data = await api("/users", { params: { q: users.q, status: users.status, sort: users.sort, page: users.page, page_size: PAGE_SIZE } });
+      const data = await api("/users", { params: { q: users.q, status: users.status, sort: users.sort, page, page_size: size } });
       if (mine !== users.req) return;
       users.items = append ? users.items.concat(data.items) : data.items;
       users.total = data.total;
@@ -479,6 +487,30 @@
     renderGallery();
     renderPills();
   }
+
+  /** Manual refresh: the fallback for a missed or slow realtime event. */
+  function wireRefresh(buttonId, run) {
+    const button = $(buttonId);
+    if (!button) return;
+    button.addEventListener("click", async () => {
+      if (button.disabled) return;
+      button.disabled = true;
+      button.classList.add("is-busy");
+      try {
+        await run();
+      } finally {
+        button.disabled = false;
+        button.classList.remove("is-busy");
+      }
+    });
+  }
+
+  wireRefresh("refreshAccounts", async () => {
+    accountsStale = false;
+    users.error = "";
+    await loadUsers({ silent: true });
+    if (users.error) toast(users.error, "error");
+  });
 
   function clearUserFilters() {
     users.q = "";
@@ -544,7 +576,7 @@
       el("p", { class: "um-username", text: item.username ? `@${item.username}` : "No username yet" }),
       el("p", { class: "um-username", text: item.email || "" }),
       el("span", { class: `um-status is-${item.status}`, text: STATUS_LABEL[item.status] || item.status }),
-      el("div", { class: "um-chips" }, el("span", { class: "um-chip", text: item.email_verified ? "Email verified" : "Email not verified" }), item.role === "admin" ? el("span", { class: "um-chip", text: "Administrator" }) : null)
+      el("div", { class: "um-chips" }, el("span", { class: "um-chip", text: item.email_verified ? "Email verified" : "Email not verified" }), el("span", { class: "um-chip", text: item.role === "admin" ? "Administrator" : "User" }))
     );
 
     const account = section(
@@ -692,7 +724,8 @@
     const live = ["online", "away", "offline"].includes(item.status);
     const ended = !live;
     const items = [];
-    if (live && !item.is_current) {
+    // Administrator accounts keep their sessions: only user accounts can be revoked here.
+    if (live && !item.is_current && item.user.role !== "admin") {
       items.push({ label: "Revoke session", icon: "revoke", danger: true, run: () => confirmRevoke(item) });
       items.push({ label: `Revoke all for ${handle(item.user)}`, icon: "ban", danger: true, run: () => confirmRevokeAll(item.user) });
     }
@@ -725,7 +758,7 @@
     $("sessionCount").textContent = sessions.loading && !sessions.total
       ? "Loading sessions…"
       : sessions.total
-        ? `${sessions.total} signed-in ${sessions.total === 1 ? "session" : "sessions"} · your account, then admins, then users · online → away → offline`
+        ? `${sessions.total} signed-in ${sessions.total === 1 ? "session" : "sessions"} · online → away → offline, then your account, admins, users`
         : "Nobody is signed in right now.";
 
     if (sessions.loading && !sessions.items.length) {
@@ -788,9 +821,12 @@
   // menu, dialog or a deeper page of results is in use.
   const LIVE_REFRESH_MS = 30000;
   setInterval(() => {
-    if (document.hidden || $("view-sessions").hidden) return;
+    if (document.hidden) return;
     if (!menuEl.hidden || confirmDialog.open || drawer.open) return;
-    if (sessions.loading) return;
+    // The gallery keeps the same 30 s safety net, so a missed event never leaves
+    // the two tabs disagreeing about who is online.
+    if (!$("view-accounts").hidden && !users.loading) loadUsers({ silent: true });
+    if ($("view-sessions").hidden || sessions.loading) return;
     loadSessionStats({ silent: true });
     loadSessions({ silent: true });
   }, LIVE_REFRESH_MS);
@@ -802,12 +838,10 @@
   // One event covers both tabs: "account_*" reasons also refresh the gallery.
   const realtimeChanged = debounce((payload) => {
     const busy = !menuEl.hidden || confirmDialog.open || drawer.open;
-    const reason = (payload && payload.reason) || "";
 
-    if (reason.startsWith("account")) {
-      if (document.hidden || $("view-accounts").hidden || busy) accountsStale = true;
-      else loadUsers();
-    }
+    // Sign-ins and sign-outs change who is online, so the gallery reorders too.
+    if (document.hidden || $("view-accounts").hidden || busy) accountsStale = true;
+    else loadUsers({ silent: true });
 
     if (document.hidden || $("view-sessions").hidden) {
       sessionsStale = true; // refreshed when the admin comes back to the tab
@@ -819,7 +853,7 @@
     }
     loadSessionStats({ silent: true });
     loadSessions({ silent: true });
-  }, 700);
+  }, 150);
 
   async function startRealtime() {
     if (!window.Pusher) return;
@@ -957,12 +991,45 @@
     loadHistory();
   }
   $("historyEvent").addEventListener("change", (event) => filterHistory({ event: event.target.value }));
-  $("historyFrom").addEventListener("change", (event) => filterHistory({ from: event.target.value }));
-  $("historyTo").addEventListener("change", (event) => filterHistory({ to: event.target.value }));
+
+  /* ---- date range: no future days, and start/end can’t cross each other ---- */
+  const pad2 = (value) => String(value).padStart(2, "0");
+  const toInputDate = (date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+  const HISTORY_TODAY = toInputDate(new Date());
+
+  /** changed: "from" | "to" | undefined (just re-apply limits). */
+  function syncHistoryDates(changed) {
+    const from = $("historyFrom");
+    const to = $("historyTo");
+    if (changed === "from" && from.value && to.value && to.value < from.value) to.value = from.value;
+    if (changed === "to" && from.value && to.value && to.value < from.value) from.value = to.value;
+    // Picking a start date restricts the end date to that day or later, and the
+    // other way round; neither calendar offers days after today.
+    to.max = HISTORY_TODAY;
+    from.max = to.value && to.value < HISTORY_TODAY ? to.value : HISTORY_TODAY;
+    to.min = from.value || "";
+  }
+  syncHistoryDates();
+
+  $("historyFrom").addEventListener("change", (event) => {
+    syncHistoryDates("from");
+    filterHistory({ from: event.target.value, to: $("historyTo").value });
+  });
+  $("historyTo").addEventListener("change", (event) => {
+    syncHistoryDates("to");
+    filterHistory({ from: $("historyFrom").value, to: event.target.value });
+  });
   const searchHistory = debounce((value) => filterHistory({ q: value.trim() }));
   $("historySearch").addEventListener("input", (event) => searchHistory(event.target.value));
   $("historyPrev").addEventListener("click", () => { hist.page -= 1; loadHistory(); });
   $("historyNext").addEventListener("click", () => { hist.page += 1; loadHistory(); });
+
+  wireRefresh("refreshSessions", async () => {
+    sessionsStale = false;
+    sessions.error = "";
+    await Promise.all([loadSessionStats({ silent: true }), loadSessions({ silent: true }), loadHistory()]);
+    if (sessions.error) toast(sessions.error, "error");
+  });
 
   /* ====================================================================
      Tabs
@@ -984,7 +1051,7 @@
     }
     if (tab === "accounts" && accountsStale) {
       accountsStale = false;
-      loadUsers();
+      loadUsers({ silent: true });
     }
   }
   $("tab-accounts").addEventListener("click", () => showTab("accounts"));
@@ -1025,7 +1092,7 @@
   window.toggleTheme = () => {
     const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     applyTheme(theme);
-    try { localStorage.setItem("signrest-admin-theme", theme); } catch { /* storage unavailable */ }
+    try { localStorage.setItem("signrest_theme", theme); } catch { /* storage unavailable */ }
   };
   window.collapseSidebar = () => {
     const app = $("app");

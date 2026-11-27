@@ -161,7 +161,7 @@
       : "/api/signup/resend-otp";
 
     const savedTheme = localStorage.getItem("signrest_theme");
-    let theme = savedTheme === "dark" ? "dark" : "light";
+    let theme = savedTheme === "dark" || savedTheme === "light" ? savedTheme : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 
     const bgPhotoLayer = document.getElementById("bgPhotoLayer");
     const statusBanner = document.getElementById("statusBanner");

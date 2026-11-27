@@ -5,10 +5,6 @@
 
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const THEME_ICONS = {
-    sun: '<svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg>',
-    moon: '<svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"></path></svg>',
-  };
 
   /* ---------- API layer ---------- */
   async function req(method, path, body) {
@@ -162,62 +158,6 @@
 
   function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2200); }
 
-  function applyTheme(theme) {
-    const isDark = theme === "dark";
-    document.documentElement.dataset.theme = isDark ? "dark" : "light";
-    const button = $("theme-toggle");
-    button.innerHTML = isDark ? THEME_ICONS.sun : THEME_ICONS.moon;
-    button.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
-    button.title = isDark ? "Switch to light mode" : "Switch to dark mode";
-  }
-
-  function toggleTheme() {
-    const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-    localStorage.setItem("signrest-admin-theme", theme);
-    applyTheme(theme);
-  }
-
-  function initials(name) {
-    return String(name || "Admin").trim().split(/\s+/).slice(0, 2).map((part) => part[0] || "").join("").toUpperCase() || "A";
-  }
-
-  function safeProfileImage(value) {
-    if (typeof value !== "string" || !value.trim()) return "";
-    try {
-      const url = new URL(value, window.location.origin);
-      return url.protocol === "https:" || url.origin === window.location.origin ? url.href : "";
-    } catch {
-      return "";
-    }
-  }
-
-  async function loadAdminProfile() {
-    const response = await fetch("/api/admin/profile", {
-      credentials: "include",
-      headers: { Accept: "application/json", "X-Signrest-Request": "admin" },
-    });
-    if (!response.ok) throw new Error(`Could not load the admin profile (HTTP ${response.status}).`);
-
-    const result = await response.json();
-    const profile = result && result.item;
-    if (!result.success || !profile) throw new Error(result.message || "Could not load the admin profile.");
-
-    const name = profile.full_name || profile.username || "Admin";
-    const avatar = $("top-initials");
-    const imageUrl = safeProfileImage(profile.profile_photo);
-    avatar.title = name;
-    if (!imageUrl) {
-      avatar.textContent = initials(name);
-      return;
-    }
-
-    const image = document.createElement("img");
-    image.src = imageUrl;
-    image.alt = "";
-    image.addEventListener("error", () => { avatar.textContent = initials(name); }, { once: true });
-    avatar.replaceChildren(image);
-  }
-
   async function load() {
     try { questions = await api.list(); render(); }
     catch (e) { $("list").innerHTML = `<div class="q-empty">${esc(e.message)}</div>`; }
@@ -225,10 +165,8 @@
 
   /* ---------- Events ---------- */
   document.addEventListener("DOMContentLoaded", async () => {
-    const saved = localStorage.getItem("signrest-admin-theme");
-    applyTheme(saved === "dark" ? "dark" : "light");
-    $("theme-toggle").onclick = toggleTheme;
-    loadAdminProfile().catch((error) => toast(error.message));
+    const saved = localStorage.getItem("signrest_theme");
+    document.documentElement.dataset.theme = saved === "dark" ? "dark" : "light";
     ["search", "fType", "fCat", "fStatus"].forEach((id) => $(id).addEventListener("input", render));
     $("addBtn").onclick = () => openEditor(null);
     $("dlgClose").onclick = $("cancelBtn").onclick = () => $("qDialog").close();

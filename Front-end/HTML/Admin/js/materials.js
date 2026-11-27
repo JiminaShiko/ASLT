@@ -449,7 +449,7 @@
     window.toggleTheme = () => {
       const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
       applyTheme(theme);
-      try { localStorage.setItem("signrest-admin-theme", theme); } catch { /* storage unavailable */ }
+      try { localStorage.setItem("signrest_theme", theme); } catch { /* storage unavailable */ }
     };
 
     window.collapseSidebar = () => {
@@ -518,7 +518,7 @@
 
     /* ---------------- Init ---------------- */
     let savedTheme = "light";
-    try { savedTheme = localStorage.getItem("signrest-admin-theme") || "light"; } catch { savedTheme = "light"; }
+    try { savedTheme = localStorage.getItem("signrest_theme") || "light"; } catch { savedTheme = "light"; }
     applyTheme(savedTheme);
     fillCategorySelects();
     loadSidebar().catch((error) => toast(error.message, "error"));
