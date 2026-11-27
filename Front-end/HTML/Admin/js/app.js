@@ -129,5 +129,5 @@ function showLogDetails(id){
 
 document.getElementById('modal-close').innerHTML=icon('close');document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobile()});loadState();if(['logs','materials','overview'].includes(state.page)){state.logs=[];state.materials=[];state.profile={name:'Administrator',email:''}}updateProfile();render();loadSidebar().catch(error=>toast(error.message||'Unable to load the admin sidebar.'));loadAdminProfile();if(state.page==='overview')loadOverview();if(state.page==='logs'){loadEvaluations();loadTranslations()}if(state.page==='materials'){document.getElementById('search').setAttribute('aria-label','Search materials');document.getElementById('search').placeholder='Search materials…';loadMaterials()}
 let savedTheme = 'light';
-try { savedTheme = localStorage.getItem('signrest-admin-theme') || 'light'; } catch (_) {}
+try { savedTheme = localStorage.getItem('signrest_theme') || 'light'; } catch (_) {}
 document.documentElement.dataset.theme = savedTheme === 'dark' ? 'dark' : 'light';
