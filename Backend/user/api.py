@@ -69,12 +69,13 @@ DEFAULT_SETTINGS = {
     "calibrate_reps": 3,
 }
 WORD_DEFAULT_SETTINGS = {
-    "fps": 20.0,
+    # The camera pages post on a 30 fps grid and the word model counts frames
+    # for its onset/rest debounce, so the declared rate must be the real one.
+    "fps": 30.0,
     "stride": max(1, int(words_config.LIVE_STRIDE)),
     "buffer": float(words_config.BUFFER_SECONDS),
-    # Web word mode writes the highest-% (top-1) word above a small confidence
-    # floor, while still requiring the top1-top2 margin gap.
-    "conf": 0.30,
+    # Match the promoted word model's evaluated commit policy.
+    "conf": 0.85,
     "margin": float(words_config.MARGIN_MIN),
 }
 
@@ -338,11 +339,14 @@ class LiveSession:
             # block typing. The highest-probability letter always votes, and the
             # smoother's vote window + hold timer decide when it is written.
             top_letter = call["top3"][0][0] if call["top3"] else None
+            smoother_letter = top_letter
+            if self.settings["motion"] and self.motion.blocks_static(top_letter, now):
+                smoother_letter = None
             if call["top3"] and (call["uncertain"] or call["low_conf"]):
                 self.uncertain_at[top_letter] = now
             force, self.force_next = self.force_next, False
             held, typed, held_conf = self.smoother.step(
-                top_letter, call["conf"], now, force=force,
+                smoother_letter, call["conf"], now, force=force,
                 hand_present=lms is not None, gate=0.0,
             )
             if typed:
@@ -603,8 +607,6 @@ class WordLiveSession:
             buffer_seconds=self.settings["buffer"],
             min_conf=self.settings["conf"],
             min_margin=self.settings["margin"],
-            # Web word mode commits the top-1 even for confusable pairs.
-            hedge_pairs={},
         )
         self.started_at = time.monotonic()
         self.last_activity = self.started_at

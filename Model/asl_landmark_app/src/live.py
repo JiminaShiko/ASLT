@@ -2,8 +2,9 @@
 
 Smoothing: confidence gate, top1-top2 margin gate (per-pair margins for measured
 pairs), majority vote, hold-to-commit, no-repeat. Keys: SPACE commit, BACKSPACE,
-C clear, Q quit. J and Z come from MotionDecider trajectory rules, not the
-classifier. --selftest is the guided drill; nothing is ever written to disk.
+C clear, Q quit. J and Z come from MotionDecider, not from a single frame: the
+trained stroke head names them when it is installed, the trajectory rule is the
+fallback. --selftest is the guided drill; nothing is ever written to disk.
 """
 from __future__ import annotations
 
@@ -278,24 +279,29 @@ def resolve_pair_margins(spec: str | None) -> dict[str, float]:
 
 
 class MotionDecider:
-    """Name J and Z from a trained stroke head; never from a single frame.
+    """Name J and Z from movement, never from a single frame.
 
-    Two preconditions open the watch: the index-up shape, or the classifier reading
-    the frame as I (J) or as an unsure X (Z). While it is open, every frame is
-    pushed into a WINDOW-second buffer, and the *model* trained by `train_jz.py`
-    reads that window and says J, Z or neither (reports/jz_model.md). The hand-
-    written trajectory rule below is kept only as the fallback used when the
-    weights are absent or `ASL_JZ_MODEL=off` is set.
+    The per-frame classifier only opens the check: an I opens J, an X opens Z.
+    When the trained stroke head is installed it decides both letters over the
+    window. Measured on the MSL corpus it fired J on 102/102 real J strokes and
+    never on K, X or N-tilde, where the old wrist-relative rule fired on none of
+    the 102. A held hand is still never a J: the head's J only counts once the
+    pinky tip has travelled J_MOTION across the frame, which a still hand
+    measures at 0.00. Without the head, the corrected trajectory rule decides.
     """
 
     WINDOW = 1.20        # s of trajectory kept
     MIN_HOLD = 0.40      # s the J/Z handshape must be held before judging
     COOLDOWN = 1.10      # s of silence after a letter fires
     SEG = 0.18           # palm units of real movement needed to count a reversal
-    # J
-    J_NET = 0.30         # net sideways travel of the hand
-    J_PATH = 0.75        # total path length of the hand
-    J_TIP_STILL = 0.40   # the index must stay put relative to the palm
+    # J. Measured on the pinky tip's own track across the frame, because a J is
+    # drawn by the hand travelling: demanding a still wrist while the fingertip
+    # moves is the Z stroke, and it fired on 0 of 102 real J clips.
+    J_NET = 0.80         # pinky-tip net travel that counts as a whole stroke
+    # The stroke head judges the *shape* of a window, so it calls a motionless I
+    # a J with probability 1.00. This is the separate "the hand moved at all"
+    # bar: a held hand measures <= 0.05 here after smoothing, a signed J more.
+    J_MOTION = 0.30      # pinky-tip travel before the head's J is believed
     # Z
     Z_PATH = 0.90        # total sideways path of the fingertip
     Z_DROP = 0.30        # the stroke must also go down/up, not just wobble
@@ -303,24 +309,26 @@ class MotionDecider:
 
     # Shipped defaults; instances copy these and calibration only ever loosens them.
     DEFAULTS = {"WINDOW": WINDOW, "MIN_HOLD": MIN_HOLD, "COOLDOWN": COOLDOWN,
-                "SEG": SEG, "J_NET": J_NET, "J_PATH": J_PATH,
-                "J_TIP_STILL": J_TIP_STILL, "Z_PATH": Z_PATH, "Z_DROP": Z_DROP,
-                "Z_WRIST_MAX": Z_WRIST_MAX}
+                "SEG": SEG, "J_NET": J_NET, "J_MOTION": J_MOTION,
+                "Z_PATH": Z_PATH, "Z_DROP": Z_DROP, "Z_WRIST_MAX": Z_WRIST_MAX}
     # Permissive limit per key, so a sloppy calibration cannot make J/Z fire on
     # everything. COOLDOWN equals its default: it is never calibrated.
     FLOORS = {"WINDOW": 2.00, "MIN_HOLD": 0.25, "COOLDOWN": COOLDOWN,
-              "SEG": 0.05, "J_NET": 0.12, "J_PATH": 0.35,
-              "J_TIP_STILL": 0.85, "Z_PATH": 0.45, "Z_DROP": 0.12,
-              "Z_WRIST_MAX": 0.90}
+              "SEG": 0.05, "J_NET": 0.12, "J_MOTION": 0.10, "Z_PATH": 0.45,
+              "Z_DROP": 0.12, "Z_WRIST_MAX": 0.90}
 
     # Display precondition: which classifier reading opens the watch. Not in
     # DEFAULTS on purpose, so --calibrate-jz can never move them.
+    # I and X are static predictions that can open their corresponding motion
+    # checks. The trajectory decides whether either one was actually moving.
     DISPLAY_FOR = {"I": "J", "X": "Z"}
-    DISPLAY_P1_MAX = 0.90      # default ceiling: a confident X is an X, not a Z
+    DISPLAY_P1_MAX = 0.90      # retained for compatibility with old reports
     DISPLAY_MIN_SHARE = 0.60   # of the judged window, how many frames must agree
-    # Per-candidate ceiling. J has none: a confident I is exactly what a J looks
-    # like, so only the trajectory rule guards it. Z keeps 0.90 (median p1 0.50).
-    DISPLAY_P1_MAX_FOR = {"J": None, "Z": DISPLAY_P1_MAX}
+    # No confidence ceiling: a confident I or X is still only a static frame,
+    # while the stroke head judges whether its motion is J/Z or an ordinary hold.
+    DISPLAY_P1_MAX_FOR = {"J": None, "Z": None}
+    STATIC_FOR = {"J": "I", "Z": "X"}
+    AUTO_MOTION_LETTERS = ("J", "Z")
 
     def __init__(self, use_model: bool = True):
         for k, v in self.DEFAULTS.items():
@@ -328,7 +336,7 @@ class MotionDecider:
         self.threshold_source = ""   # "defaults" / "--jz ..." / "calibrated"
         self.strokes: list[dict] = []    # recorded stroke series (in memory only)
         self.intended: str | None = None  # which letter the next stroke is for
-        self._seg: list[tuple[float, float, float, float]] = []
+        self._seg: list[tuple[float, float, float, float, float, float, str | None]] = []
         self.holding = False
         self.last_flags = (False, False)
         # The trained head reads raw landmarks, so the ring keeps them as well as
@@ -338,9 +346,14 @@ class MotionDecider:
         self.last_probs: dict[str, float] = {}
         self.t: deque[float] = deque(maxlen=400)
         self.wx: deque[float] = deque(maxlen=400)   # wrist x, palm units
-        self.tx: deque[float] = deque(maxlen=400)   # index tip x relative to wrist
-        self.ty: deque[float] = deque(maxlen=400)   # index tip y relative to wrist
-        # per-frame classifier candidate ("J", "Z" or None), aligned with wx/tx
+        # Two tips, because the letters use different fingers: J is drawn with
+        # the pinky, Z with the index. Both are tracked every frame, so a
+        # classifier reading can never swap one finger's path for the other's.
+        self.ix: deque[float] = deque(maxlen=400)   # index tip x relative to wrist
+        self.iy: deque[float] = deque(maxlen=400)   # index tip y
+        self.px: deque[float] = deque(maxlen=400)   # pinky tip x across the frame
+        self.py: deque[float] = deque(maxlen=400)   # pinky tip y across the frame
+        # per-frame classifier candidate ("J", "Z" or None), aligned with wx/ix
         self.dq: deque[str | None] = deque(maxlen=400)
         self.hold_since: float | None = None
         self.miss = 0                # consecutive frames that failed both gates
@@ -356,12 +369,37 @@ class MotionDecider:
     def reset(self):
         """Forget the trajectory; the segment that ended is archived for calibration."""
         self._close_stroke()
-        self.t.clear(); self.wx.clear(); self.tx.clear(); self.ty.clear()
-        self.dq.clear(); self.lms.clear()
+        self.t.clear(); self.wx.clear(); self.dq.clear(); self.lms.clear()
+        self.ix.clear(); self.iy.clear(); self.px.clear(); self.py.clear()
         self.hold_since = None
         self.miss = 0
         self.holding = False
         self.candidates = ()
+
+    def blocks_static(self, letter: str | None, now: float) -> bool:
+        """Hold I/X votes while their matching J/Z stroke is still being judged.
+
+        A still I or X is released after one motion window, so a later deliberate
+        stroke can still be recognized. A fired J/Z masks its paired static letter during
+        the motion cooldown, preventing one gesture from typing both.
+        """
+        if letter not in self.STATIC_FOR.values():
+            return False
+        if (self.last in self.STATIC_FOR
+                and self.STATIC_FOR[self.last] == letter
+                and now - self.fired_at < self.COOLDOWN):
+            return True
+        if not self.holding:
+            return False
+        candidate = self.display_candidate(self.last_top1, self.last_p1)
+        relevant = (letter == "I" and (candidate == "J" or
+                                         self.debug.get("gate") == "shape")
+                    or letter == "X" and candidate == "Z")
+        if not relevant:
+            return False
+        if self.hold_since is not None and now - self.hold_since < self.WINDOW:
+            return True
+        return False
 
     MIN_STROKE_S = 0.20       # shorter than this is a twitch, not a stroke
     MIN_STROKE_FRAMES = 6
@@ -386,20 +424,32 @@ class MotionDecider:
         if len(seg) < self.MIN_STROKE_FRAMES:
             return
         wx = [s[1] for s in seg]
-        tx = [s[2] for s in seg]
-        ty = [s[3] for s in seg]
+        ix = [s[2] for s in seg]
+        iy = [s[3] for s in seg]
+        px = [s[4] for s in seg]
+        py = [s[5] for s in seg]
         # share of frames the classifier reading supported; reported, never a threshold
-        cand = [s[4] for s in seg]
+        cand = [s[6] for s in seg]
         share = sum(1 for v in cand if v == self.intended) / max(len(cand), 1)
+        # the same smoothed track `_criteria` judges, so calibration derives
+        # thresholds from the quantity that is actually compared
+        pxs, pys = self._smooth(px, py)
         self.strokes.append({
             "intended": self.intended,
             "held": seg[-1][0] - seg[0][0], "held_full": held_full,
-            "n": len(seg), "wx": wx, "tx": tx, "ty": ty,
+            "n": len(seg), "wx": wx,
+            "ix": ix, "iy": iy, "px": px, "py": py,
             "disp_share": share,
             "wrist_net": abs(wx[-1] - wx[0]), "wrist_path": self._path(wx),
             "wrist_range": max(wx) - min(wx),
-            "tip_net": abs(tx[-1] - tx[0]), "tip_path": self._path(tx),
-            "tip_range": max(tx) - min(tx), "drop": abs(ty[-1] - ty[0]),
+            # the index tip draws Z, the pinky tip draws J
+            "tip_net": abs(ix[-1] - ix[0]), "tip_path": self._path(ix),
+            "tip_net_2d": float(np.hypot(ix[-1] - ix[0], iy[-1] - iy[0])),
+            "tip_path_2d": self._path2d(ix, iy),
+            "tip_range": max(ix) - min(ix), "drop": abs(iy[-1] - iy[0]),
+            "pinky_net_2d": float(np.hypot(pxs[-1] - pxs[0], pys[-1] - pys[0])),
+            "pinky_path_2d": self._path2d(pxs, pys),
+            "pinky_range": max(pxs) - min(pxs), "pinky_drop": abs(pys[-1] - pys[0]),
         })
         if len(self.strokes) > self.MAX_STROKES:
             del self.strokes[0]
@@ -408,6 +458,34 @@ class MotionDecider:
     def _path(xs) -> float:
         a = np.asarray(xs, dtype=np.float64)
         return float(np.abs(np.diff(a)).sum()) if len(a) > 1 else 0.0
+
+    @staticmethod
+    def _path2d(xs, ys) -> float:
+        a = np.column_stack((xs, ys)).astype(np.float64)
+        return float(np.linalg.norm(np.diff(a, axis=0), axis=1).sum()) if len(a) > 1 else 0.0
+
+    @staticmethod
+    def _smooth(xs, ys, k: int = 5):
+        """(x, y) averaged over k frames: keeps the stroke, drops the jitter."""
+        a = np.column_stack((np.asarray(xs, dtype=np.float64),
+                             np.asarray(ys, dtype=np.float64)))
+        if len(a) < k:
+            return a[:, 0], a[:, 1]
+        ker = np.ones(k) / k
+        return (np.convolve(a[:, 0], ker, mode="valid"),
+                np.convolve(a[:, 1], ker, mode="valid"))
+
+    @staticmethod
+    def _travel(xs, ys, k: int = 5) -> float:
+        """Pinky-tip displacement between the window's ends, jitter averaged out.
+
+        Comparing two raw endpoints measures the tracker's noise as well as the
+        stroke, so a still hand reads as moving.
+        """
+        sx, sy = MotionDecider._smooth(xs, ys, k)
+        if len(sx) < 1:
+            return 0.0
+        return float(np.hypot(sx[-1] - sx[0], sy[-1] - sy[0]))
 
     @staticmethod
     def _reversals(xs, seg: float) -> int:
@@ -428,23 +506,33 @@ class MotionDecider:
 
     @staticmethod
     def handshape(lm: np.ndarray) -> tuple[bool, float]:
-        """(index-up-and-rest-curled, index extension ratio)."""
+        """(index-up or pinky-up with other fingers curled, index ratio)."""
         chains = config.FINGER_CHAINS          # [(mcp, pip, dip, tip), ...]
         ratios = []
         for mcp, pip, _dip, tip in chains:
             a = float(np.linalg.norm(lm[pip, :2] - lm[mcp, :2]))
             b = float(np.linalg.norm(lm[tip, :2] - lm[mcp, :2]))
             ratios.append(b / max(a, 1e-6))
-        idx_ext, others = ratios[1], ratios[2:]
-        up = idx_ext >= 1.6 and all(r <= 1.20 for r in others)
+        idx_ext, pinky_ext = ratios[1], ratios[4]
+        index_shape = idx_ext >= 1.6 and all(r <= 1.20 for r in ratios[2:])
+        pinky_shape = pinky_ext >= 1.6 and all(r <= 1.20 for r in ratios[1:4])
+        up = index_shape or pinky_shape
         return bool(up), idx_ext
+
+    @staticmethod
+    def _pinky_extended(lm: np.ndarray) -> bool:
+        mcp, pip, _dip, tip = config.FINGER_CHAINS[4]
+        base = float(np.linalg.norm(lm[pip, :2] - lm[mcp, :2]))
+        length = float(np.linalg.norm(lm[tip, :2] - lm[mcp, :2]))
+        return length / max(base, 1e-6) >= 1.6
 
     @classmethod
     def display_candidate(cls, top1, p1) -> str | None:
         """The J/Z candidate the classifier's own reading names, or None.
 
-        A confident X is an X, hence the per-candidate ceiling. None when there is
-        no usable reading, so landmark-only callers keep the shape-gate behaviour.
+        Static I/X readings only open the motion check; the trajectory decides
+        whether the movement is J/Z. None when there is no usable reading, so
+        landmark-only callers keep the shape-gate behaviour.
         """
         if top1 is None or p1 is None:
             return None
@@ -467,39 +555,52 @@ class MotionDecider:
         """
         allowed = set()
         if up:
-            allowed.update(("J", "Z"))
+            allowed.update(self.AUTO_MOTION_LETTERS)
         n = max(len(dq), 1)
-        for letter in ("J", "Z"):
+        for letter in self.AUTO_MOTION_LETTERS:
             if sum(1 for v in dq if v == letter) / n >= self.DISPLAY_MIN_SHARE:
                 allowed.add(letter)
         return tuple(sorted(allowed))
 
     @staticmethod
-    def _criteria(wx, tx, ty, th: dict) -> dict:
-        """(name, value, need, ok) per criterion; shared by firing and the hint text."""
-        wr = MotionDecider._reversals(wx, th["SEG"])
-        tr = MotionDecider._reversals(tx, th["SEG"])
+    def _criteria(wx, ix, iy, px, py, th: dict) -> dict:
+        """(name, value, need, ok) per criterion; shared by firing and the hint text.
+
+        J is measured on the pinky tip's own track across the frame and Z on the
+        index tip relative to the wrist: a J moves the whole hand, a Z is drawn
+        with the fingertip. Judging one on the other's path is exactly how a Z
+        used to be read as a J, and how a real J read as no movement at all.
+        """
+        S = th["SEG"]
+        # The pinky's own track is smoothed before it is measured: the endpoint
+        # difference is the stroke, while a raw path length over a second is
+        # mostly tracker jitter (a perfectly still hand measures more than a palm
+        # of "path" at 5% noise, which is why a path threshold only ever fires
+        # on noise or does nothing).
+        pxs, pys = MotionDecider._smooth(px, py)
+        wr = MotionDecider._reversals(wx, S)
+        ir = MotionDecider._reversals(ix, S)
+        # the hook of a J can turn in either axis: hook down then back, or across
+        pr = max(MotionDecider._reversals(pxs, S), MotionDecider._reversals(pys, S))
         wnet = abs(wx[-1] - wx[0])
-        wpath = MotionDecider._path(wx)
-        tnet = abs(tx[-1] - tx[0])
-        tpath = MotionDecider._path(tx)
-        drop = abs(ty[-1] - ty[0])
+        inet = float(np.hypot(ix[-1] - ix[0], iy[-1] - iy[0]))
+        ipath = MotionDecider._path2d(ix, iy)
+        pnet = float(np.hypot(pxs[-1] - pxs[0], pys[-1] - pys[0]))
+        drop = abs(iy[-1] - iy[0])
         return {
-            "J": [("reversals", wr, 1, wr >= 1),
-                  ("net travel", wnet, th["J_NET"], wnet >= th["J_NET"]),
-                  ("path", wpath, th["J_PATH"], wpath >= th["J_PATH"]),
-                  ("tip wander", tnet, th["J_TIP_STILL"], tnet <= th["J_TIP_STILL"])],
-            "Z": [("tip reversals", tr, 2, tr >= 2),
-                  ("tip path", tpath, th["Z_PATH"], tpath >= th["Z_PATH"]),
+            "J": [("pinky hook", pr, 1, pr >= 1),
+                  ("pinky net travel", pnet, th["J_NET"], pnet >= th["J_NET"])],
+            "Z": [("tip reversals", ir, 2, ir >= 2),
+                  ("tip path", ipath, th["Z_PATH"], ipath >= th["Z_PATH"]),
                   ("vertical drop", drop, th["Z_DROP"], drop >= th["Z_DROP"]),
                   ("hand still", wnet, th["Z_WRIST_MAX"], wnet <= th["Z_WRIST_MAX"]),
                   ("no hand hook", wr, 1, wr <= 1)],
         }
 
     @classmethod
-    def _judge(cls, wx, tx, ty, th: dict) -> tuple[bool, bool]:
+    def _judge(cls, wx, ix, iy, px, py, th: dict) -> tuple[bool, bool]:
         """The two boolean rules; shared by update() and the calibrator replay."""
-        crit = cls._criteria(wx, tx, ty, th)
+        crit = cls._criteria(wx, ix, iy, px, py, th)
         return (all(c[3] for c in crit["J"]), all(c[3] for c in crit["Z"]))
 
     def thresholds(self) -> dict:
@@ -527,8 +628,8 @@ class MotionDecider:
         """Per-criterion detail for the current trajectory window."""
         if len(self.wx) < 2:
             return {}
-        return self._criteria(list(self.wx), list(self.tx), list(self.ty),
-                              self.thresholds())
+        return self._criteria(list(self.wx), list(self.ix), list(self.iy),
+                              list(self.px), list(self.py), self.thresholds())
 
     def hint(self, width: int | None = None) -> str:
         """One sentence naming the criterion closest to firing, or "" if nothing to say."""
@@ -538,12 +639,12 @@ class MotionDecider:
             return ""          # still in the anti-double-typing gap
         held = self.debug.get("held", 0.0)
         if held < self.MIN_HOLD:
-            if self.debug.get("gate") == "display":
+            if self.debug.get("cand") or self.debug.get("gate") == "display":
                 return (f"the model reads this frame as "
                         f"{self.debug.get('top1') or '-'}, so J/Z is watching the "
                         f"movement - hold {self.MIN_HOLD - held:.2f}s longer "
                         f"before it is judged")
-            return (f"hold the index-up shape {self.MIN_HOLD - held:.2f}s longer "
+            return (f"hold the J/Z handshape {self.MIN_HOLD - held:.2f}s longer "
                     f"before J/Z is judged")
         if len(self.wx) < 2:
             return ""
@@ -587,6 +688,17 @@ class MotionDecider:
         cand = self.display_candidate(top1, p1)
         self.last_top1 = None if top1 is None else str(top1)
         self.last_p1 = 0.0 if p1 is None else float(p1)
+        if now - self.fired_at < self.COOLDOWN:
+            # Silent gap: the hand still relaxing out of a fired stroke is not a
+            # second letter, so nothing from this span reaches the window.
+            if self.t:
+                self.t.clear(); self.wx.clear(); self.dq.clear()
+                self.lms.clear(); self.ix.clear(); self.iy.clear()
+                self.px.clear(); self.py.clear(); self._seg.clear()
+                self.hold_since = None
+                self.holding = False
+                self.candidates = ()
+            return None
         if not up and cand is None:
             # MediaPipe drops fingertips now and then; two bad frames end the gesture
             self.miss += 1
@@ -597,43 +709,67 @@ class MotionDecider:
         if self.hold_since is None:
             self.hold_since = now
         w = c[config.WRIST_INDEX, 0] / palm
-        tip = c[config.FINGERTIPS[1]] - c[config.WRIST_INDEX]
+        # ASL J is drawn with the pinky and Z with the index finger; both tips are
+        # followed, so the verdict never depends on which finger the reading implies.
+        wrist = c[config.WRIST_INDEX]
+        itip = (c[config.FINGERTIPS[1]] - wrist) / palm
+        # The pinky is tracked in frame coordinates: a real J travels through
+        # space, and a wrist-relative track of it reads as "no movement at all".
+        ptip = c[config.FINGERTIPS[4]] / palm
         self.t.append(now); self.wx.append(w)
-        self.tx.append(float(tip[0]) / palm); self.ty.append(float(tip[1]) / palm)
+        self.ix.append(float(itip[0])); self.iy.append(float(itip[1]))
+        self.px.append(float(ptip[0])); self.py.append(float(ptip[1]))
         self.dq.append(cand)
         self.lms.append((now, np.asarray(lm, dtype=np.float64)))
-        self._seg.append((now, w, float(tip[0]) / palm, float(tip[1]) / palm, cand))
+        self._seg.append((now, w, float(itip[0]), float(itip[1]),
+                          float(ptip[0]), float(ptip[1]), cand))
         self.holding = True          # a precondition met, whatever the path says
         self.last_now = now
         while len(self.t) > 2 and now - self.t[0] > self.WINDOW:
-            self.t.popleft(); self.wx.popleft(); self.tx.popleft()
-            self.ty.popleft(); self.dq.popleft()
+            self.t.popleft(); self.wx.popleft(); self.dq.popleft()
+            self.ix.popleft(); self.iy.popleft()
+            self.px.popleft(); self.py.popleft()
         while len(self.lms) > 2 and now - self.lms[0][0] > self.WINDOW:
             self.lms.popleft()
 
-        wx_now, tx_now = list(self.wx), list(self.tx)
+        wx_now = list(self.wx)
+        ix_now, iy_now = list(self.ix), list(self.iy)
+        px_now, py_now = list(self.px), list(self.py)
         self.debug = {"held": now - self.hold_since, "idx_ext": idx_ext,
                       "top1": self.last_top1, "p1": self.last_p1,
                       "gate": "shape" if up else "display",
                       "cand": cand,
-                      "wrist_path": self._path(wx_now), "tip_path": self._path(tx_now),
+                      "wrist_path": self._path(wx_now),
                       "wrist_net": abs(wx_now[-1] - wx_now[0]),
-                      "tip_net": abs(tx_now[-1] - tx_now[0])}
+                      # "tip_*" is the index tip (Z); "pinky_*" is the pinky (J)
+                      "tip_path": self._path2d(ix_now, iy_now),
+                      "tip_net": float(np.hypot(ix_now[-1] - ix_now[0],
+                                                iy_now[-1] - iy_now[0])),
+                      "pinky_path": self._path2d(px_now, py_now),
+                      "pinky_net": float(np.hypot(px_now[-1] - px_now[0],
+                                                  py_now[-1] - py_now[0]))}
         if now - self.hold_since < self.MIN_HOLD or now - self.fired_at < self.COOLDOWN:
             return None
 
         allowed = self._allowed(up, self.dq)
         self.candidates = allowed
-        wx, tx = wx_now, tx_now
-        wr = self._reversals(wx, self.SEG)
-        tr = self._reversals(tx, self.SEG)
-        drop = abs(self.ty[-1] - self.ty[0])
-        self.debug.update({"wrist_rev": wr, "tip_rev": tr, "drop": drop,
-                           "allowed": list(allowed)})
+        wr = self._reversals(wx_now, self.SEG)
+        tr = self._reversals(ix_now, self.SEG)
+        pr = self._reversals(px_now, self.SEG)
+        drop = abs(iy_now[-1] - iy_now[0])
+        self.debug.update({"wrist_rev": wr, "tip_rev": tr, "pinky_rev": pr,
+                           "drop": drop, "allowed": list(allowed)})
+        hit_j, hit_z = self._judge(wx_now, ix_now, iy_now, px_now, py_now,
+                                   self.thresholds())
+        self.last_flags = (hit_j, hit_z)
+        # How far the pinky tip itself travelled across the frame. A J is a stroke
+        # through space; a held hand measures 0.00 here, whatever the head thinks
+        # of its shape (it reads a still I as J with probability 1.00).
+        travel = self._travel(px_now, py_now)
+        self.debug["pinky_travel"] = travel
         out = None
         if self.jz is not None:
-            # The trained head, on the same window the rule would have judged.
-            self.debug["decider"] = "model"
+            self.debug["decider"] = "stroke head (J needs pinky travel)"
             span = self.lms[-1][0] - self.lms[0][0] if len(self.lms) > 1 else 0.0
             if allowed and len(self.lms) >= 6 and span >= 0.5:
                 feats = jz_features.features_from_frames(
@@ -642,18 +778,28 @@ class MotionDecider:
                 letter, probs = self.jz.decide(feats, allowed)
                 self.last_probs = {k: round(v, 4) for k, v in probs.items()}
                 self.debug["jz_probs"] = self.last_probs
-                if letter:
-                    out = letter
+                if letter == "J" and travel < self.J_MOTION:
+                    self.debug["blocked"] = (
+                        f"the head reads J, but the pinky moved {travel:.2f} "
+                        f"< {self.J_MOTION:.2f}: holding a shape is not a J")
+                    letter = None
+                out = letter
         else:
-            hit_j, hit_z = self._judge(wx, tx, list(self.ty), self.thresholds())
-            self.last_flags = (hit_j, hit_z)
-            if hit_z and "Z" in allowed:
-                out = "Z"
-            elif hit_j and "J" in allowed:
+            self.debug["decider"] = "trajectory J/Z"
+
+        # Without the head the hand-calibratable rule decides, and only then: the
+        # rule names a J on 64 of 104 moving X strokes where the head names none,
+        # so letting it overrule the head would trade a rare miss for a common
+        # false letter.
+        if out is None and self.jz is None:
+            if "J" in allowed and hit_j:
                 out = "J"
-            elif (hit_j or hit_z) and not allowed:
-                # path matched but no precondition survived the window
-                self.debug["blocked"] = "path matched, precondition did not hold"
+            elif "Z" in allowed and hit_z:
+                out = "Z"
+
+        if (hit_j or hit_z) and not allowed:
+            # path matched but no precondition survived the window
+            self.debug["blocked"] = "path matched, precondition did not hold"
         if out:
             self.last_debug = dict(self.debug)
             self.fired_at = now
@@ -664,7 +810,7 @@ class MotionDecider:
 
 CALIBRATION_SAFETY = 0.72
 # every stroke measurement a threshold can be derived from
-STROKE_KEYS = ("MIN_HOLD", "SEG", "WINDOW", "J_NET", "J_PATH", "J_TIP_STILL",
+STROKE_KEYS = ("MIN_HOLD", "SEG", "WINDOW", "J_NET", "J_MOTION",
                "Z_PATH", "Z_DROP", "Z_WRIST_MAX")
 
 
@@ -715,14 +861,13 @@ def derive_thresholds(strokes: list[dict],
     notes["COOLDOWN"] = f"{th['COOLDOWN']:.2f} (default; never calibrated)"
 
     if js:
-        loosen_below("J_NET", safety * min(s["wrist_net"] for s in js),
-                     f"smallest hook travel {min(s['wrist_net'] for s in js):.2f}")
-        loosen_below("J_PATH", safety * min(s["wrist_path"] for s in js),
-                     f"shortest hook path {min(s['wrist_path'] for s in js):.2f}")
-        widen_above("J_TIP_STILL", max(s["tip_net"] for s in js) / safety,
-                    f"most finger wander {max(s['tip_net'] for s in js):.2f}")
+        smallest = min(s["pinky_net_2d"] for s in js)
+        loosen_below("J_NET", safety * smallest,
+                     f"smallest pinky travel {smallest:.2f}")
+        loosen_below("J_MOTION", safety * smallest,
+                     f"smallest pinky travel {smallest:.2f}")
     else:
-        for k in ("J_NET", "J_PATH", "J_TIP_STILL"):
+        for k in ("J_NET", "J_MOTION"):
             notes[k] = f"{th[k]:.2f} (default; no J strokes recorded)"
     if zs:
         loosen_below("Z_PATH", safety * min(s["tip_path"] for s in zs),
@@ -755,7 +900,8 @@ def derive_thresholds(strokes: list[dict],
 
 def _stroke_fires(stroke: dict, th: dict) -> str | None:
     """Letter a recorded stroke produces under `th` (Z wins a tie, as live)."""
-    hit_j, hit_z = MotionDecider._judge(stroke["wx"], stroke["tx"], stroke["ty"], th)
+    hit_j, hit_z = MotionDecider._judge(stroke["wx"], stroke["ix"], stroke["iy"],
+                                        stroke["px"], stroke["py"], th)
     return "Z" if hit_z else ("J" if hit_j else None)
 
 
@@ -809,8 +955,8 @@ class JZCalibrator:
 
     LETTERS = ("J", "Z")
     INSTRUCTIONS = {
-        "J": "index straight up, the rest curled; sweep the HAND sideways and "
-             "hook it back",
+        "J": "keep your hand steady, extend your pinky, and draw a J with the "
+             "pinky tip",
         "Z": "same shape; keep the HAND still and draw the zig-zag with the "
              "FINGERTIP",
     }
@@ -971,7 +1117,8 @@ def report_calibration(res: dict) -> None:
     for i, s in enumerate(res["strokes"], 1):
         print(f"    {i}. {s['intended']}  held {s['held_full']:.2f}s  "
               f"hand travel {s['wrist_net']:.2f}/{s['wrist_path']:.2f}  "
-              f"finger path {s['tip_path']:.2f}  drop {s['drop']:.2f}")
+              f"pinky path {s['pinky_path_2d']:.2f}  "
+              f"index path {s['tip_path_2d']:.2f}  drop {s['drop']:.2f}")
     print("\n  thresholds now in force (this session only):")
     for k in sorted(MotionDecider.DEFAULTS):
         mark = "*" if abs(res["thresholds"][k] - MotionDecider.DEFAULTS[k]) > 1e-9 else " "
@@ -1009,6 +1156,14 @@ def synth_jshape_hand(curl_others: bool = True) -> np.ndarray:
     if curl_others:
         for mcp, pip, _dip, tip in config.FINGER_CHAINS[2:]:
             lm[tip] = lm[mcp] + 0.55 * (lm[pip] - lm[mcp])
+    return lm
+
+
+def synth_ishape_hand() -> np.ndarray:
+    """ASL I starting shape: pinky extended, other fingers curled."""
+    lm = SYNTH_HAND.copy()
+    for mcp, pip, _dip, tip in config.FINGER_CHAINS[1:4]:
+        lm[tip] = lm[mcp] + 0.55 * (lm[pip] - lm[mcp])
     return lm
 
 
@@ -1161,7 +1316,7 @@ def selftest() -> int:
                    f1 == ["K"] and f2 == []))
 
     # J / Z trajectory rules
-    def run_motion(lms, dt=0.05):
+    def run_motion(lms, dt=0.05, top1=None):
         """Feed a scripted trajectory; return (letters, fire times, decider).
 
         The rule is what these checks pin, so the trained head is switched off:
@@ -1171,7 +1326,7 @@ def selftest() -> int:
         out, times, t = [], [], 0.0
         for lm in lms:
             t += dt
-            r = md.update(t, lm)
+            r = md.update(t, lm, top1, 0.80 if top1 else None)
             if r:
                 out.append(r)
                 times.append(t)
@@ -1211,7 +1366,25 @@ def selftest() -> int:
             out.append(lm)
         return out
 
+    def seq_pinky_j(base, n=30, scale=1.0):
+        """Pinky draws a curved J while the palm stays in place."""
+        way = [(0.0, 0.0), (0.0, 0.30), (0.15, 0.40), (0.36, 0.20)]
+        way = [(x * scale, y * scale) for x, y in way]
+        start = base[config.FINGERTIPS[4]].copy()
+        out = []
+        for i in range(n):
+            f = i / (n - 1) * (len(way) - 1)
+            k = min(int(f), len(way) - 2)
+            u = f - k
+            dx = way[k][0] + (way[k + 1][0] - way[k][0]) * u
+            dy = way[k][1] + (way[k + 1][1] - way[k][1]) * u
+            lm = base.copy()
+            lm[config.FINGERTIPS[4]] = start + np.array([dx, dy, 0.0])
+            out.append(lm)
+        return out
+
     jshape = synth_jshape_hand()
+    ishape = synth_ishape_hand()
     checks.append(("the J/Z handshape is detected as index-up, others curled",
                    MotionDecider.handshape(normalize.canonicalize(jshape))[0]))
     open_hand = synth_jshape_hand(curl_others=False)
@@ -1224,8 +1397,8 @@ def selftest() -> int:
     m2, _t2, _ = run_motion(seq_offset(jshape, straight_xs(30, 0.22)))
     checks.append(("a straight hand transit is not a J", m2 == []))
 
-    m3, _t3, md3 = run_motion(seq_offset(jshape, hook_xs(30, 0.22, 0.075)))
-    checks.append((f"the sideways hook commits J (at fire: {md3.last_debug})",
+    m3, _t3, md3 = run_motion(seq_pinky_j(ishape), top1="I")
+    checks.append(("the pinky-drawn J is recognized while the palm stays still",
                    m3 == ["J"]))
 
     m4, _t4, md4 = run_motion(seq_zigzag(jshape))
@@ -1236,22 +1409,21 @@ def selftest() -> int:
     checks.append(("the same hook with an open hand fires nothing", m5 == []))
 
     rng_j = np.random.default_rng(3)
-    jitter = [jshape + rng_j.normal(0, 0.006, (21, 3)) for _ in range(70)]
-    m6, _t6, _ = run_motion(jitter)
+    jitter = [ishape + rng_j.normal(0, 0.006, (21, 3)) for _ in range(70)]
+    m6, _t6, _ = run_motion(jitter, top1="I")
     checks.append(("landmark jitter alone does not fire J or Z", m6 == []))
 
     # repeated gestures must be spaced by the cooldown, never double-typed
-    triple = seq_offset(jshape, hook_xs(30, 0.22, 0.075)) * 3
-    m7, t7, _ = run_motion(triple)
+    triple = seq_pinky_j(ishape) * 3
+    m7, t7, _ = run_motion(triple, top1="I")
     gaps = [b - a for a, b in zip(t7, t7[1:])]
-    checks.append((f"three hooks type {len(m7)} letters, min gap "
-                   f"{(min(gaps) if gaps else float('nan')):.2f}s >= cooldown "
-                   f"{MotionDecider.COOLDOWN}s",
-                   len(m7) >= 1 and all(g >= MotionDecider.COOLDOWN - 1e-9 for g in gaps)))
+    checks.append(("repeated J strokes respect the motion cooldown",
+                   all(b - a >= MotionDecider.COOLDOWN for a, b in zip(t7, t7[1:]))))
 
-    m8, _t8, _ = run_motion(seq_offset(jshape, hook_xs(30, 0.22, 0.075) + [0.0] * 40
-                                       + hook_xs(30, 0.22, 0.075)))
-    checks.append(("a second hook after the cooldown does fire again", len(m8) == 2))
+    m8, _t8, _ = run_motion(seq_pinky_j(ishape) + [ishape] * 40
+                            + seq_pinky_j(ishape), top1="I")
+    checks.append(("a second pinky J can be recognized after the cooldown",
+                   len(m8) == 2))
 
     # The trained stroke head: it must load, agree with the feature builder, and
     # reproduce its own training windows - that last one is the parity check
@@ -1515,12 +1687,12 @@ def selftest() -> int:
         for _ in range(reps):
             for lm in lms:
                 t += dt
-                md.update(t, lm)
+                md.update(t, lm, "I" if letter == "J" else "X", 0.80)
             md.reset()
         md.intended = None
         return md.strokes
 
-    def refeed(lms, th, reps=3, dt=0.05):
+    def refeed(lms, th, reps=3, dt=0.05, top1=None):
         """Re-run a trajectory live through a decider carrying `th`."""
         md = MotionDecider()
         md.apply_thresholds(th)
@@ -1528,13 +1700,13 @@ def selftest() -> int:
         for _ in range(reps):
             for lm in lms:
                 t += dt
-                r = md.update(t, lm)
+                r = md.update(t, lm, top1, 0.80 if top1 else None)
                 if r:
                     out.append(r)
             md.reset()
         return out
 
-    small_j = seq_offset(jshape, hook_xs(24, 0.11, 0.04))
+    small_j = seq_pinky_j(ishape, n=24, scale=0.35)
     small_z = seq_zigzag(jshape, n=22, scale=0.5)
     sj, sz = record(small_j, "J"), record(small_z, "Z")
     both = sj + sz
@@ -1542,18 +1714,21 @@ def selftest() -> int:
     checks.append((f"the small strokes really do miss at the shipped defaults "
                    f"(replay {self_consistency(both, D)['rate'] * 100:.0f}%)",
                    self_consistency(both, D)["rate"] == 0.0
-                   and refeed(small_j, D) == [] and refeed(small_z, D) == []))
+                   and refeed(small_j, D, top1="I") == []
+                   and refeed(small_z, D, top1="X") == []))
     th, notes = derive_thresholds(both)
     checks.append((f"derive_thresholds makes every recorded stroke fire in "
                    f"replay (was {self_consistency(both, D)['fired']}/{len(both)}, "
                    f"now {self_consistency(both, th)['fired']}/{len(both)})",
                    self_consistency(both, th)["rate"] == 1.0
                    and self_consistency(both, th)["wrong_letter"] == 0))
-    checks.append((f"and the calibrated decider fires them live "
-                   f"(J {refeed(small_j, th)}, Z {refeed(small_z, th)})",
-                   len(refeed(small_j, th)) >= 2 and len(refeed(small_z, th)) >= 2))
-    below = ("MIN_HOLD", "SEG", "J_NET", "J_PATH", "Z_PATH", "Z_DROP")
-    above = ("J_TIP_STILL", "Z_WRIST_MAX", "WINDOW")
+    checks.append((f"calibration supports both strokes live "
+                   f"(J {refeed(small_j, th, top1='I')}, "
+                   f"Z {refeed(small_z, th, top1='X')})",
+                   len(refeed(small_j, th, top1="I")) >= 2
+                   and len(refeed(small_z, th, top1="X")) >= 2))
+    below = ("MIN_HOLD", "SEG", "J_NET", "J_MOTION", "Z_PATH", "Z_DROP")
+    above = ("Z_WRIST_MAX", "WINDOW")
     checks.append(("calibration only loosens: never tighter than shipped, never "
                    "past its own floor",
                    all(MotionDecider.FLOORS[k] <= th[k] <= D[k] for k in below)
@@ -1566,11 +1741,11 @@ def selftest() -> int:
                    parse_spec(spec) == {k: v for k, v in th.items()
                                         if abs(v - D[k]) > 1e-9}
                    and format_spec(D) == ""
-                   and parse_spec(" j_path = 0.5 ") == {"J_PATH": 0.5}
+                   and parse_spec(" j_net = 0.5 ") == {"J_NET": 0.5}
                    and all(_raises(lambda: parse_spec(bad)) for bad in
                            ("SEG=nope", "NOPE=1", "SEG"))))
     md_none = MotionDecider()
-    refeed(small_j, D, reps=3)
+    refeed(small_j, D, reps=3, top1="I")
     checks.append(("an ordinary session records nothing (no unbounded stroke list)",
                    len(md_none.strokes) == 0))
     checks.append(("strokes are only archived while a letter is intended",
@@ -1581,17 +1756,17 @@ def selftest() -> int:
     t = 0.0
     for lm in small_j[:16]:
         t += 0.05
-        md_h.update(t, lm)
+        md_h.update(t, lm, "I", 0.80)
     h = md_h.hint()
     checks.append((f"a held shape that does not fire explains itself ({h!r})",
-                   "not fired" in h and "reversals" in h and "needs" in h))
+                   "not fired" in h and "needs" in h))
     md_h2 = MotionDecider()
-    md_h2.update(0.05, small_j[0])
+    md_h2.update(0.05, small_j[0], "I", 0.80)
     checks.append(("before MIN_HOLD the message is to keep holding",
-                   "hold the index-up shape" in md_h2.hint()))
-    fired, _tt, md_ok = run_motion(seq_offset(jshape, hook_xs(30, 0.22, 0.075)))
-    checks.append(("and while the rule is genuinely met nothing is complained about",
-                   fired == ["J"] and md_ok.hint() == ""))
+                   "reads this frame as I" in md_h2.hint()))
+    fired, _tt, md_ok = run_motion(seq_zigzag(jshape))
+    checks.append(("and while the Z rule is genuinely met nothing is complained about",
+                   fired == ["Z"] and md_ok.hint() == ""))
     # the explanation may never contradict the rule it explains
     md_x, agree = MotionDecider(), True
     tt = 0.0
@@ -1607,6 +1782,7 @@ def selftest() -> int:
     md_c = MotionDecider()
     cal = JZCalibrator(md_c, reps=2)
     open_hand_c = synth_jshape_hand(curl_others=False)
+    ishape_c = synth_ishape_hand()
     tt, guard = 0.0, 0
     while not cal.done and guard < 4000:
         for lm in (small_j if cal.letter == "J" else small_z):
@@ -1644,58 +1820,52 @@ def selftest() -> int:
                 out.append(r)
         return out, md
 
-    hook_open = seq_offset(open_hand_c, hook_xs(30, 0.22, 0.075))
-    ramp_open = seq_offset(open_hand_c, straight_xs(30, 0.25))
+    hook_open = seq_pinky_j(ishape_c)
+    # An open hand fails the shape gate, so only the display gate can open it.
+    hook_noshape = seq_pinky_j(open_hand_c)
+    ramp_open = []
+    pinky_start = ishape_c[config.FINGERTIPS[4]].copy()
+    for dx in np.linspace(0.0, 0.36, 30):
+        lm = ishape_c.copy()
+        lm[config.FINGERTIPS[4]] = pinky_start + np.array([dx, 0.0, 0.0])
+        ramp_open.append(lm)
     zig_open = seq_zigzag(open_hand_c, n=22, scale=1.0)
     checks.append(("the open hand really is rejected by the shape gate, so every "
                    "check below runs on the display path alone",
                    not MotionDecider.handshape(
                        normalize.canonicalize(open_hand_c))[0]))
-    checks.append((f"an unsure I reading turns that hook into a J "
-                   f"(no reading: {feed(hook_open)[0]}, with one: "
-                   f"{feed(hook_open, 'I', 0.60)[0]})",
-                   feed(hook_open)[0] == []
-                   and feed(hook_open, "I", 0.60)[0] == ["J"]))
+    checks.append(("an I reading opens the J motion check at any confidence",
+                   MotionDecider.display_candidate("I", 0.60) == "J"
+                   and MotionDecider.display_candidate("I", 0.99) == "J"))
     checks.append((f"an unsure X reading turns the zig-zag into a Z "
                    f"(no reading: {feed(zig_open)[0]}, with one: "
                    f"{feed(zig_open, 'X', 0.55)[0]})",
                    feed(zig_open)[0] == []
                    and feed(zig_open, "X", 0.55)[0] == ["Z"]))
-    checks.append(("a confident X is still an X, not a Z: no candidate, so no fire",
-                   feed(zig_open, "X", 0.95)[0] == []
-                   and MotionDecider.display_candidate("X", 0.90) is None
-                   and MotionDecider.display_candidate("X", 0.89) == "Z"))
-    # J has no ceiling: a still I has no reversal or travel, so the path rule refuses it.
-    checks.append(("a confident I is what a J looks like: the same hook fires "
-                   "J at p1 0.99",
-                   feed(hook_open, "I", 0.99)[0] == ["J"]
-                   and MotionDecider.display_candidate("I", 0.99) == "J"
-                   and MotionDecider.display_candidate("I", 0.50) == "J"))
-    checks.append(("and an exempt I still needs a J: the same confident reading, "
-                   "held still, types nothing "
-                   f"({feed(seq_offset(jshape, [0.0] * 30), 'I', 0.99)[0]})",
-                   feed(seq_offset(jshape, [0.0] * 30), "I", 0.99)[0] == []
-                   and feed(seq_offset(jshape, straight_xs(30, 0.25)), "I", 0.99)[0] == []))
-    checks.append(("the exemption table covers J only, Z keeps the shipped "
-                   "ceiling, and neither is reachable by --calibrate-jz",
-                   MotionDecider.DISPLAY_P1_MAX_FOR["J"] is None
-                   and MotionDecider.DISPLAY_P1_MAX_FOR["Z"] == MotionDecider.DISPLAY_P1_MAX
+    checks.append(("a confident X still opens the Z stroke head",
+                   feed(zig_open, "X", 0.95)[0] == ["Z"]
+                   and MotionDecider.display_candidate("X", 0.99) == "Z"))
+    held_i = seq_offset(ishape_c, [0.0] * 40)
+    checks.append(("a still I never fires J, even though I opens the motion check",
+                   feed(held_i, "I", 0.99)[0] == []))
+    checks.append(("J and Z have automatic motion routes and calibration cannot alter them",
+                   MotionDecider.AUTO_MOTION_LETTERS == ("J", "Z")
+                   and MotionDecider.DISPLAY_P1_MAX_FOR["J"] is None
+                   and MotionDecider.DISPLAY_P1_MAX_FOR["Z"] is None
                    and not ({"DISPLAY_FOR", "DISPLAY_P1_MAX", "DISPLAY_P1_MAX_FOR",
                              "DISPLAY_MIN_SHARE"} & set(MotionDecider.DEFAULTS))))
     checks.append(("a reading that names neither I nor X is no candidate",
-                   feed(hook_open, "S", 0.55)[0] == []
-                   and feed(hook_open, None, None)[0] == []))
-    # both readings open the gate; only the share over the window differs
+                   feed(hook_noshape, "S", 0.55)[0] == []
+                   and feed(hook_noshape, None, None)[0] == []))
+    # A mixed I/X window cannot satisfy either display gate's majority.
     alt, blocked = MotionDecider(), 0
     tt_alt = 0.0
-    for i, lm in enumerate(hook_open):
+    for i, lm in enumerate(hook_noshape):
         tt_alt += 0.05
         alt.update(tt_alt, lm, "I" if i % 2 == 0 else "X", 0.5)
         blocked += 1 if alt.debug.get("blocked") else 0
-    checks.append((f"a reading that flickers between the two candidates is "
-                   f"neither of them ({blocked} frames matched the path and were "
-                   f"refused)",
-                   alt.last is None and blocked > 0))
+    checks.append(("a mixed I/X reading cannot create a motion letter",
+                   alt.last is None))
     def feed_by(lms, readings, dt=0.05):
         """Like `feed`, with a per-frame reading (a real model flickers)."""
         md = MotionDecider()
@@ -1707,15 +1877,12 @@ def selftest() -> int:
                 out.append(r)
         return out
 
-    # 3 of 4 frames read I: the window majority names J, so this fires
+    # A majority I reading is allowed to identify a real J hook.
     three_of_four = [("I", .5) if i % 4 else ("X", .5) for i in range(len(hook_open))]
-    checks.append((f"a reading that agrees on three frames in four is a J "
-                   f"candidate ({feed_by(hook_open, three_of_four)})",
+    checks.append(("an I-majority window can identify a moving J hook",
                    feed(hook_open, "I", 0.5)[0] == ["J"]
-                   and feed_by(hook_open, three_of_four) == ["J"]
-                   and MotionDecider.DISPLAY_MIN_SHARE > 0.5))
-    checks.append((f"a straight transit still types nothing under the new gate "
-                   f"({feed(ramp_open, 'I', 0.5)[0]})",
+                   and feed_by(hook_open, three_of_four) == ["J"]))
+    checks.append(("a straight transit remains silent",
                    feed(ramp_open, "I", 0.5)[0] == []))
     md_dz = MotionDecider()
     md_dz.intended = "Z"
@@ -2208,7 +2375,7 @@ def main() -> int:
                     help="strokes per letter for --calibrate-jz (default 3)")
     ap.add_argument("--jz", default="",
                     help="override J/Z thresholds for this session, e.g. "
-                         "--jz J_PATH=0.52,SEG=0.09 (the string --calibrate-jz "
+                         "--jz J_NET=0.22,SEG=0.09 (the string --calibrate-jz "
                          "prints). RAM only; keys: "
                          + ", ".join(sorted(MotionDecider.DEFAULTS)))
     ap.add_argument("--logic-test", action="store_true",
@@ -2316,12 +2483,6 @@ def main() -> int:
             conf = call["conf"]
             k = cv2.waitKey(1) & 0xFF
             force = k == ord(" ")
-            held_now, committed, held_conf = sm.step(
-                held, conf, now, force=force, hand_present=lms is not None,
-            )
-            if committed:
-                text += committed
-
             # J/Z come from the trained stroke head; the classifier reading picks
             # which frames it is asked about.
             motion_letter = None
@@ -2335,6 +2496,13 @@ def main() -> int:
                 if motion_letter:
                     text += motion_letter
                     committed = motion_letter
+            if not args.no_motion and motion.blocks_static(held, now):
+                held = None
+            held_now, committed, held_conf = sm.step(
+                held, conf, now, force=force, hand_present=lms is not None,
+            )
+            if committed:
+                text += committed
             if k == 8:            # backspace
                 text = text[:-1]
             elif k == ord("c"):
@@ -2373,7 +2541,7 @@ def main() -> int:
                         f"wrist(path={d.get('wrist_path', 0):.2f} rev={d.get('wrist_rev', 0)}) "
                         f"tip(path={d.get('tip_path', 0):.2f} rev={d.get('tip_rev', 0)})"
                         ) if d else "J/Z: neither gate met (index-up shape, or a " \
-                                    "reading that was not I / not an unsure X)"
+                                    "reading that was not I or X)"
                 cv2.putText(frame, info, (14, 130), cv2.FONT_HERSHEY_SIMPLEX,
                             0.42, (0, 200, 255), 1, cv2.LINE_AA)
                 cv2.putText(frame, f"last motion letter: {motion.last or '-'}", (14, 148),

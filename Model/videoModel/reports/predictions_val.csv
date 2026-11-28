@@ -1,521 +1,321 @@
 video,gloss,label,participant,kind,start,end,pred,p1,margin,top3,correct,committed,hedge_refused,refusal_reason
-744008724339543-EAT.mp4,EAT1,eat,P5,sign,10,75,eat,0.8099,0.7972,eat|home|me,True,False,False,confidence 0.81 < 0.85
-7791424980867376-GOOD.mp4,GOOD,good,P12,sign,11,27,good,0.7752,0.6933,good|thanks|bad,True,False,False,confidence 0.78 < 0.85
-4096147054343935-PLEASE.mp4,PLEASE,please,P12,sign,10,15,my,0.9629,0.953,my|please|sorry,False,True,False,
-7071450710791192-DRINK.mp4,DRINK1,drink,P12,sign,10,36,drink,0.9404,0.937,drink|home|my,True,True,False,
-3043245354055728-SAD.mp4,SAD,sad,P12,sign,7,36,sad,0.9394,0.9308,sad|wait|school,True,True,False,
-5938307461368451-HOME.mp4,HOME,home,P12,sign,9,39,home,0.9545,0.9513,home|understand|name,True,True,False,
-5439490417710435-NAME.mp4,NAME,name,P12,sign,6,32,name,0.9832,0.9817,name|understand|bread,True,True,False,
-05614933522741539-HELLO.mp4,HELLO,hello,P12,sign,6,42,hello,0.934,0.9284,hello|understand|why,True,True,False,
-25163871214803346-BAD.mp4,BAD,bad,P5,sign,29,48,bad,0.9724,0.9675,bad|thanks|need,True,True,False,
-8534077485600235-HELP.mp4,HELP,help,P5,sign,22,60,help,0.955,0.9426,help|how|please,True,True,False,
-09691552256972735-HAPPY.mp4,HAPPY,happy,P5,sign,24,54,my,0.9002,0.8664,my|please|sorry,False,True,False,
-23909248218883028-LOVE.mp4,LOVE,love,P5,sign,24,53,love,0.6611,0.4844,love|help|hungry,True,False,False,confidence 0.66 < 0.85
-8618976665727696-GOOD.mp4,GOOD,good,P21,sign,26,35,bad,0.4657,0.212,bad|good|thanks,False,False,False,confidence 0.47 < 0.85
-8323715285073319-NO.mp4,NO,no,P21,sign,16,53,no,0.8189,0.7596,no|where|water,True,False,False,confidence 0.82 < 0.85
-7861062216231951-SCHOOL.mp4,SCHOOL,school,P21,sign,25,47,school,0.9597,0.9534,school|OTHER|doctor,True,True,False,
-7875424216858471-DRINK 2.mp4,DRINK2,drink,P21,sign,6,33,drink,0.9435,0.9386,drink|bye|me,True,True,False,
-019466731254031755-BAD.mp4,BAD,bad,P21,sign,5,15,bad,0.921,0.9107,bad|good|eat,True,True,False,
-07732970042675213-HAPPY.mp4,HAPPY,happy,P21,sign,9,36,happy,0.5558,0.3481,happy|my|please,True,False,False,confidence 0.56 < 0.85
-0392835216734122-EAT.mp4,EAT1,eat,P21,sign,8,32,eat,0.9292,0.9252,eat|bad|come,True,True,False,
-05163066213189427-FRIEND.mp4,FRIEND,friend,P21,sign,26,61,friend,0.6444,0.5637,friend|when|OTHER,True,False,False,confidence 0.64 < 0.85
-7300348171338833-LOVE.mp4,LOVE,love,P21,sign,8,37,love,0.9475,0.9409,love|help|my,True,True,False,
-4843579408025589-GOOD.mp4,GOOD,good,P39,sign,42,58,good,0.6131,0.5672,good|hungry|happy,True,False,False,confidence 0.61 < 0.85
-9161842981344352-YES.mp4,YES,yes,P21,sign,7,38,yes,0.9119,0.904,yes|work|bathroom,True,True,False,
-8038145060553852-DRINK.mp4,DRINK1,drink,P21,sign,11,37,drink,0.8929,0.8849,drink|come|your,True,True,False,
-29913355059297864-SAD.mp4,SAD,sad,P21,sign,6,32,sad,0.941,0.9294,sad|wait|sleep,True,True,False,
-4111158323472113-HOME.mp4,HOME,home,P21,sign,7,41,home,0.8792,0.8651,home|drink|eat,True,True,False,
-0006320057552187119-THANK YOU.mp4,THANKYOU,thanks,P21,sign,4,14,good,0.8954,0.865,good|thanks|bad,False,False,True,good/thanks?
-14082179940882456-EAT 2.mp4,EAT2,eat,P21,sign,9,33,eat,0.927,0.9209,eat|sleep|come,True,True,False,
-16004917375203398-FAMILY.mp4,FAMILY,family,P21,sign,4,42,family,0.9869,0.9857,family|me|bread,True,True,False,
-15179467641851585-SORRY.mp4,SORRY,sorry,P21,sign,0,55,sorry,0.9769,0.9732,sorry|me|medicine,True,True,False,
-42961246858695024-PLEASE.mp4,PLEASE,please,P21,sign,9,25,please,0.8614,0.8363,please|happy|my,True,True,False,
-8779944008396092-BYE.mp4,BYE,bye,P21,sign,5,23,bye,0.8651,0.8538,bye|bad|your,True,True,False,
-9710569622157019-BYE.mp4,BYE,bye,P39,sign,49,83,bye,0.9242,0.9181,bye|yes|no,True,True,False,
-6037747479203328-HELP.mp4,HELP,help,P21,sign,5,36,help,0.9422,0.936,help|stop|good,True,True,False,
-6442814975743945-NAME.mp4,NAME,name,P21,sign,10,32,name,0.9867,0.9856,name|bread|understand,True,True,False,
-20675411351630046-HELLO.mp4,HELLO,hello,P21,sign,8,32,hello,0.7853,0.7608,hello|bye|bad,True,False,False,confidence 0.79 < 0.85
-9715589334909431-YES.mp4,YES,yes,P21,sign,6,34,yes,0.9158,0.9105,yes|work|bye,True,True,False,
-36996117552353014-DRINK 2.mp4,DRINK2,drink,P21,sign,7,28,drink,0.9353,0.9301,drink|bye|you,True,True,False,
-42327270691916885-YES.mp4,YES,yes,P39,sign,46,74,yes,0.8649,0.8479,yes|me|bad,True,True,False,
-049094629596487804-HOME.mp4,HOME,home,P39,sign,64,74,home,0.6124,0.4945,home|drink|why,True,False,False,confidence 0.61 < 0.85
-9031073980623976-NAME.mp4,NAME,name,P39,sign,0,142,REST,0.8274,0.8028,REST|me|what,False,False,False,confidence 0.83 < 0.85
-16493550450776628-HELLO.mp4,HELLO,hello,P39,sign,45,84,bye,0.6286,0.5542,bye|stop|hello,False,False,False,confidence 0.63 < 0.85
-4656606080155459-NO.mp4,NO,no,P39,sign,42,79,no,0.9432,0.9347,no|where|bye,True,True,False,
-5470582351678035-DRINK 2.mp4,DRINK2,drink,P39,sign,52,102,drink,0.7986,0.7732,drink|bye|who,True,False,False,confidence 0.80 < 0.85
-3698632660671215-HAPPY.mp4,HAPPY,happy,P39,sign,62,84,my,0.8404,0.75,my|please|hungry,False,False,False,confidence 0.84 < 0.85
-009883456113471967-EAT.mp4,EAT1,eat,P39,sign,63,95,eat,0.9103,0.9055,eat|wait|come,True,True,False,
-04551864995837951-SAD.mp4,SAD,sad,P39,sign,67,101,want,0.9693,0.9664,want|family|wait,False,True,False,
-24442962392359258-SCHOOL.mp4,SCHOOL,school,P39,sign,48,77,school,0.9864,0.9846,school|my|bread,True,True,False,
-29341979023390885-FRIEND.mp4,FRIEND,friend,P39,sign,46,77,friend,0.8738,0.8481,friend|when|hurt,True,True,False,
-20482432773002457-LOVE.mp4,LOVE,love,P39,sign,45,77,love,0.9449,0.94,love|sorry|help,True,True,False,
-06939945586940688-BAD.mp4,BAD,bad,P39,sign,48,61,water,0.3274,0.2793,water|doctor|need,False,False,False,confidence 0.33 < 0.85
-44817736125778374-HELP.mp4,HELP,help,P39,sign,52,93,help,0.9455,0.9407,help|good|how,True,True,False,
-4396630789618088-EAT 2.mp4,EAT2,eat,P39,sign,41,77,eat,0.8957,0.8888,eat|home|me,True,True,False,
-9733795834896177-FAMILY.mp4,FAMILY,family,P39,sign,46,85,family,0.9791,0.9774,family|me|want,True,True,False,
-6387762756061144-SORRY.mp4,SORRY,sorry,P39,sign,0,133,sorry,0.9143,0.9027,sorry|me|you,True,True,False,
-5938554372186748-EAT 2.mp4,EAT2,eat,P26,sign,8,34,eat,0.5883,0.4821,eat|sleep|come,True,False,False,confidence 0.59 < 0.85
-7397889710801269-FAMILY.mp4,FAMILY,family,P26,sign,9,49,family,0.9763,0.9736,family|me|understand,True,True,False,
-9220637121525757-SORRY.mp4,SORRY,sorry,P26,sign,0,79,sorry,0.9787,0.975,sorry|me|medicine,True,True,False,
-25290749191933815-GOOD.mp4,GOOD,good,P26,sign,5,30,good,0.5686,0.4924,good|hungry|eat,True,False,False,confidence 0.57 < 0.85
-6330094542104612-PLEASE.mp4,PLEASE,please,P39,sign,49,64,please,0.5815,0.2782,please|my|hungry,True,False,False,confidence 0.58 < 0.85
-7313509467149351-DRINK.mp4,DRINK1,drink,P39,sign,46,81,drink,0.9327,0.9255,drink|home|understand,True,True,False,
-16870669316247833-THANK YOU.mp4,THANKYOU,thanks,P39,sign,43,59,good,0.3503,0.1749,good|bad|eat,False,False,False,confidence 0.35 < 0.85
-2631901034056372-LOVE.mp4,LOVE,love,P39,sign,41,71,love,0.9167,0.9089,love|help|sorry,True,True,False,
-8079226457278508-NO.mp4,NO,no,P26,sign,7,38,where,0.8146,0.7809,where|no|like,False,False,False,confidence 0.81 < 0.85
-02185976473813267-SCHOOL.mp4,SCHOOL,school,P26,sign,6,48,school,0.9771,0.9752,school|OTHER|my,True,True,False,
-6298947790810541-FRIEND.mp4,FRIEND,friend,P26,sign,9,47,friend,0.9526,0.942,friend|OTHER|when,True,True,False,
-7628262965013866-BAD.mp4,BAD,bad,P26,sign,7,16,bad,0.675,0.5966,bad|eat|good,True,False,False,confidence 0.67 < 0.85
-26056519285644875-YES.mp4,YES,yes,P39,sign,36,69,yes,0.9015,0.8957,yes|bye|work,True,True,False,
-6484470716683486-DRINK 2.mp4,DRINK2,drink,P39,sign,41,89,drink,0.8704,0.8621,drink|chicken|you,True,True,False,
-7976564165646398-THANK YOU.mp4,THANKYOU,thanks,P26,sign,28,61,thanks,0.4592,0.352,thanks|sad|good,True,False,False,confidence 0.46 < 0.85
-25439044778685105-LOVE.mp4,LOVE,love,P26,sign,13,69,sorry,0.968,0.9651,sorry|my|love,False,True,False,
-05859480723249688-PLEASE.mp4,PLEASE,please,P26,sign,10,32,my,0.9045,0.8561,my|please|hungry,False,True,False,
-37918472044314444-DRINK.mp4,DRINK1,drink,P26,sign,6,27,drink,0.8934,0.8856,drink|water|come,True,True,False,
-9009874398583952-SAD.mp4,SAD,sad,P26,sign,4,29,sad,0.8128,0.7828,sad|wait|want,True,False,False,confidence 0.81 < 0.85
-5358205730570242-HOME.mp4,HOME,home,P26,sign,16,38,home,0.8409,0.8019,home|drink|understand,True,False,False,confidence 0.84 < 0.85
-1420689770801613-NAME.mp4,NAME,name,P26,sign,6,28,name,0.9838,0.9824,name|bread|understand,True,True,False,
-020030442376253177-HELLO.mp4,HELLO,hello,P26,sign,4,28,hello,0.6663,0.5983,hello|bye|drink,True,False,False,confidence 0.67 < 0.85
-2889010159260097-BYE.mp4,BYE,bye,P26,sign,4,23,bye,0.8212,0.7983,bye|finish|bad,True,False,False,confidence 0.82 < 0.85
-8977694836593926-YES.mp4,YES,yes,P26,sign,4,35,yes,0.6551,0.6187,yes|bye|need,True,False,False,confidence 0.66 < 0.85
-4382571867616978-HELP.mp4,HELP,help,P26,sign,8,37,help,0.9635,0.9602,help|good|how,True,True,False,
-7331110745964862-DRINK 2.mp4,DRINK2,drink,P26,sign,5,47,drink,0.9319,0.9271,drink|home|bye,True,True,False,
-6098755056170255-HAPPY.mp4,HAPPY,happy,P26,sign,24,50,my,0.9862,0.984,my|please|sorry,False,True,False,
-8779902440064791-EAT.mp4,EAT1,eat,P26,sign,9,40,eat,0.9347,0.931,eat|home|come,True,True,False,
-8218136220855874-HELP.mp4,HELP,help,P26,sign,5,40,help,0.911,0.8985,help|love|who,True,True,False,
-5084675430857362-BRACELET.mp4,BRACELET,OTHER,P5,sign,24,49,doctor,0.3968,0.326,doctor|bye|OTHER,False,False,False,confidence 0.40 < 0.85
-28541392437861024-TOMORROW.mp4,TOMORROW,tomorrow,P21,sign,5,35,tomorrow,0.4823,0.4123,tomorrow|drink|who,True,False,False,confidence 0.48 < 0.85
-6466730782412575-REVENGE.mp4,REVENGE,OTHER,P21,sign,7,40,more,0.3453,0.2333,more|eat|home,False,False,False,confidence 0.35 < 0.85
-052047780303462465-TOMORROW.mp4,TOMORROW,tomorrow,P21,sign,5,29,tomorrow,0.8424,0.8281,tomorrow|who|you,True,False,False,confidence 0.84 < 0.85
-162343851099775-BIOLOGY.mp4,BIOLOGY,OTHER,P39,sign,46,99,family,0.7853,0.756,family|medicine|more,False,False,False,confidence 0.79 < 0.85
-4328643376522927-WORK.mp4,WORK,work,P39,sign,65,85,work,0.9198,0.9123,work|yes|love,True,True,False,
-5043995947516982-BIOLOGY.mp4,BIOLOGY,OTHER,P26,sign,6,48,medicine,0.3749,0.0115,medicine|family|more,False,False,False,confidence 0.37 < 0.85
-6072418103340411-WORK.mp4,WORK,work,P26,sign,8,51,work,0.8986,0.8863,work|doctor|love,True,True,False,
-8121903625431852-MUSEUM.mp4,MUSEUM,OTHER,P26,sign,7,40,OTHER,0.2734,0.0881,OTHER|doctor|what,True,False,False,confidence 0.27 < 0.85
-895022317746502-MY.mp4,MY,my,P5,sign,32,36,my,0.479,0.1329,my|please|hungry,True,False,False,confidence 0.48 < 0.85
-830706580516783-DOCTOR.mp4,DOCTOR1,doctor,P5,sign,38,75,how,0.1799,0.014,how|help|work,False,False,False,confidence 0.18 < 0.85
-4372505087382914-ME.mp4,ME,me,P5,sign,26,30,hungry,0.4602,0.3808,hungry|please|sorry,False,False,False,confidence 0.46 < 0.85
-19418271966399425-WAIT.mp4,WAIT,wait,P5,sign,23,55,want,0.9344,0.923,want|wait|what,False,True,False,
-32838564647007873-SLEEP.mp4,SLEEP,sleep,P5,sign,41,67,sleep,0.8643,0.8448,sleep|come|apple,True,True,False,
-7530258985595248-WATER.mp4,WATER,water,P5,sign,3,69,water,0.7031,0.6661,water|doctor|school,True,False,False,confidence 0.70 < 0.85
-16110924695348516-YOUR.mp4,YOUR,your,P5,sign,0,90,your,0.2476,0.1855,your|what|come,True,False,False,confidence 0.25 < 0.85
-2868906638281077-BREAD.mp4,BREAD,bread,P12,sign,10,37,bread,0.9886,0.9876,bread|my|school,True,True,False,
-8724961433813252-HUNGRY.mp4,HUNGRY,hungry,P12,sign,12,23,hungry,0.9459,0.9397,hungry|sorry|please,True,True,False,
-7404223141679687-WHERE.mp4,WHERE,where,P12,sign,8,38,where,0.9783,0.9764,where|you|medicine,True,True,False,
-08956501268165051-SICK.mp4,SICK,sick,P12,sign,8,36,sick,0.959,0.9556,sick|OTHER|bread,True,True,False,
-8341336597329694-MORE.mp4,MORE,more,P12,sign,7,40,more,0.9498,0.9445,more|doctor|eat,True,True,False,
-24758144482774802-WHO.mp4,WHO,who,P12,sign,5,31,who,0.9371,0.9196,who|you|OTHER,True,True,False,
-9717361996927067-UNDERSTAND.mp4,UNDERSTAND,understand,P12,sign,6,36,understand,0.9844,0.9833,understand|need|sorry,True,True,False,
-6220173213417262-WHY.mp4,WHY,why,P12,sign,5,35,why,0.9432,0.936,why|home|need,True,True,False,
-19039558672419843-WHEN.mp4,WHEN,when,P12,sign,6,37,when,0.9609,0.9543,when|hurt|name,True,True,False,
-6229294436435182-YOU.mp4,YOU,you,P12,sign,6,36,you,0.9794,0.9775,you|come|where,True,True,False,
-17739780073785405-HURT.mp4,HURT,hurt,P12,sign,5,37,hurt,0.9719,0.9679,hurt|today|what,True,True,False,
-9659002140360071-WANT 2.mp4,WANT1,want,P12,sign,3,20,want,0.7515,0.6693,want|wait|what,True,False,False,confidence 0.75 < 0.85
-8894617756348819-APPLE.mp4,APPLE,apple,P5,sign,16,44,apple,0.658,0.605,apple|who|drink,True,False,False,confidence 0.66 < 0.85
-6671187735704913-APPLE.mp4,APPLE,apple,P21,sign,52,84,apple,0.8983,0.8881,apple|who|drink,True,True,False,
-306250682526525-HUNGRY.mp4,HUNGRY,hungry,P21,sign,0,75,hungry,0.6002,0.5217,hungry|sorry|please,True,False,False,confidence 0.60 < 0.85
-9761845244833474-APPLE.mp4,APPLE,apple,P39,sign,43,89,apple,0.924,0.9201,apple|understand|yes,True,True,False,
-8525529504952978-HUNGRY.mp4,HUNGRY,hungry,P39,sign,0,136,REST,0.2028,0.0663,REST|hungry|doctor,False,False,False,confidence 0.20 < 0.85
-11792300756428031-WHAT 1.mp4,WHAT2,what,P21,sign,15,31,what,0.8645,0.8171,what|want|stop,True,True,False,
-2294900578606751-COME.mp4,COME,come,P21,sign,10,34,come,0.9835,0.982,come|me|school,True,True,False,
-3211415289488089-MY.mp4,MY,my,P21,sign,9,16,my,0.9791,0.977,my|please|sorry,True,True,False,
-5829570199823455-DOCTOR.mp4,DOCTOR1,doctor,P21,sign,7,35,doctor,0.8983,0.8823,doctor|OTHER|medicine,True,True,False,
-35429744496101856-ME.mp4,ME,me,P21,sign,0,52,me,0.989,0.9879,me|sorry|family,True,True,False,
-5419469718181713-WAIT.mp4,WAIT,wait,P21,sign,7,30,want,0.958,0.9545,want|family|wait,False,True,False,
-4876077931735432-SLEEP.mp4,SLEEP,sleep,P21,sign,14,43,sleep,0.9599,0.9567,sleep|why|come,True,True,False,
-414141284745577-WATER.mp4,WATER,water,P21,sign,9,32,water,0.9182,0.9107,water|your|doctor,True,True,False,
-2596986287783567-YOUR.mp4,YOUR,your,P21,sign,10,34,your,0.9769,0.9751,your|my|you,True,True,False,
-3860077714893173-FINISH.mp4,FINISH,finish,P21,sign,6,31,finish,0.9648,0.9609,finish|bye|need,True,True,False,
-34697989347891944-WHERE.mp4,WHERE,where,P21,sign,9,30,where,0.9787,0.9759,where|you|medicine,True,True,False,
-47832051707828005-SICK.mp4,SICK,sick,P21,sign,4,36,sick,0.9509,0.9461,sick|OTHER|why,True,True,False,
-009299695590603507-MORE.mp4,MORE,more,P21,sign,11,34,more,0.8113,0.7237,more|doctor|eat,True,False,False,confidence 0.81 < 0.85
-9085692028177397-WANT 2.mp4,WANT1,want,P21,sign,5,16,want,0.5184,0.2348,want|go|me,True,False,False,confidence 0.52 < 0.85
-04669408879006931-NEED.mp4,NEED,need,P21,sign,5,27,need,0.9756,0.9734,need|come|yes,True,True,False,
-19643383002170656-YOU.mp4,YOU,you,P21,sign,11,18,you,0.9856,0.9846,you|come|sorry,True,True,False,
-6440601854085655-HURT.mp4,HURT,hurt,P21,sign,5,23,hurt,0.9541,0.9431,hurt|what|today,True,True,False,
-6012173826569807-NOW.mp4,NOW,now,P21,sign,5,22,now,0.7025,0.4919,now|today|bread,True,False,False,confidence 0.70 < 0.85
-8042345903835753-LIKE.mp4,LIKE,like,P21,sign,7,12,like,0.7597,0.6878,like|hungry|my,True,False,False,confidence 0.76 < 0.85
-6082022551291582-TODAY.mp4,TODAY,today,P21,sign,6,23,now,0.7506,0.5609,now|today|need,False,False,False,confidence 0.75 < 0.85
-41399648901403063-MEDICINE.mp4,MEDICINE,medicine,P21,sign,6,12,medicine,0.9837,0.9823,medicine|school|name,True,True,False,
-6721385997956766-GO.mp4,GO,go,P21,sign,5,23,go,0.9338,0.923,go|OTHER|when,True,True,False,
-3330583417668693-WANT.mp4,WANT2,want,P21,sign,12,35,want,0.9697,0.9667,want|what|wait,True,True,False,
-757798573449781-THIRSTY.mp4,THIRSTY,thirsty,P21,sign,5,18,thirsty,0.8848,0.8695,thirsty|who|you,True,True,False,
-8290350631082379-WORK.mp4,WORK,work,P21,sign,5,35,work,0.9371,0.933,work|love|sorry,True,True,False,
-6506737411983545-WHO.mp4,WHO,who,P21,sign,8,31,who,0.9078,0.8734,who|you|come,True,True,False,
-8071758688201891-UNDERSTAND.mp4,UNDERSTAND,understand,P21,sign,7,32,understand,0.9846,0.9835,understand|school|family,True,True,False,
-7508574803030745-WHY.mp4,WHY,why,P21,sign,8,36,why,0.967,0.9646,why|now|come,True,True,False,
-08729017928642491-WHEN.mp4,WHEN,when,P21,sign,6,30,when,0.9544,0.9472,when|name|friend,True,True,False,
-10542513580735968-HOW.mp4,HOW1,how,P21,sign,6,29,how,0.9492,0.9384,how|help|bread,True,True,False,
-30879418056454777-NEED.mp4,NEED,need,P39,sign,56,76,need,0.9896,0.9888,need|you|me,True,True,False,
-8203203237125376-NOW.mp4,NOW,now,P39,sign,63,72,today,0.7259,0.5384,today|now|understand,False,False,False,confidence 0.73 < 0.85
-16373316542801275-LIKE.mp4,LIKE,like,P39,sign,39,47,my,0.6361,0.5658,my|like|hungry,False,False,False,confidence 0.64 < 0.85
-4382853991304725-STOP.mp4,STOP,stop,P21,sign,3,30,stop,0.9507,0.9474,stop|why|thanks,True,True,False,
-9106828060005678-WHAT 2.mp4,WHAT1,what,P21,sign,5,27,like,0.416,0.2281,like|what|OTHER,False,False,False,confidence 0.42 < 0.85
-6519044168483283-BREAD.mp4,BREAD,bread,P21,sign,5,31,bread,0.9885,0.9875,bread|my|school,True,True,False,
-2363946724780117-BATHROOM.mp4,BATHROOM,bathroom,P21,sign,5,26,bathroom,0.6139,0.4267,bathroom|where|doctor,True,False,False,confidence 0.61 < 0.85
-3488393161458545-TOMORROW.mp4,TOMORROW,tomorrow,P39,sign,53,69,tomorrow,0.543,0.3814,tomorrow|apple|bathroom,True,False,False,confidence 0.54 < 0.85
-8541893071831477-SLEEP.mp4,SLEEP,sleep,P21,sign,7,34,sleep,0.9607,0.9552,sleep|come|why,True,True,False,
-5103688507862052-SLEEP.mp4,SLEEP,sleep,P39,sign,60,87,sleep,0.9604,0.9572,sleep|eat|my,True,True,False,
-9000660794636397-MORE.mp4,MORE,more,P39,sign,61,98,doctor,0.8951,0.8443,doctor|more|OTHER,False,True,False,
-5788460385097332-WHO.mp4,WHO,who,P39,sign,49,81,who,0.9411,0.9261,who|you|OTHER,True,True,False,
-03174577769237463-WATER.mp4,WATER,water,P39,sign,56,85,water,0.802,0.7871,water|doctor|your,True,False,False,confidence 0.80 < 0.85
-7464906167030079-YOUR.mp4,YOUR,your,P39,sign,55,83,your,0.9729,0.9707,your|my|you,True,True,False,
-45273738498753846-SICK.mp4,SICK,sick,P39,sign,57,94,sick,0.9566,0.9506,sick|why|OTHER,True,True,False,
-7903893233633115-UNDERSTAND.mp4,UNDERSTAND,understand,P39,sign,43,80,understand,0.9541,0.9501,understand|need|school,True,True,False,
-5132756077874947-WHY.mp4,WHY,why,P39,sign,54,84,why,0.827,0.7997,why|come|what,True,False,False,confidence 0.83 < 0.85
-5407096343613205-WHEN.mp4,WHEN,when,P39,sign,48,88,you,0.2912,0.1826,you|need|hurt,False,False,False,confidence 0.29 < 0.85
-35038040842137197-YOU.mp4,YOU,you,P39,sign,0,118,REST,0.8261,0.8099,REST|me|help,False,False,False,confidence 0.83 < 0.85
-023534771855838965-HURT.mp4,HURT,hurt,P39,sign,0,141,REST,0.4264,0.2687,REST|what|doctor,False,False,False,confidence 0.43 < 0.85
-629671692318208-THIRSTY.mp4,THIRSTY,thirsty,P39,sign,36,68,thirsty,0.8353,0.8068,thirsty|sorry|me,True,False,False,confidence 0.84 < 0.85
-22914094527724194-TODAY.mp4,TODAY,today,P39,sign,49,58,today,0.8875,0.8336,today|now|hurt,True,True,False,
-8782648080433364-WANT 2.mp4,WANT1,want,P39,sign,57,70,what,0.8181,0.7292,what|want|come,False,False,False,confidence 0.82 < 0.85
-10421760727572105-WANT.mp4,WANT2,want,P39,sign,59,81,want,0.6375,0.4457,want|what|today,True,False,False,confidence 0.64 < 0.85
-028864186395991087-MEDICINE.mp4,MEDICINE,medicine,P39,sign,47,51,medicine,0.8851,0.8702,medicine|doctor|OTHER,True,True,False,
-3702604002311216-GO.mp4,GO,go,P39,sign,42,59,go,0.734,0.6664,go|where|when,True,False,False,confidence 0.73 < 0.85
-6809556328325521-COME.mp4,COME,come,P39,sign,52,72,come,0.9696,0.9674,come|me|need,True,True,False,
-37186838838285174-WHAT 1.mp4,WHAT2,what,P39,sign,0,119,help,0.4706,0.4005,help|what|today,False,False,False,confidence 0.47 < 0.85
-14107936727280213-MY.mp4,MY,my,P39,sign,58,84,my,0.9762,0.9727,my|please|hungry,True,True,False,
-06221413057811631-DOCTOR.mp4,DOCTOR1,doctor,P39,sign,0,121,doctor,0.7971,0.7458,doctor|REST|OTHER,True,False,False,confidence 0.80 < 0.85
-5724078705072562-ME.mp4,ME,me,P39,sign,0,109,me,0.9865,0.9853,me|sorry|bread,True,True,False,
-5205785031120291-WAIT.mp4,WAIT,wait,P39,sign,47,76,want,0.3942,0.0744,want|wait|what,False,False,False,confidence 0.39 < 0.85
-24803980252556834-FINISH.mp4,FINISH,finish,P39,sign,46,73,finish,0.9544,0.9506,finish|happy|me,True,True,False,
-6997365376367899-WHERE.mp4,WHERE,where,P39,sign,46,74,where,0.9785,0.9767,where|you|medicine,True,True,False,
-6271713081961889-HOW.mp4,HOW1,how,P39,sign,0,126,how,0.3861,0.3074,how|doctor|what,True,False,False,confidence 0.39 < 0.85
-49400025068696496-STOP.mp4,STOP,stop,P39,sign,37,78,stop,0.9649,0.9618,stop|what|more,True,True,False,
-873539016146136-WHAT 2.mp4,WHAT1,what,P39,sign,49,82,what,0.9331,0.9206,what|OTHER|name,True,True,False,
-9234489097265757-BREAD.mp4,BREAD,bread,P39,sign,57,95,bread,0.9879,0.9866,bread|my|school,True,True,False,
-3622050510913253-BATHROOM.mp4,BATHROOM,bathroom,P39,sign,58,95,bathroom,0.9406,0.935,bathroom|no|where,True,True,False,
-7945999380612383-MEDICINE.mp4,MEDICINE,medicine,P26,sign,9,50,medicine,0.9842,0.983,medicine|you|sorry,True,True,False,
-5587884729767747-GO.mp4,GO,go,P26,sign,4,32,go,0.3011,0.155,go|where|when,True,False,False,confidence 0.30 < 0.85
-43278703688513187-TODAY.mp4,TODAY,today,P26,sign,13,33,today,0.8807,0.822,today|now|what,True,True,False,
-971003020665846-HOW.mp4,HOW1,how,P26,sign,14,45,how,0.9472,0.9421,how|happy|school,True,True,False,
-38376537009853195-BREAD.mp4,BREAD,bread,P26,sign,12,67,hungry,0.2451,0.1113,hungry|help|love,False,False,False,confidence 0.25 < 0.85
-6405573667025386-BATHROOM.mp4,BATHROOM,bathroom,P26,sign,11,46,bathroom,0.9192,0.9097,bathroom|doctor|work,True,True,False,
-8804372922780734-FINISH.mp4,FINISH,finish,P26,sign,8,40,finish,0.9098,0.9017,finish|bye|what,True,True,False,
-06571173343741843-APPLE.mp4,APPLE,apple,P26,sign,6,45,apple,0.9277,0.9239,apple|understand|who,True,True,False,
-8727936955185542-HUNGRY.mp4,HUNGRY,hungry,P26,sign,11,17,sorry,0.8322,0.7869,sorry|hungry|my,False,False,False,confidence 0.83 < 0.85
-38702561454738094-WHEN.mp4,WHEN,when,P26,sign,11,47,need,0.4659,0.3763,need|when|OTHER,False,False,False,confidence 0.47 < 0.85
-298155207775465-YOU.mp4,YOU,you,P26,sign,4,32,you,0.9802,0.9775,you|need|come,True,True,False,
-24503491036116554-HURT.mp4,HURT,hurt,P26,sign,5,49,hurt,0.9653,0.9617,hurt|what|today,True,True,False,
-6330153558265055-NEED.mp4,NEED,need,P26,sign,10,42,need,0.7331,0.6289,need|you|where,True,False,False,confidence 0.73 < 0.85
-10928494959813584-NOW.mp4,NOW,now,P26,sign,6,37,what,0.6868,0.6211,what|today|now,False,False,False,confidence 0.69 < 0.85
-6682245340769342-MY.mp4,MY,my,P26,sign,0,55,my,0.9895,0.9886,my|please|sorry,True,True,False,
-6906126485234503-DOCTOR.mp4,DOCTOR1,doctor,P26,sign,0,68,sorry,0.3481,0.1575,sorry|doctor|REST,False,False,False,confidence 0.35 < 0.85
-03554605558492718-ME.mp4,ME,me,P26,sign,25,29,apple,0.1818,0.0603,apple|hurt|yes,False,False,False,confidence 0.18 < 0.85
-9850177164607337-WATER.mp4,WATER,water,P26,sign,6,39,water,0.9176,0.9111,water|doctor|your,True,True,False,
-19532533865671398-WHERE.mp4,WHERE,where,P26,sign,6,33,where,0.964,0.9603,where|bathroom|like,True,True,False,
-3176950945974586-SICK.mp4,SICK,sick,P26,sign,6,35,sick,0.6687,0.4516,sick|why|school,True,False,False,confidence 0.67 < 0.85
-6368510219023522-WAIT.mp4,WAIT,wait,P26,sign,10,37,want,0.8729,0.8386,want|what|wait,False,True,False,
-9036471590989446-SLEEP.mp4,SLEEP,sleep,P26,sign,11,41,sleep,0.8257,0.8075,sleep|love|sick,True,False,False,confidence 0.83 < 0.85
-17984011488050022-MORE.mp4,MORE,more,P26,sign,4,33,more,0.8898,0.832,more|doctor|OTHER,True,True,False,
-8040413047655517-WHO.mp4,WHO,who,P26,sign,6,26,who,0.9508,0.9454,who|you|OTHER,True,True,False,
-6504234134902995-UNDERSTAND.mp4,UNDERSTAND,understand,P26,sign,7,27,understand,0.9849,0.9839,understand|name|sorry,True,True,False,
-38099175964004983-WHY.mp4,WHY,why,P26,sign,0,34,what,0.3869,0.1974,what|why|now,False,False,False,confidence 0.39 < 0.85
-11163894424136789-LIKE.mp4,LIKE,like,P26,sign,9,28,hungry,0.7337,0.6278,hungry|like|my,False,False,False,confidence 0.73 < 0.85
-7757946316597986-STOP.mp4,STOP,stop,P26,sign,5,34,stop,0.4955,0.3618,stop|sick|why,True,False,False,confidence 0.50 < 0.85
-24519151833954478-WHAT 2.mp4,WHAT1,what,P26,sign,8,34,what,0.8554,0.807,what|OTHER|now,True,True,False,
-24064885357062593-COME.mp4,COME,come,P26,sign,12,33,what,0.3951,0.2479,what|why|come,False,False,False,confidence 0.40 < 0.85
-05608472883163529-WHAT 1.mp4,WHAT2,what,P26,sign,0,40,what,0.8256,0.7775,what|want|today,True,False,False,confidence 0.83 < 0.85
-577183601855066-TOMORROW.mp4,TOMORROW,tomorrow,P26,sign,3,31,help,0.519,0.3524,help|hungry|tomorrow,False,False,False,confidence 0.52 < 0.85
-8459253067700705-WANT.mp4,WANT2,want,P26,sign,5,32,what,0.8515,0.799,what|want|why,False,True,False,
-4174335657826118-THIRSTY.mp4,THIRSTY,thirsty,P26,sign,10,37,thirsty,0.8339,0.8008,thirsty|me|sorry,True,False,False,confidence 0.83 < 0.85
-15592377033295812-YOUR.mp4,YOUR,your,P26,sign,4,30,your,0.9776,0.9759,your|you|my,True,True,False,
-3964716837264739-WANT 2.mp4,WANT1,want,P26,sign,4,38,want,0.9665,0.9608,want|what|family,True,True,False,
-5285653456968582-TODAY.mp4,TODAY,today,P26,sign,6,46,today,0.9056,0.8708,today|now|hurt,True,True,False,
-986022284412545-WHAT 1.mp4,WHAT2,what,P26,sign,7,34,what,0.9135,0.8803,what|want|come,True,True,False,
-34076966817997323-ME.mp4,ME,me,P26,sign,15,45,me,0.2216,0.0965,me|doctor|thirsty,True,False,False,confidence 0.22 < 0.85
-5801873008829825-BECOME.mp4,BECOME,OTHER,P21,sign,4,21,school,0.9425,0.931,school|my|good,False,True,False,
-9993692818863158-SILLY.mp4,SILLY,OTHER,P5,sign,4,49,who,0.2739,0.1611,who|love|tomorrow,False,False,False,confidence 0.27 < 0.85
-8006057606700916-EXAMPLE.mp4,EXAMPLE,OTHER,P12,sign,11,43,school,0.9666,0.9631,school|stop|OTHER,False,True,False,
-5303036926562847-RELEASE.mp4,RELEASE,OTHER,P12,sign,13,47,love,0.1601,0.0289,love|doctor|bathroom,False,False,False,confidence 0.16 < 0.85
-35591295240993426-MEGAPHONE.mp4,MEGAPHONE,OTHER,P12,sign,16,58,drink,0.2251,0.0818,drink|bye|hello,False,False,False,confidence 0.23 < 0.85
-8361903158670465-POOL GAME.mp4,POOLGAME,OTHER,P5,sign,0,99,REST,0.1614,0.0149,REST|help|doctor,False,False,False,confidence 0.16 < 0.85
-6931178547025278-TURKEY.mp4,TURKEY1,OTHER,P5,sign,29,71,apple,0.5435,0.5008,apple|thirsty|me,False,False,False,confidence 0.54 < 0.85
-8865816848442825-HAPPEN.mp4,HAPPEN,OTHER,P5,sign,23,52,when,0.2615,0.1367,when|now|hurt,False,False,False,confidence 0.26 < 0.85
-9685949419972621-ASTRONAUT.mp4,ASTRONAUT,OTHER,P12,sign,14,40,OTHER,0.4028,0.267,OTHER|medicine|go,True,False,False,confidence 0.40 < 0.85
-3370771332793896-STUDENT.mp4,STUDENT,OTHER,P12,sign,9,36,sick,0.4439,0.3307,sick|stop|OTHER,False,False,False,confidence 0.44 < 0.85
-027532349402833-DOWNSIZE.mp4,DOWNSIZE1,OTHER,P12,sign,10,44,go,0.2831,0.1275,go|when|where,False,False,False,confidence 0.28 < 0.85
-6019681134067734-WONDER.mp4,WONDER,OTHER,P12,sign,10,42,understand,0.9493,0.943,understand|need|school,False,True,False,
-5802476408389681-CORN 1.mp4,CORN1,OTHER,P12,sign,5,39,who,0.5422,0.4671,who|you|apple,False,False,False,confidence 0.54 < 0.85
-2591177165349323-ENVELOPE 5.mp4,ENVELOPE3,OTHER,P5,sign,42,81,doctor,0.2769,0.1231,doctor|how|school,False,False,False,confidence 0.28 < 0.85
-6113025140614445-SOMERSAULT 3.mp4,SOMERSAULT2,OTHER,P5,sign,22,69,OTHER,0.3249,0.2238,OTHER|what|more,True,False,False,confidence 0.32 < 0.85
-6875018898334526-SLICE 3.mp4,SLICE4,OTHER,P5,sign,28,61,stop,0.6722,0.47,stop|help|good,False,False,False,confidence 0.67 < 0.85
-2820344663651275-TRIP 2.mp4,TRIP2,OTHER,P5,sign,18,52,OTHER,0.3816,0.2714,OTHER|what|friend,True,False,False,confidence 0.38 < 0.85
-7725711298079567-ATHLETE.mp4,ATHLETE,OTHER,P5,sign,18,57,bathroom,0.9222,0.9158,bathroom|no|doctor,False,True,False,
-7137675354741357-POLISH.mp4,POLISH,OTHER,P5,sign,20,89,work,0.3325,0.203,work|yes|OTHER,False,False,False,confidence 0.33 < 0.85
-8334862371163634-REMIND.mp4,REMIND,OTHER,P5,sign,24,84,more,0.3477,0.1939,more|go|OTHER,False,False,False,confidence 0.35 < 0.85
-9676550564435922-JUNIOR.mp4,JUNIOR,OTHER,P5,sign,18,52,school,0.8254,0.7813,school|doctor|OTHER,False,False,False,confidence 0.83 < 0.85
-08433061936933717-NIGHT.mp4,NIGHT1,OTHER,P5,sign,31,63,doctor,0.5986,0.4833,doctor|work|OTHER,False,False,False,confidence 0.60 < 0.85
-8023239580796708-AWAKE.mp4,AWAKE,OTHER,P5,sign,18,46,when,0.3858,0.1964,when|go|OTHER,False,False,False,confidence 0.39 < 0.85
-33277603176677206-MCDONALDS.mp4,MCDONALDS,OTHER,P39,sign,50,103,friend,0.5049,0.3303,friend|doctor|OTHER,False,False,False,confidence 0.50 < 0.85
-6695605225113161-DONT KNOW.mp4,DONTKNOW,OTHER,P21,sign,8,38,finish,0.6682,0.6255,finish|bad|bread,False,False,False,confidence 0.67 < 0.85
-9544722378286297-PINCH.mp4,PINCH1,OTHER,P21,sign,4,32,love,0.2609,0.1113,love|who|OTHER,False,False,False,confidence 0.26 < 0.85
-7451289471930389-ALRIGHT.mp4,ALRIGHT,OTHER,P21,sign,6,33,school,0.924,0.9121,school|my|good,False,True,False,
-5768423480273424-LOBSTER 3.mp4,LOBSTER3,OTHER,P21,sign,6,36,what,0.4126,0.2601,what|hurt|want,False,False,False,confidence 0.41 < 0.85
-33998368724114303-HAPPEN.mp4,HAPPEN,OTHER,P21,sign,6,17,hurt,0.5882,0.3509,hurt|what|today,False,False,False,confidence 0.59 < 0.85
-46177982143117036-CHICAGO.mp4,CHICAGO,OTHER,P21,sign,7,28,bye,0.7105,0.5977,bye|bad|me,False,False,False,confidence 0.71 < 0.85
-4791291616278226-SILLY.mp4,SILLY,OTHER,P21,sign,5,30,tomorrow,0.2249,0.0232,tomorrow|help|hungry,False,False,False,confidence 0.22 < 0.85
-7524024072897346-MUSEUM.mp4,MUSEUM,OTHER,P21,sign,5,30,OTHER,0.4051,0.2909,OTHER|go|no,True,False,False,confidence 0.41 < 0.85
-903935681817708-MCDONALDS.mp4,MCDONALDS,OTHER,P21,sign,21,62,OTHER,0.3674,0.2498,OTHER|friend|medicine,True,False,False,confidence 0.37 < 0.85
-024897946104871505-SHAVE 4.mp4,SHAVE3,OTHER,P21,sign,7,49,love,0.4241,0.3485,love|stop|tomorrow,False,False,False,confidence 0.42 < 0.85
-25645696041773425-WONDER.mp4,WONDER,OTHER,P39,sign,60,107,understand,0.9788,0.9766,understand|need|school,False,True,False,
-4331446402686592-ENGAGEMENT.mp4,ENGAGEMENT,OTHER,P39,sign,57,78,school,0.9523,0.9467,school|my|doctor,False,True,False,
-9146359022356558-GAS.mp4,GAS,OTHER,P21,sign,8,35,work,0.9287,0.9226,work|love|yes,False,True,False,
-653894433602245-KEYBOARD.mp4,KEYBOARD,OTHER,P21,sign,5,31,bye,0.4626,0.3562,bye|family|no,False,False,False,confidence 0.46 < 0.85
-7445163687198764-PULL CONVINCE.mp4,PULLCONVINCE,OTHER,P21,sign,6,30,today,0.1992,0.0098,today|help|now,False,False,False,confidence 0.20 < 0.85
-4619102582986805-CAPTURE.mp4,CAPTURE,OTHER,P21,sign,4,25,OTHER,0.2171,0.1073,OTHER|no|chicken,True,False,False,confidence 0.22 < 0.85
-4274835877634555-PINEAPPLE.mp4,PINEAPPLE1,OTHER,P21,sign,7,34,work,0.2577,0.1566,work|OTHER|yes,False,False,False,confidence 0.26 < 0.85
-20296149790930174-FREEDOM.mp4,FREEDOM,OTHER,P21,sign,7,29,bathroom,0.394,0.2332,bathroom|doctor|help,False,False,False,confidence 0.39 < 0.85
-25616980642451836-DRIVE.mp4,DRIVE,OTHER,P21,sign,5,44,today,0.6784,0.601,today|now|hurt,False,False,False,confidence 0.68 < 0.85
-5685456620542664-GOAL.mp4,GOAL,OTHER,P21,sign,6,38,go,0.479,0.2834,go|when|OTHER,False,False,False,confidence 0.48 < 0.85
-8885915598928231-CARRY.mp4,CARRY,OTHER,P21,sign,5,27,help,0.2292,0.054,help|good|happy,False,False,False,confidence 0.23 < 0.85
-43914209308534025-TEACH 2.mp4,TEACH2,OTHER,P21,sign,5,44,OTHER,0.2939,0.1191,OTHER|sick|yes,True,False,False,confidence 0.29 < 0.85
-184695107664812-WHICH.mp4,WHICH,OTHER,P21,sign,5,33,help,0.4994,0.2147,help|bread|how,False,False,False,confidence 0.50 < 0.85
-6316221330732725-CORN 2.mp4,CORN2,OTHER,P21,sign,4,43,family,0.7312,0.6944,family|name|need,False,False,False,confidence 0.73 < 0.85
-7040921150104393-EASTER.mp4,EASTER,OTHER,P21,sign,4,30,OTHER,0.3896,0.2793,OTHER|bread|sick,True,False,False,confidence 0.39 < 0.85
-4693497743252226-AWAKE.mp4,AWAKE,OTHER,P21,sign,4,27,go,0.51,0.4035,go|OTHER|where,False,False,False,confidence 0.51 < 0.85
-9072438422600229-HAIRDRYER 2.mp4,HAIRDRYER2,OTHER,P21,sign,5,38,come,0.9064,0.8893,come|need|understand,False,True,False,
-3914082348681629-FLOWER.mp4,FLOWER,OTHER,P21,sign,5,33,eat,0.4385,0.2871,eat|stop|drink,False,False,False,confidence 0.44 < 0.85
-5998804262536852-SNEAK ADVENTURE.mp4,SNEAKADVENTURE,OTHER,P39,sign,49,95,name,0.2553,0.1035,name|OTHER|friend,False,False,False,confidence 0.26 < 0.85
-08177289829230028-GOAL.mp4,GOAL,OTHER,P39,sign,57,106,go,0.4842,0.365,go|when|where,False,False,False,confidence 0.48 < 0.85
-05108944916703817-REMIND.mp4,REMIND,OTHER,P21,sign,6,35,medicine,0.6277,0.5533,medicine|OTHER|go,False,False,False,confidence 0.63 < 0.85
-16945051524554744-DEVELOP.mp4,DEVELOP1,OTHER,P21,sign,9,34,school,0.9484,0.9445,school|my|your,False,True,False,
-7070296885881275-BACKPACK 2.mp4,BACKPACK2,OTHER,P39,sign,58,84,doctor,0.3422,0.1586,doctor|how|help,False,False,False,confidence 0.34 < 0.85
-29060539248404194-THROW.mp4,THROW1,OTHER,P21,sign,5,34,why,0.4976,0.4213,why|what|where,False,False,False,confidence 0.50 < 0.85
-7283360333141773-STAMP 1.mp4,STAMP1,OTHER,P39,sign,41,84,help,0.9262,0.9131,help|today|OTHER,False,True,False,
-4652674888365578-CALM.mp4,CALM,OTHER,P21,sign,7,21,OTHER,0.2689,0.0625,OTHER|doctor|school,True,False,False,confidence 0.27 < 0.85
-33673767424578105-FOUL.mp4,FOUL,OTHER,P39,sign,36,84,need,0.2289,0.0617,need|bathroom|where,False,False,False,confidence 0.23 < 0.85
-8799780532145094-OFF.mp4,OFF,OTHER,P39,sign,42,70,stop,0.1564,0.0341,stop|where|what,False,False,False,confidence 0.16 < 0.85
-28680808101958166-TEACH 2.mp4,TEACH2,OTHER,P39,sign,36,87,OTHER,0.3229,0.2241,OTHER|bread|sick,True,False,False,confidence 0.32 < 0.85
-6204925936388856-CASUAL.mp4,CASUAL,OTHER,P39,sign,39,44,family,0.4443,0.3289,family|medicine|OTHER,False,False,False,confidence 0.44 < 0.85
-7949004630319016-ATHLETE.mp4,ATHLETE,OTHER,P39,sign,50,89,bathroom,0.779,0.7362,bathroom|doctor|hurt,False,False,False,confidence 0.78 < 0.85
-3278503258105816-STUDY.mp4,STUDY,OTHER,P39,sign,37,74,doctor,0.6468,0.5906,doctor|help|OTHER,False,False,False,confidence 0.65 < 0.85
-20725414525609387-HAWAII.mp4,HAWAII,OTHER,P39,sign,32,97,go,0.178,0.0399,go|understand|OTHER,False,False,False,confidence 0.18 < 0.85
-16391641947067104-SPREAD 3.mp4,SPREAD2,OTHER,P39,sign,0,140,doctor,0.4424,0.2744,doctor|school|medicine,False,False,False,confidence 0.44 < 0.85
-6585367333851069-YAWN 4.mp4,YAWN2,OTHER,P39,sign,36,104,chicken,0.2561,0.0582,chicken|drink|who,False,False,False,confidence 0.26 < 0.85
-10139297254732105-MISUNDERSTAND.mp4,MISUNDERSTAND,OTHER,P39,sign,43,87,understand,0.965,0.9624,understand|school|my,False,True,False,
-4854859087495569-DONT KNOW.mp4,DONTKNOW,OTHER,P39,sign,33,75,finish,0.7646,0.7447,finish|happy|hello,False,False,False,confidence 0.76 < 0.85
-5711375739643303-TRIP 2.mp4,TRIP2,OTHER,P39,sign,43,69,help,0.3699,0.2731,help|how|bread,False,False,False,confidence 0.37 < 0.85
-25217431585194916-PINCH.mp4,PINCH1,OTHER,P39,sign,0,127,sorry,0.3431,0.0929,sorry|love|you,False,False,False,confidence 0.34 < 0.85
-015591745666532653-GAS.mp4,GAS,OTHER,P39,sign,53,74,yes,0.7575,0.7254,yes|bathroom|work,False,False,False,confidence 0.76 < 0.85
-1702551244293049-KEYBOARD.mp4,KEYBOARD,OTHER,P39,sign,55,63,doctor,0.4213,0.3276,doctor|bathroom|more,False,False,False,confidence 0.42 < 0.85
-10823826540284687-PERSPECTIVE.mp4,PERSPECTIVE,OTHER,P39,sign,44,85,go,0.8128,0.7442,go|when|OTHER,False,False,False,confidence 0.81 < 0.85
-7031515900538949-CHICAGO.mp4,CHICAGO,OTHER,P39,sign,49,63,bye,0.3331,0.1734,bye|your|hello,False,False,False,confidence 0.33 < 0.85
-6385013990261217-SOCIAL.mp4,SOCIAL,OTHER,P39,sign,49,120,bread,0.9698,0.9668,bread|sick|school,False,True,False,
-8152932257681471-CEMETERY.mp4,CEMETERY,OTHER,P39,sign,56,66,work,0.3415,0.0778,work|yes|bathroom,False,False,False,confidence 0.34 < 0.85
-5628743417976216-BECOME.mp4,BECOME,OTHER,P39,sign,49,66,school,0.479,0.2123,school|doctor|OTHER,False,False,False,confidence 0.48 < 0.85
-40384535092229634-VASE.mp4,VASE,OTHER,P39,sign,56,90,OTHER,0.5171,0.4427,OTHER|now|what,True,False,False,confidence 0.52 < 0.85
-11636825090167657-EASTER.mp4,EASTER,OTHER,P39,sign,34,83,OTHER,0.2575,0.1504,OTHER|bread|me,True,False,False,confidence 0.26 < 0.85
-2095746666174485-MONSTER.mp4,MONSTER,OTHER,P39,sign,31,76,bye,0.2239,0.0801,bye|need|hello,False,False,False,confidence 0.22 < 0.85
-3169716621489418-HAIRDRYER 2.mp4,HAIRDRYER2,OTHER,P39,sign,40,91,why,0.1585,0.0171,why|bathroom|come,False,False,False,confidence 0.16 < 0.85
-7041824415988975-LAY DOWN.mp4,LAYDOWN,OTHER,P39,sign,38,70,help,0.2484,0.0517,help|today|what,False,False,False,confidence 0.25 < 0.85
-9289275786008793-DARK.mp4,DARK1,OTHER,P39,sign,40,88,stop,0.4723,0.3896,stop|OTHER|sick,False,False,False,confidence 0.47 < 0.85
-8091235653797137-HATCH 2.mp4,HATCH2,OTHER,P39,sign,65,91,what,0.7644,0.6559,what|want|hurt,False,False,False,confidence 0.76 < 0.85
-7470451311062261-ENVELOPE 5.mp4,ENVELOPE3,OTHER,P39,sign,41,99,doctor,0.3141,0.0413,doctor|medicine|OTHER,False,False,False,confidence 0.31 < 0.85
-4315971508471905-EXAMPLE.mp4,EXAMPLE,OTHER,P39,sign,45,91,more,0.447,0.3174,more|OTHER|what,False,False,False,confidence 0.45 < 0.85
-04086427732072373-MEGAPHONE.mp4,MEGAPHONE,OTHER,P39,sign,45,106,bye,0.3073,0.1683,bye|hello|OTHER,False,False,False,confidence 0.31 < 0.85
-29800790160891144-ASTRONAUT.mp4,ASTRONAUT,OTHER,P39,sign,48,75,family,0.6551,0.5776,family|OTHER|medicine,False,False,False,confidence 0.66 < 0.85
-8175976377678535-NIGHT.mp4,NIGHT1,OTHER,P39,sign,35,59,doctor,0.5029,0.2462,doctor|work|OTHER,False,False,False,confidence 0.50 < 0.85
-5147041918881023-PULL CONVINCE.mp4,PULLCONVINCE,OTHER,P26,sign,15,56,why,0.6325,0.5714,why|what|now,False,False,False,confidence 0.63 < 0.85
-7019796297629999-CAPTURE.mp4,CAPTURE,OTHER,P26,sign,5,45,where,0.6453,0.6027,where|medicine|name,False,False,False,confidence 0.65 < 0.85
-05313536275990982-CEMETERY.mp4,CEMETERY,OTHER,P26,sign,18,52,yes,0.2349,0.1197,yes|work|bye,False,False,False,confidence 0.23 < 0.85
-9824642593164712-LAY DOWN.mp4,LAYDOWN,OTHER,P26,sign,23,76,help,0.5749,0.5036,help|stop|OTHER,False,False,False,confidence 0.57 < 0.85
-3187350995521874-STUDY.mp4,STUDY,OTHER,P26,sign,7,53,doctor,0.4594,0.2257,doctor|what|more,False,False,False,confidence 0.46 < 0.85
-9059432524286246-CALM.mp4,CALM,OTHER,P26,sign,8,25,medicine,0.6543,0.5716,medicine|doctor|school,False,False,False,confidence 0.65 < 0.85
-8263522752603221-CARRY.mp4,CARRY,OTHER,P26,sign,7,30,why,0.342,0.0676,why|what|come,False,False,False,confidence 0.34 < 0.85
-20810033190369248-HAWAII.mp4,HAWAII,OTHER,P26,sign,7,47,understand,0.2885,0.0694,understand|sleep|come,False,False,False,confidence 0.29 < 0.85
-2801295381348399-STUDENT.mp4,STUDENT,OTHER,P39,sign,53,75,what,0.2625,0.0558,what|stop|OTHER,False,False,False,confidence 0.26 < 0.85
-11907179475280327-WINDMILL.mp4,WINDMILL1,OTHER,P39,sign,50,99,name,0.9494,0.944,name|when|me,False,True,False,
-5421040498071887-MOUNTAIN.mp4,MOUNTAIN1,OTHER,P39,sign,50,94,medicine,0.2275,0.1032,medicine|doctor|OTHER,False,False,False,confidence 0.23 < 0.85
-22118435094634625-FLOWER.mp4,FLOWER,OTHER,P39,sign,48,91,eat,0.4112,0.1266,eat|stop|drink,False,False,False,confidence 0.41 < 0.85
-25687748160480894-STUMBLE.mp4,STUMBLE,OTHER,P39,sign,49,70,bathroom,0.83,0.8084,bathroom|no|hurt,False,False,False,confidence 0.83 < 0.85
-01760703377656725-JUNIOR.mp4,JUNIOR,OTHER,P39,sign,45,88,school,0.9317,0.9178,school|OTHER|doctor,False,True,False,
-030563552039930775-CASUAL.mp4,CASUAL,OTHER,P39,sign,0,111,doctor,0.9328,0.923,doctor|what|OTHER,False,True,False,
-7384935722022539-YAWN 4.mp4,YAWN2,OTHER,P39,sign,37,101,who,0.2874,0.1106,who|drink|chicken,False,False,False,confidence 0.29 < 0.85
-5762874267150302-SPREAD 3.mp4,SPREAD2,OTHER,P26,sign,21,25,school,0.9698,0.9664,school|my|bread,False,True,False,
-38369272799697773-FOUL.mp4,FOUL,OTHER,P26,sign,8,38,need,0.5301,0.3672,need|you|where,False,False,False,confidence 0.53 < 0.85
-8570496255822306-OFF.mp4,OFF,OTHER,P26,sign,8,36,bye,0.2191,0.0979,bye|where|stop,False,False,False,confidence 0.22 < 0.85
-2999967919573674-VASE.mp4,VASE,OTHER,P26,sign,22,51,OTHER,0.3523,0.1549,OTHER|what|now,True,False,False,confidence 0.35 < 0.85
-5557394845250132-ENGAGEMENT.mp4,ENGAGEMENT,OTHER,P26,sign,5,39,stop,0.2635,0.1607,stop|love|family,False,False,False,confidence 0.26 < 0.85
-9798458516215385-CORN 1.mp4,CORN1,OTHER,P26,sign,6,41,who,0.7517,0.666,who|you|OTHER,False,False,False,confidence 0.75 < 0.85
-9557764850487398-SOCIAL.mp4,SOCIAL,OTHER,P26,sign,6,53,OTHER,0.5167,0.4508,OTHER|what|doctor,True,False,False,confidence 0.52 < 0.85
-4334102281052954-STUMBLE.mp4,STUMBLE,OTHER,P26,sign,7,32,hurt,0.6815,0.5934,hurt|what|OTHER,False,False,False,confidence 0.68 < 0.85
-6840885006548572-MONSTER.mp4,MONSTER,OTHER,P26,sign,9,45,bye,0.2206,0.0354,bye|need|hello,False,False,False,confidence 0.22 < 0.85
-08696017599698558-WINDMILL.mp4,WINDMILL1,OTHER,P26,sign,11,60,name,0.9821,0.9808,name|need|when,False,True,False,
-15267303418917422-MOUNTAIN.mp4,MOUNTAIN1,OTHER,P26,sign,7,60,doctor,0.3426,0.2162,doctor|OTHER|work,False,False,False,confidence 0.34 < 0.85
-5803218002565746-DOWNSIZE.mp4,DOWNSIZE1,OTHER,P26,sign,6,29,what,0.1907,0.0184,what|now|OTHER,False,False,False,confidence 0.19 < 0.85
-41701960573846275-SHAVE 4.mp4,SHAVE3,OTHER,P26,sign,5,27,work,0.5569,0.4981,work|you|doctor,False,False,False,confidence 0.56 < 0.85
-04971692146038431-SOMERSAULT 3.mp4,SOMERSAULT2,OTHER,P26,sign,6,51,what,0.3993,0.2233,what|doctor|OTHER,False,False,False,confidence 0.40 < 0.85
-3028529053351541-PINEAPPLE.mp4,PINEAPPLE1,OTHER,P26,sign,14,59,yes,0.4659,0.4098,yes|OTHER|apple,False,False,False,confidence 0.47 < 0.85
-2742592702398339-REVENGE.mp4,REVENGE,OTHER,P26,sign,25,58,tomorrow,0.234,0.0997,tomorrow|come|where,False,False,False,confidence 0.23 < 0.85
-35625782331049627-RELEASE.mp4,RELEASE,OTHER,P26,sign,8,42,bathroom,0.3834,0.3144,bathroom|doctor|who,False,False,False,confidence 0.38 < 0.85
-8504478926730117-WHICH.mp4,WHICH,OTHER,P26,sign,7,33,help,0.4466,0.0196,help|how|bread,False,False,False,confidence 0.45 < 0.85
-9640630138208175-CORN 2.mp4,CORN2,OTHER,P26,sign,3,32,OTHER,0.3393,0.2268,OTHER|family|name,True,False,False,confidence 0.34 < 0.85
-7014710296796682-DARK.mp4,DARK1,OTHER,P26,sign,6,37,come,0.9438,0.9351,come|bread|sick,False,True,False,
-7597632941375478-HATCH 2.mp4,HATCH2,OTHER,P26,sign,5,32,what,0.71,0.6715,what|why|want,False,False,False,confidence 0.71 < 0.85
-7930520707117039-FREEDOM.mp4,FREEDOM,OTHER,P26,sign,7,36,bathroom,0.2419,0.1119,bathroom|help|doctor,False,False,False,confidence 0.24 < 0.85
-6313598470901556-DRIVE.mp4,DRIVE,OTHER,P26,sign,7,31,what,0.4041,0.2504,what|today|now,False,False,False,confidence 0.40 < 0.85
-6868045523294657-SNEAK ADVENTURE.mp4,SNEAKADVENTURE,OTHER,P26,sign,7,35,doctor,0.4316,0.3077,doctor|water|OTHER,False,False,False,confidence 0.43 < 0.85
-5837651918689251-LOBSTER 3.mp4,LOBSTER3,OTHER,P26,sign,8,37,what,0.1686,0.0216,what|go|want,False,False,False,confidence 0.17 < 0.85
-18382300518968453-POOL GAME.mp4,POOLGAME,OTHER,P26,sign,15,26,yes,0.7439,0.7166,yes|apple|like,False,False,False,confidence 0.74 < 0.85
-17758701834660795-TURKEY.mp4,TURKEY1,OTHER,P26,sign,10,36,REST,0.776,0.7157,REST|me|my,False,False,False,confidence 0.78 < 0.85
-022923932561187188-BRACELET.mp4,BRACELET,OTHER,P26,sign,7,44,doctor,0.7674,0.7156,doctor|work|OTHER,False,False,False,confidence 0.77 < 0.85
-6964353056982939-BACKPACK 2.mp4,BACKPACK2,OTHER,P26,sign,0,64,REST,0.719,0.6971,REST|help|me,False,False,False,confidence 0.72 < 0.85
-8552586857158018-STAMP 1.mp4,STAMP1,OTHER,P26,sign,7,32,come,0.2692,0.128,come|bye|what,False,False,False,confidence 0.27 < 0.85
-7889824439523152-PERSPECTIVE.mp4,PERSPECTIVE,OTHER,P26,sign,7,38,go,0.653,0.5757,go|when|hurt,False,False,False,confidence 0.65 < 0.85
-24076099760194847-POLISH.mp4,POLISH,OTHER,P26,sign,0,60,me,0.3152,0.2522,me|need|you,False,False,False,confidence 0.32 < 0.85
-07528890903775065-MISUNDERSTAND.mp4,MISUNDERSTAND,OTHER,P26,sign,5,32,understand,0.9746,0.9723,understand|need|name,False,True,False,
-7877312690929996-DEVELOP.mp4,DEVELOP1,OTHER,P26,sign,5,32,school,0.3365,0.2337,school|your|family,False,False,False,confidence 0.34 < 0.85
-456137634841679-SLICE 3.mp4,SLICE4,OTHER,P26,sign,0,37,stop,0.905,0.892,stop|help|my,False,True,False,
-9853696567953554-THROW.mp4,THROW1,OTHER,P26,sign,7,32,where,0.136,0.0247,where|come|need,False,False,False,confidence 0.14 < 0.85
-21537826064280519-ALRIGHT.mp4,ALRIGHT,OTHER,P26,sign,6,37,school,0.9086,0.8988,school|my|stop,False,True,False,
-019466731254031755-BAD.mp4,BAD,REST,P21,rest,20,49,REST,0.8172,0.7616,REST|me|doctor,True,False,False,confidence 0.82 < 0.85
-5147041918881023-PULL CONVINCE.mp4,PULLCONVINCE,REST,P26,rest,6,15,REST,0.7314,0.7107,REST|me|want,True,False,False,confidence 0.73 < 0.85
-6113025140614445-SOMERSAULT 3.mp4,SOMERSAULT2,REST,P5,rest,80,94,REST,0.8094,0.7903,REST|me|my,True,False,False,confidence 0.81 < 0.85
-7014710296796682-DARK.mp4,DARK1,REST,P26,rest,1,5,REST,0.7668,0.7476,REST|me|my,True,False,False,confidence 0.77 < 0.85
-7071450710791192-DRINK.mp4,DRINK1,REST,P12,rest,1,9,REST,0.7713,0.753,REST|me|my,True,False,False,confidence 0.77 < 0.85
-5285653456968582-TODAY.mp4,TODAY,REST,P26,rest,0,4,REST,0.8009,0.7808,REST|me|my,True,False,False,confidence 0.80 < 0.85
-9289275786008793-DARK.mp4,DARK1,REST,P39,rest,106,131,REST,0.8034,0.7833,REST|me|my,True,False,False,confidence 0.80 < 0.85
-38369272799697773-FOUL.mp4,FOUL,REST,P26,rest,46,57,REST,0.7813,0.7639,REST|me|want,True,False,False,confidence 0.78 < 0.85
-6809556328325521-COME.mp4,COME,REST,P39,rest,7,52,what,0.6154,0.5258,what|why|REST,False,False,False,confidence 0.62 < 0.85
-4372505087382914-ME.mp4,ME,REST,P5,rest,30,81,me,0.9769,0.9736,me|sorry|come,False,True,False,
-08956501268165051-SICK.mp4,SICK,REST,P12,rest,1,8,REST,0.7725,0.7537,REST|me|your,True,False,False,confidence 0.77 < 0.85
-7597632941375478-HATCH 2.mp4,HATCH2,REST,P26,rest,34,46,REST,0.7629,0.7448,REST|me|want,True,False,False,confidence 0.76 < 0.85
-5938554372186748-EAT 2.mp4,EAT2,REST,P26,rest,36,59,REST,0.8081,0.7894,REST|me|my,True,False,False,confidence 0.81 < 0.85
-0392835216734122-EAT.mp4,EAT1,REST,P21,rest,1,7,REST,0.78,0.7607,REST|me|my,True,False,False,confidence 0.78 < 0.85
-8570496255822306-OFF.mp4,OFF,REST,P26,rest,0,8,REST,0.819,0.7995,REST|me|my,True,False,False,confidence 0.82 < 0.85
-9798458516215385-CORN 1.mp4,CORN1,REST,P26,rest,0,4,REST,0.8032,0.7854,REST|me|my,True,False,False,confidence 0.80 < 0.85
-7451289471930389-ALRIGHT.mp4,ALRIGHT,REST,P21,rest,48,53,REST,0.74,0.7209,REST|me|want,True,False,False,confidence 0.74 < 0.85
-5788460385097332-WHO.mp4,WHO,REST,P39,rest,0,43,REST,0.7834,0.7651,REST|me|your,True,False,False,confidence 0.78 < 0.85
-6313598470901556-DRIVE.mp4,DRIVE,REST,P26,rest,34,40,REST,0.7914,0.7682,REST|me|my,True,False,False,confidence 0.79 < 0.85
-7041824415988975-LAY DOWN.mp4,LAYDOWN,REST,P39,rest,24,38,REST,0.6636,0.6236,REST|doctor|me,True,False,False,confidence 0.66 < 0.85
-009299695590603507-MORE.mp4,MORE,REST,P21,rest,47,53,REST,0.7662,0.7468,REST|me|want,True,False,False,confidence 0.77 < 0.85
-8977694836593926-YES.mp4,YES,REST,P26,rest,50,55,REST,0.8034,0.7846,REST|me|my,True,False,False,confidence 0.80 < 0.85
-3698632660671215-HAPPY.mp4,HAPPY,REST,P39,rest,87,155,REST,0.8381,0.8233,REST|help|why,True,False,False,confidence 0.84 < 0.85
-03174577769237463-WATER.mp4,WATER,REST,P39,rest,7,53,REST,0.8087,0.7904,REST|me|my,True,False,False,confidence 0.81 < 0.85
-456137634841679-SLICE 3.mp4,SLICE4,REST,P26,rest,47,67,REST,0.7373,0.7188,REST|me|want,True,False,False,confidence 0.74 < 0.85
-6484470716683486-DRINK 2.mp4,DRINK2,REST,P39,rest,98,110,REST,0.7469,0.7273,REST|me|want,True,False,False,confidence 0.75 < 0.85
-01760703377656725-JUNIOR.mp4,JUNIOR,REST,P39,rest,3,8,REST,0.7582,0.7387,REST|me|want,True,False,False,confidence 0.76 < 0.85
-6385013990261217-SOCIAL.mp4,SOCIAL,REST,P39,rest,13,36,REST,0.7586,0.7399,REST|me|want,True,False,False,confidence 0.76 < 0.85
-6405573667025386-BATHROOM.mp4,BATHROOM,REST,P26,rest,47,69,REST,0.7901,0.7719,REST|me|my,True,False,False,confidence 0.79 < 0.85
-6931178547025278-TURKEY.mp4,TURKEY1,REST,P5,rest,0,24,REST,0.4946,0.1822,REST|me|my,True,False,False,confidence 0.49 < 0.85
-8079226457278508-NO.mp4,NO,REST,P26,rest,38,67,REST,0.7952,0.776,REST|me|my,True,False,False,confidence 0.80 < 0.85
-17984011488050022-MORE.mp4,MORE,REST,P26,rest,35,48,REST,0.7834,0.7639,REST|me|my,True,False,False,confidence 0.78 < 0.85
-2591177165349323-ENVELOPE 5.mp4,ENVELOPE3,REST,P5,rest,0,20,REST,0.8209,0.8018,REST|me|my,True,False,False,confidence 0.82 < 0.85
-414141284745577-WATER.mp4,WATER,REST,P21,rest,32,50,REST,0.7797,0.7617,REST|me|help,True,False,False,confidence 0.78 < 0.85
-41399648901403063-MEDICINE.mp4,MEDICINE,REST,P21,rest,14,22,medicine,0.9774,0.9747,medicine|school|name,False,True,False,
-7464906167030079-YOUR.mp4,YOUR,REST,P39,rest,111,122,REST,0.7847,0.7678,REST|me|help,True,False,False,confidence 0.78 < 0.85
-4334102281052954-STUMBLE.mp4,STUMBLE,REST,P26,rest,3,7,REST,0.8151,0.7895,REST|me|my,True,False,False,confidence 0.82 < 0.85
-7791424980867376-GOOD.mp4,GOOD,REST,P12,rest,28,41,where,0.2109,0.0287,where|water|what,False,False,False,confidence 0.21 < 0.85
-8323715285073319-NO.mp4,NO,REST,P21,rest,54,59,yes,0.2565,0.0868,yes|REST|hurt,False,False,False,confidence 0.26 < 0.85
-29913355059297864-SAD.mp4,SAD,REST,P21,rest,1,6,sorry,0.31,0.1645,sorry|please|my,False,False,False,confidence 0.31 < 0.85
-9824642593164712-LAY DOWN.mp4,LAYDOWN,REST,P26,rest,77,94,REST,0.8156,0.7953,REST|me|my,True,False,False,confidence 0.82 < 0.85
-4315971508471905-EXAMPLE.mp4,EXAMPLE,REST,P39,rest,24,28,REST,0.7823,0.7625,REST|me|my,True,False,False,confidence 0.78 < 0.85
-2631901034056372-LOVE.mp4,LOVE,REST,P39,rest,80,105,REST,0.7762,0.7571,REST|me|want,True,False,False,confidence 0.78 < 0.85
-9850177164607337-WATER.mp4,WATER,REST,P26,rest,45,58,REST,0.7816,0.7609,REST|me|my,True,False,False,confidence 0.78 < 0.85
-8504478926730117-WHICH.mp4,WHICH,REST,P26,rest,1,5,REST,0.7876,0.7623,REST|me|your,True,False,False,confidence 0.79 < 0.85
-8724961433813252-HUNGRY.mp4,HUNGRY,REST,P12,rest,51,61,REST,0.7687,0.7504,REST|me|your,True,False,False,confidence 0.77 < 0.85
-5768423480273424-LOBSTER 3.mp4,LOBSTER3,REST,P21,rest,1,6,REST,0.1797,0.0084,REST|bathroom|doctor,True,False,False,confidence 0.18 < 0.85
-8885915598928231-CARRY.mp4,CARRY,REST,P21,rest,0,5,REST,0.4745,0.3617,REST|help|hungry,True,False,False,confidence 0.47 < 0.85
-3370771332793896-STUDENT.mp4,STUDENT,REST,P12,rest,66,72,REST,0.7877,0.7588,REST|me|my,True,False,False,confidence 0.79 < 0.85
-5801873008829825-BECOME.mp4,BECOME,REST,P21,rest,33,42,REST,0.7553,0.7353,REST|me|want,True,False,False,confidence 0.76 < 0.85
-7071450710791192-DRINK.mp4,DRINK1,REST,P12,rest,38,47,REST,0.7684,0.7517,REST|me|help,True,False,False,confidence 0.77 < 0.85
-7451289471930389-ALRIGHT.mp4,ALRIGHT,REST,P21,rest,2,6,REST,0.8033,0.7728,REST|me|my,True,False,False,confidence 0.80 < 0.85
-4656606080155459-NO.mp4,NO,REST,P39,rest,19,34,REST,0.7508,0.7327,REST|me|help,True,False,False,confidence 0.75 < 0.85
-9710569622157019-BYE.mp4,BYE,REST,P39,rest,6,17,REST,0.7836,0.7647,REST|me|my,True,False,False,confidence 0.78 < 0.85
-44817736125778374-HELP.mp4,HELP,REST,P39,rest,0,51,REST,0.7836,0.7641,REST|me|my,True,False,False,confidence 0.78 < 0.85
-653894433602245-KEYBOARD.mp4,KEYBOARD,REST,P21,rest,42,48,REST,0.7611,0.7417,REST|me|want,True,False,False,confidence 0.76 < 0.85
-3028529053351541-PINEAPPLE.mp4,PINEAPPLE1,REST,P26,rest,67,76,REST,0.8009,0.782,REST|me|my,True,False,False,confidence 0.80 < 0.85
-5685456620542664-GOAL.mp4,GOAL,REST,P21,rest,0,6,REST,0.271,0.0505,REST|where|no,True,False,False,confidence 0.27 < 0.85
-8334862371163634-REMIND.mp4,REMIND,REST,P5,rest,1,24,REST,0.5017,0.3924,REST|doctor|yes,True,False,False,confidence 0.50 < 0.85
-6330153558265055-NEED.mp4,NEED,REST,P26,rest,49,68,REST,0.8029,0.7833,REST|me|my,True,False,False,confidence 0.80 < 0.85
-05163066213189427-FRIEND.mp4,FRIEND,REST,P21,rest,8,23,REST,0.7518,0.7318,REST|me|your,True,False,False,confidence 0.75 < 0.85
-4854859087495569-DONT KNOW.mp4,DONTKNOW,REST,P39,rest,93,101,REST,0.7556,0.7366,REST|me|want,True,False,False,confidence 0.76 < 0.85
-49400025068696496-STOP.mp4,STOP,REST,P39,rest,96,108,REST,0.7693,0.7482,REST|me|my,True,False,False,confidence 0.77 < 0.85
-9676550564435922-JUNIOR.mp4,JUNIOR,REST,P5,rest,61,73,REST,0.8194,0.7977,REST|me|my,True,False,False,confidence 0.82 < 0.85
-29341979023390885-FRIEND.mp4,FRIEND,REST,P39,rest,83,105,hurt,0.6321,0.5719,hurt|when|like,False,False,False,confidence 0.63 < 0.85
-20296149790930174-FREEDOM.mp4,FREEDOM,REST,P21,rest,31,46,REST,0.7384,0.719,REST|me|want,True,False,False,confidence 0.74 < 0.85
-8023239580796708-AWAKE.mp4,AWAKE,REST,P5,rest,64,68,REST,0.7903,0.773,REST|me|help,True,False,False,confidence 0.79 < 0.85
-2596986287783567-YOUR.mp4,YOUR,REST,P21,rest,37,52,REST,0.7801,0.7601,REST|me|my,True,False,False,confidence 0.78 < 0.85
-4334102281052954-STUMBLE.mp4,STUMBLE,REST,P26,rest,36,70,REST,0.5201,0.4697,REST|hurt|like,True,False,False,confidence 0.52 < 0.85
-9000660794636397-MORE.mp4,MORE,REST,P39,rest,104,150,REST,0.84,0.8204,REST|help|doctor,True,False,False,confidence 0.84 < 0.85
-8175976377678535-NIGHT.mp4,NIGHT1,REST,P39,rest,19,32,REST,0.7854,0.7655,REST|me|my,True,False,False,confidence 0.79 < 0.85
-8006057606700916-EXAMPLE.mp4,EXAMPLE,REST,P12,rest,45,55,REST,0.7563,0.7369,REST|me|help,True,False,False,confidence 0.76 < 0.85
-28541392437861024-TOMORROW.mp4,TOMORROW,REST,P21,rest,1,5,REST,0.7749,0.7557,REST|me|my,True,False,False,confidence 0.77 < 0.85
-6440601854085655-HURT.mp4,HURT,REST,P21,rest,1,5,REST,0.7985,0.7738,REST|me|my,True,False,False,confidence 0.80 < 0.85
-895022317746502-MY.mp4,MY,REST,P5,rest,5,16,REST,0.7081,0.663,REST|help|why,True,False,False,confidence 0.71 < 0.85
-7070296885881275-BACKPACK 2.mp4,BACKPACK2,REST,P39,rest,9,55,REST,0.5827,0.5138,REST|help|doctor,True,False,False,confidence 0.58 < 0.85
-46177982143117036-CHICAGO.mp4,CHICAGO,REST,P21,rest,0,7,REST,0.8228,0.7921,REST|me|my,True,False,False,confidence 0.82 < 0.85
-7877312690929996-DEVELOP.mp4,DEVELOP1,REST,P26,rest,0,5,your,0.1913,0.0747,your|water|doctor,False,False,False,confidence 0.19 < 0.85
-10542513580735968-HOW.mp4,HOW1,REST,P21,rest,1,6,REST,0.7521,0.7279,REST|where|help,True,False,False,confidence 0.75 < 0.85
-8724961433813252-HUNGRY.mp4,HUNGRY,REST,P12,rest,1,11,REST,0.7896,0.7704,REST|me|your,True,False,False,confidence 0.79 < 0.85
-19418271966399425-WAIT.mp4,WAIT,REST,P5,rest,59,74,REST,0.844,0.8303,REST|help|me,True,False,False,confidence 0.84 < 0.85
-11636825090167657-EASTER.mp4,EASTER,REST,P39,rest,0,34,REST,0.7647,0.7452,REST|me|my,True,False,False,confidence 0.76 < 0.85
-2999967919573674-VASE.mp4,VASE,REST,P26,rest,5,18,hurt,0.2028,0.0571,hurt|bathroom|need,False,False,False,confidence 0.20 < 0.85
-5470582351678035-DRINK 2.mp4,DRINK2,REST,P39,rest,106,163,REST,0.7879,0.7575,REST|me|my,True,False,False,confidence 0.79 < 0.85
-5768423480273424-LOBSTER 3.mp4,LOBSTER3,REST,P21,rest,46,52,REST,0.7866,0.7664,REST|me|your,True,False,False,confidence 0.79 < 0.85
-04669408879006931-NEED.mp4,NEED,REST,P21,rest,1,5,REST,0.7803,0.7594,REST|me|your,True,False,False,confidence 0.78 < 0.85
-8091235653797137-HATCH 2.mp4,HATCH2,REST,P39,rest,6,63,doctor,0.4297,0.3259,doctor|REST|OTHER,False,False,False,confidence 0.43 < 0.85
-43278703688513187-TODAY.mp4,TODAY,REST,P26,rest,2,9,REST,0.7966,0.7777,REST|me|my,True,False,False,confidence 0.80 < 0.85
-14082179940882456-EAT 2.mp4,EAT2,REST,P21,rest,0,9,me,0.8877,0.8741,me|REST|need,False,True,False,
-5285653456968582-TODAY.mp4,TODAY,REST,P26,rest,47,53,REST,0.7949,0.7746,REST|me|my,True,False,False,confidence 0.79 < 0.85
-7524024072897346-MUSEUM.mp4,MUSEUM,REST,P21,rest,0,4,REST,0.7849,0.7645,REST|me|my,True,False,False,confidence 0.78 < 0.85
-8799780532145094-OFF.mp4,OFF,REST,P39,rest,73,85,REST,0.7862,0.7641,REST|me|my,True,False,False,confidence 0.79 < 0.85
-9824642593164712-LAY DOWN.mp4,LAYDOWN,REST,P26,rest,0,23,REST,0.747,0.7228,REST|me|my,True,False,False,confidence 0.75 < 0.85
-8203203237125376-NOW.mp4,NOW,REST,P39,rest,1,63,REST,0.2704,0.0638,REST|help|doctor,True,False,False,confidence 0.27 < 0.85
-05614933522741539-HELLO.mp4,HELLO,REST,P12,rest,46,53,REST,0.7437,0.727,REST|me|help,True,False,False,confidence 0.74 < 0.85
-6440601854085655-HURT.mp4,HURT,REST,P21,rest,25,46,hurt,0.9546,0.9435,hurt|what|today,False,True,False,
-5829570199823455-DOCTOR.mp4,DOCTOR1,REST,P21,rest,1,6,REST,0.8104,0.7831,REST|me|my,True,False,False,confidence 0.81 < 0.85
-3187350995521874-STUDY.mp4,STUDY,REST,P26,rest,0,6,REST,0.7813,0.7641,REST|me|help,True,False,False,confidence 0.78 < 0.85
-19643383002170656-YOU.mp4,YOU,REST,P21,rest,0,9,REST,0.6943,0.6749,REST|help|me,True,False,False,confidence 0.69 < 0.85
-0392835216734122-EAT.mp4,EAT1,REST,P21,rest,32,52,REST,0.7687,0.7515,REST|me|help,True,False,False,confidence 0.77 < 0.85
-9710569622157019-BYE.mp4,BYE,REST,P39,rest,85,126,REST,0.815,0.7962,REST|help|me,True,False,False,confidence 0.81 < 0.85
-6997365376367899-WHERE.mp4,WHERE,REST,P39,rest,75,115,REST,0.6474,0.6144,REST|help|hurt,True,False,False,confidence 0.65 < 0.85
-18382300518968453-POOL GAME.mp4,POOLGAME,REST,P26,rest,0,7,REST,0.7781,0.7601,REST|me|help,True,False,False,confidence 0.78 < 0.85
-8323715285073319-NO.mp4,NO,REST,P21,rest,6,10,REST,0.728,0.708,REST|me|want,True,False,False,confidence 0.73 < 0.85
-20482432773002457-LOVE.mp4,LOVE,REST,P39,rest,0,45,REST,0.7876,0.7637,REST|doctor|what,True,False,False,confidence 0.79 < 0.85
-7019796297629999-CAPTURE.mp4,CAPTURE,REST,P26,rest,0,4,REST,0.7776,0.7581,REST|me|my,True,False,False,confidence 0.78 < 0.85
-10421760727572105-WANT.mp4,WANT2,REST,P39,rest,32,58,today,0.269,0.0845,today|help|what,False,False,False,confidence 0.27 < 0.85
-986022284412545-WHAT 1.mp4,WHAT2,REST,P26,rest,36,58,REST,0.827,0.8087,REST|me|help,True,False,False,confidence 0.83 < 0.85
-6113025140614445-SOMERSAULT 3.mp4,SOMERSAULT2,REST,P5,rest,3,8,REST,0.2861,0.1328,REST|bathroom|hurt,True,False,False,confidence 0.29 < 0.85
-2591177165349323-ENVELOPE 5.mp4,ENVELOPE3,REST,P5,rest,81,114,REST,0.8565,0.8434,REST|me|doctor,True,False,False,
-6298947790810541-FRIEND.mp4,FRIEND,REST,P26,rest,0,4,REST,0.7969,0.7778,REST|me|my,True,False,False,confidence 0.80 < 0.85
-3914082348681629-FLOWER.mp4,FLOWER,REST,P21,rest,49,55,REST,0.7749,0.7557,REST|me|help,True,False,False,confidence 0.77 < 0.85
-3169716621489418-HAIRDRYER 2.mp4,HAIRDRYER2,REST,P39,rest,101,112,REST,0.7853,0.766,REST|me|want,True,False,False,confidence 0.79 < 0.85
-6330094542104612-PLEASE.mp4,PLEASE,REST,P39,rest,67,122,please,0.5456,0.3791,please|my|hungry,False,False,False,confidence 0.55 < 0.85
-4372505087382914-ME.mp4,ME,REST,P5,rest,1,26,REST,0.7976,0.7759,REST|help|doctor,True,False,False,confidence 0.80 < 0.85
-9072438422600229-HAIRDRYER 2.mp4,HAIRDRYER2,REST,P21,rest,52,56,REST,0.7698,0.7522,REST|me|help,True,False,False,confidence 0.77 < 0.85
-6585367333851069-YAWN 4.mp4,YAWN2,REST,P39,rest,105,148,REST,0.8362,0.8153,REST|help|why,True,False,False,confidence 0.84 < 0.85
-9715589334909431-YES.mp4,YES,REST,P21,rest,42,46,REST,0.8023,0.7812,REST|me|my,True,False,False,confidence 0.80 < 0.85
-903935681817708-MCDONALDS.mp4,MCDONALDS,REST,P21,rest,11,19,REST,0.7158,0.6968,REST|me|help,True,False,False,confidence 0.72 < 0.85
-2095746666174485-MONSTER.mp4,MONSTER,REST,P39,rest,4,24,REST,0.7349,0.7158,REST|me|want,True,False,False,confidence 0.73 < 0.85
-38099175964004983-WHY.mp4,WHY,REST,P26,rest,40,57,REST,0.7792,0.7595,REST|me|my,True,False,False,confidence 0.78 < 0.85
-5557394845250132-ENGAGEMENT.mp4,ENGAGEMENT,REST,P26,rest,44,61,REST,0.8008,0.7825,REST|me|my,True,False,False,confidence 0.80 < 0.85
-5439490417710435-NAME.mp4,NAME,REST,P12,rest,1,5,REST,0.7429,0.7251,REST|me|help,True,False,False,confidence 0.74 < 0.85
-11792300756428031-WHAT 1.mp4,WHAT2,REST,P21,rest,3,8,REST,0.7886,0.7695,REST|me|my,True,False,False,confidence 0.79 < 0.85
-19039558672419843-WHEN.mp4,WHEN,REST,P12,rest,38,51,REST,0.7366,0.719,REST|help|me,True,False,False,confidence 0.74 < 0.85
-23909248218883028-LOVE.mp4,LOVE,REST,P5,rest,57,72,me,0.628,0.5589,me|REST|sorry,False,False,False,confidence 0.63 < 0.85
-29060539248404194-THROW.mp4,THROW1,REST,P21,rest,38,48,REST,0.7788,0.7599,REST|me|want,True,False,False,confidence 0.78 < 0.85
-20296149790930174-FREEDOM.mp4,FREEDOM,REST,P21,rest,0,4,REST,0.7455,0.7251,REST|me|your,True,False,False,confidence 0.75 < 0.85
-4331446402686592-ENGAGEMENT.mp4,ENGAGEMENT,REST,P39,rest,14,45,REST,0.7732,0.7541,REST|me|want,True,False,False,confidence 0.77 < 0.85
-4854859087495569-DONT KNOW.mp4,DONTKNOW,REST,P39,rest,15,33,REST,0.749,0.7295,REST|me|want,True,False,False,confidence 0.75 < 0.85
-6671187735704913-APPLE.mp4,APPLE,REST,P21,rest,84,93,REST,0.7334,0.7153,REST|me|help,True,False,False,confidence 0.73 < 0.85
-30879418056454777-NEED.mp4,NEED,REST,P39,rest,79,134,me,0.5379,0.4158,me|REST|need,False,False,False,confidence 0.54 < 0.85
-6840885006548572-MONSTER.mp4,MONSTER,REST,P26,rest,45,67,REST,0.7688,0.7489,REST|me|my,True,False,False,confidence 0.77 < 0.85
-7070296885881275-BACKPACK 2.mp4,BACKPACK2,REST,P39,rest,94,131,yes,0.2336,0.0495,yes|me|work,False,False,False,confidence 0.23 < 0.85
-33673767424578105-FOUL.mp4,FOUL,REST,P39,rest,84,110,REST,0.7022,0.6663,REST|help|why,True,False,False,confidence 0.70 < 0.85
-10139297254732105-MISUNDERSTAND.mp4,MISUNDERSTAND,REST,P39,rest,99,103,REST,0.7803,0.76,REST|me|my,True,False,False,confidence 0.78 < 0.85
-8727936955185542-HUNGRY.mp4,HUNGRY,REST,P26,rest,0,9,REST,0.6602,0.6295,REST|doctor|my,True,False,False,confidence 0.66 < 0.85
-25439044778685105-LOVE.mp4,LOVE,REST,P26,rest,80,88,REST,0.7347,0.7166,REST|me|help,True,False,False,confidence 0.73 < 0.85
-7524024072897346-MUSEUM.mp4,MUSEUM,REST,P21,rest,30,51,REST,0.805,0.7673,REST|help|why,True,False,False,confidence 0.81 < 0.85
-11907179475280327-WINDMILL.mp4,WINDMILL1,REST,P39,rest,18,44,REST,0.7872,0.7687,REST|me|my,True,False,False,confidence 0.79 < 0.85
-4396630789618088-EAT 2.mp4,EAT2,REST,P39,rest,2,41,REST,0.7895,0.7679,REST|me|come,True,False,False,confidence 0.79 < 0.85
-7470451311062261-ENVELOPE 5.mp4,ENVELOPE3,REST,P39,rest,120,132,REST,0.8036,0.7646,REST|me|my,True,False,False,confidence 0.80 < 0.85
-020030442376253177-HELLO.mp4,HELLO,REST,P26,rest,0,4,REST,0.7987,0.7801,REST|me|my,True,False,False,confidence 0.80 < 0.85
-6484470716683486-DRINK 2.mp4,DRINK2,REST,P39,rest,12,22,REST,0.7344,0.7148,REST|me|want,True,False,False,confidence 0.73 < 0.85
-6098755056170255-HAPPY.mp4,HAPPY,REST,P26,rest,63,77,REST,0.7596,0.7403,REST|me|help,True,False,False,confidence 0.76 < 0.85
-04551864995837951-SAD.mp4,SAD,REST,P39,rest,7,38,REST,0.7685,0.7505,REST|me|help,True,False,False,confidence 0.77 < 0.85
-8804372922780734-FINISH.mp4,FINISH,REST,P26,rest,41,65,REST,0.8025,0.7844,REST|me|my,True,False,False,confidence 0.80 < 0.85
-43278703688513187-TODAY.mp4,TODAY,REST,P26,rest,33,56,today,0.7126,0.6095,today|now|what,False,False,False,confidence 0.71 < 0.85
-4791291616278226-SILLY.mp4,SILLY,REST,P21,rest,1,5,REST,0.81,0.7916,REST|me|my,True,False,False,confidence 0.81 < 0.85
-05859480723249688-PLEASE.mp4,PLEASE,REST,P26,rest,32,53,my,0.778,0.7032,my|please|hungry,False,False,False,confidence 0.78 < 0.85
+744008724339543-EAT.mp4,EAT1,eat,P5,sign,10,75,eat,0.8658,0.8396,eat|bad|stop,True,True,False,
+7791424980867376-GOOD.mp4,GOOD,good,P12,sign,11,27,good,0.4529,0.0369,good|thanks|bad,True,False,False,confidence 0.45 < 0.85
+4096147054343935-PLEASE.mp4,PLEASE,please,P12,sign,10,15,please,0.74,0.6114,please|hungry|help,True,False,False,confidence 0.74 < 0.85
+7071450710791192-DRINK.mp4,DRINK1,drink,P12,sign,10,36,drink,0.959,0.9531,drink|hungry|bad,True,True,False,
+5938307461368451-HOME.mp4,HOME,home,P12,sign,9,39,home,0.9642,0.9594,home|why|more,True,True,False,
+5439490417710435-NAME.mp4,NAME,name,P12,sign,6,32,name,0.9853,0.9836,name|friend|when,True,True,False,
+05614933522741539-HELLO.mp4,HELLO,hello,P12,sign,6,42,hello,0.9274,0.9099,hello|bye|why,True,True,False,
+25163871214803346-BAD.mp4,BAD,bad,P5,sign,29,48,bad,0.944,0.9287,bad|thanks|eat,True,True,False,
+8534077485600235-HELP.mp4,HELP,help,P5,sign,22,60,help,0.835,0.74,help|how|please,True,False,False,confidence 0.84 < 0.85
+23909248218883028-LOVE.mp4,LOVE,love,P5,sign,24,53,love,0.9397,0.9267,love|help|sorry,True,True,False,
+8618976665727696-GOOD.mp4,GOOD,good,P21,sign,26,35,good,0.4382,0.0754,good|thanks|bad,True,False,False,confidence 0.44 < 0.85
+8323715285073319-NO.mp4,NO,no,P21,sign,16,53,no,0.8062,0.7197,no|where|water,True,False,False,confidence 0.81 < 0.85
+7861062216231951-SCHOOL.mp4,SCHOOL,school,P21,sign,25,47,school,0.5751,0.462,school|stop|OTHER,True,False,False,confidence 0.58 < 0.85
+7875424216858471-DRINK 2.mp4,DRINK2,drink,P21,sign,6,33,drink,0.8997,0.88,drink|hungry|bye,True,True,False,
+019466731254031755-BAD.mp4,BAD,bad,P21,sign,5,15,bad,0.8979,0.868,bad|hungry|drink,True,True,False,
+0392835216734122-EAT.mp4,EAT1,eat,P21,sign,8,32,eat,0.9546,0.9445,eat|home|sleep,True,True,False,
+05163066213189427-FRIEND.mp4,FRIEND,friend,P21,sign,26,61,friend,0.7985,0.7497,friend|when|OTHER,True,False,False,confidence 0.80 < 0.85
+7300348171338833-LOVE.mp4,LOVE,love,P21,sign,8,37,love,0.9572,0.9492,love|sorry|help,True,True,False,
+4843579408025589-GOOD.mp4,GOOD,good,P39,sign,42,58,good,0.7165,0.5804,good|thanks|please,True,False,False,confidence 0.72 < 0.85
+9161842981344352-YES.mp4,YES,yes,P21,sign,7,38,yes,0.935,0.9141,yes|work|need,True,True,False,
+8038145060553852-DRINK.mp4,DRINK1,drink,P21,sign,11,37,drink,0.9588,0.9527,drink|bad|hungry,True,True,False,
+4111158323472113-HOME.mp4,HOME,home,P21,sign,7,41,home,0.9475,0.94,home|eat|why,True,True,False,
+0006320057552187119-THANK YOU.mp4,THANKYOU,thanks,P21,sign,4,14,good,0.5961,0.4809,good|thanks|hungry,False,False,False,confidence 0.60 < 0.85
+14082179940882456-EAT 2.mp4,EAT2,eat,P21,sign,9,33,eat,0.6373,0.4726,eat|home|sleep,True,False,False,confidence 0.64 < 0.85
+16004917375203398-FAMILY.mp4,FAMILY,family,P21,sign,4,42,family,0.9844,0.9828,family|name|school,True,True,False,
+15179467641851585-SORRY.mp4,SORRY,sorry,P21,sign,0,55,sorry,0.9752,0.9703,sorry|me|love,True,False,True,sorry/me?
+42961246858695024-PLEASE.mp4,PLEASE,please,P21,sign,9,25,please,0.8601,0.8322,please|help|hungry,True,True,False,
+8779944008396092-BYE.mp4,BYE,bye,P21,sign,5,23,bye,0.9269,0.9145,bye|bad|finish,True,True,False,
+9710569622157019-BYE.mp4,BYE,bye,P39,sign,49,83,bye,0.9414,0.935,bye|work|yes,True,True,False,
+6037747479203328-HELP.mp4,HELP,help,P21,sign,5,36,help,0.8957,0.8819,help|good|how,True,True,False,
+6442814975743945-NAME.mp4,NAME,name,P21,sign,10,32,name,0.987,0.9854,name|need|when,True,True,False,
+20675411351630046-HELLO.mp4,HELLO,hello,P21,sign,8,32,hello,0.9268,0.9109,hello|bye|why,True,True,False,
+9715589334909431-YES.mp4,YES,yes,P21,sign,6,34,yes,0.9517,0.9453,yes|work|need,True,True,False,
+36996117552353014-DRINK 2.mp4,DRINK2,drink,P21,sign,7,28,drink,0.8742,0.8608,drink|hungry|bye,True,True,False,
+42327270691916885-YES.mp4,YES,yes,P39,sign,46,74,yes,0.9046,0.8884,yes|need|me,True,True,False,
+049094629596487804-HOME.mp4,HOME,home,P39,sign,64,74,home,0.894,0.8601,home|why|eat,True,True,False,
+9031073980623976-NAME.mp4,NAME,name,P39,sign,0,142,REST,0.6945,0.6387,REST|me|yes,False,False,False,confidence 0.69 < 0.85
+16493550450776628-HELLO.mp4,HELLO,hello,P39,sign,45,84,bye,0.3324,0.0906,bye|hello|why,False,False,False,confidence 0.33 < 0.85
+4656606080155459-NO.mp4,NO,no,P39,sign,42,79,no,0.9524,0.9388,no|where|you,True,True,False,
+5470582351678035-DRINK 2.mp4,DRINK2,drink,P39,sign,52,102,drink,0.9316,0.9252,drink|bad|no,True,True,False,
+009883456113471967-EAT.mp4,EAT1,eat,P39,sign,63,95,eat,0.9354,0.9216,eat|home|bad,True,True,False,
+24442962392359258-SCHOOL.mp4,SCHOOL,school,P39,sign,48,77,school,0.9857,0.9842,school|sorry|name,True,True,False,
+29341979023390885-FRIEND.mp4,FRIEND,friend,P39,sign,46,77,friend,0.8394,0.7976,friend|when|you,True,False,False,confidence 0.84 < 0.85
+20482432773002457-LOVE.mp4,LOVE,love,P39,sign,45,77,love,0.9542,0.9461,love|sorry|help,True,True,False,
+06939945586940688-BAD.mp4,BAD,bad,P39,sign,48,61,hungry,0.2316,0.0642,hungry|good|water,False,False,False,confidence 0.23 < 0.85
+44817736125778374-HELP.mp4,HELP,help,P39,sign,52,93,help,0.8837,0.8481,help|how|good,True,True,False,
+4396630789618088-EAT 2.mp4,EAT2,eat,P39,sign,41,77,eat,0.9268,0.9026,eat|home|sleep,True,True,False,
+9733795834896177-FAMILY.mp4,FAMILY,family,P39,sign,46,85,family,0.9869,0.9857,family|name|sorry,True,True,False,
+6387762756061144-SORRY.mp4,SORRY,sorry,P39,sign,0,133,sorry,0.9223,0.8964,sorry|love|school,True,True,False,
+5938554372186748-EAT 2.mp4,EAT2,eat,P26,sign,8,34,eat,0.3669,0.139,eat|home|sleep,True,False,False,confidence 0.37 < 0.85
+7397889710801269-FAMILY.mp4,FAMILY,family,P26,sign,9,49,family,0.9845,0.9827,family|want|need,True,True,False,
+9220637121525757-SORRY.mp4,SORRY,sorry,P26,sign,0,79,sorry,0.9877,0.9863,sorry|love|me,True,True,False,
+25290749191933815-GOOD.mp4,GOOD,good,P26,sign,5,30,good,0.6408,0.3776,good|thanks|bad,True,False,False,confidence 0.64 < 0.85
+6330094542104612-PLEASE.mp4,PLEASE,please,P39,sign,49,64,please,0.9269,0.9177,please|help|hungry,True,True,False,
+7313509467149351-DRINK.mp4,DRINK1,drink,P39,sign,46,81,drink,0.9434,0.9265,drink|bad|bye,True,True,False,
+16870669316247833-THANK YOU.mp4,THANKYOU,thanks,P39,sign,43,59,good,0.5049,0.3414,good|thanks|bad,False,False,False,confidence 0.50 < 0.85
+2631901034056372-LOVE.mp4,LOVE,love,P39,sign,41,71,love,0.9478,0.9374,love|sorry|help,True,True,False,
+8079226457278508-NO.mp4,NO,no,P26,sign,7,38,no,0.5935,0.3823,no|where|go,True,False,False,confidence 0.59 < 0.85
+02185976473813267-SCHOOL.mp4,SCHOOL,school,P26,sign,6,48,school,0.9457,0.9327,school|stop|more,True,True,False,
+6298947790810541-FRIEND.mp4,FRIEND,friend,P26,sign,9,47,friend,0.8866,0.8605,friend|when|you,True,True,False,
+7628262965013866-BAD.mp4,BAD,bad,P26,sign,7,16,bad,0.7733,0.7034,bad|drink|hungry,True,False,False,confidence 0.77 < 0.85
+26056519285644875-YES.mp4,YES,yes,P39,sign,36,69,yes,0.9472,0.9423,yes|no|me,True,True,False,
+6484470716683486-DRINK 2.mp4,DRINK2,drink,P39,sign,41,89,drink,0.9389,0.9334,drink|bye|water,True,True,False,
+7976564165646398-THANK YOU.mp4,THANKYOU,thanks,P26,sign,28,61,thanks,0.7757,0.6981,thanks|good|come,True,False,False,confidence 0.78 < 0.85
+25439044778685105-LOVE.mp4,LOVE,love,P26,sign,13,69,sorry,0.8996,0.8751,sorry|love|me,False,True,False,
+05859480723249688-PLEASE.mp4,PLEASE,please,P26,sign,10,32,please,0.9118,0.8998,please|help|hungry,True,True,False,
+37918472044314444-DRINK.mp4,DRINK1,drink,P26,sign,6,27,drink,0.943,0.9355,drink|water|bad,True,True,False,
+5358205730570242-HOME.mp4,HOME,home,P26,sign,16,38,home,0.928,0.9087,home|eat|go,True,True,False,
+1420689770801613-NAME.mp4,NAME,name,P26,sign,6,28,name,0.9876,0.9861,name|need|when,True,True,False,
+020030442376253177-HELLO.mp4,HELLO,hello,P26,sign,4,28,hello,0.9025,0.8766,hello|bye|why,True,True,False,
+2889010159260097-BYE.mp4,BYE,bye,P26,sign,4,23,bye,0.8786,0.8536,bye|finish|bad,True,True,False,
+8977694836593926-YES.mp4,YES,yes,P26,sign,4,35,yes,0.5557,0.4738,yes|come|need,True,False,False,confidence 0.56 < 0.85
+4382571867616978-HELP.mp4,HELP,help,P26,sign,8,37,help,0.8546,0.8213,help|good|how,True,True,False,
+7331110745964862-DRINK 2.mp4,DRINK2,drink,P26,sign,5,47,drink,0.893,0.8804,drink|understand|bye,True,True,False,
+8779902440064791-EAT.mp4,EAT1,eat,P26,sign,9,40,eat,0.9725,0.9668,eat|home|bad,True,True,False,
+8218136220855874-HELP.mp4,HELP,help,P26,sign,5,40,help,0.7789,0.7397,help|good|hungry,True,False,False,confidence 0.78 < 0.85
+8977161343977647-RETIRE.mp4,RETIRE,OTHER,P21,sign,15,22,name,0.9772,0.9748,name|when|need,False,True,False,
+11592225384835153-ART.mp4,ART,OTHER,P39,sign,69,118,help,0.2956,0.1654,help|now|why,False,False,False,confidence 0.30 < 0.85
+4328643376522927-WORK.mp4,WORK,work,P39,sign,65,85,work,0.9739,0.9701,work|yes|bathroom,True,True,False,
+6553822102549725-RETIRE.mp4,RETIRE,OTHER,P26,sign,13,44,name,0.6776,0.6239,name|friend|OTHER,False,False,False,confidence 0.68 < 0.85
+6072418103340411-WORK.mp4,WORK,work,P26,sign,8,51,work,0.9737,0.9709,work|bathroom|love,True,True,False,
+04683718482429655-AVOID.mp4,AVOID,OTHER,P26,sign,6,30,bathroom,0.7927,0.7624,bathroom|how|help,False,False,False,confidence 0.79 < 0.85
+4372505087382914-ME.mp4,ME,me,P5,sign,26,30,me,0.4096,0.1973,me|hungry|please,True,False,False,confidence 0.41 < 0.85
+32838564647007873-SLEEP.mp4,SLEEP,sleep,P5,sign,41,67,sleep,0.9582,0.9504,sleep|understand|come,True,True,False,
+7530258985595248-WATER.mp4,WATER,water,P5,sign,3,69,water,0.7719,0.7276,water|school|more,True,False,False,confidence 0.77 < 0.85
+8724961433813252-HUNGRY.mp4,HUNGRY,hungry,P12,sign,12,23,hungry,0.943,0.9358,hungry|please|sorry,True,True,False,
+7404223141679687-WHERE.mp4,WHERE,where,P12,sign,8,38,where,0.9627,0.9569,where|no|understand,True,True,False,
+8341336597329694-MORE.mp4,MORE,more,P12,sign,7,40,more,0.9648,0.9609,more|home|eat,True,True,False,
+9717361996927067-UNDERSTAND.mp4,UNDERSTAND,understand,P12,sign,6,36,understand,0.9863,0.984,understand|need|come,True,True,False,
+6220173213417262-WHY.mp4,WHY,why,P12,sign,5,35,why,0.7486,0.5839,why|hello|need,True,False,False,confidence 0.75 < 0.85
+19039558672419843-WHEN.mp4,WHEN,when,P12,sign,6,37,when,0.9598,0.9518,when|friend|where,True,True,False,
+6229294436435182-YOU.mp4,YOU,you,P12,sign,6,36,you,0.9848,0.9819,you|where|need,True,True,False,
+9659002140360071-WANT 2.mp4,WANT1,want,P12,sign,3,20,want,0.9588,0.9401,want|what|understand,True,True,False,
+306250682526525-HUNGRY.mp4,HUNGRY,hungry,P21,sign,0,75,hungry,0.9174,0.9103,hungry|help|please,True,True,False,
+8525529504952978-HUNGRY.mp4,HUNGRY,hungry,P39,sign,0,136,hungry,0.5659,0.5118,hungry|please|REST,True,False,False,confidence 0.57 < 0.85
+11792300756428031-WHAT 1.mp4,WHAT2,what,P21,sign,15,31,what,0.8518,0.7948,what|want|stop,True,True,False,
+2294900578606751-COME.mp4,COME,come,P21,sign,10,34,come,0.9858,0.9841,come|need|understand,True,True,False,
+35429744496101856-ME.mp4,ME,me,P21,sign,0,52,me,0.9905,0.9893,me|sorry|you,True,False,True,sorry/me?
+4876077931735432-SLEEP.mp4,SLEEP,sleep,P21,sign,14,43,sleep,0.9511,0.9396,sleep|why|home,True,True,False,
+414141284745577-WATER.mp4,WATER,water,P21,sign,9,32,water,0.9349,0.9281,water|more|please,True,True,False,
+3860077714893173-FINISH.mp4,FINISH,finish,P21,sign,6,31,finish,0.96,0.9509,finish|bye|bad,True,True,False,
+34697989347891944-WHERE.mp4,WHERE,where,P21,sign,9,30,where,0.9542,0.9474,where|no|you,True,True,False,
+009299695590603507-MORE.mp4,MORE,more,P21,sign,11,34,more,0.959,0.954,more|home|bathroom,True,True,False,
+9085692028177397-WANT 2.mp4,WANT1,want,P21,sign,5,16,want,0.8471,0.8151,want|thanks|what,True,False,False,confidence 0.85 < 0.85
+04669408879006931-NEED.mp4,NEED,need,P21,sign,5,27,need,0.9621,0.9524,need|yes|me,True,True,False,
+19643383002170656-YOU.mp4,YOU,you,P21,sign,11,18,you,0.9865,0.9846,you|need|where,True,True,False,
+6012173826569807-NOW.mp4,NOW,now,P21,sign,5,22,now,0.5541,0.1905,now|today|help,True,False,False,confidence 0.55 < 0.85
+6082022551291582-TODAY.mp4,TODAY,today,P21,sign,6,23,now,0.5286,0.122,now|today|help,False,False,False,confidence 0.53 < 0.85
+6721385997956766-GO.mp4,GO,go,P21,sign,5,23,OTHER,0.4967,0.1369,OTHER|go|no,False,False,False,confidence 0.50 < 0.85
+3330583417668693-WANT.mp4,WANT2,want,P21,sign,12,35,want,0.9657,0.9588,want|what|family,True,True,False,
+8290350631082379-WORK.mp4,WORK,work,P21,sign,5,35,work,0.9673,0.9624,work|yes|bathroom,True,True,False,
+8071758688201891-UNDERSTAND.mp4,UNDERSTAND,understand,P21,sign,7,32,understand,0.9868,0.985,understand|come|you,True,True,False,
+7508574803030745-WHY.mp4,WHY,why,P21,sign,8,36,why,0.9719,0.9684,why|go|hello,True,True,False,
+08729017928642491-WHEN.mp4,WHEN,when,P21,sign,6,30,when,0.9497,0.9379,when|friend|name,True,True,False,
+10542513580735968-HOW.mp4,HOW1,how,P21,sign,6,29,how,0.917,0.8811,how|help|work,True,True,False,
+30879418056454777-NEED.mp4,NEED,need,P39,sign,56,76,need,0.99,0.9888,need|come|you,True,True,False,
+8203203237125376-NOW.mp4,NOW,now,P39,sign,63,72,today,0.5423,0.1854,today|now|help,False,False,False,confidence 0.54 < 0.85
+4382853991304725-STOP.mp4,STOP,stop,P21,sign,3,30,stop,0.4992,0.1319,stop|what|go,True,False,False,confidence 0.50 < 0.85
+9106828060005678-WHAT 2.mp4,WHAT1,what,P21,sign,5,27,OTHER,0.9363,0.9258,OTHER|need|hello,False,False,False,
+2363946724780117-BATHROOM.mp4,BATHROOM,bathroom,P21,sign,5,26,bathroom,0.8934,0.8707,bathroom|where|work,True,True,False,
+8541893071831477-SLEEP.mp4,SLEEP,sleep,P21,sign,7,34,sleep,0.8591,0.8062,sleep|why|come,True,True,False,
+5103688507862052-SLEEP.mp4,SLEEP,sleep,P39,sign,60,87,sleep,0.9669,0.9595,sleep|eat|me,True,True,False,
+9000660794636397-MORE.mp4,MORE,more,P39,sign,61,98,more,0.8836,0.8727,more|home|water,True,True,False,
+03174577769237463-WATER.mp4,WATER,water,P39,sign,56,85,water,0.7392,0.7009,water|hungry|please,True,False,False,confidence 0.74 < 0.85
+7903893233633115-UNDERSTAND.mp4,UNDERSTAND,understand,P39,sign,43,80,understand,0.9812,0.9784,understand|come|need,True,True,False,
+5132756077874947-WHY.mp4,WHY,why,P39,sign,54,84,why,0.9049,0.8811,why|now|come,True,True,False,
+5407096343613205-WHEN.mp4,WHEN,when,P39,sign,48,88,when,0.2668,0.0517,when|you|me,True,False,False,confidence 0.27 < 0.85
+35038040842137197-YOU.mp4,YOU,you,P39,sign,0,118,REST,0.7326,0.7089,REST|yes|me,False,False,False,confidence 0.73 < 0.85
+22914094527724194-TODAY.mp4,TODAY,today,P39,sign,49,58,today,0.6586,0.4156,today|now|help,True,False,False,confidence 0.66 < 0.85
+8782648080433364-WANT 2.mp4,WANT1,want,P39,sign,57,70,what,0.7954,0.7205,what|today|want,False,False,False,confidence 0.80 < 0.85
+10421760727572105-WANT.mp4,WANT2,want,P39,sign,59,81,how,0.4687,0.3437,how|want|more,False,False,False,confidence 0.47 < 0.85
+3702604002311216-GO.mp4,GO,go,P39,sign,42,59,go,0.9029,0.8702,go|where|no,True,True,False,
+6809556328325521-COME.mp4,COME,come,P39,sign,52,72,come,0.9767,0.9739,come|understand|need,True,True,False,
+37186838838285174-WHAT 1.mp4,WHAT2,what,P39,sign,0,119,what,0.3347,0.1379,what|today|help,True,False,False,confidence 0.33 < 0.85
+5724078705072562-ME.mp4,ME,me,P39,sign,0,109,me,0.9897,0.9882,me|sorry|you,True,False,True,sorry/me?
+24803980252556834-FINISH.mp4,FINISH,finish,P39,sign,46,73,finish,0.9404,0.9326,finish|what|family,True,True,False,
+6997365376367899-WHERE.mp4,WHERE,where,P39,sign,46,74,where,0.9584,0.9511,where|no|understand,True,True,False,
+6271713081961889-HOW.mp4,HOW1,how,P39,sign,0,126,how,0.479,0.3686,how|more|good,True,False,False,confidence 0.48 < 0.85
+49400025068696496-STOP.mp4,STOP,stop,P39,sign,37,78,stop,0.928,0.9057,stop|what|more,True,True,False,
+873539016146136-WHAT 2.mp4,WHAT1,what,P39,sign,49,82,what,0.7975,0.6923,what|go|today,True,False,False,confidence 0.80 < 0.85
+3622050510913253-BATHROOM.mp4,BATHROOM,bathroom,P39,sign,58,95,bathroom,0.9484,0.9406,bathroom|yes|work,True,True,False,
+5587884729767747-GO.mp4,GO,go,P26,sign,4,32,go,0.7375,0.5841,go|OTHER|no,True,False,False,confidence 0.74 < 0.85
+43278703688513187-TODAY.mp4,TODAY,today,P26,sign,13,33,today,0.7733,0.6245,today|now|help,True,False,False,confidence 0.77 < 0.85
+971003020665846-HOW.mp4,HOW1,how,P26,sign,14,45,how,0.9261,0.9132,how|good|OTHER,True,True,False,
+6405573667025386-BATHROOM.mp4,BATHROOM,bathroom,P26,sign,11,46,bathroom,0.9298,0.9159,bathroom|work|yes,True,True,False,
+8804372922780734-FINISH.mp4,FINISH,finish,P26,sign,8,40,finish,0.9316,0.9231,finish|what|bye,True,True,False,
+8727936955185542-HUNGRY.mp4,HUNGRY,hungry,P26,sign,11,17,hungry,0.9213,0.9074,hungry|please|love,True,True,False,
+38702561454738094-WHEN.mp4,WHEN,when,P26,sign,11,47,need,0.9081,0.8919,need|OTHER|name,False,True,False,
+298155207775465-YOU.mp4,YOU,you,P26,sign,4,32,you,0.8282,0.7624,you|need|where,True,False,False,confidence 0.83 < 0.85
+6330153558265055-NEED.mp4,NEED,need,P26,sign,10,42,need,0.9886,0.9869,need|you|come,True,True,False,
+10928494959813584-NOW.mp4,NOW,now,P26,sign,6,37,now,0.7279,0.5992,now|today|why,True,False,False,confidence 0.73 < 0.85
+03554605558492718-ME.mp4,ME,me,P26,sign,25,29,need,0.9844,0.9818,need|come|yes,False,True,False,
+9850177164607337-WATER.mp4,WATER,water,P26,sign,6,39,water,0.9377,0.9281,water|you|no,True,True,False,
+19532533865671398-WHERE.mp4,WHERE,where,P26,sign,6,33,where,0.9441,0.9361,where|bathroom|no,True,True,False,
+9036471590989446-SLEEP.mp4,SLEEP,sleep,P26,sign,11,41,sleep,0.9326,0.9211,sleep|come|why,True,True,False,
+17984011488050022-MORE.mp4,MORE,more,P26,sign,4,33,more,0.9301,0.9225,more|bathroom|where,True,True,False,
+6504234134902995-UNDERSTAND.mp4,UNDERSTAND,understand,P26,sign,7,27,understand,0.987,0.9855,understand|need|come,True,True,False,
+38099175964004983-WHY.mp4,WHY,why,P26,sign,0,34,why,0.312,0.0117,why|what|go,True,False,False,confidence 0.31 < 0.85
+7757946316597986-STOP.mp4,STOP,stop,P26,sign,5,34,stop,0.7988,0.7416,stop|what|more,True,False,False,confidence 0.80 < 0.85
+24519151833954478-WHAT 2.mp4,WHAT1,what,P26,sign,8,34,what,0.5623,0.4362,what|why|OTHER,True,False,False,confidence 0.56 < 0.85
+24064885357062593-COME.mp4,COME,come,P26,sign,12,33,come,0.3732,0.2329,come|why|REST,True,False,False,confidence 0.37 < 0.85
+05608472883163529-WHAT 1.mp4,WHAT2,what,P26,sign,0,40,what,0.7895,0.6985,what|want|today,True,False,False,confidence 0.79 < 0.85
+8459253067700705-WANT.mp4,WANT2,want,P26,sign,5,32,what,0.9281,0.906,what|want|today,False,True,False,
+3964716837264739-WANT 2.mp4,WANT1,want,P26,sign,4,38,want,0.9681,0.959,want|what|family,True,True,False,
+5285653456968582-TODAY.mp4,TODAY,today,P26,sign,6,46,today,0.6674,0.439,today|now|help,True,False,False,confidence 0.67 < 0.85
+986022284412545-WHAT 1.mp4,WHAT2,what,P26,sign,7,34,what,0.8807,0.8126,what|want|stop,True,True,False,
+34076966817997323-ME.mp4,ME,me,P26,sign,15,45,yes,0.3069,0.1693,yes|hungry|me,False,False,False,confidence 0.31 < 0.85
+8765379179357844-WASH MACHINE.mp4,WASHMACHINE,OTHER,P21,sign,5,38,OTHER,0.7383,0.6414,OTHER|name|school,True,False,False,confidence 0.74 < 0.85
+7445163687198764-PULL CONVINCE.mp4,PULLCONVINCE,OTHER,P21,sign,6,30,help,0.6221,0.5374,help|today|bathroom,False,False,False,confidence 0.62 < 0.85
+21537826064280519-ALRIGHT.mp4,ALRIGHT,OTHER,P26,sign,6,37,school,0.7763,0.6617,school|stop|more,False,False,False,confidence 0.78 < 0.85
+8779944008396092-BYE.mp4,BYE,REST,P21,rest,0,5,come,0.6954,0.6169,come|REST|me,False,False,False,confidence 0.70 < 0.85
+25439044778685105-LOVE.mp4,LOVE,REST,P26,rest,71,91,REST,0.678,0.6485,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+3330583417668693-WANT.mp4,WANT2,REST,P21,rest,38,54,REST,0.6785,0.6521,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+9106828060005678-WHAT 2.mp4,WHAT1,REST,P21,rest,32,36,REST,0.707,0.6795,REST|yes|more,True,False,False,confidence 0.71 < 0.85
+6330094542104612-PLEASE.mp4,PLEASE,REST,P39,rest,66,123,please,0.7834,0.7044,please|hungry|thanks,False,False,False,confidence 0.78 < 0.85
+8782648080433364-WANT 2.mp4,WANT1,REST,P39,rest,70,141,stop,0.194,0.0337,stop|REST|more,False,False,False,confidence 0.19 < 0.85
+8459253067700705-WANT.mp4,WANT2,REST,P26,rest,1,5,REST,0.688,0.659,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+36996117552353014-DRINK 2.mp4,DRINK2,REST,P21,rest,37,53,REST,0.6947,0.6667,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+4876077931735432-SLEEP.mp4,SLEEP,REST,P21,rest,6,11,REST,0.6726,0.6415,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+17984011488050022-MORE.mp4,MORE,REST,P26,rest,37,59,REST,0.6731,0.6426,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+7628262965013866-BAD.mp4,BAD,REST,P26,rest,16,50,me,0.8977,0.8783,me|you|sorry,False,True,False,
+7404223141679687-WHERE.mp4,WHERE,REST,P12,rest,1,8,REST,0.682,0.6504,REST|more|help,True,False,False,confidence 0.68 < 0.85
+1420689770801613-NAME.mp4,NAME,REST,P26,rest,2,6,REST,0.6821,0.6531,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+9715589334909431-YES.mp4,YES,REST,P21,rest,0,6,REST,0.6957,0.6674,REST|yes|more,True,False,False,confidence 0.70 < 0.85
+3330583417668693-WANT.mp4,WANT2,REST,P21,rest,0,12,REST,0.3311,0.1901,REST|more|home,True,False,False,confidence 0.33 < 0.85
+5132756077874947-WHY.mp4,WHY,REST,P39,rest,96,105,REST,0.6709,0.6402,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+11592225384835153-ART.mp4,ART,REST,P39,rest,0,67,come,0.6499,0.5932,come|REST|help,False,False,False,confidence 0.65 < 0.85
+6484470716683486-DRINK 2.mp4,DRINK2,REST,P39,rest,14,21,REST,0.67,0.6374,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+484863140155418-MONEY 2.mp4,MONEY2,REST,P39,rest,89,122,REST,0.6912,0.662,REST|yes|more,True,False,False,confidence 0.69 < 0.85
+5407096343613205-WHEN.mp4,WHEN,REST,P39,rest,104,118,REST,0.6559,0.6217,REST|more|help,True,False,False,confidence 0.66 < 0.85
+8954385001170695-MONEY 2.mp4,MONEY2,REST,P21,rest,31,49,REST,0.6908,0.6633,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+7313509467149351-DRINK.mp4,DRINK1,REST,P39,rest,90,103,REST,0.6902,0.6619,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+7331110745964862-DRINK 2.mp4,DRINK2,REST,P26,rest,53,64,REST,0.6873,0.6585,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+24064885357062593-COME.mp4,COME,REST,P26,rest,48,64,REST,0.6648,0.6311,REST|more|yes,True,False,False,confidence 0.66 < 0.85
+8218136220855874-HELP.mp4,HELP,REST,P26,rest,45,60,REST,0.6779,0.6475,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+5587884729767747-GO.mp4,GO,REST,P26,rest,0,4,REST,0.6872,0.6592,REST|yes|more,True,False,False,confidence 0.69 < 0.85
+43278703688513187-TODAY.mp4,TODAY,REST,P26,rest,7,11,REST,0.672,0.6443,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+8541893071831477-SLEEP.mp4,SLEEP,REST,P21,rest,36,52,REST,0.7029,0.6743,REST|yes|more,True,False,False,confidence 0.70 < 0.85
+34697989347891944-WHERE.mp4,WHERE,REST,P21,rest,0,9,REST,0.391,0.3304,REST|why|come,True,False,False,confidence 0.39 < 0.85
+8203203237125376-NOW.mp4,NOW,REST,P39,rest,41,54,REST,0.7081,0.6804,REST|yes|more,True,False,False,confidence 0.71 < 0.85
+8341336597329694-MORE.mp4,MORE,REST,P12,rest,50,54,REST,0.6577,0.6236,REST|more|help,True,False,False,confidence 0.66 < 0.85
+10928494959813584-NOW.mp4,NOW,REST,P26,rest,43,47,REST,0.6624,0.6283,REST|more|help,True,False,False,confidence 0.66 < 0.85
+4096147054343935-PLEASE.mp4,PLEASE,REST,P12,rest,1,10,REST,0.2516,0.1049,REST|please|thanks,True,False,False,confidence 0.25 < 0.85
+11792300756428031-WHAT 1.mp4,WHAT2,REST,P21,rest,43,52,REST,0.6226,0.5786,REST|please|hungry,True,False,False,confidence 0.62 < 0.85
+03554605558492718-ME.mp4,ME,REST,P26,rest,2,25,me,0.9877,0.9862,me|sorry|you,False,False,True,sorry/me?
+6484470716683486-DRINK 2.mp4,DRINK2,REST,P39,rest,95,109,REST,0.6697,0.6392,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+9000660794636397-MORE.mp4,MORE,REST,P39,rest,100,111,need,0.9661,0.9612,need|OTHER|yes,False,True,False,
+02185976473813267-SCHOOL.mp4,SCHOOL,REST,P26,rest,0,5,REST,0.6793,0.6479,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+6330153558265055-NEED.mp4,NEED,REST,P26,rest,3,9,REST,0.6594,0.6254,REST|more|help,True,False,False,confidence 0.66 < 0.85
+04669408879006931-NEED.mp4,NEED,REST,P21,rest,0,5,REST,0.6706,0.6422,REST|yes|more,True,False,False,confidence 0.67 < 0.85
+7404223141679687-WHERE.mp4,WHERE,REST,P12,rest,46,53,REST,0.6814,0.6487,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+5439490417710435-NAME.mp4,NAME,REST,P12,rest,1,5,REST,0.6854,0.6552,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+43278703688513187-TODAY.mp4,TODAY,REST,P26,rest,74,80,REST,0.6862,0.6564,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+42961246858695024-PLEASE.mp4,PLEASE,REST,P21,rest,61,69,REST,0.699,0.6723,REST|yes|more,True,False,False,confidence 0.70 < 0.85
+44817736125778374-HELP.mp4,HELP,REST,P39,rest,0,52,REST,0.6837,0.6545,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+04683718482429655-AVOID.mp4,AVOID,REST,P26,rest,31,63,REST,0.7468,0.7174,REST|yes|more,True,False,False,confidence 0.75 < 0.85
+4382571867616978-HELP.mp4,HELP,REST,P26,rest,37,62,REST,0.7184,0.692,REST|thanks|home,True,False,False,confidence 0.72 < 0.85
+8218136220855874-HELP.mp4,HELP,REST,P26,rest,0,5,REST,0.6577,0.6255,REST|more|help,True,False,False,confidence 0.66 < 0.85
+009883456113471967-EAT.mp4,EAT1,REST,P39,rest,117,149,REST,0.7527,0.7284,REST|more|thanks,True,False,False,confidence 0.75 < 0.85
+38702561454738094-WHEN.mp4,WHEN,REST,P26,rest,49,110,REST,0.6829,0.6526,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+06939945586940688-BAD.mp4,BAD,REST,P39,rest,93,106,REST,0.6745,0.643,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+5938554372186748-EAT 2.mp4,EAT2,REST,P26,rest,0,8,REST,0.6682,0.6386,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+38702561454738094-WHEN.mp4,WHEN,REST,P26,rest,3,11,REST,0.4653,0.3378,REST|me|yes,True,False,False,confidence 0.47 < 0.85
+6072418103340411-WORK.mp4,WORK,REST,P26,rest,60,67,REST,0.6746,0.6428,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+7875424216858471-DRINK 2.mp4,DRINK2,REST,P21,rest,1,6,REST,0.3949,0.124,REST|come|need,True,False,False,confidence 0.39 < 0.85
+7903893233633115-UNDERSTAND.mp4,UNDERSTAND,REST,P39,rest,88,115,REST,0.6767,0.6467,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+7791424980867376-GOOD.mp4,GOOD,REST,P12,rest,3,8,yes,0.501,0.3919,yes|bathroom|REST,False,False,False,confidence 0.50 < 0.85
+6504234134902995-UNDERSTAND.mp4,UNDERSTAND,REST,P26,rest,43,48,REST,0.6902,0.6617,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+37918472044314444-DRINK.mp4,DRINK1,REST,P26,rest,27,51,REST,0.669,0.6365,REST|more|help,True,False,False,confidence 0.67 < 0.85
+44817736125778374-HELP.mp4,HELP,REST,P39,rest,99,124,REST,0.6623,0.6306,REST|more|yes,True,False,False,confidence 0.66 < 0.85
+21537826064280519-ALRIGHT.mp4,ALRIGHT,REST,P26,rest,0,4,REST,0.6873,0.6561,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+7976564165646398-THANK YOU.mp4,THANKYOU,REST,P26,rest,80,100,REST,0.6972,0.6699,REST|more|yes,True,False,False,confidence 0.70 < 0.85
+9733795834896177-FAMILY.mp4,FAMILY,REST,P39,rest,97,109,REST,0.6823,0.6529,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+24442962392359258-SCHOOL.mp4,SCHOOL,REST,P39,rest,23,31,REST,0.6777,0.6466,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+7397889710801269-FAMILY.mp4,FAMILY,REST,P26,rest,1,6,REST,0.677,0.6457,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+2889010159260097-BYE.mp4,BYE,REST,P26,rest,27,42,REST,0.6955,0.667,REST|yes|more,True,False,False,confidence 0.70 < 0.85
+0392835216734122-EAT.mp4,EAT1,REST,P21,rest,33,53,REST,0.6619,0.6304,REST|more|yes,True,False,False,confidence 0.66 < 0.85
+4328643376522927-WORK.mp4,WORK,REST,P39,rest,1,51,REST,0.6796,0.6494,REST|yes|more,True,False,False,confidence 0.68 < 0.85
+019466731254031755-BAD.mp4,BAD,REST,P21,rest,0,5,please,0.3382,0.2371,please|REST|come,False,False,False,confidence 0.34 < 0.85
+19039558672419843-WHEN.mp4,WHEN,REST,P12,rest,41,51,REST,0.6906,0.6606,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+7445163687198764-PULL CONVINCE.mp4,PULLCONVINCE,REST,P21,rest,0,4,REST,0.7078,0.6789,REST|yes|me,True,False,False,confidence 0.71 < 0.85
+6072418103340411-WORK.mp4,WORK,REST,P26,rest,2,7,REST,0.6449,0.6091,REST|more|help,True,False,False,confidence 0.64 < 0.85
+8779902440064791-EAT.mp4,EAT1,REST,P26,rest,0,7,REST,0.6768,0.6458,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+03554605558492718-ME.mp4,ME,REST,P26,rest,37,51,REST,0.7244,0.6913,REST|me|yes,True,False,False,confidence 0.72 < 0.85
+6721385997956766-GO.mp4,GO,REST,P21,rest,32,47,REST,0.7028,0.6772,REST|more|yes,True,False,False,confidence 0.70 < 0.85
+9000660794636397-MORE.mp4,MORE,REST,P39,rest,1,59,REST,0.716,0.6808,REST|me|yes,True,False,False,confidence 0.72 < 0.85
+24803980252556834-FINISH.mp4,FINISH,REST,P39,rest,33,37,REST,0.683,0.6537,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+5285653456968582-TODAY.mp4,TODAY,REST,P26,rest,65,83,REST,0.6815,0.652,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+30879418056454777-NEED.mp4,NEED,REST,P39,rest,35,43,REST,0.669,0.6384,REST|more|help,True,False,False,confidence 0.67 < 0.85
+009299695590603507-MORE.mp4,MORE,REST,P21,rest,3,10,REST,0.2262,0.0342,REST|hungry|me,True,False,False,confidence 0.23 < 0.85
+9106828060005678-WHAT 2.mp4,WHAT1,REST,P21,rest,0,5,REST,0.6729,0.6444,REST|yes|more,True,False,False,confidence 0.67 < 0.85
+7757946316597986-STOP.mp4,STOP,REST,P26,rest,0,5,REST,0.6688,0.6363,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+9710569622157019-BYE.mp4,BYE,REST,P39,rest,4,15,REST,0.6978,0.6699,REST|yes|more,True,False,False,confidence 0.70 < 0.85
+11792300756428031-WHAT 1.mp4,WHAT2,REST,P21,rest,1,14,REST,0.6812,0.6508,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+4111158323472113-HOME.mp4,HOME,REST,P21,rest,0,7,REST,0.6936,0.6677,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+2363946724780117-BATHROOM.mp4,BATHROOM,REST,P21,rest,0,4,REST,0.676,0.6457,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+2363946724780117-BATHROOM.mp4,BATHROOM,REST,P21,rest,27,38,REST,0.6759,0.6474,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+34076966817997323-ME.mp4,ME,REST,P26,rest,1,11,REST,0.6726,0.6407,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+16004917375203398-FAMILY.mp4,FAMILY,REST,P21,rest,44,56,REST,0.6775,0.6496,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+26056519285644875-YES.mp4,YES,REST,P39,rest,2,22,REST,0.657,0.6236,REST|more|yes,True,False,False,confidence 0.66 < 0.85
+8782648080433364-WANT 2.mp4,WANT1,REST,P39,rest,21,57,REST,0.6236,0.588,REST|where|yes,True,False,False,confidence 0.62 < 0.85
+05608472883163529-WHAT 1.mp4,WHAT2,REST,P26,rest,42,76,REST,0.7279,0.6996,REST|me|yes,True,False,False,confidence 0.73 < 0.85
+8977161343977647-RETIRE.mp4,RETIRE,REST,P21,rest,24,30,name,0.9806,0.9783,name|when|need,False,True,False,
+3622050510913253-BATHROOM.mp4,BATHROOM,REST,P39,rest,97,133,REST,0.7787,0.754,REST|yes|more,True,False,False,confidence 0.78 < 0.85
+8724961433813252-HUNGRY.mp4,HUNGRY,REST,P12,rest,3,11,REST,0.6811,0.6518,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+5358205730570242-HOME.mp4,HOME,REST,P26,rest,46,50,REST,0.6696,0.6371,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+4656606080155459-NO.mp4,NO,REST,P39,rest,86,124,REST,0.6726,0.6416,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+04669408879006931-NEED.mp4,NEED,REST,P21,rest,27,52,REST,0.6847,0.6564,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+8079226457278508-NO.mp4,NO,REST,P26,rest,1,7,REST,0.6689,0.6365,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+8804372922780734-FINISH.mp4,FINISH,REST,P26,rest,1,7,REST,0.665,0.633,REST|more|help,True,False,False,confidence 0.67 < 0.85
+8341336597329694-MORE.mp4,MORE,REST,P12,rest,0,5,REST,0.6707,0.6364,REST|more|help,True,False,False,confidence 0.67 < 0.85
+05614933522741539-HELLO.mp4,HELLO,REST,P12,rest,1,5,REST,0.6658,0.6292,REST|more|help,True,False,False,confidence 0.67 < 0.85
+29341979023390885-FRIEND.mp4,FRIEND,REST,P39,rest,23,42,REST,0.6663,0.6341,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+2889010159260097-BYE.mp4,BYE,REST,P26,rest,0,4,REST,0.6813,0.6509,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+6229294436435182-YOU.mp4,YOU,REST,P12,rest,38,56,REST,0.6866,0.656,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+6330153558265055-NEED.mp4,NEED,REST,P26,rest,42,65,REST,0.6651,0.6335,REST|more|help,True,False,False,confidence 0.67 < 0.85
+8534077485600235-HELP.mp4,HELP,REST,P5,rest,61,82,REST,0.5285,0.4769,REST|more|thanks,True,False,False,confidence 0.53 < 0.85
+10542513580735968-HOW.mp4,HOW1,REST,P21,rest,35,61,REST,0.679,0.6494,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+971003020665846-HOW.mp4,HOW1,REST,P26,rest,0,14,REST,0.6701,0.6404,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+7508574803030745-WHY.mp4,WHY,REST,P21,rest,4,8,REST,0.6989,0.6712,REST|me|yes,True,False,False,confidence 0.70 < 0.85
+298155207775465-YOU.mp4,YOU,REST,P26,rest,42,53,REST,0.6702,0.636,REST|more|help,True,False,False,confidence 0.67 < 0.85
+484863140155418-MONEY 2.mp4,MONEY2,REST,P39,rest,23,37,REST,0.6815,0.6528,REST|yes|more,True,False,False,confidence 0.68 < 0.85
+6298947790810541-FRIEND.mp4,FRIEND,REST,P26,rest,0,8,REST,0.6622,0.6284,REST|more|help,True,False,False,confidence 0.66 < 0.85
+8290350631082379-WORK.mp4,WORK,REST,P21,rest,40,44,REST,0.7023,0.6757,REST|more|yes,True,False,False,confidence 0.70 < 0.85
+4843579408025589-GOOD.mp4,GOOD,REST,P39,rest,14,27,REST,0.6852,0.6564,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+7071450710791192-DRINK.mp4,DRINK1,REST,P12,rest,5,10,REST,0.6933,0.6667,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+32838564647007873-SLEEP.mp4,SLEEP,REST,P5,rest,2,23,REST,0.6857,0.6542,REST|yes|more,True,False,False,confidence 0.69 < 0.85
+3860077714893173-FINISH.mp4,FINISH,REST,P21,rest,1,6,REST,0.5516,0.4749,REST|where|please,True,False,False,confidence 0.55 < 0.85
+873539016146136-WHAT 2.mp4,WHAT1,REST,P39,rest,5,28,REST,0.6813,0.653,REST|yes|more,True,False,False,confidence 0.68 < 0.85
+8618976665727696-GOOD.mp4,GOOD,REST,P21,rest,43,47,please,0.8125,0.7853,please|thanks|good,False,False,False,confidence 0.81 < 0.85
+986022284412545-WHAT 1.mp4,WHAT2,REST,P26,rest,1,7,REST,0.6887,0.66,REST|more|yes,True,False,False,confidence 0.69 < 0.85
+020030442376253177-HELLO.mp4,HELLO,REST,P26,rest,30,48,REST,0.6611,0.6278,REST|more|help,True,False,False,confidence 0.66 < 0.85
+22914094527724194-TODAY.mp4,TODAY,REST,P39,rest,80,123,REST,0.3828,0.3241,REST|more|want,True,False,False,confidence 0.38 < 0.85
+34076966817997323-ME.mp4,ME,REST,P26,rest,45,70,REST,0.6728,0.6426,REST|yes|more,True,False,False,confidence 0.67 < 0.85
+4372505087382914-ME.mp4,ME,REST,P5,rest,7,26,REST,0.6683,0.6297,REST|me|yes,True,False,False,confidence 0.67 < 0.85
+8323715285073319-NO.mp4,NO,REST,P21,rest,0,16,REST,0.6879,0.6605,REST|yes|more,True,False,False,confidence 0.69 < 0.85
+25439044778685105-LOVE.mp4,LOVE,REST,P26,rest,2,12,REST,0.6831,0.6546,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+24442962392359258-SCHOOL.mp4,SCHOOL,REST,P39,rest,81,124,please,0.3378,0.2323,please|more|REST,False,False,False,confidence 0.34 < 0.85
+24064885357062593-COME.mp4,COME,REST,P26,rest,0,12,REST,0.6645,0.6355,REST|more|yes,True,False,False,confidence 0.66 < 0.85
+6405573667025386-BATHROOM.mp4,BATHROOM,REST,P26,rest,3,11,REST,0.6215,0.582,REST|more|want,True,False,False,confidence 0.62 < 0.85
+34697989347891944-WHERE.mp4,WHERE,REST,P21,rest,30,44,REST,0.6791,0.6499,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+10421760727572105-WANT.mp4,WANT2,REST,P39,rest,83,110,REST,0.4697,0.3777,REST|more|why,True,False,False,confidence 0.47 < 0.85
+8038145060553852-DRINK.mp4,DRINK1,REST,P21,rest,0,5,REST,0.6796,0.6499,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+7300348171338833-LOVE.mp4,LOVE,REST,P21,rest,38,62,sorry,0.365,0.145,sorry|school|you,False,False,False,confidence 0.36 < 0.85
+9850177164607337-WATER.mp4,WATER,REST,P26,rest,0,6,REST,0.6717,0.6401,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+14082179940882456-EAT 2.mp4,EAT2,REST,P21,rest,1,8,REST,0.6271,0.5317,REST|me|come,True,False,False,confidence 0.63 < 0.85
+8727936955185542-HUNGRY.mp4,HUNGRY,REST,P26,rest,32,47,please,0.4169,0.2666,please|hungry|REST,False,False,False,confidence 0.42 < 0.85
+16870669316247833-THANK YOU.mp4,THANKYOU,REST,P39,rest,2,28,REST,0.6822,0.652,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+8323715285073319-NO.mp4,NO,REST,P21,rest,55,59,need,0.8907,0.8582,need|come|REST,False,True,False,
+0006320057552187119-THANK YOU.mp4,THANKYOU,REST,P21,rest,14,46,please,0.56,0.3291,please|hungry|thanks,False,False,False,confidence 0.56 < 0.85
+4876077931735432-SLEEP.mp4,SLEEP,REST,P21,rest,45,62,REST,0.718,0.6905,REST|yes|more,True,False,False,confidence 0.72 < 0.85
+5587884729767747-GO.mp4,GO,REST,P26,rest,35,58,REST,0.7541,0.7061,REST|yes|me,True,False,False,confidence 0.75 < 0.85
+3860077714893173-FINISH.mp4,FINISH,REST,P21,rest,31,63,REST,0.7438,0.717,REST|yes|me,True,False,False,confidence 0.74 < 0.85
+7861062216231951-SCHOOL.mp4,SCHOOL,REST,P21,rest,1,10,REST,0.6745,0.6448,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+019466731254031755-BAD.mp4,BAD,REST,P21,rest,21,40,OTHER,0.365,0.1877,OTHER|need|REST,False,False,False,confidence 0.36 < 0.85
+8290350631082379-WORK.mp4,WORK,REST,P21,rest,0,4,REST,0.673,0.6425,REST|more|yes,True,False,False,confidence 0.67 < 0.85
+8541893071831477-SLEEP.mp4,SLEEP,REST,P21,rest,0,7,REST,0.699,0.6718,REST|yes|more,True,False,False,confidence 0.70 < 0.85
+7397889710801269-FAMILY.mp4,FAMILY,REST,P26,rest,62,75,REST,0.6807,0.6512,REST|more|yes,True,False,False,confidence 0.68 < 0.85
+4843579408025589-GOOD.mp4,GOOD,REST,P39,rest,64,89,hungry,0.4709,0.2129,hungry|please|thanks,False,False,False,confidence 0.47 < 0.85
+8977694836593926-YES.mp4,YES,REST,P26,rest,36,51,REST,0.6943,0.6642,REST|yes|more,True,False,False,confidence 0.69 < 0.85

@@ -149,13 +149,11 @@ PAIR_MARGINS: dict = {
 
 # these swaps survive the confidence floor, so no threshold separates them
 HEDGE_PAIRS: dict = {
+    # only pairs whose *both* words are in the shipped 40-word vocabulary: a
+    # pair naming a word the model cannot say can never be produced
     ("good", "thanks"): "good/thanks?",
-    ("when", "hurt"): "when/hurt?",
     ("now", "today"): "now/today?",
-    ("doctor", "help"): "doctor/help?",
-    ("please", "my"): "please/my?",
     ("sorry", "me"): "sorry/me?",
-    ("wait", "want"): "wait/want?",
 }
 BUFFER_SECONDS = 2.5
 LIVE_STRIDE = 1

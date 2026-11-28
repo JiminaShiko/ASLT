@@ -35,15 +35,22 @@ class Word:
 class VocabSpec:
     words: list[Word]
     enabled_batches: tuple[int, ...]
+    enabled_words: tuple[str, ...] = ()
     rest: dict = field(default_factory=dict)
     other: dict = field(default_factory=dict)
     raw: dict = field(default_factory=dict)
 
     @property
     def active(self) -> list[Word]:
-        """Enabled words that are resolvable in the dataset."""
+        """Enabled words that are resolvable in the dataset.
+
+        `enabled_words` narrows the batch switch to a named subset (the daily
+        vocabulary shipped in models/); empty means every enabled batch.
+        """
+        keep = set(self.enabled_words)
         return [w for w in self.words
                 if w.batch in self.enabled_batches
+                and (not keep or w.word in keep)
                 and (w.glosses or w.external_glosses)]
 
     @property
@@ -78,6 +85,7 @@ def load_vocab(path=None) -> VocabSpec:
     return VocabSpec(
         words=words,
         enabled_batches=tuple(spec.get("enabled_batches", (1,))),
+        enabled_words=tuple(spec.get("enabled_words", ())),
         rest=spec["extra_classes"][config.REST_LABEL],
         other=spec["extra_classes"][config.OTHER_LABEL],
         raw=spec,

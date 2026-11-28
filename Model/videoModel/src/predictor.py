@@ -169,7 +169,7 @@ class WordPredictor:
                     f'  cd "{config.ROOT}"\n'
                     "  python -m src.extract --splits train,val,test --workers 4\n"
                     "  python -m src.train")
-            net, meta = model.load(weights)
+            net, meta = model.load_release(weights)
         self.net, self.meta = net, dict(meta or {})
         self.weights = Path(weights)
         self.source = "from file" if loaded_from_file else "in memory"
@@ -235,6 +235,8 @@ class WordPredictor:
                       self.net.arch.in_dim,
                       config.NUM_FRAMES, self.stride, self.buf_s,
                       float(self.min_conf), float(self.min_margin))
+        if isinstance(self.net, model.Ensemble):
+            self.log.info("ensemble: %d checkpoints averaged", len(self.net.nets))
         if self.stale:
             self.log.warning(self.stale)
 

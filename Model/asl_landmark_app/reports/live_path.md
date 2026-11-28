@@ -8,10 +8,10 @@ Answered correctly per block: **90/95** (94.7%); 0/95 blocks committed inside th
 
 | measure | video tracking only | + retry (what ships) |
 |---|---|---|
-| loop speed, median per block (incl. decoding each frame from disk, which a webcam does not cost) | 80.9 frames/s | **68.8 frames/s** (PASS the 20 FPS target) |
+| loop speed, median per block (incl. decoding each frame from disk, which a webcam does not cost) | 83.3 frames/s | **74.0 frames/s** (PASS the 20 FPS target) |
 | frames with a hand | 809/950 (85.2%) | 924/950 (97.3%) |
-| usable detections/s | 60.5 | 68.8 |
-| retry | – | recovery(conf=0.3, after=1, every=3, flip=on): 141 empty frames, retried on 132 (93.6% of them), found 115 hands (3 via mirror), 21.4 ms per try, 20.0 ms amortised |
+| usable detections/s | 73.3 | 74.0 |
+| retry | – | recovery(conf=0.3, after=1, every=3, flip=on): 141 empty frames, retried on 132 (93.6% of them), found 115 hands (3 via mirror), 20.0 ms per try, 18.7 ms amortised |
 
 The two columns are the same frames in the same process, so the difference is the retry and nothing else. This is the only hand-coverage figure in the project measured frame by frame through the live path. It is not the same quantity as the extractor's recall in the training report, which is offline **image** recall over all 122k files and can afford five detections per image because it runs once instead of thirty times a second. Neither is a webcam measurement; only the self-test (`python src/live.py --selftest`) is.
 

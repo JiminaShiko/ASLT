@@ -571,7 +571,9 @@ def t_trained():
              "src/run_all.py --only train (or the command block in the README)")
         return
     from src import train as T
-    net, meta = model.load(config.FOR_RELEASE)
+    # the shipped artifact, exactly as the live path loads it: the primary
+    # checkpoint plus whatever meta['ensemble'] lists beside it
+    net, meta = model.load_release(config.FOR_RELEASE)
     labels = meta.get("labels") or []
     # models/meta.json is the provenance file train.py writes beside the
     # weights; the .pt carries only what load() needs to rebuild the graph.

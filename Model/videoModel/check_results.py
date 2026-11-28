@@ -98,7 +98,7 @@ def headline(d: dict) -> dict:
     b = test.get("background") or {}
     data = s.get("data") or {}
     return {
-        "candidate": d.get("candidate") or s.get("candidate"),
+        "candidate": d.get("candidate"),   # scope: a candidate dir, never the shipped model
         "label_set_id": s.get("label_set_id"),
         "evaluation_id": s.get("evaluation_id"),
         "commit_policy": s.get("commit_policy"),
@@ -366,6 +366,32 @@ def render(d: dict) -> str:
     A("Every test number above is from signers the model never saw. A random "
       "split would read far higher and would not be reported here.")
     A("")
+    ens = (d.get("meta") or {}).get("ensemble_eval")
+    if ens:
+        members = [str(m) for m in ((d.get("meta") or {}).get("ensemble") or [])]
+        A("## The shipped artifact is an ensemble")
+        A("`models/words_core20.pt` plus "
+          + ", ".join(f"`{m}`" for m in members)
+          + ": the number typed is the mean of their probabilities. Every row "
+            "below is the same cached held-out clips scored through each "
+            "checkpoint, so the columns are comparable.")
+        A("")
+        A("| model | val words | test words | test macro words | ps_test words |")
+        A("|---|---|---|---|---|")
+        rows = [("ensemble (shipped)", ens.get("val") or [],
+                 ens.get("test") or [], ens.get("ps_test") or [])]
+        for name, vals in (ens.get("members_single") or {}).items():
+            rows.append((f"single: {name}", vals.get("val") or [],
+                         vals.get("test") or [], vals.get("ps_test") or []))
+        for name, val, test, ps in rows:
+            def pick(v, i):
+                return f"{float(v[i]) * 100:.1f}%" if len(v) > i else "n/a"
+            A(f"| {name} | {pick(val, 1)} | {pick(test, 1)} | {pick(test, 2)} "
+              f"| {pick(ps, 1)} |")
+        A("")
+        A("Members were trained on the training splits only and the shipped "
+          "combination was chosen on VAL.")
+        A("")
     if h["ps_test_top1"] is not None:
         A("## Held-out groups (never pooled)")
         A("")

@@ -1147,10 +1147,10 @@
         <span class="board-badge">Word-Level Textbook</span>
         <div class="board-main-info">
           <h3>WLASL Vocabulary</h3>
-          <p>Watch real video demonstrations for 56 essential everyday ASL words.</p>
+          <p>Watch real video demonstrations for 40 essential everyday ASL words.</p>
         </div>
         <div class="board-footer-row">
-          <span class="board-count-tag">56 Words</span>
+          <span class="board-count-tag">40 Words</span>
           <button type="button" class="board-arrow-btn" aria-label="Open WLASL Digital Textbook">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -1357,13 +1357,11 @@
 
   // Word videos are under `text_to_sign_demo/word/<word>.mp4`
   const DEFAULT_WORDS = [
-    "eat", "family", "friend", "good", "hello", "help", "name", "sad",
-    "school", "drink", "thanks", "love", "bye", "sorry", "yes", "no",
-    "happy", "please", "bad", "home", "me", "my", "you", "your",
-    "what", "where", "who", "want", "need", "like", "go", "come",
-    "stop", "more", "water", "understand", "now", "today", "work", "wait",
-    "finish", "sleep", "bathroom", "hungry", "thirsty", "when", "why", "how",
-    "apple", "bread", "chicken", "tomorrow", "sick", "hurt", "doctor", "medicine"
+    "eat", "family", "friend", "good", "hello", "help", "name", "school",
+    "drink", "thanks", "love", "bye", "sorry", "yes", "no", "please",
+    "bad", "home", "me", "you", "what", "where", "want", "need", "go",
+    "come", "stop", "more", "water", "understand", "now", "today",
+    "work", "finish", "sleep", "bathroom", "hungry", "when", "why", "how"
   ].map((w) => ({
     key: w,
     label: w.charAt(0).toUpperCase() + w.slice(1),
@@ -1373,7 +1371,7 @@
 
   let curriculum = {
     asl: { total: 26, completed: [], items: DEFAULT_LETTERS },
-    wlasl: { total: 56, completed: [], items: DEFAULT_WORDS }
+    wlasl: { total: 40, completed: [], items: DEFAULT_WORDS }
   };
 
   // Tracks whether the 50% or 100% milestone toast was already shown this session
@@ -1395,7 +1393,7 @@
     document.getElementById("aslProgressFill").style.width = `${aslPct}%`;
 
     const wlaslDone = new Set(curriculum.wlasl.completed).size;
-    const wlaslTotal = curriculum.wlasl.total || 56;
+    const wlaslTotal = curriculum.wlasl.total || 40;
     const wlaslPct = Math.round((wlaslDone / wlaslTotal) * 100);
     document.getElementById("wlaslProgressText").textContent = `${wlaslDone} / ${wlaslTotal} (${wlaslPct}%)`;
     document.getElementById("wlaslProgressFill").style.width = `${wlaslPct}%`;
@@ -1469,7 +1467,7 @@
     tbChartModeWrapper.style.display = "block";
     tbSpreadView.classList.remove("active");
 
-    tbTitle.textContent = activeCategory === "asl" ? "ASL Alphabet Chart (A – Z)" : "WLASL Vocabulary Chart (56 Words)";
+    tbTitle.textContent = activeCategory === "asl" ? "ASL Alphabet Chart (A – Z)" : "WLASL Vocabulary Chart (40 Words)";
     tbCounter.textContent = `${learnedSet.size} / ${items.length} Learned`;
 
     tbChartGrid.innerHTML = "";
@@ -1631,10 +1629,10 @@
   const tbTestBtn = document.getElementById("tbTestBtn");
 
   // Minimum gap between camera frame posts; one request in flight at a time.
-  // Letters must feed the J/Z stroke window, which needs ~a second of closely
-  // spaced landmarks, so this path runs as fast as the round trip allows
-  // instead of the old 10 fps. 560 px matches the translator's camera size.
-  const TEST_FRAME_MS = { asl: 33, wlasl: 66 };
+  // Both models are trained on 30 fps clips and the word model counts frames
+  // for its onset/rest debounce, so both paths post on the same 30 fps grid as
+  // the translator instead of the old 15 fps words / 10 fps letters.
+  const TEST_FRAME_MS = { asl: 33, wlasl: 33 };
   const TEST_MAX_SIDE = 560;
   const testCanvas = document.createElement("canvas");
   const testCanvasCtx = testCanvas.getContext("2d");
@@ -1871,7 +1869,10 @@
         return;
       }
       if (!state.predicted) {
-        testReadout(state.hint || "No hand detected — move your hand into the frame.", "err");
+        testReadout(
+          state.hint || "No hand detected — move your hand into the frame.",
+          state.hands && state.hands.length ? "" : "err"
+        );
       } else {
         const pct = Math.round((state.confidence || 0) * 100);
         testReadout(
@@ -1932,7 +1933,12 @@
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: { ideal: "user" } },
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: 30 },
+          facingMode: { ideal: "user" }
+        },
         audio: false
       });
       if (runId !== testRunId) {
@@ -1982,7 +1988,11 @@
     ltTarget.textContent = item.label;
     ltTitle.textContent = testCategory === "asl" ? "Alphabet sign test" : "Word sign test";
     ltInstruction.textContent = testCategory === "asl"
-      ? `Make the ASL handshape for \u201c${item.label}\u201d. Hold it in the middle of the frame, clearly visible, until the model reads it.`
+      ? (item.label === "J"
+          ? "Keep your hand steady and trace the J with your pinky in one continuous motion."
+          : item.label === "Z"
+            ? "Trace a clear Z-shaped zigzag in one continuous motion, with your hand centered in the frame."
+            : `Make the ASL handshape for \u201c${item.label}\u201d. Hold it in the middle of the frame, clearly visible, until the model reads it.`)
       : `Show the sign for \u201c${item.label}\u201d facing the camera. The word model needs the whole movement, so sign it once and then lower your hands.`;
     testBackdrop.classList.add("open");
     startSignTest();
@@ -2382,7 +2392,7 @@
       if (aslPct >= 50) announcedMilestones.asl_50 = true;
       if (aslPct >= 100) announcedMilestones.asl_100 = true;
 
-      const wlaslPct = Math.round((new Set(curriculum.wlasl.completed).size / (curriculum.wlasl.total || 56)) * 100);
+      const wlaslPct = Math.round((new Set(curriculum.wlasl.completed).size / (curriculum.wlasl.total || 40)) * 100);
       if (wlaslPct >= 50) announcedMilestones.wlasl_50 = true;
       if (wlaslPct >= 100) announcedMilestones.wlasl_100 = true;
 

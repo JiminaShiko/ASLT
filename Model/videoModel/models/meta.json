@@ -1,18 +1,21 @@
 {
- "label_set_id": "490d04657dd08d4fb052",
- "evaluation_id": "9f198832eda8c3fefb3c",
+ "candidate": "boost_reg",
+ "label_set_id": "437a28cca1a2f2f960ff",
+ "evaluation_id": "c969703fbf68a7799b04",
  "commit_policy": {
   "version": "predictor.decide/commitable-v1",
   "confidence_min": 0.85,
   "margin_min": 0.15,
   "pair_margins": {},
   "hedge_pairs": {
-   "good|thanks": "good/thanks?"
+   "good|thanks": "good/thanks?",
+   "now|today": "now/today?",
+   "me|sorry": "sorry/me?"
   },
   "scope": "offline clip decisions; not measured live accuracy"
  },
  "model": "isolated ASL word recognizer (landmarks, not pixels)",
- "created": "2026-11-22 13:35:52",
+ "created": "2026-11-28 12:32:27",
  "labels": [
   "eat",
   "family",
@@ -21,7 +24,6 @@
   "hello",
   "help",
   "name",
-  "sad",
   "school",
   "drink",
   "thanks",
@@ -30,20 +32,15 @@
   "sorry",
   "yes",
   "no",
-  "happy",
   "please",
   "bad",
   "home",
   "me",
-  "my",
   "you",
-  "your",
   "what",
   "where",
-  "who",
   "want",
   "need",
-  "like",
   "go",
   "come",
   "stop",
@@ -53,27 +50,17 @@
   "now",
   "today",
   "work",
-  "wait",
   "finish",
   "sleep",
   "bathroom",
   "hungry",
-  "thirsty",
   "when",
   "why",
   "how",
-  "apple",
-  "bread",
-  "chicken",
-  "tomorrow",
-  "sick",
-  "hurt",
-  "doctor",
-  "medicine",
   "REST",
   "OTHER"
  ],
- "num_classes": 58,
+ "num_classes": 42,
  "vocab_batches": [
   1,
   2,
@@ -83,10 +70,10 @@
  "num_frames": 64,
  "landmark_version": 2,
  "feature_version": 3,
- "train_words_top1": 0.9692,
+ "train_words_top1": 0.955,
  "arch": {
   "in_dim": 200,
-  "num_classes": 58,
+  "num_classes": 42,
   "hidden": 96,
   "gru_layers": 2,
   "conv_channels": [
@@ -94,13 +81,13 @@
    96
   ],
   "kernel": 5,
-  "dropout": 0.3
+  "dropout": 0.45
  },
- "params": 385178,
+ "params": 382090,
  "regularization": {
-  "preset": "none",
-  "dropout": 0.3,
-  "weight_decay": 0.0001,
+  "preset": "reg",
+  "dropout": 0.45,
+  "weight_decay": 0.001,
   "label_smoothing": 0.05,
   "hidden": null,
   "gru_layers": null,
@@ -119,45 +106,45 @@
    "mirror": 0.5
   }
  },
- "train_samples": 4572,
- "train_signers": 91,
- "train_videos": 3978,
- "best_val_top1": 0.625,
- "epochs_ran": 56,
- "seed": 20261118,
+ "train_samples": 3070,
+ "train_signers": 90,
+ "train_videos": 2481,
+ "best_val_top1": 0.8719,
+ "epochs_ran": 47,
+ "seed": 20261117,
  "smoke": false,
- "sample_fingerprint": "a4904a4b34dc",
+ "sample_fingerprint": "91ee232d67f4",
  "eval": {
   "train": {
-   "n": 4572,
-   "top1_all": 0.8543,
-   "top1_words_only": 0.9692,
-   "top1_words_only_n": 3382,
+   "n": 3070,
+   "top1_all": 0.9375,
+   "top1_words_only": 0.955,
+   "top1_words_only_n": 2445,
    "note": "train split with the released weights: the memorisation check, not a held-out number"
   },
   "val": {
-   "n_samples": 520,
-   "n_videos": 370,
+   "n_samples": 320,
+   "n_videos": 172,
    "n_signers": 5,
-   "top1_all": 0.625,
-   "top5_all": 0.8308,
-   "macro_top1_words": 0.8075,
-   "n_words_scored": 55,
+   "top1_all": 0.8719,
+   "top5_all": 0.9594,
+   "macro_top1_words": 0.8999,
+   "n_words_scored": 40,
    "background": {
     "rest_n": 150,
-    "rest_acc": 0.8733,
-    "rest_as_word": 19,
-    "rest_as_word_rate": 0.1267,
-    "other_n": 150,
-    "other_acc": 0.1067,
-    "other_as_word": 131,
-    "other_as_word_rate": 0.8733,
+    "rest_acc": 0.88,
+    "rest_as_word": 17,
+    "rest_as_word_rate": 0.1133,
+    "other_n": 7,
+    "other_acc": 0.1429,
+    "other_as_word": 6,
+    "other_as_word_rate": 0.8571,
     "word_as_extra": 4,
-    "word_as_extra_rate": 0.0182
+    "word_as_extra_rate": 0.0245
    },
-   "top1_words_only": 0.8136,
-   "top1_words_only_n": 220,
-   "top5_words_only": 0.9636,
+   "top1_words_only": 0.9018,
+   "top1_words_only_n": 163,
+   "top5_words_only": 0.9755,
    "gate": {
     "policy": {
      "version": "predictor.decide/commitable-v1",
@@ -165,23 +152,25 @@
      "margin_min": 0.15,
      "pair_margins": {},
      "hedge_pairs": {
-      "good|thanks": "good/thanks?"
+      "good|thanks": "good/thanks?",
+      "now|today": "now/today?",
+      "me|sorry": "sorry/me?"
      },
      "scope": "offline clip decisions; not measured live accuracy"
     },
-    "n_rows": 520,
-    "n_words": 220,
-    "n_committed": 166,
-    "n_correct_committed": 129,
-    "n_hedge_refused": 1,
-    "typed_share": 0.6364,
-    "correct_commit_recall": 0.5864,
-    "typed_precision": 0.7771,
-    "typed_precision_words": 0.9214,
+    "n_rows": 320,
+    "n_words": 163,
+    "n_committed": 112,
+    "n_correct_committed": 103,
+    "n_hedge_refused": 4,
+    "typed_share": 0.6564,
+    "correct_commit_recall": 0.6319,
+    "typed_precision": 0.9196,
+    "typed_precision_words": 0.9626,
     "rest_n": 150,
     "rest_slip": 0.0267,
-    "other_n": 150,
-    "other_slip": 0.1467
+    "other_n": 7,
+    "other_slip": 0.1429
    },
    "groups": {
     "core20": {
@@ -193,7 +182,6 @@
       "hello",
       "help",
       "name",
-      "sad",
       "school",
       "drink",
       "thanks",
@@ -202,44 +190,39 @@
       "sorry",
       "yes",
       "no",
-      "happy",
       "please",
       "bad",
       "home"
      ],
-     "n_samples": 84,
-     "n_words_scored": 20,
-     "top1": 0.8333,
-     "macro_top1": 0.815,
-     "correct_commit_recall": 0.5952
+     "n_samples": 76,
+     "n_words_scored": 18,
+     "top1": 0.9211,
+     "macro_top1": 0.9102,
+     "correct_commit_recall": 0.6842
     },
     "weak6": {
      "labels": [
-      "happy",
       "thanks",
-      "please",
-      "no",
       "bad",
-      "good"
+      "hello",
+      "name",
+      "love",
+      "bye"
      ],
-     "n_samples": 22,
+     "n_samples": 23,
      "n_words_scored": 6,
-     "top1": 0.5455,
-     "macro_top1": 0.5417,
-     "correct_commit_recall": 0.1818
+     "top1": 0.7391,
+     "macro_top1": 0.7306,
+     "correct_commit_recall": 0.6522
     },
     "new_words": {
      "labels": [
       "me",
-      "my",
       "you",
-      "your",
       "what",
       "where",
-      "who",
       "want",
       "need",
-      "like",
       "go",
       "come",
       "stop",
@@ -249,55 +232,45 @@
       "now",
       "today",
       "work",
-      "wait",
       "finish",
       "sleep",
       "bathroom",
       "hungry",
-      "thirsty",
       "when",
       "why",
-      "how",
-      "apple",
-      "bread",
-      "chicken",
-      "tomorrow",
-      "sick",
-      "hurt",
-      "doctor",
-      "medicine"
+      "how"
      ],
-     "n_samples": 136,
-     "n_words_scored": 35,
-     "top1": 0.7941,
-     "macro_top1": 0.8032,
-     "correct_commit_recall": 0.5809
+     "n_samples": 87,
+     "n_words_scored": 22,
+     "top1": 0.8736,
+     "macro_top1": 0.8914,
+     "correct_commit_recall": 0.5862
     }
    }
   },
   "test": {
-   "n_samples": 1319,
-   "n_videos": 1022,
+   "n_samples": 860,
+   "n_videos": 565,
    "n_signers": 11,
-   "top1_all": 0.6831,
-   "top5_all": 0.8757,
-   "macro_top1_words": 0.813,
-   "n_words_scored": 55,
+   "top1_all": 0.8372,
+   "top5_all": 0.964,
+   "macro_top1_words": 0.8276,
+   "n_words_scored": 40,
    "background": {
     "rest_n": 300,
-    "rest_acc": 0.8767,
-    "rest_as_word": 37,
-    "rest_as_word_rate": 0.1233,
-    "other_n": 288,
-    "other_acc": 0.1528,
-    "other_as_word": 241,
-    "other_as_word_rate": 0.8368,
-    "word_as_extra": 10,
-    "word_as_extra_rate": 0.0137
+    "rest_acc": 0.8867,
+    "rest_as_word": 33,
+    "rest_as_word_rate": 0.11,
+    "other_n": 13,
+    "other_acc": 0.0769,
+    "other_as_word": 12,
+    "other_as_word_rate": 0.9231,
+    "word_as_extra": 13,
+    "word_as_extra_rate": 0.0238
    },
-   "top1_words_only": 0.814,
-   "top1_words_only_n": 731,
-   "top5_words_only": 0.9603,
+   "top1_words_only": 0.8373,
+   "top1_words_only_n": 547,
+   "top5_words_only": 0.9781,
    "gate": {
     "policy": {
      "version": "predictor.decide/commitable-v1",
@@ -305,23 +278,25 @@
      "margin_min": 0.15,
      "pair_margins": {},
      "hedge_pairs": {
-      "good|thanks": "good/thanks?"
+      "good|thanks": "good/thanks?",
+      "now|today": "now/today?",
+      "me|sorry": "sorry/me?"
      },
      "scope": "offline clip decisions; not measured live accuracy"
     },
-    "n_rows": 1319,
-    "n_words": 731,
-    "n_committed": 464,
-    "n_correct_committed": 400,
-    "n_hedge_refused": 3,
-    "typed_share": 0.5814,
-    "correct_commit_recall": 0.5472,
-    "typed_precision": 0.8621,
-    "typed_precision_words": 0.9412,
+    "n_rows": 860,
+    "n_words": 547,
+    "n_committed": 325,
+    "n_correct_committed": 302,
+    "n_hedge_refused": 13,
+    "typed_share": 0.5777,
+    "correct_commit_recall": 0.5521,
+    "typed_precision": 0.9292,
+    "typed_precision_words": 0.9557,
     "rest_n": 300,
-    "rest_slip": 0.0233,
-    "other_n": 288,
-    "other_slip": 0.1111
+    "rest_slip": 0.0133,
+    "other_n": 13,
+    "other_slip": 0.3846
    },
    "groups": {
     "core20": {
@@ -333,7 +308,6 @@
       "hello",
       "help",
       "name",
-      "sad",
       "school",
       "drink",
       "thanks",
@@ -342,44 +316,39 @@
       "sorry",
       "yes",
       "no",
-      "happy",
       "please",
       "bad",
       "home"
      ],
-     "n_samples": 269,
-     "n_words_scored": 20,
-     "top1": 0.8364,
-     "macro_top1": 0.8303,
-     "correct_commit_recall": 0.4907
+     "n_samples": 245,
+     "n_words_scored": 18,
+     "top1": 0.8531,
+     "macro_top1": 0.8402,
+     "correct_commit_recall": 0.5755
     },
     "weak6": {
      "labels": [
-      "happy",
       "thanks",
-      "please",
-      "no",
       "bad",
-      "good"
+      "hello",
+      "name",
+      "love",
+      "bye"
      ],
-     "n_samples": 73,
+     "n_samples": 77,
      "n_words_scored": 6,
-     "top1": 0.6027,
-     "macro_top1": 0.6077,
-     "correct_commit_recall": 0.1644
+     "top1": 0.7922,
+     "macro_top1": 0.7871,
+     "correct_commit_recall": 0.5065
     },
     "new_words": {
      "labels": [
       "me",
-      "my",
       "you",
-      "your",
       "what",
       "where",
-      "who",
       "want",
       "need",
-      "like",
       "go",
       "come",
       "stop",
@@ -389,40 +358,30 @@
       "now",
       "today",
       "work",
-      "wait",
       "finish",
       "sleep",
       "bathroom",
       "hungry",
-      "thirsty",
       "when",
       "why",
-      "how",
-      "apple",
-      "bread",
-      "chicken",
-      "tomorrow",
-      "sick",
-      "hurt",
-      "doctor",
-      "medicine"
+      "how"
      ],
-     "n_samples": 462,
-     "n_words_scored": 35,
-     "top1": 0.7987,
-     "macro_top1": 0.8031,
-     "correct_commit_recall": 0.5801
+     "n_samples": 302,
+     "n_words_scored": 22,
+     "top1": 0.8079,
+     "macro_top1": 0.8173,
+     "correct_commit_recall": 0.5331
     }
    }
   },
   "ps_test": {
-   "n_samples": 840,
-   "n_videos": 840,
+   "n_samples": 600,
+   "n_videos": 600,
    "n_signers": 10,
-   "top1_all": 0.8369,
-   "top5_all": 0.9738,
-   "macro_top1_words": 0.8369,
-   "n_words_scored": 42,
+   "top1_all": 0.805,
+   "top5_all": 0.985,
+   "macro_top1_words": 0.805,
+   "n_words_scored": 30,
    "background": {
     "rest_n": 0,
     "rest_acc": null,
@@ -435,9 +394,9 @@
     "word_as_extra": 0,
     "word_as_extra_rate": 0.0
    },
-   "top1_words_only": 0.8369,
-   "top1_words_only_n": 840,
-   "top5_words_only": 0.9738,
+   "top1_words_only": 0.805,
+   "top1_words_only_n": 600,
+   "top5_words_only": 0.985,
    "gate": {
     "policy": {
      "version": "predictor.decide/commitable-v1",
@@ -445,19 +404,21 @@
      "margin_min": 0.15,
      "pair_margins": {},
      "hedge_pairs": {
-      "good|thanks": "good/thanks?"
+      "good|thanks": "good/thanks?",
+      "now|today": "now/today?",
+      "me|sorry": "sorry/me?"
      },
      "scope": "offline clip decisions; not measured live accuracy"
     },
-    "n_rows": 840,
-    "n_words": 840,
-    "n_committed": 495,
-    "n_correct_committed": 483,
-    "n_hedge_refused": 9,
-    "typed_share": 0.5893,
-    "correct_commit_recall": 0.575,
-    "typed_precision": 0.9758,
-    "typed_precision_words": 0.9758,
+    "n_rows": 600,
+    "n_words": 600,
+    "n_committed": 325,
+    "n_correct_committed": 320,
+    "n_hedge_refused": 30,
+    "typed_share": 0.5417,
+    "correct_commit_recall": 0.5333,
+    "typed_precision": 0.9846,
+    "typed_precision_words": 0.9846,
     "rest_n": 0,
     "rest_slip": null,
     "other_n": 0,
@@ -473,7 +434,6 @@
       "hello",
       "help",
       "name",
-      "sad",
       "school",
       "drink",
       "thanks",
@@ -482,44 +442,39 @@
       "sorry",
       "yes",
       "no",
-      "happy",
       "please",
       "bad",
       "home"
      ],
-     "n_samples": 320,
-     "n_words_scored": 16,
-     "top1": 0.8313,
-     "macro_top1": 0.8312,
-     "correct_commit_recall": 0.5219
+     "n_samples": 280,
+     "n_words_scored": 14,
+     "top1": 0.8107,
+     "macro_top1": 0.8107,
+     "correct_commit_recall": 0.4857
     },
     "weak6": {
      "labels": [
-      "happy",
       "thanks",
-      "please",
-      "no",
       "bad",
-      "good"
+      "hello",
+      "name",
+      "love",
+      "bye"
      ],
-     "n_samples": 120,
-     "n_words_scored": 6,
-     "top1": 0.7667,
-     "macro_top1": 0.7667,
-     "correct_commit_recall": 0.4083
+     "n_samples": 100,
+     "n_words_scored": 5,
+     "top1": 0.72,
+     "macro_top1": 0.72,
+     "correct_commit_recall": 0.34
     },
     "new_words": {
      "labels": [
       "me",
-      "my",
       "you",
-      "your",
       "what",
       "where",
-      "who",
       "want",
       "need",
-      "like",
       "go",
       "come",
       "stop",
@@ -529,35 +484,107 @@
       "now",
       "today",
       "work",
-      "wait",
       "finish",
       "sleep",
       "bathroom",
       "hungry",
-      "thirsty",
       "when",
       "why",
-      "how",
-      "apple",
-      "bread",
-      "chicken",
-      "tomorrow",
-      "sick",
-      "hurt",
-      "doctor",
-      "medicine"
+      "how"
      ],
-     "n_samples": 520,
-     "n_words_scored": 26,
-     "top1": 0.8404,
-     "macro_top1": 0.8404,
-     "correct_commit_recall": 0.6077
+     "n_samples": 320,
+     "n_words_scored": 16,
+     "top1": 0.8,
+     "macro_top1": 0.8,
+     "correct_commit_recall": 0.575
     }
    }
   }
  },
- "test_top1": 0.6831,
+ "test_top1": 0.8372,
  "test_n_signers": 11,
  "licence": "trained on ASL Citizen under the terms in D:\\sign language project\\ASTL project\\ASLT\\Model\\videoModel\\ASL_Citizen\\use.txt; non-commercial research only",
- "note": "scored on the official signer-disjoint split; no webcam data was used for training or calibration, and nothing from a camera is ever written to disk"
+ "note": "scored on the official signer-disjoint split; no webcam data was used for training or calibration, and nothing from a camera is ever written to disk",
+ "ensemble": [
+  "words_core20_e2.pt",
+  "words_core20_e3.pt"
+ ],
+ "ensemble_note": "words_core20.pt is the reg config (dropout 0.45, wd 1e-3); e2 is the daily40 'none' config; e3 is the 'aug+' config. Predictions are the mean of the three softmax outputs.",
+ "ensemble_eval": {
+  "split_order": [
+   "val",
+   "test",
+   "ps_test"
+  ],
+  "metric": "top1_all / top1_words_only / macro_words",
+  "val": [
+   0.875,
+   0.9018,
+   0.9022
+  ],
+  "test": [
+   0.8547,
+   0.8483,
+   0.8477
+  ],
+  "ps_test": [
+   0.8383,
+   0.8383,
+   0.8383
+  ],
+  "members_single": {
+   "reg": {
+    "val": [
+     0.8719,
+     0.8957,
+     0.8999
+    ],
+    "test": [
+     0.8372,
+     0.8282,
+     0.8276
+    ],
+    "ps_test": [
+     0.805,
+     0.805,
+     0.805
+    ]
+   },
+   "none": {
+    "val": [
+     0.875,
+     0.8834,
+     0.8853
+    ],
+    "test": [
+     0.8558,
+     0.8391,
+     0.8367
+    ],
+    "ps_test": [
+     0.8433,
+     0.8433,
+     0.8433
+    ]
+   },
+   "aug+": {
+    "val": [
+     0.8438,
+     0.8773,
+     0.8668
+    ],
+    "test": [
+     0.8244,
+     0.83,
+     0.8305
+    ],
+    "ps_test": [
+     0.83,
+     0.83,
+     0.83
+    ]
+   }
+  },
+  "measured_by": "offline replay of the cached test clips through the three checkpoints; the shipped path is the same average"
+ }
 }

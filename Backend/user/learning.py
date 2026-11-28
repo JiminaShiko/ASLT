@@ -40,14 +40,15 @@ LETTER_VOTE_FRAMES = 5      # size of the live letter vote window
 LETTER_VOTE_CONF = 0.70     # a frame below this never votes (live.py's gate)
 PRACTICE_TTL_SECONDS = 600
 
+# The daily-communication vocabulary the shipped word model is trained on
+# (Model/videoModel/vocab.json -> enabled_words). Keep the two in step: a lesson
+# for a word the recogniser cannot say can never be passed.
 WLASL_WORDS = [
-    "eat", "family", "friend", "good", "hello", "help", "name", "sad",
-    "school", "drink", "thanks", "love", "bye", "sorry", "yes", "no",
-    "happy", "please", "bad", "home", "me", "my", "you", "your",
-    "what", "where", "who", "want", "need", "like", "go", "come",
-    "stop", "more", "water", "understand", "now", "today", "work", "wait",
-    "finish", "sleep", "bathroom", "hungry", "thirsty", "when", "why", "how",
-    "apple", "bread", "chicken", "tomorrow", "sick", "hurt", "doctor", "medicine",
+    "eat", "family", "friend", "good", "hello", "help", "name", "school",
+    "drink", "thanks", "love", "bye", "sorry", "yes", "no", "please",
+    "bad", "home", "me", "you", "what", "where", "want", "need", "go",
+    "come", "stop", "more", "water", "understand", "now", "today",
+    "work", "finish", "sleep", "bathroom", "hungry", "when", "why", "how",
 ]
 
 
@@ -698,9 +699,9 @@ class LetterPractice:
         )
         self.smoother = landmark_live.Smoother(
             conf=LETTER_VOTE_CONF, vote=LETTER_VOTE_FRAMES, hold=0.0)
-        # J and Z are not among the classifier's 24 static classes, so without the
-        # trained stroke head this camera test could never pass them - it read an
-        # I-shaped hand as "I" forever. Same decider live.py runs.
+        # J and Z are not among the classifier's 24 static classes. The shared
+        # motion decider reads the pinky trajectory for J and the index trajectory
+        # for Z, so this practice camera follows the same live recognition path.
         self.motion = landmark_live.MotionDecider()
         # Body/face trace for the overlay only; the letter reading is unchanged.
         self.pose = PoseOverlay()
@@ -754,14 +755,16 @@ class LetterPractice:
             probabilities, self.labels, self.settings["conf"],
             self.settings["margin"], pairs=self.settings["pairs"],
         )
-        held, _committed, held_conf = self.smoother.step(
-            call["letter"], call["conf"], now, hand_present=True)
         top1 = call["top3"][0][0] if call["top3"] else ""
         # A stroke the J/Z head names overrides this frame's static reading: the
         # classifier has no J or Z to offer, so the hand-written letter is all it
         # can say about a hook or a zigzag.
         motion_letter = self.motion.update(
             now, result.landmarks, top1, call["conf"])
+        motion_blocked = self.motion.blocks_static(top1, now)
+        static_vote = None if motion_blocked else call["letter"]
+        held, _committed, held_conf = self.smoother.step(
+            static_vote, call["conf"], now, hand_present=True)
         if motion_letter:
             held = motion_letter
             held_conf = float(self.motion.last_probs.get(motion_letter, 1.0))
@@ -775,14 +778,20 @@ class LetterPractice:
         )
         return {
             "matched": matched,
-            "predicted": held or top1,
+            "predicted": held or ("" if motion_blocked else top1),
             "confidence": confidence,
             "held": held or "",
             "hands": [hand_points(result.landmarks)],
             "head": overlay["head"],
             "body": overlay["body"],
             "frame_ms": self.last_frame_ms,
-            "hint": "" if held else "Hold the sign steady in the middle of the frame.",
+            "hint": (
+                (f"Trace the {self.target} stroke in one clear motion."
+                 if self.target in ("J", "Z") else
+                 "Checking the hand movement before choosing I/J or X/Z.")
+                if motion_blocked else
+                ("" if held else "Hold the sign steady in the middle of the frame.")
+            ),
         }
 
     def _pose_tick(self, rgb):
