@@ -1,6 +1,7 @@
 {
- "label_set_id": "490d04657dd08d4fb052",
- "evaluation_id": "9f198832eda8c3fefb3c",
+ "candidate": "boost_reg",
+ "label_set_id": "437a28cca1a2f2f960ff",
+ "evaluation_id": "c969703fbf68a7799b04",
  "evaluation_identity": {
   "protocol": "official-ac-val-v1",
   "smoke": false,
@@ -8,14 +9,10 @@
   "labels": [
    "OTHER",
    "REST",
-   "apple",
    "bad",
    "bathroom",
-   "bread",
    "bye",
-   "chicken",
    "come",
-   "doctor",
    "drink",
    "eat",
    "family",
@@ -23,47 +20,35 @@
    "friend",
    "go",
    "good",
-   "happy",
    "hello",
    "help",
    "home",
    "how",
    "hungry",
-   "hurt",
-   "like",
    "love",
    "me",
-   "medicine",
    "more",
-   "my",
    "name",
    "need",
    "no",
    "now",
    "please",
-   "sad",
    "school",
-   "sick",
    "sleep",
    "sorry",
    "stop",
    "thanks",
-   "thirsty",
    "today",
-   "tomorrow",
    "understand",
-   "wait",
    "want",
    "water",
    "what",
    "when",
    "where",
-   "who",
    "why",
    "work",
    "yes",
-   "you",
-   "your"
+   "you"
   ],
   "glosses": {
    "eat": [
@@ -87,9 +72,6 @@
    ],
    "name": [
     "NAME"
-   ],
-   "sad": [
-    "SAD"
    ],
    "school": [
     "SCHOOL"
@@ -116,9 +98,6 @@
    "no": [
     "NO"
    ],
-   "happy": [
-    "HAPPY"
-   ],
    "please": [
     "PLEASE"
    ],
@@ -131,14 +110,8 @@
    "me": [
     "ME"
    ],
-   "my": [
-    "MY"
-   ],
    "you": [
     "YOU"
-   ],
-   "your": [
-    "YOUR"
    ],
    "what": [
     "WHAT1",
@@ -147,18 +120,12 @@
    "where": [
     "WHERE"
    ],
-   "who": [
-    "WHO"
-   ],
    "want": [
     "WANT1",
     "WANT2"
    ],
    "need": [
     "NEED"
-   ],
-   "like": [
-    "LIKE"
    ],
    "go": [
     "GO"
@@ -187,9 +154,6 @@
    "work": [
     "WORK"
    ],
-   "wait": [
-    "WAIT"
-   ],
    "finish": [
     "FINISH"
    ],
@@ -202,9 +166,6 @@
    "hungry": [
     "HUNGRY"
    ],
-   "thirsty": [
-    "THIRSTY"
-   ],
    "when": [
     "WHEN"
    ],
@@ -213,28 +174,6 @@
    ],
    "how": [
     "HOW1"
-   ],
-   "apple": [
-    "APPLE"
-   ],
-   "bread": [
-    "BREAD"
-   ],
-   "chicken": [],
-   "tomorrow": [
-    "TOMORROW"
-   ],
-   "sick": [
-    "SICK"
-   ],
-   "hurt": [
-    "HURT"
-   ],
-   "doctor": [
-    "DOCTOR1"
-   ],
-   "medicine": [
-    "MEDICINE"
    ]
   },
   "policy": {
@@ -243,7 +182,9 @@
    "margin_min": 0.15,
    "pair_margins": {},
    "hedge_pairs": {
-    "good|thanks": "good/thanks?"
+    "good|thanks": "good/thanks?",
+    "now|today": "now/today?",
+    "me|sorry": "sorry/me?"
    },
    "scope": "offline clip decisions; not measured live accuracy"
   },
@@ -253,9 +194,9 @@
    "val"
   ],
   "samples": {
-   "val": "b07d7404f1d540a80e9a",
-   "test": "ef0f88f2abfec0f12fed",
-   "ps_test": "df9722db4f5ad9e6d549"
+   "val": "87012283a236ac845c77",
+   "test": "683ef32d31b5c30fd831",
+   "ps_test": "82571fce0bf868efc134"
   }
  },
  "commit_policy": {
@@ -264,7 +205,9 @@
   "margin_min": 0.15,
   "pair_margins": {},
   "hedge_pairs": {
-   "good|thanks": "good/thanks?"
+   "good|thanks": "good/thanks?",
+   "now|today": "now/today?",
+   "me|sorry": "sorry/me?"
   },
   "scope": "offline clip decisions; not measured live accuracy"
  },
@@ -277,7 +220,6 @@
    "hello",
    "help",
    "name",
-   "sad",
    "school",
    "drink",
    "thanks",
@@ -286,30 +228,25 @@
    "sorry",
    "yes",
    "no",
-   "happy",
    "please",
    "bad",
    "home"
   ],
   "weak6": [
-   "happy",
    "thanks",
-   "please",
-   "no",
    "bad",
-   "good"
+   "hello",
+   "name",
+   "love",
+   "bye"
   ],
   "new_words": [
    "me",
-   "my",
    "you",
-   "your",
    "what",
    "where",
-   "who",
    "want",
    "need",
-   "like",
    "go",
    "come",
    "stop",
@@ -319,23 +256,13 @@
    "now",
    "today",
    "work",
-   "wait",
    "finish",
    "sleep",
    "bathroom",
    "hungry",
-   "thirsty",
    "when",
    "why",
-   "how",
-   "apple",
-   "bread",
-   "chicken",
-   "tomorrow",
-   "sick",
-   "hurt",
-   "doctor",
-   "medicine"
+   "how"
   ]
  },
  "eval_splits": [
@@ -343,20 +270,20 @@
   "test",
   "ps_test"
  ],
- "trained_at": "2026-11-22 13:35:52",
+ "trained_at": "2026-11-28 12:32:27",
  "smoke": false,
- "seed": 20261118,
+ "seed": 20261117,
  "epochs_requested": 60,
- "epochs_ran": 56,
- "best_val_top1": 0.625,
- "sample_fingerprint": "a4904a4b34dc",
+ "epochs_ran": 47,
+ "best_val_top1": 0.8719,
+ "sample_fingerprint": "91ee232d67f4",
  "feature_dim": 200,
  "feature_version": 3,
  "feature_blocks": "all",
  "regularization": {
-  "preset": "none",
-  "dropout": 0.3,
-  "weight_decay": 0.0001,
+  "preset": "reg",
+  "dropout": 0.45,
+  "weight_decay": 0.001,
   "label_smoothing": 0.05,
   "hidden": null,
   "gru_layers": null,
@@ -375,7 +302,7 @@
    "mirror": 0.5
   }
  },
- "num_classes": 58,
+ "num_classes": 42,
  "labels": [
   "eat",
   "family",
@@ -384,7 +311,6 @@
   "hello",
   "help",
   "name",
-  "sad",
   "school",
   "drink",
   "thanks",
@@ -393,20 +319,15 @@
   "sorry",
   "yes",
   "no",
-  "happy",
   "please",
   "bad",
   "home",
   "me",
-  "my",
   "you",
-  "your",
   "what",
   "where",
-  "who",
   "want",
   "need",
-  "like",
   "go",
   "come",
   "stop",
@@ -416,565 +337,474 @@
   "now",
   "today",
   "work",
-  "wait",
   "finish",
   "sleep",
   "bathroom",
   "hungry",
-  "thirsty",
   "when",
   "why",
   "how",
-  "apple",
-  "bread",
-  "chicken",
-  "tomorrow",
-  "sick",
-  "hurt",
-  "doctor",
-  "medicine",
   "REST",
   "OTHER"
  ],
  "history": [
   {
    "epoch": 1,
-   "train_loss": 3.9752,
-   "train_top1": 0.0247,
-   "val_top1": 0.0288,
+   "train_loss": 3.6495,
+   "train_top1": 0.0375,
+   "val_top1": 0.0375,
    "saved": true,
    "lr": 6.9e-05,
-   "seconds": 14.9
+   "seconds": 10.6
   },
   {
    "epoch": 2,
-   "train_loss": 3.6176,
-   "train_top1": 0.068,
-   "val_top1": 0.0385,
+   "train_loss": 3.419,
+   "train_top1": 0.07,
+   "val_top1": 0.05,
    "saved": true,
    "lr": 0.000153,
-   "seconds": 14.6
+   "seconds": 11.0
   },
   {
    "epoch": 3,
-   "train_loss": 2.9618,
-   "train_top1": 0.1406,
-   "val_top1": 0.0615,
+   "train_loss": 2.9886,
+   "train_top1": 0.1163,
+   "val_top1": 0.0719,
    "saved": true,
    "lr": 0.000281,
-   "seconds": 14.3
+   "seconds": 10.9
   },
   {
    "epoch": 4,
-   "train_loss": 2.507,
-   "train_top1": 0.1927,
-   "val_top1": 0.0788,
+   "train_loss": 2.4856,
+   "train_top1": 0.2039,
+   "val_top1": 0.0844,
    "saved": true,
    "lr": 0.000438,
-   "seconds": 14.3
+   "seconds": 10.9
   },
   {
    "epoch": 5,
-   "train_loss": 2.0662,
-   "train_top1": 0.2749,
-   "val_top1": 0.0788,
-   "saved": false,
+   "train_loss": 2.1183,
+   "train_top1": 0.2658,
+   "val_top1": 0.1125,
+   "saved": true,
    "lr": 0.000605,
-   "seconds": 14.0
+   "seconds": 10.8
   },
   {
    "epoch": 6,
-   "train_loss": 1.6812,
-   "train_top1": 0.3556,
-   "val_top1": 0.1135,
+   "train_loss": 1.7945,
+   "train_top1": 0.3251,
+   "val_top1": 0.1156,
    "saved": true,
-   "lr": 0.000761,
-   "seconds": 14.2
+   "lr": 0.000762,
+   "seconds": 10.9
   },
   {
    "epoch": 7,
-   "train_loss": 1.4258,
-   "train_top1": 0.4608,
-   "val_top1": 0.1192,
+   "train_loss": 1.6504,
+   "train_top1": 0.3629,
+   "val_top1": 0.1344,
    "saved": true,
    "lr": 0.000889,
-   "seconds": 14.0
+   "seconds": 11.0
   },
   {
    "epoch": 8,
-   "train_loss": 1.2583,
-   "train_top1": 0.5256,
-   "val_top1": 0.1923,
+   "train_loss": 1.3999,
+   "train_top1": 0.458,
+   "val_top1": 0.1969,
    "saved": true,
    "lr": 0.000972,
-   "seconds": 14.0
+   "seconds": 10.9
   },
   {
    "epoch": 9,
-   "train_loss": 1.1274,
-   "train_top1": 0.5831,
-   "val_top1": 0.2096,
+   "train_loss": 1.2852,
+   "train_top1": 0.5137,
+   "val_top1": 0.25,
    "saved": true,
    "lr": 0.001,
-   "seconds": 14.0
+   "seconds": 11.0
   },
   {
    "epoch": 10,
-   "train_loss": 1.0087,
-   "train_top1": 0.6463,
-   "val_top1": 0.2404,
-   "saved": true,
+   "train_loss": 1.1244,
+   "train_top1": 0.584,
+   "val_top1": 0.2375,
+   "saved": false,
    "lr": 0.000999,
-   "seconds": 14.2
+   "seconds": 10.9
   },
   {
    "epoch": 11,
-   "train_loss": 0.9206,
-   "train_top1": 0.7008,
-   "val_top1": 0.2712,
+   "train_loss": 1.0406,
+   "train_top1": 0.6349,
+   "val_top1": 0.2875,
    "saved": true,
    "lr": 0.000996,
-   "seconds": 14.1
+   "seconds": 10.9
   },
   {
    "epoch": 12,
-   "train_loss": 0.8545,
-   "train_top1": 0.7262,
-   "val_top1": 0.4654,
+   "train_loss": 1.0021,
+   "train_top1": 0.6436,
+   "val_top1": 0.325,
    "saved": true,
    "lr": 0.000991,
-   "seconds": 14.3
+   "seconds": 10.9
   },
   {
    "epoch": 13,
-   "train_loss": 0.8181,
-   "train_top1": 0.7524,
-   "val_top1": 0.2788,
-   "saved": false,
+   "train_loss": 0.9082,
+   "train_top1": 0.7059,
+   "val_top1": 0.5312,
+   "saved": true,
    "lr": 0.000985,
-   "seconds": 13.9
+   "seconds": 10.9
   },
   {
    "epoch": 14,
-   "train_loss": 0.7564,
-   "train_top1": 0.7848,
-   "val_top1": 0.5058,
+   "train_loss": 0.8803,
+   "train_top1": 0.7264,
+   "val_top1": 0.6219,
    "saved": true,
    "lr": 0.000976,
-   "seconds": 14.2
+   "seconds": 10.9
   },
   {
    "epoch": 15,
-   "train_loss": 0.7255,
-   "train_top1": 0.8042,
-   "val_top1": 0.5346,
+   "train_loss": 0.8055,
+   "train_top1": 0.7632,
+   "val_top1": 0.7156,
    "saved": true,
    "lr": 0.000966,
-   "seconds": 15.0
+   "seconds": 10.9
   },
   {
    "epoch": 16,
-   "train_loss": 0.7119,
-   "train_top1": 0.827,
-   "val_top1": 0.2923,
-   "saved": false,
+   "train_loss": 0.7725,
+   "train_top1": 0.7762,
+   "val_top1": 0.7406,
+   "saved": true,
    "lr": 0.000954,
-   "seconds": 14.8
+   "seconds": 10.9
   },
   {
    "epoch": 17,
-   "train_loss": 0.6653,
-   "train_top1": 0.8388,
-   "val_top1": 0.5558,
-   "saved": true,
+   "train_loss": 0.76,
+   "train_top1": 0.7925,
+   "val_top1": 0.7312,
+   "saved": false,
    "lr": 0.00094,
-   "seconds": 14.0
+   "seconds": 10.8
   },
   {
    "epoch": 18,
-   "train_loss": 0.6603,
-   "train_top1": 0.8486,
-   "val_top1": 0.5308,
-   "saved": false,
+   "train_loss": 0.7094,
+   "train_top1": 0.8176,
+   "val_top1": 0.75,
+   "saved": true,
    "lr": 0.000925,
-   "seconds": 14.0
+   "seconds": 11.0
   },
   {
    "epoch": 19,
-   "train_loss": 0.6212,
-   "train_top1": 0.8688,
-   "val_top1": 0.5423,
+   "train_loss": 0.6625,
+   "train_top1": 0.8557,
+   "val_top1": 0.7094,
    "saved": false,
    "lr": 0.000908,
-   "seconds": 14.1
+   "seconds": 10.9
   },
   {
    "epoch": 20,
-   "train_loss": 0.6046,
-   "train_top1": 0.8692,
-   "val_top1": 0.55,
-   "saved": false,
+   "train_loss": 0.6759,
+   "train_top1": 0.8492,
+   "val_top1": 0.7688,
+   "saved": true,
    "lr": 0.000889,
-   "seconds": 14.2
+   "seconds": 10.7
   },
   {
    "epoch": 21,
-   "train_loss": 0.5919,
-   "train_top1": 0.8839,
-   "val_top1": 0.5404,
-   "saved": false,
+   "train_loss": 0.658,
+   "train_top1": 0.8544,
+   "val_top1": 0.775,
+   "saved": true,
    "lr": 0.000869,
-   "seconds": 14.0
+   "seconds": 11.0
   },
   {
    "epoch": 22,
-   "train_loss": 0.587,
-   "train_top1": 0.8788,
-   "val_top1": 0.5577,
-   "saved": true,
+   "train_loss": 0.6193,
+   "train_top1": 0.872,
+   "val_top1": 0.7688,
+   "saved": false,
    "lr": 0.000848,
-   "seconds": 14.5
+   "seconds": 11.0
   },
   {
    "epoch": 23,
-   "train_loss": 0.5854,
-   "train_top1": 0.8817,
-   "val_top1": 0.5481,
-   "saved": false,
+   "train_loss": 0.6015,
+   "train_top1": 0.886,
+   "val_top1": 0.8156,
+   "saved": true,
    "lr": 0.000825,
-   "seconds": 14.1
+   "seconds": 10.9
   },
   {
    "epoch": 24,
-   "train_loss": 0.5642,
-   "train_top1": 0.8972,
-   "val_top1": 0.5423,
+   "train_loss": 0.5934,
+   "train_top1": 0.8821,
+   "val_top1": 0.7812,
    "saved": false,
    "lr": 0.000801,
-   "seconds": 14.3
+   "seconds": 10.9
   },
   {
    "epoch": 25,
-   "train_loss": 0.5515,
-   "train_top1": 0.9062,
-   "val_top1": 0.5615,
-   "saved": true,
+   "train_loss": 0.5948,
+   "train_top1": 0.8902,
+   "val_top1": 0.8094,
+   "saved": false,
    "lr": 0.000776,
-   "seconds": 13.9
+   "seconds": 10.9
   },
   {
    "epoch": 26,
-   "train_loss": 0.5316,
-   "train_top1": 0.9064,
-   "val_top1": 0.5731,
-   "saved": true,
-   "lr": 0.00075,
-   "seconds": 14.3
+   "train_loss": 0.5595,
+   "train_top1": 0.9078,
+   "val_top1": 0.8,
+   "saved": false,
+   "lr": 0.000749,
+   "seconds": 10.8
   },
   {
    "epoch": 27,
-   "train_loss": 0.5192,
-   "train_top1": 0.9221,
-   "val_top1": 0.5885,
+   "train_loss": 0.5713,
+   "train_top1": 0.9052,
+   "val_top1": 0.8313,
    "saved": true,
    "lr": 0.000722,
-   "seconds": 13.9
+   "seconds": 11.0
   },
   {
    "epoch": 28,
-   "train_loss": 0.5137,
-   "train_top1": 0.9221,
-   "val_top1": 0.5654,
+   "train_loss": 0.5483,
+   "train_top1": 0.9078,
+   "val_top1": 0.7875,
    "saved": false,
-   "lr": 0.000695,
-   "seconds": 14.3
+   "lr": 0.000694,
+   "seconds": 10.8
   },
   {
    "epoch": 29,
-   "train_loss": 0.5132,
-   "train_top1": 0.9259,
-   "val_top1": 0.5538,
-   "saved": false,
+   "train_loss": 0.5464,
+   "train_top1": 0.9101,
+   "val_top1": 0.8344,
+   "saved": true,
    "lr": 0.000666,
-   "seconds": 14.4
+   "seconds": 11.0
   },
   {
    "epoch": 30,
-   "train_loss": 0.4873,
-   "train_top1": 0.93,
-   "val_top1": 0.5615,
+   "train_loss": 0.5386,
+   "train_top1": 0.9192,
+   "val_top1": 0.8,
    "saved": false,
    "lr": 0.000636,
-   "seconds": 14.2
+   "seconds": 10.8
   },
   {
    "epoch": 31,
-   "train_loss": 0.5006,
-   "train_top1": 0.9309,
-   "val_top1": 0.5731,
+   "train_loss": 0.5151,
+   "train_top1": 0.9274,
+   "val_top1": 0.8313,
    "saved": false,
-   "lr": 0.000607,
-   "seconds": 14.1
+   "lr": 0.000606,
+   "seconds": 10.8
   },
   {
    "epoch": 32,
-   "train_loss": 0.4999,
-   "train_top1": 0.9374,
-   "val_top1": 0.5865,
-   "saved": false,
+   "train_loss": 0.5162,
+   "train_top1": 0.9368,
+   "val_top1": 0.8406,
+   "saved": true,
    "lr": 0.000576,
-   "seconds": 14.5
+   "seconds": 10.9
   },
   {
    "epoch": 33,
-   "train_loss": 0.4807,
-   "train_top1": 0.9401,
-   "val_top1": 0.5577,
-   "saved": false,
-   "lr": 0.000546,
-   "seconds": 14.1
+   "train_loss": 0.4924,
+   "train_top1": 0.9394,
+   "val_top1": 0.85,
+   "saved": true,
+   "lr": 0.000545,
+   "seconds": 10.9
   },
   {
    "epoch": 34,
-   "train_loss": 0.4626,
-   "train_top1": 0.9436,
-   "val_top1": 0.5692,
+   "train_loss": 0.4937,
+   "train_top1": 0.9391,
+   "val_top1": 0.8438,
    "saved": false,
    "lr": 0.000515,
-   "seconds": 14.4
+   "seconds": 10.9
   },
   {
    "epoch": 35,
-   "train_loss": 0.4632,
-   "train_top1": 0.9528,
-   "val_top1": 0.5962,
-   "saved": true,
+   "train_loss": 0.5009,
+   "train_top1": 0.9349,
+   "val_top1": 0.8469,
+   "saved": false,
    "lr": 0.000484,
-   "seconds": 14.1
+   "seconds": 11.0
   },
   {
    "epoch": 36,
-   "train_loss": 0.4773,
-   "train_top1": 0.9473,
-   "val_top1": 0.6,
+   "train_loss": 0.5071,
+   "train_top1": 0.9433,
+   "val_top1": 0.8562,
    "saved": true,
    "lr": 0.000453,
-   "seconds": 14.1
+   "seconds": 10.9
   },
   {
    "epoch": 37,
-   "train_loss": 0.4577,
-   "train_top1": 0.9549,
-   "val_top1": 0.5923,
-   "saved": false,
+   "train_loss": 0.4769,
+   "train_top1": 0.9531,
+   "val_top1": 0.8594,
+   "saved": true,
    "lr": 0.000423,
-   "seconds": 14.2
+   "seconds": 10.9
   },
   {
    "epoch": 38,
-   "train_loss": 0.4506,
-   "train_top1": 0.9556,
-   "val_top1": 0.6038,
+   "train_loss": 0.4906,
+   "train_top1": 0.9459,
+   "val_top1": 0.8688,
    "saved": true,
-   "lr": 0.000393,
-   "seconds": 14.1
+   "lr": 0.000392,
+   "seconds": 10.9
   },
   {
    "epoch": 39,
-   "train_loss": 0.4597,
-   "train_top1": 0.96,
-   "val_top1": 0.6058,
+   "train_loss": 0.483,
+   "train_top1": 0.9518,
+   "val_top1": 0.8719,
    "saved": true,
    "lr": 0.000363,
-   "seconds": 14.2
+   "seconds": 10.8
   },
   {
    "epoch": 40,
-   "train_loss": 0.4515,
-   "train_top1": 0.9593,
-   "val_top1": 0.5962,
+   "train_loss": 0.4611,
+   "train_top1": 0.9606,
+   "val_top1": 0.8625,
    "saved": false,
    "lr": 0.000333,
-   "seconds": 14.2
+   "seconds": 10.9
   },
   {
    "epoch": 41,
-   "train_loss": 0.4448,
-   "train_top1": 0.9624,
-   "val_top1": 0.6096,
-   "saved": true,
+   "train_loss": 0.4663,
+   "train_top1": 0.9616,
+   "val_top1": 0.85,
+   "saved": false,
    "lr": 0.000305,
-   "seconds": 14.0
+   "seconds": 10.9
   },
   {
    "epoch": 42,
-   "train_loss": 0.4429,
-   "train_top1": 0.9676,
-   "val_top1": 0.6058,
+   "train_loss": 0.4609,
+   "train_top1": 0.9642,
+   "val_top1": 0.8719,
    "saved": false,
    "lr": 0.000277,
-   "seconds": 14.1
+   "seconds": 10.9
   },
   {
    "epoch": 43,
-   "train_loss": 0.4368,
-   "train_top1": 0.9678,
-   "val_top1": 0.6077,
+   "train_loss": 0.4673,
+   "train_top1": 0.9668,
+   "val_top1": 0.8719,
    "saved": false,
-   "lr": 0.00025,
-   "seconds": 14.3
+   "lr": 0.000249,
+   "seconds": 10.8
   },
   {
    "epoch": 44,
-   "train_loss": 0.4416,
-   "train_top1": 0.9628,
-   "val_top1": 0.6154,
-   "saved": true,
+   "train_loss": 0.4722,
+   "train_top1": 0.9593,
+   "val_top1": 0.8594,
+   "saved": false,
    "lr": 0.000223,
-   "seconds": 14.2
+   "seconds": 10.8
   },
   {
    "epoch": 45,
-   "train_loss": 0.4356,
-   "train_top1": 0.9689,
-   "val_top1": 0.6154,
+   "train_loss": 0.4592,
+   "train_top1": 0.9596,
+   "val_top1": 0.8594,
    "saved": false,
    "lr": 0.000198,
-   "seconds": 14.0
+   "seconds": 10.8
   },
   {
    "epoch": 46,
-   "train_loss": 0.4316,
-   "train_top1": 0.9694,
-   "val_top1": 0.6173,
-   "saved": true,
+   "train_loss": 0.453,
+   "train_top1": 0.9655,
+   "val_top1": 0.8625,
+   "saved": false,
    "lr": 0.000174,
-   "seconds": 14.2
+   "seconds": 10.9
   },
   {
    "epoch": 47,
-   "train_loss": 0.4417,
-   "train_top1": 0.9639,
-   "val_top1": 0.6212,
-   "saved": true,
-   "lr": 0.000152,
-   "seconds": 13.8
-  },
-  {
-   "epoch": 48,
-   "train_loss": 0.4399,
-   "train_top1": 0.9705,
-   "val_top1": 0.625,
-   "saved": true,
-   "lr": 0.00013,
-   "seconds": 14.2
-  },
-  {
-   "epoch": 49,
-   "train_loss": 0.4338,
+   "train_loss": 0.4488,
    "train_top1": 0.9694,
-   "val_top1": 0.6135,
+   "val_top1": 0.8719,
    "saved": false,
-   "lr": 0.00011,
-   "seconds": 13.8
-  },
-  {
-   "epoch": 50,
-   "train_loss": 0.4275,
-   "train_top1": 0.9718,
-   "val_top1": 0.6173,
-   "saved": false,
-   "lr": 9.2e-05,
-   "seconds": 14.2
-  },
-  {
-   "epoch": 51,
-   "train_loss": 0.4347,
-   "train_top1": 0.9757,
-   "val_top1": 0.625,
-   "saved": false,
-   "lr": 7.5e-05,
-   "seconds": 14.0
-  },
-  {
-   "epoch": 52,
-   "train_loss": 0.4301,
-   "train_top1": 0.9692,
-   "val_top1": 0.6212,
-   "saved": false,
-   "lr": 5.9e-05,
-   "seconds": 14.2
-  },
-  {
-   "epoch": 53,
-   "train_loss": 0.4242,
-   "train_top1": 0.9727,
-   "val_top1": 0.6212,
-   "saved": false,
-   "lr": 4.6e-05,
-   "seconds": 14.3
-  },
-  {
-   "epoch": 54,
-   "train_loss": 0.4239,
-   "train_top1": 0.9748,
-   "val_top1": 0.6192,
-   "saved": false,
-   "lr": 3.4e-05,
-   "seconds": 14.2
-  },
-  {
-   "epoch": 55,
-   "train_loss": 0.4279,
-   "train_top1": 0.9759,
-   "val_top1": 0.6212,
-   "saved": false,
-   "lr": 2.3e-05,
-   "seconds": 14.3
-  },
-  {
-   "epoch": 56,
-   "train_loss": 0.4231,
-   "train_top1": 0.9768,
-   "val_top1": 0.6212,
-   "saved": false,
-   "lr": 1.5e-05,
-   "seconds": 14.5
+   "lr": 0.000151,
+   "seconds": 10.9
   }
  ],
- "sec_per_epoch": 14.2,
- "seconds": 809.4,
+ "sec_per_epoch": 10.89,
+ "seconds": 521.0,
  "eval": {
   "train": {
-   "n": 4572,
-   "top1_all": 0.8543,
-   "top1_words_only": 0.9692,
-   "top1_words_only_n": 3382,
+   "n": 3070,
+   "top1_all": 0.9375,
+   "top1_words_only": 0.955,
+   "top1_words_only_n": 2445,
    "note": "train split with the released weights: the memorisation check, not a held-out number"
   },
   "val": {
-   "n_samples": 520,
-   "n_videos": 370,
+   "n_samples": 320,
+   "n_videos": 172,
    "n_signers": 5,
-   "top1_all": 0.625,
-   "top5_all": 0.8308,
-   "macro_top1_words": 0.8075,
-   "n_words_scored": 55,
+   "top1_all": 0.8719,
+   "top5_all": 0.9594,
+   "macro_top1_words": 0.8999,
+   "n_words_scored": 40,
    "background": {
     "rest_n": 150,
-    "rest_acc": 0.8733,
-    "rest_as_word": 19,
-    "rest_as_word_rate": 0.1267,
-    "other_n": 150,
-    "other_acc": 0.1067,
-    "other_as_word": 131,
-    "other_as_word_rate": 0.8733,
+    "rest_acc": 0.88,
+    "rest_as_word": 17,
+    "rest_as_word_rate": 0.1133,
+    "other_n": 7,
+    "other_acc": 0.1429,
+    "other_as_word": 6,
+    "other_as_word_rate": 0.8571,
     "word_as_extra": 4,
-    "word_as_extra_rate": 0.0182
+    "word_as_extra_rate": 0.0245
    },
-   "top1_words_only": 0.8136,
-   "top1_words_only_n": 220,
-   "top5_words_only": 0.9636,
+   "top1_words_only": 0.9018,
+   "top1_words_only_n": 163,
+   "top5_words_only": 0.9755,
    "gate": {
     "policy": {
      "version": "predictor.decide/commitable-v1",
@@ -982,23 +812,25 @@
      "margin_min": 0.15,
      "pair_margins": {},
      "hedge_pairs": {
-      "good|thanks": "good/thanks?"
+      "good|thanks": "good/thanks?",
+      "now|today": "now/today?",
+      "me|sorry": "sorry/me?"
      },
      "scope": "offline clip decisions; not measured live accuracy"
     },
-    "n_rows": 520,
-    "n_words": 220,
-    "n_committed": 166,
-    "n_correct_committed": 129,
-    "n_hedge_refused": 1,
-    "typed_share": 0.6364,
-    "correct_commit_recall": 0.5864,
-    "typed_precision": 0.7771,
-    "typed_precision_words": 0.9214,
+    "n_rows": 320,
+    "n_words": 163,
+    "n_committed": 112,
+    "n_correct_committed": 103,
+    "n_hedge_refused": 4,
+    "typed_share": 0.6564,
+    "correct_commit_recall": 0.6319,
+    "typed_precision": 0.9196,
+    "typed_precision_words": 0.9626,
     "rest_n": 150,
     "rest_slip": 0.0267,
-    "other_n": 150,
-    "other_slip": 0.1467
+    "other_n": 7,
+    "other_slip": 0.1429
    },
    "groups": {
     "core20": {
@@ -1010,7 +842,6 @@
       "hello",
       "help",
       "name",
-      "sad",
       "school",
       "drink",
       "thanks",
@@ -1019,44 +850,39 @@
       "sorry",
       "yes",
       "no",
-      "happy",
       "please",
       "bad",
       "home"
      ],
-     "n_samples": 84,
-     "n_words_scored": 20,
-     "top1": 0.8333,
-     "macro_top1": 0.815,
-     "correct_commit_recall": 0.5952
+     "n_samples": 76,
+     "n_words_scored": 18,
+     "top1": 0.9211,
+     "macro_top1": 0.9102,
+     "correct_commit_recall": 0.6842
     },
     "weak6": {
      "labels": [
-      "happy",
       "thanks",
-      "please",
-      "no",
       "bad",
-      "good"
+      "hello",
+      "name",
+      "love",
+      "bye"
      ],
-     "n_samples": 22,
+     "n_samples": 23,
      "n_words_scored": 6,
-     "top1": 0.5455,
-     "macro_top1": 0.5417,
-     "correct_commit_recall": 0.1818
+     "top1": 0.7391,
+     "macro_top1": 0.7306,
+     "correct_commit_recall": 0.6522
     },
     "new_words": {
      "labels": [
       "me",
-      "my",
       "you",
-      "your",
       "what",
       "where",
-      "who",
       "want",
       "need",
-      "like",
       "go",
       "come",
       "stop",
@@ -1066,55 +892,45 @@
       "now",
       "today",
       "work",
-      "wait",
       "finish",
       "sleep",
       "bathroom",
       "hungry",
-      "thirsty",
       "when",
       "why",
-      "how",
-      "apple",
-      "bread",
-      "chicken",
-      "tomorrow",
-      "sick",
-      "hurt",
-      "doctor",
-      "medicine"
+      "how"
      ],
-     "n_samples": 136,
-     "n_words_scored": 35,
-     "top1": 0.7941,
-     "macro_top1": 0.8032,
-     "correct_commit_recall": 0.5809
+     "n_samples": 87,
+     "n_words_scored": 22,
+     "top1": 0.8736,
+     "macro_top1": 0.8914,
+     "correct_commit_recall": 0.5862
     }
    }
   },
   "test": {
-   "n_samples": 1319,
-   "n_videos": 1022,
+   "n_samples": 860,
+   "n_videos": 565,
    "n_signers": 11,
-   "top1_all": 0.6831,
-   "top5_all": 0.8757,
-   "macro_top1_words": 0.813,
-   "n_words_scored": 55,
+   "top1_all": 0.8372,
+   "top5_all": 0.964,
+   "macro_top1_words": 0.8276,
+   "n_words_scored": 40,
    "background": {
     "rest_n": 300,
-    "rest_acc": 0.8767,
-    "rest_as_word": 37,
-    "rest_as_word_rate": 0.1233,
-    "other_n": 288,
-    "other_acc": 0.1528,
-    "other_as_word": 241,
-    "other_as_word_rate": 0.8368,
-    "word_as_extra": 10,
-    "word_as_extra_rate": 0.0137
+    "rest_acc": 0.8867,
+    "rest_as_word": 33,
+    "rest_as_word_rate": 0.11,
+    "other_n": 13,
+    "other_acc": 0.0769,
+    "other_as_word": 12,
+    "other_as_word_rate": 0.9231,
+    "word_as_extra": 13,
+    "word_as_extra_rate": 0.0238
    },
-   "top1_words_only": 0.814,
-   "top1_words_only_n": 731,
-   "top5_words_only": 0.9603,
+   "top1_words_only": 0.8373,
+   "top1_words_only_n": 547,
+   "top5_words_only": 0.9781,
    "gate": {
     "policy": {
      "version": "predictor.decide/commitable-v1",
@@ -1122,23 +938,25 @@
      "margin_min": 0.15,
      "pair_margins": {},
      "hedge_pairs": {
-      "good|thanks": "good/thanks?"
+      "good|thanks": "good/thanks?",
+      "now|today": "now/today?",
+      "me|sorry": "sorry/me?"
      },
      "scope": "offline clip decisions; not measured live accuracy"
     },
-    "n_rows": 1319,
-    "n_words": 731,
-    "n_committed": 464,
-    "n_correct_committed": 400,
-    "n_hedge_refused": 3,
-    "typed_share": 0.5814,
-    "correct_commit_recall": 0.5472,
-    "typed_precision": 0.8621,
-    "typed_precision_words": 0.9412,
+    "n_rows": 860,
+    "n_words": 547,
+    "n_committed": 325,
+    "n_correct_committed": 302,
+    "n_hedge_refused": 13,
+    "typed_share": 0.5777,
+    "correct_commit_recall": 0.5521,
+    "typed_precision": 0.9292,
+    "typed_precision_words": 0.9557,
     "rest_n": 300,
-    "rest_slip": 0.0233,
-    "other_n": 288,
-    "other_slip": 0.1111
+    "rest_slip": 0.0133,
+    "other_n": 13,
+    "other_slip": 0.3846
    },
    "groups": {
     "core20": {
@@ -1150,7 +968,6 @@
       "hello",
       "help",
       "name",
-      "sad",
       "school",
       "drink",
       "thanks",
@@ -1159,44 +976,39 @@
       "sorry",
       "yes",
       "no",
-      "happy",
       "please",
       "bad",
       "home"
      ],
-     "n_samples": 269,
-     "n_words_scored": 20,
-     "top1": 0.8364,
-     "macro_top1": 0.8303,
-     "correct_commit_recall": 0.4907
+     "n_samples": 245,
+     "n_words_scored": 18,
+     "top1": 0.8531,
+     "macro_top1": 0.8402,
+     "correct_commit_recall": 0.5755
     },
     "weak6": {
      "labels": [
-      "happy",
       "thanks",
-      "please",
-      "no",
       "bad",
-      "good"
+      "hello",
+      "name",
+      "love",
+      "bye"
      ],
-     "n_samples": 73,
+     "n_samples": 77,
      "n_words_scored": 6,
-     "top1": 0.6027,
-     "macro_top1": 0.6077,
-     "correct_commit_recall": 0.1644
+     "top1": 0.7922,
+     "macro_top1": 0.7871,
+     "correct_commit_recall": 0.5065
     },
     "new_words": {
      "labels": [
       "me",
-      "my",
       "you",
-      "your",
       "what",
       "where",
-      "who",
       "want",
       "need",
-      "like",
       "go",
       "come",
       "stop",
@@ -1206,40 +1018,30 @@
       "now",
       "today",
       "work",
-      "wait",
       "finish",
       "sleep",
       "bathroom",
       "hungry",
-      "thirsty",
       "when",
       "why",
-      "how",
-      "apple",
-      "bread",
-      "chicken",
-      "tomorrow",
-      "sick",
-      "hurt",
-      "doctor",
-      "medicine"
+      "how"
      ],
-     "n_samples": 462,
-     "n_words_scored": 35,
-     "top1": 0.7987,
-     "macro_top1": 0.8031,
-     "correct_commit_recall": 0.5801
+     "n_samples": 302,
+     "n_words_scored": 22,
+     "top1": 0.8079,
+     "macro_top1": 0.8173,
+     "correct_commit_recall": 0.5331
     }
    }
   },
   "ps_test": {
-   "n_samples": 840,
-   "n_videos": 840,
+   "n_samples": 600,
+   "n_videos": 600,
    "n_signers": 10,
-   "top1_all": 0.8369,
-   "top5_all": 0.9738,
-   "macro_top1_words": 0.8369,
-   "n_words_scored": 42,
+   "top1_all": 0.805,
+   "top5_all": 0.985,
+   "macro_top1_words": 0.805,
+   "n_words_scored": 30,
    "background": {
     "rest_n": 0,
     "rest_acc": null,
@@ -1252,9 +1054,9 @@
     "word_as_extra": 0,
     "word_as_extra_rate": 0.0
    },
-   "top1_words_only": 0.8369,
-   "top1_words_only_n": 840,
-   "top5_words_only": 0.9738,
+   "top1_words_only": 0.805,
+   "top1_words_only_n": 600,
+   "top5_words_only": 0.985,
    "gate": {
     "policy": {
      "version": "predictor.decide/commitable-v1",
@@ -1262,19 +1064,21 @@
      "margin_min": 0.15,
      "pair_margins": {},
      "hedge_pairs": {
-      "good|thanks": "good/thanks?"
+      "good|thanks": "good/thanks?",
+      "now|today": "now/today?",
+      "me|sorry": "sorry/me?"
      },
      "scope": "offline clip decisions; not measured live accuracy"
     },
-    "n_rows": 840,
-    "n_words": 840,
-    "n_committed": 495,
-    "n_correct_committed": 483,
-    "n_hedge_refused": 9,
-    "typed_share": 0.5893,
-    "correct_commit_recall": 0.575,
-    "typed_precision": 0.9758,
-    "typed_precision_words": 0.9758,
+    "n_rows": 600,
+    "n_words": 600,
+    "n_committed": 325,
+    "n_correct_committed": 320,
+    "n_hedge_refused": 30,
+    "typed_share": 0.5417,
+    "correct_commit_recall": 0.5333,
+    "typed_precision": 0.9846,
+    "typed_precision_words": 0.9846,
     "rest_n": 0,
     "rest_slip": null,
     "other_n": 0,
@@ -1290,7 +1094,6 @@
       "hello",
       "help",
       "name",
-      "sad",
       "school",
       "drink",
       "thanks",
@@ -1299,44 +1102,39 @@
       "sorry",
       "yes",
       "no",
-      "happy",
       "please",
       "bad",
       "home"
      ],
-     "n_samples": 320,
-     "n_words_scored": 16,
-     "top1": 0.8313,
-     "macro_top1": 0.8312,
-     "correct_commit_recall": 0.5219
+     "n_samples": 280,
+     "n_words_scored": 14,
+     "top1": 0.8107,
+     "macro_top1": 0.8107,
+     "correct_commit_recall": 0.4857
     },
     "weak6": {
      "labels": [
-      "happy",
       "thanks",
-      "please",
-      "no",
       "bad",
-      "good"
+      "hello",
+      "name",
+      "love",
+      "bye"
      ],
-     "n_samples": 120,
-     "n_words_scored": 6,
-     "top1": 0.7667,
-     "macro_top1": 0.7667,
-     "correct_commit_recall": 0.4083
+     "n_samples": 100,
+     "n_words_scored": 5,
+     "top1": 0.72,
+     "macro_top1": 0.72,
+     "correct_commit_recall": 0.34
     },
     "new_words": {
      "labels": [
       "me",
-      "my",
       "you",
-      "your",
       "what",
       "where",
-      "who",
       "want",
       "need",
-      "like",
       "go",
       "come",
       "stop",
@@ -1346,29 +1144,19 @@
       "now",
       "today",
       "work",
-      "wait",
       "finish",
       "sleep",
       "bathroom",
       "hungry",
-      "thirsty",
       "when",
       "why",
-      "how",
-      "apple",
-      "bread",
-      "chicken",
-      "tomorrow",
-      "sick",
-      "hurt",
-      "doctor",
-      "medicine"
+      "how"
      ],
-     "n_samples": 520,
-     "n_words_scored": 26,
-     "top1": 0.8404,
-     "macro_top1": 0.8404,
-     "correct_commit_recall": 0.6077
+     "n_samples": 320,
+     "n_words_scored": 16,
+     "top1": 0.8,
+     "macro_top1": 0.8,
+     "correct_commit_recall": 0.575
     }
    }
   }
@@ -1376,32 +1164,25 @@
  "weak6_source": "six weakest core20 words on this run's official val split",
  "data": {
   "train": {
-   "n_samples": 4572,
-   "n_videos": 3978,
-   "n_signers": 91,
-   "n_ac_videos": 2052,
-   "n_ps_videos": 2520,
+   "n_samples": 3070,
+   "n_videos": 2481,
+   "n_signers": 90,
+   "n_ac_videos": 1270,
+   "n_ps_videos": 1800,
    "per_label": [
     {
      "label": "OTHER",
-     "samples": 590,
-     "videos": 590,
-     "signers": 27,
-     "mean_frames": 37.3
+     "samples": 25,
+     "videos": 25,
+     "signers": 16,
+     "mean_frames": 40.9
     },
     {
      "label": "REST",
      "samples": 600,
-     "videos": 530,
-     "signers": 29,
-     "mean_frames": 15.8
-    },
-    {
-     "label": "apple",
-     "samples": 77,
-     "videos": 77,
-     "signers": 51,
-     "mean_frames": 47.5
+     "videos": 453,
+     "signers": 30,
+     "mean_frames": 15.6
     },
     {
      "label": "bad",
@@ -1418,13 +1199,6 @@
      "mean_frames": 43.4
     },
     {
-     "label": "bread",
-     "samples": 14,
-     "videos": 14,
-     "signers": 14,
-     "mean_frames": 28.2
-    },
-    {
      "label": "bye",
      "samples": 75,
      "videos": 75,
@@ -1432,25 +1206,11 @@
      "mean_frames": 41.1
     },
     {
-     "label": "chicken",
-     "samples": 60,
-     "videos": 60,
-     "signers": 39,
-     "mean_frames": 57.2
-    },
-    {
      "label": "come",
      "samples": 15,
      "videos": 15,
      "signers": 12,
      "mean_frames": 22.1
-    },
-    {
-     "label": "doctor",
-     "samples": 73,
-     "videos": 73,
-     "signers": 50,
-     "mean_frames": 46.7
     },
     {
      "label": "drink",
@@ -1502,13 +1262,6 @@
      "mean_frames": 37.6
     },
     {
-     "label": "happy",
-     "samples": 75,
-     "videos": 75,
-     "signers": 48,
-     "mean_frames": 41.4
-    },
-    {
      "label": "hello",
      "samples": 74,
      "videos": 74,
@@ -1544,20 +1297,6 @@
      "mean_frames": 39.8
     },
     {
-     "label": "hurt",
-     "samples": 74,
-     "videos": 74,
-     "signers": 53,
-     "mean_frames": 46.8
-    },
-    {
-     "label": "like",
-     "samples": 75,
-     "videos": 75,
-     "signers": 48,
-     "mean_frames": 47.9
-    },
-    {
      "label": "love",
      "samples": 73,
      "videos": 73,
@@ -1572,25 +1311,11 @@
      "mean_frames": 63.9
     },
     {
-     "label": "medicine",
-     "samples": 15,
-     "videos": 15,
-     "signers": 13,
-     "mean_frames": 42.5
-    },
-    {
      "label": "more",
      "samples": 75,
      "videos": 75,
      "signers": 54,
      "mean_frames": 43.9
-    },
-    {
-     "label": "my",
-     "samples": 13,
-     "videos": 13,
-     "signers": 13,
-     "mean_frames": 35.0
     },
     {
      "label": "name",
@@ -1628,25 +1353,11 @@
      "mean_frames": 45.3
     },
     {
-     "label": "sad",
-     "samples": 74,
-     "videos": 74,
-     "signers": 49,
-     "mean_frames": 44.3
-    },
-    {
      "label": "school",
      "samples": 16,
      "videos": 16,
      "signers": 16,
      "mean_frames": 35.4
-    },
-    {
-     "label": "sick",
-     "samples": 74,
-     "videos": 74,
-     "signers": 49,
-     "mean_frames": 41.7
     },
     {
      "label": "sleep",
@@ -1677,13 +1388,6 @@
      "mean_frames": 30.2
     },
     {
-     "label": "thirsty",
-     "samples": 74,
-     "videos": 74,
-     "signers": 48,
-     "mean_frames": 36.8
-    },
-    {
      "label": "today",
      "samples": 75,
      "videos": 75,
@@ -1691,25 +1395,11 @@
      "mean_frames": 45.3
     },
     {
-     "label": "tomorrow",
-     "samples": 76,
-     "videos": 76,
-     "signers": 46,
-     "mean_frames": 38.0
-    },
-    {
      "label": "understand",
      "samples": 14,
      "videos": 14,
      "signers": 14,
      "mean_frames": 29.0
-    },
-    {
-     "label": "wait",
-     "samples": 73,
-     "videos": 73,
-     "signers": 47,
-     "mean_frames": 48.5
     },
     {
      "label": "want",
@@ -1747,13 +1437,6 @@
      "mean_frames": 38.6
     },
     {
-     "label": "who",
-     "samples": 74,
-     "videos": 74,
-     "signers": 49,
-     "mean_frames": 45.3
-    },
-    {
      "label": "why",
      "samples": 74,
      "videos": 74,
@@ -1780,47 +1463,33 @@
      "videos": 15,
      "signers": 15,
      "mean_frames": 25.6
-    },
-    {
-     "label": "your",
-     "samples": 16,
-     "videos": 16,
-     "signers": 15,
-     "mean_frames": 29.8
     }
    ],
    "kinds": {
-    "sign": 3972,
+    "sign": 2470,
     "rest": 600
    }
   },
   "val": {
-   "n_samples": 520,
-   "n_videos": 370,
+   "n_samples": 320,
+   "n_videos": 172,
    "n_signers": 5,
-   "n_ac_videos": 520,
+   "n_ac_videos": 320,
    "n_ps_videos": 0,
    "per_label": [
     {
      "label": "OTHER",
-     "samples": 150,
-     "videos": 150,
-     "signers": 5,
-     "mean_frames": 36.7
+     "samples": 7,
+     "videos": 7,
+     "signers": 3,
+     "mean_frames": 28.4
     },
     {
      "label": "REST",
      "samples": 150,
-     "videos": 130,
+     "videos": 117,
      "signers": 5,
-     "mean_frames": 17.0
-    },
-    {
-     "label": "apple",
-     "samples": 4,
-     "videos": 4,
-     "signers": 4,
-     "mean_frames": 36.2
+     "mean_frames": 15.6
     },
     {
      "label": "bad",
@@ -1837,13 +1506,6 @@
      "mean_frames": 31.0
     },
     {
-     "label": "bread",
-     "samples": 4,
-     "videos": 4,
-     "signers": 4,
-     "mean_frames": 36.5
-    },
-    {
      "label": "bye",
      "samples": 3,
      "videos": 3,
@@ -1856,13 +1518,6 @@
      "videos": 3,
      "signers": 3,
      "mean_frames": 21.7
-    },
-    {
-     "label": "doctor",
-     "samples": 4,
-     "videos": 4,
-     "signers": 4,
-     "mean_frames": 63.5
     },
     {
      "label": "drink",
@@ -1914,13 +1569,6 @@
      "mean_frames": 16.5
     },
     {
-     "label": "happy",
-     "samples": 4,
-     "videos": 4,
-     "signers": 4,
-     "mean_frames": 26.2
-    },
-    {
      "label": "hello",
      "samples": 4,
      "videos": 4,
@@ -1956,20 +1604,6 @@
      "mean_frames": 57.0
     },
     {
-     "label": "hurt",
-     "samples": 4,
-     "videos": 4,
-     "signers": 4,
-     "mean_frames": 58.8
-    },
-    {
-     "label": "like",
-     "samples": 3,
-     "videos": 3,
-     "signers": 3,
-     "mean_frames": 10.7
-    },
-    {
      "label": "love",
      "samples": 5,
      "videos": 5,
@@ -1984,25 +1618,11 @@
      "mean_frames": 39.8
     },
     {
-     "label": "medicine",
-     "samples": 3,
-     "videos": 3,
-     "signers": 3,
-     "mean_frames": 17.0
-    },
-    {
      "label": "more",
      "samples": 4,
      "videos": 4,
      "signers": 4,
      "mean_frames": 30.5
-    },
-    {
-     "label": "my",
-     "samples": 4,
-     "videos": 4,
-     "signers": 4,
-     "mean_frames": 23.0
     },
     {
      "label": "name",
@@ -2040,25 +1660,11 @@
      "mean_frames": 14.5
     },
     {
-     "label": "sad",
-     "samples": 4,
-     "videos": 4,
-     "signers": 4,
-     "mean_frames": 28.5
-    },
-    {
      "label": "school",
      "samples": 3,
      "videos": 3,
      "signers": 3,
      "mean_frames": 31.0
-    },
-    {
-     "label": "sick",
-     "samples": 4,
-     "videos": 4,
-     "signers": 4,
-     "mean_frames": 31.5
     },
     {
      "label": "sleep",
@@ -2089,13 +1695,6 @@
      "mean_frames": 19.7
     },
     {
-     "label": "thirsty",
-     "samples": 3,
-     "videos": 3,
-     "signers": 3,
-     "mean_frames": 24.0
-    },
-    {
      "label": "today",
      "samples": 4,
      "videos": 4,
@@ -2103,25 +1702,11 @@
      "mean_frames": 21.5
     },
     {
-     "label": "tomorrow",
-     "samples": 4,
-     "videos": 4,
-     "signers": 3,
-     "mean_frames": 24.5
-    },
-    {
      "label": "understand",
      "samples": 4,
      "videos": 4,
      "signers": 4,
      "mean_frames": 28.0
-    },
-    {
-     "label": "wait",
-     "samples": 4,
-     "videos": 4,
-     "signers": 4,
-     "mean_frames": 27.8
     },
     {
      "label": "want",
@@ -2159,13 +1744,6 @@
      "mean_frames": 26.5
     },
     {
-     "label": "who",
-     "samples": 4,
-     "videos": 4,
-     "signers": 4,
-     "mean_frames": 25.2
-    },
-    {
      "label": "why",
      "samples": 4,
      "videos": 4,
@@ -2192,47 +1770,33 @@
      "videos": 4,
      "signers": 4,
      "mean_frames": 45.8
-    },
-    {
-     "label": "your",
-     "samples": 4,
-     "videos": 4,
-     "signers": 4,
-     "mean_frames": 42.0
     }
    ],
    "kinds": {
-    "sign": 370,
+    "sign": 170,
     "rest": 150
    }
   },
   "test": {
-   "n_samples": 1319,
-   "n_videos": 1022,
+   "n_samples": 860,
+   "n_videos": 565,
    "n_signers": 11,
-   "n_ac_videos": 1319,
+   "n_ac_videos": 860,
    "n_ps_videos": 0,
    "per_label": [
     {
      "label": "OTHER",
-     "samples": 288,
-     "videos": 288,
-     "signers": 11,
-     "mean_frames": 37.4
+     "samples": 13,
+     "videos": 13,
+     "signers": 9,
+     "mean_frames": 34.6
     },
     {
      "label": "REST",
      "samples": 300,
-     "videos": 274,
+     "videos": 252,
      "signers": 11,
-     "mean_frames": 12.9
-    },
-    {
-     "label": "apple",
-     "samples": 11,
-     "videos": 11,
-     "signers": 11,
-     "mean_frames": 34.3
+     "mean_frames": 12.2
     },
     {
      "label": "bad",
@@ -2249,13 +1813,6 @@
      "mean_frames": 30.3
     },
     {
-     "label": "bread",
-     "samples": 13,
-     "videos": 13,
-     "signers": 11,
-     "mean_frames": 29.8
-    },
-    {
      "label": "bye",
      "samples": 12,
      "videos": 12,
@@ -2268,13 +1825,6 @@
      "videos": 12,
      "signers": 11,
      "mean_frames": 27.7
-    },
-    {
-     "label": "doctor",
-     "samples": 13,
-     "videos": 13,
-     "signers": 11,
-     "mean_frames": 44.1
     },
     {
      "label": "drink",
@@ -2326,13 +1876,6 @@
      "mean_frames": 16.5
     },
     {
-     "label": "happy",
-     "samples": 12,
-     "videos": 12,
-     "signers": 11,
-     "mean_frames": 30.2
-    },
-    {
      "label": "hello",
      "samples": 14,
      "videos": 14,
@@ -2368,20 +1911,6 @@
      "mean_frames": 15.6
     },
     {
-     "label": "hurt",
-     "samples": 12,
-     "videos": 12,
-     "signers": 11,
-     "mean_frames": 26.4
-    },
-    {
-     "label": "like",
-     "samples": 12,
-     "videos": 12,
-     "signers": 11,
-     "mean_frames": 45.8
-    },
-    {
      "label": "love",
      "samples": 12,
      "videos": 12,
@@ -2396,25 +1925,11 @@
      "mean_frames": 49.8
     },
     {
-     "label": "medicine",
-     "samples": 13,
-     "videos": 13,
-     "signers": 11,
-     "mean_frames": 32.5
-    },
-    {
      "label": "more",
      "samples": 12,
      "videos": 12,
      "signers": 11,
      "mean_frames": 28.8
-    },
-    {
-     "label": "my",
-     "samples": 13,
-     "videos": 13,
-     "signers": 11,
-     "mean_frames": 27.8
     },
     {
      "label": "name",
@@ -2452,25 +1967,11 @@
      "mean_frames": 31.1
     },
     {
-     "label": "sad",
-     "samples": 12,
-     "videos": 12,
-     "signers": 10,
-     "mean_frames": 30.0
-    },
-    {
      "label": "school",
      "samples": 11,
      "videos": 11,
      "signers": 11,
      "mean_frames": 30.6
-    },
-    {
-     "label": "sick",
-     "samples": 13,
-     "videos": 13,
-     "signers": 11,
-     "mean_frames": 28.3
     },
     {
      "label": "sleep",
@@ -2501,13 +2002,6 @@
      "mean_frames": 24.7
     },
     {
-     "label": "thirsty",
-     "samples": 12,
-     "videos": 12,
-     "signers": 11,
-     "mean_frames": 26.2
-    },
-    {
      "label": "today",
      "samples": 11,
      "videos": 11,
@@ -2515,25 +2009,11 @@
      "mean_frames": 27.8
     },
     {
-     "label": "tomorrow",
-     "samples": 10,
-     "videos": 10,
-     "signers": 10,
-     "mean_frames": 35.8
-    },
-    {
      "label": "understand",
      "samples": 14,
      "videos": 14,
      "signers": 11,
      "mean_frames": 26.9
-    },
-    {
-     "label": "wait",
-     "samples": 13,
-     "videos": 13,
-     "signers": 11,
-     "mean_frames": 27.3
     },
     {
      "label": "want",
@@ -2571,13 +2051,6 @@
      "mean_frames": 27.1
     },
     {
-     "label": "who",
-     "samples": 14,
-     "videos": 14,
-     "signers": 11,
-     "mean_frames": 31.4
-    },
-    {
      "label": "why",
      "samples": 14,
      "videos": 14,
@@ -2604,34 +2077,20 @@
      "videos": 12,
      "signers": 11,
      "mean_frames": 17.6
-    },
-    {
-     "label": "your",
-     "samples": 11,
-     "videos": 11,
-     "signers": 11,
-     "mean_frames": 25.4
     }
    ],
    "kinds": {
-    "sign": 1019,
+    "sign": 560,
     "rest": 300
    }
   },
   "ps_test": {
-   "n_samples": 840,
-   "n_videos": 840,
+   "n_samples": 600,
+   "n_videos": 600,
    "n_signers": 10,
    "n_ac_videos": 0,
-   "n_ps_videos": 840,
+   "n_ps_videos": 600,
    "per_label": [
-    {
-     "label": "apple",
-     "samples": 20,
-     "videos": 20,
-     "signers": 6,
-     "mean_frames": 56.9
-    },
     {
      "label": "bad",
      "samples": 20,
@@ -2652,20 +2111,6 @@
      "videos": 20,
      "signers": 6,
      "mean_frames": 39.9
-    },
-    {
-     "label": "chicken",
-     "samples": 20,
-     "videos": 20,
-     "signers": 6,
-     "mean_frames": 55.0
-    },
-    {
-     "label": "doctor",
-     "samples": 20,
-     "videos": 20,
-     "signers": 6,
-     "mean_frames": 44.0
     },
     {
      "label": "drink",
@@ -2710,13 +2155,6 @@
      "mean_frames": 42.0
     },
     {
-     "label": "happy",
-     "samples": 20,
-     "videos": 20,
-     "signers": 6,
-     "mean_frames": 46.9
-    },
-    {
      "label": "hello",
      "samples": 20,
      "videos": 20,
@@ -2750,20 +2188,6 @@
      "videos": 20,
      "signers": 6,
      "mean_frames": 32.0
-    },
-    {
-     "label": "hurt",
-     "samples": 20,
-     "videos": 20,
-     "signers": 6,
-     "mean_frames": 40.0
-    },
-    {
-     "label": "like",
-     "samples": 20,
-     "videos": 20,
-     "signers": 6,
-     "mean_frames": 47.5
     },
     {
      "label": "love",
@@ -2801,20 +2225,6 @@
      "mean_frames": 47.7
     },
     {
-     "label": "sad",
-     "samples": 20,
-     "videos": 20,
-     "signers": 6,
-     "mean_frames": 50.8
-    },
-    {
-     "label": "sick",
-     "samples": 20,
-     "videos": 20,
-     "signers": 6,
-     "mean_frames": 48.1
-    },
-    {
      "label": "sleep",
      "samples": 20,
      "videos": 20,
@@ -2836,32 +2246,11 @@
      "mean_frames": 32.9
     },
     {
-     "label": "thirsty",
-     "samples": 20,
-     "videos": 20,
-     "signers": 6,
-     "mean_frames": 47.0
-    },
-    {
      "label": "today",
      "samples": 20,
      "videos": 20,
      "signers": 6,
      "mean_frames": 41.5
-    },
-    {
-     "label": "tomorrow",
-     "samples": 20,
-     "videos": 20,
-     "signers": 6,
-     "mean_frames": 40.9
-    },
-    {
-     "label": "wait",
-     "samples": 20,
-     "videos": 20,
-     "signers": 6,
-     "mean_frames": 51.8
     },
     {
      "label": "water",
@@ -2892,13 +2281,6 @@
      "mean_frames": 48.4
     },
     {
-     "label": "who",
-     "samples": 20,
-     "videos": 20,
-     "signers": 6,
-     "mean_frames": 37.0
-    },
-    {
      "label": "why",
      "samples": 20,
      "videos": 20,
@@ -2921,7 +2303,7 @@
     }
    ],
    "kinds": {
-    "sign": 840
+    "sign": 600
    }
   }
  },

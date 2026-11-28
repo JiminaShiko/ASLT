@@ -12,20 +12,28 @@ function call.
 
 ABOUT
 -----
-Name    : videoModel word recognizer (56 trained words + REST + OTHER;
-          95 words are defined in vocab.json, batches 1-3 are enabled)
+Name    : videoModel word recognizer (40 daily-communication words +
+          REST + OTHER; 95 words are defined in vocab.json, the retained
+          daily set is the `enabled_words` list there)
 Data    : ASL Citizen (Microsoft Research), ~83,400 isolated word videos,
           52 signers, already on disk at `ASL_Citizen/`
 Approach: landmarks, not pixels - one shared 200-number feature vector per
           clip, used identically for training and for the live demo
-Model   : conv1d x2 -> bidirectional GRU x2 -> Linear, 385,178 parameters,
+Model   : conv1d x2 -> bidirectional GRU x2 -> Linear, 382,090 parameters,
           CPU only. Standardisation (train-split mean/std) and the max-over-time
           pooling live inside the module, so the checkpoint, the ONNX graph and
           the webcam path cannot drift apart.
-Result  : the shipped checkpoint is the communication_v2 expansion (56 words
-          + REST + OTHER = 58 classes, ASL Citizen plus 2,520 PopSign clips).
-          Held-out, signer-disjoint: ASL Citizen 81.4% top-1 on words / 68.3%
-          over all classes, PopSign signers 83.7%. Full tables: REPORT_WORDS.md.
+Result  : the shipped checkpoint is the daily-40 build (40 words + REST +
+          OTHER = 42 classes, ASL Citizen plus PopSign clips). It is an
+          ensemble of three checkpoints trained with different regularization
+          (none / dropout 0.45 + weight decay / heavier augmentation); the
+          typed number is the mean of their probabilities, and the ONNX graph
+          exports that same average. Held-out, signer-disjoint: ASL Citizen
+          84.8% top-1 on words / 85.5% over all classes, PopSign signers 83.8%
+          - each member alone scores 82.8-83.9% on the same clips. The same
+          corpus at 56 words scored 81.4% / 68.3%, so the smaller vocabulary is
+          the accuracy, not only the scope.
+          Full tables: REPORT_WORDS.md.
           Offline clips only - the live webcam path is verified for feature
           parity, not measured for accuracy.
 
@@ -70,10 +78,10 @@ WHAT IT DOES
              pose 30 + hands 84 + hand shape 18 + face 12 + hand-to-body 10 +
              presence 4 + velocity 12 + segment read-out 30.
 
-3  train     [64, 200]  ->  97 classes
-             95 active communication words, plus REST (idle head/tail of the
+3  train     [64, 200]  ->  42 classes
+             40 daily-communication words, plus REST (idle head/tail of the
              same clips) and OTHER (a capped sample of signs outside the
-             vocabulary).
+             vocabulary). `python -m src.vocab --status` prints the exact set.
 
 4  live      webcam frame -> landmarks -> features -> decision -> a word
              a segment opens when a hand rises above the shoulder line and
@@ -378,10 +386,12 @@ ignored `datasets/external/` directory and is excluded from Git.
 
 THE VOCABULARY
 --------------
-95 words across four batches are *defined* in `vocab.json`, plus REST and OTHER
-(97 labels). Batches 1-3 are enabled, so the shipped model in `models/` covers
-56 words + REST + OTHER = 58 labels; batch 4 and the unavailable `food` stay
-defined but disabled, and their signs fall into OTHER. `src/train.py` refuses
+95 words across four batches are *defined* in `vocab.json`, plus REST and OTHER.
+Batches 1-3 are enabled and `enabled_words` narrows them to the **40-word daily
+communication set**, so the shipped model in `models/` covers 40 words + REST +
+OTHER = 42 labels. Every other word - and the unavailable `food` - stays defined
+but disabled, and its signs fall into OTHER. An empty `enabled_words` list uses
+every enabled batch again. `src/train.py` refuses
 to overwrite those weights with a different label set unless
 `--allow-vocab-change` is passed. Enable more batches in a candidate first,
 then compare before promoting:
@@ -496,8 +506,10 @@ cache/landmarks/*.npy        one per processed clip
 cache/manifest.csv           one row per clip: status, fps, window, hand rate
                              over the whole clip and over the signing window
 cache/extract_errors.csv     why any clip failed
-models/words_core20.pt       the trained weights
-models/words_core20.onnx     the exported graph
+models/words_core20.pt       the primary weights (reg config)
+models/words_core20_e2.pt    ensemble member, 'none' config
+models/words_core20_e3.pt    ensemble member, 'aug+' config
+models/words_core20.onnx     the exported graph (all three, averaged)
 models/meta.json             labels, dims, splits, seed, licence, fingerprint
 reports/*.csv *.json         per word, confusions, predictions
 REPORT_WORDS.md              the human-readable result

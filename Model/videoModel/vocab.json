@@ -1,6 +1,14 @@
 {
   "version": 3,
   "enabled_batches": [1, 2, 3],
+  "enabled_words": [
+    "eat", "family", "friend", "good", "hello", "help", "name", "school",
+    "drink", "thanks", "love", "bye", "sorry", "yes", "no", "please",
+    "bad", "home", "me", "you", "what", "where", "want", "need", "go",
+    "come", "stop", "more", "water", "understand", "now", "today",
+    "work", "finish", "sleep", "bathroom", "hungry", "when", "why", "how"
+  ],
+  "enabled_words_note": "daily-communication core: the retained subset of batches 1-3 the shipped model is trained on. Empty list = every enabled batch.",
   "dataset": "ASL Citizen (splits/train.csv, splits/val.csv, splits/test.csv)",
   "gloss_matching": "exact raw Gloss string from the official split CSVs",
   "how_to_read": [

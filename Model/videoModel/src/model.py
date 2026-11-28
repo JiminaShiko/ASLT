@@ -107,6 +107,44 @@ def save(model: WordNet, path: Path, meta: dict) -> None:
     tmp.replace(path)
 
 
+class Ensemble(nn.Module):
+    """Average of independently trained nets, as probabilities.
+
+    The members were trained with different regularization, so their errors are
+    only partly shared; averaging their softmax output measured better than any
+    single member on the held-out VAL split (see meta.json -> ensemble_eval).
+    The live path and the exported ONNX graph share this class, so they cannot
+    drift apart.
+    """
+
+    def __init__(self, nets: list[WordNet]) -> None:
+        super().__init__()
+        self.nets = nn.ModuleList(nets)
+
+    @property
+    def arch(self):
+        return self.nets[0].arch
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        total = None
+        for n in self.nets:
+            p = torch.softmax(n(x), dim=1)
+            total = p if total is None else total + p
+        return total / len(self.nets)
+
+    @torch.no_grad()
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        """[B,T,D] or [T,D] numpy -> [B,K] probabilities."""
+        self.eval()
+        a = np.asarray(x, np.float32)
+        if a.ndim == 2:
+            a = a[None]
+        return self(torch.from_numpy(a)).numpy()
+
+    def n_params(self) -> int:
+        return sum(n.n_params() for n in self.nets)
+
+
 def load(path: Path) -> tuple[WordNet, dict]:
     obj = torch.load(path, map_location="cpu", weights_only=False)
     arch = Arch(**obj["arch"])
@@ -114,6 +152,32 @@ def load(path: Path) -> tuple[WordNet, dict]:
     model.load_state_dict(obj["state_dict"])
     model.eval()
     return model, obj.get("meta", {})
+
+
+def load_release(path: Path) -> tuple[nn.Module, dict]:
+    """The shipped artifact: the primary checkpoint plus its meta['ensemble'] members.
+
+    Members are file names next to `path`, so moving models/ moves the ensemble.
+    """
+    net, meta = load(path)
+    names = list(meta.get("ensemble") or [])
+    if not names:
+        return net, meta
+    nets = [net]
+    for name in names:
+        member = path.parent / str(name)
+        if not member.is_file():
+            raise FileNotFoundError(
+                f"{path.name} lists ensemble member {name!r}, which is missing "
+                f"from {path.parent}")
+        n, m = load(member)
+        if list(m.get("labels") or []) != list(meta.get("labels") or []):
+            raise ValueError(f"ensemble member {name} has a different label set")
+        if (n.arch.in_dim, n.arch.num_classes) != (net.arch.in_dim,
+                                                   net.arch.num_classes):
+            raise ValueError(f"ensemble member {name} has a different shape")
+        nets.append(n)
+    return Ensemble(nets), meta
 
 
 if __name__ == "__main__":

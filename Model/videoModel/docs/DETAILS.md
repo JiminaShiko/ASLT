@@ -6,9 +6,15 @@ reference: the data contract, the feature contract, every threshold, what
 each report column means, what each verification mode proves, and how to
 change things.
 
-The shipped model is the `communication_v2` expansion: batches 1-3 of the
-vocabulary, 56 words + REST + OTHER = 58 labels, trained on ASL Citizen plus
-2,520 PopSign clips. Held-out numbers are in `REPORT_WORDS.md`; the methods,
+The shipped model is the daily-40 build: the 40-word `enabled_words` subset of
+batches 1-3, + REST + OTHER = 42 labels, trained on ASL Citizen plus the PopSign
+clips (3 seeds, VAL-best shipped). Raising the label count from 20 to 56 cost
+overall top-1 (68.3% at 58 classes); cutting back to the 40 daily words
+recovered it (85.5% over all classes), which is why the vocabulary is now a
+curated daily set rather than every sign the corpus has. The final 40-word
+model is a three-checkpoint ensemble (different regularization, mean of
+probabilities); `src/model.py::load_release` is the single loader the live
+path, the ONNX export and the tests all use, so they cannot drift apart. Held-out numbers are in `REPORT_WORDS.md`; the methods,
 thresholds and report definitions below are unchanged by the expansion.
 
 Wherever this reference quotes 20-word/22-label figures it is describing the

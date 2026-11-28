@@ -2,7 +2,7 @@
  "verified": true,
  "source_split": "test",
  "n_samples": 64,
- "max_prob_difference": 1.13e-06,
+ "max_prob_difference": 8.3e-07,
  "same_top1": "64/64",
  "opset": 17,
  "input": [
@@ -13,8 +13,8 @@
  "feature_version": 3,
  "output": [
   1,
-  58
+  42
  ],
- "onnx_mb": 1.55,
- "weights_mb": 1.55
+ "onnx_mb": 4.62,
+ "weights_mb": 1.54
 }

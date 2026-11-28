@@ -18,6 +18,14 @@ over the same landmarks (see "J AND Z" below). The old hand-written trajectory
 rule is still in the file as the fallback used when those weights are missing or
 `ASL_JZ_MODEL=off` is set.
 
+The two fingers are tracked separately, because the letters use different ones:
+J is a hook drawn with the **pinky** tip, Z a zig-zag drawn with the **index**
+tip. `MotionDecider` keeps both tips for the whole 1.2 s window and measures each
+rule on its own finger, so a classifier reading can no longer make an index
+zig-zag satisfy the J rule (which is how a Z used to be reported as J). The
+1.1 s cooldown after a letter is also silent: the hand relaxing out of the
+stroke just fired is not allowed to re-open the window.
+
 
 THE NUMBERS
 ===========
@@ -203,9 +211,17 @@ does not save or train on anything you sign.
 J AND Z
 =======
 The model has 24 labels and no J or Z: one still frame of J is an I, and one
-still frame of Z is an X. So a rule watches the movement in front of the model -
-a J must hook sideways and come back, a Z must zig-zag - and the frame's own
-reading is the precondition that lets that watch open.
+still frame of Z is an X. So a second, trained head reads a 1.2 s window of
+movement and names both letters, and the frame's own reading is the precondition
+that lets its watch open.
+
+A J is a space stroke - the whole hand travels, and the pinky tip draws the hook.
+The rule used to measure the pinky *relative to the wrist* and demand a still
+hand while it moved, which is the Z stroke: it fired on 0 of 102 real J clips.
+It now measures the pinky's own track across the frame, and the head's J only
+counts once the pinky has really travelled (`J_MOTION`, 0.30 palm lengths) -
+a held I measures 0.05 there and types nothing, which matters because the head
+judges a window's *shape* and calls a motionless I a J with probability 1.00.
 
 If J or Z never fires, press "Calibrate J / Z" in the browser, or:
 

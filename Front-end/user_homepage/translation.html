@@ -1621,7 +1621,7 @@
         </p>
       </div>
       <div id="words-settings" style="display:none; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; margin-top:8px; padding:10px; border-radius:12px; background:var(--sage-bar);">
-        <div>Conf: <input id="word-conf-live" type="number" step="0.05" value="0.30" style="width:60px;" /></div>
+        <div>Conf: <input id="word-conf-live" type="number" step="0.05" value="0.85" style="width:60px;" /></div>
         <div>Margin: <input id="word-margin-live" type="number" step="0.05" value="0.15" style="width:60px;" /></div>
         <div>Stride: <input id="word-stride-live" type="number" value="1" style="width:50px;" /></div>
         <p style="grid-column:1 / -1; margin:0; font-size:0.72rem; line-height:1.35; opacity:0.82;">
@@ -1771,12 +1771,14 @@
   // 560 px keeps the hand ~2x the size MediaPipe needs while cutting the JPEG
   // path's encode/upload/decode by about a third against 640.
   const LIVE_MAX_SIDE = 560;
-  // The letters path sends landmarks only, so it runs on a fixed 30 fps grid;
-  // the in-flight cap below stops a slow round trip from piling frames up.
-  const LIVE_GAP_MS = { letters: 33, words: 55 };
+  // Both paths run on a fixed 30 fps grid: the models were trained on 30 fps
+  // clips and their segmenter counts frames, so the declared rate, the send
+  // rate and the capture rate are all 30. The in-flight cap below stops a slow
+  // round trip from piling frames up instead of letting it lower the rate.
+  const LIVE_GAP_MS = { letters: 33, words: 33 };
   const TRACK_FRAME_MS = 33;   // 30 fps for tracking, drawing and landmark sends
   const LIVE_MAX_IN_FLIGHT = 2;
-  const WORD_FPS = 20;
+  const WORD_FPS = 30;
   // Hand tracking runs in the page, on the same .task model the Python detector
   // uses, so the skeleton is drawn at video rate and the server only classifies
   // the 21 landmarks it is sent. Without it the JPEG path below is unchanged.

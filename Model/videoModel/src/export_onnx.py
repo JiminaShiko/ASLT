@@ -22,6 +22,11 @@ class _Probs(nn.Module):
         return torch.softmax(self.net(x), dim=1)
 
 
+def _as_probabilities(net: nn.Module) -> nn.Module:
+    """A module whose forward returns probabilities, wrapping logits if needed."""
+    return net if isinstance(net, model.Ensemble) else _Probs(net)
+
+
 def export(weights: Path | None = None, out: Path | None = None,
            log=None) -> tuple[Path, dict]:
     log = log or config.logger_for("onnx", config.LOGS_DIR / "onnx.log")
@@ -31,7 +36,7 @@ def export(weights: Path | None = None, out: Path | None = None,
         config.logger_for("onnx").error(
             f"{weights} is missing - run python -m src.train first")
         raise SystemExit(2)
-    net, meta = model.load(weights)
+    net, meta = model.load_release(weights)
     if meta.get("smoke"):
         log.warning("%s was produced by a smoke run; the ONNX file will be "
                     "just as useless", weights)
@@ -43,8 +48,10 @@ def export(weights: Path | None = None, out: Path | None = None,
     config.ensure_dirs()
     tmp = out.with_suffix(".onnx.part")
     # the shipped graph returns probabilities; live's commit rule expects them
+    wrapped = _as_probabilities(net)
+    wrapped.eval()          # an ensemble must not export with dropout active
     torch.onnx.export(
-        _Probs(net), dummy, str(tmp), opset_version=17,
+        wrapped, dummy, str(tmp), opset_version=17,
         input_names=["features"], output_names=["probabilities"],
         dynamic_axes={"features": {0: "batch"},
                       "probabilities": {0: "batch"}},
@@ -67,7 +74,8 @@ def export(weights: Path | None = None, out: Path | None = None,
     n = min(64, len(bt))
     X = np.stack([bt.row(i, False, None) for i in range(n)]).astype(np.float32)
     with torch.no_grad():
-        torch_out = _Probs(net)(torch.from_numpy(X)).numpy()
+        # the same wrapper the graph used: an ensemble already returns probabilities
+        torch_out = _as_probabilities(net)(torch.from_numpy(X)).numpy()
     import onnxruntime as ort
     sess = ort.InferenceSession(str(out), providers=["CPUExecutionProvider"])
     onnx_out = sess.run(None, {"features": X})[0]

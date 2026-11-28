@@ -46,7 +46,7 @@ STRIDE_DEFAULT = 2         # a processed frame costs ~50 ms here; 2 fits 24 fps.
                            # Halves the J/Z rule's temporal resolution, so drop
                            # to 1 if J or Z stops firing.
 MEANINGS = {
-    "J": "J - moving letter: drawn by the sideways hook rule, not by the MLP",
+    "J": "J - moving letter: the stroke head plus real pinky travel, never one frame",
     "Z": "Z - moving letter: drawn by the fingertip zig-zag rule, not by the MLP",
 }
 
@@ -410,6 +410,8 @@ class LandmarkProcessor(VideoProcessorBase):
                         self.text += fired
                         self.last_motion = fired
                         self.commits.append((fired, now))
+                if self.motion_on and self.motion.blocks_static(self.raw_letter, now):
+                    call_letter = None
             force, self.force_next = self.force_next, False
             held, committed, held_conf = self.smoother.step(
                 call_letter, self.raw_conf, now, force=force,
@@ -704,7 +706,7 @@ with tab_live:
                        "index-up shape is held **or** the classifier reads that "
                        "frame as I (which is what a real J looks like to a "
                        "24-class model with no J - at any confidence) or as an "
-                       "unsure X (a real Z). "
+                       "X handshape (the motion head checks for Z). "
                        "If they never fire for your hand, calibrate once per "
                        "session.")
 
@@ -869,7 +871,8 @@ with tab_live:
                     "held (s)": round(float(s["held_full"]), 2),
                     "hand travel": round(float(s["wrist_net"]), 2),
                     "hand path": round(float(s["wrist_path"]), 2),
-                    "finger path": round(float(s["tip_path"]), 2),
+                    "pinky path": round(float(s["pinky_path_2d"]), 2),
+                    "index path": round(float(s["tip_path_2d"]), 2),
                     "vertical": round(float(s["drop"]), 2),
                 } for i, s in enumerate(r["strokes"], 1)]), hide_index=True)
                 if r["spec"]:
@@ -888,7 +891,7 @@ with tab_live:
                    f"(needs >= 1.6)" if m.get("gate") == "shape" else
                    f"display gate: the model reads this frame as "
                    f"{m.get('top1') or '-'} at {m.get('p1', 0):.2f} "
-                   f"(I points at J at any confidence; an unsure X points at Z)")
+                   f"(I and X frames open J/Z motion checks; the stroke decides)")
             st.caption(
                 f"J/Z watch: held {m.get('held', 0):.2f} s, {why}; wrist path "
                 f"{m.get('wrist_path', 0):.2f}, reversals "
